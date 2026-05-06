@@ -92,7 +92,7 @@
   .card-chevron { position: absolute; bottom: 18px; right: 18px; font-size: 13px; color: var(--text-3); transition: transform 0.2s; }
   .agent-card.open .card-chevron { transform: rotate(180deg); }
 
-  /* ── Test call row (NEW) ── */
+  /* ── Test call row ── */
   .card-test-call { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; min-height: 20px; }
   .card-test-link { font-size: 11px; color: var(--brand-navy); text-decoration: none; display: flex; align-items: center; gap: 4px; font-family: var(--sans); }
   .card-test-link:hover { text-decoration: underline; }
@@ -152,34 +152,6 @@
   .perf-val { font-family: var(--mono); font-size: 17px; font-weight: 500; color: var(--text); }
   .perf-val.zero { color: var(--text-3); }
   .perf-lbl { font-size: 11px; color: var(--text-3); margin-top: 3px; }
-
-  /* CTA */
-  .drawer-cta { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .drawer-cta p { font-size: 13px; color: var(--text-2); }
-  .btn-primary { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 9px 20px; border-radius: var(--radius-sm); background: var(--brand-navy); color: var(--surface); border: none; cursor: pointer; transition: opacity 0.12s; text-decoration: none; display: inline-block; }
-  .btn-primary:hover { opacity: 0.85; }
-
-  /* Request form */
-  .request-view { max-width: 600px; }
-  .request-intro { margin-bottom: 32px; }
-  .request-intro h2 { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 8px; }
-  .request-intro p { font-size: 14px; color: var(--text-2); line-height: 1.6; }
-  .form-section { margin-bottom: 22px; }
-  .form-label { font-size: 13px; font-weight: 500; color: var(--text); display: block; margin-bottom: 6px; }
-  .form-hint { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
-  .form-input, .form-fselect, .form-textarea { width: 100%; font-family: var(--sans); font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 12px; outline: none; transition: border-color 0.15s; }
-  .form-input:focus, .form-fselect:focus, .form-textarea:focus { border-color: var(--text); }
-  .form-textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
-  .form-fselect { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .type-card { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 14px; cursor: pointer; background: var(--surface); text-align: left; font-family: var(--sans); transition: all 0.12s; }
-  .type-card:hover { border-color: var(--text); }
-  .type-card.selected { border: 1.5px solid var(--text); background: var(--bg); }
-  .type-card-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
-  .type-card-desc { font-size: 11px; color: var(--text-2); line-height: 1.4; }
-  .form-submit { background: var(--brand-navy); color: var(--surface); border: none; font-family: var(--sans); font-size: 14px; font-weight: 500; padding: 11px 28px; border-radius: var(--radius-sm); cursor: pointer; transition: opacity 0.12s; }
-  .form-submit:hover { opacity: 0.85; }
-  .success-msg { display: none; background: var(--teal-bg); color: var(--teal); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
 
   /* Update data panel */
   .update-link { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; transition: color 0.12s; background: none; border: none; font-family: var(--sans); }
@@ -319,33 +291,6 @@
   .dev-btn-reject:hover { background:#F7C1C1; }
   .dev-btn-reject:disabled { opacity:0.4; cursor:not-allowed; }
   .dev-launch-gate { border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; color:var(--text-2); background:var(--bg); border:1px solid var(--border); display:flex; align-items:center; gap:8px; margin-top:12px; }
-
-  /* Chatbot */
-  .chat-fab { position: fixed; bottom: 28px; right: 28px; width: 48px; height: 48px; border-radius: 50%; background: var(--brand-navy); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(26,46,74,0.3); transition: transform 0.15s, box-shadow 0.15s; z-index: 100; }
-  .chat-fab:hover { transform: scale(1.07); box-shadow: 0 6px 20px rgba(26,46,74,0.4); }
-  .chat-panel { position: fixed; bottom: 88px; right: 28px; width: 380px; max-height: 520px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.12); display: flex; flex-direction: column; z-index: 100; animation: fadeIn 0.18s ease both; }
-  .chat-panel.hidden { display: none; }
-  .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .chat-header-left { display: flex; align-items: center; gap: 8px; }
-  .chat-header-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-mint); }
-  .chat-header-title { font-size: 13px; font-weight: 500; color: var(--text); }
-  .chat-header-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
-  .chat-close { background: none; border: none; font-size: 16px; color: var(--text-3); cursor: pointer; line-height: 1; padding: 2px; }
-  .chat-close:hover { color: var(--text); }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-height: 200px; }
-  .chat-msg { max-width: 88%; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; }
-  .chat-msg.user { background: var(--brand-navy); color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
-  .chat-msg.assistant { background: var(--bg); color: var(--text); align-self: flex-start; border-bottom-left-radius: 3px; }
-  .chat-msg.thinking { color: var(--text-3); font-style: italic; background: var(--bg); align-self: flex-start; }
-  .chat-input-row { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
-  .chat-input { flex: 1; font-family: var(--sans); font-size: 13px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; outline: none; resize: none; line-height: 1.4; max-height: 80px; transition: border-color 0.15s; }
-  .chat-input:focus { border-color: var(--brand-navy); }
-  .chat-send { background: var(--brand-navy); color: white; border: none; border-radius: var(--radius-sm); padding: 8px 14px; font-family: var(--sans); font-size: 12px; font-weight: 500; cursor: pointer; flex-shrink: 0; transition: opacity 0.12s; }
-  .chat-send:hover { opacity: 0.85; }
-  .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
-  .chat-examples { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 6px; }
-  .chat-example { font-size: 11px; color: var(--brand-navy); background: var(--brand-mint-bg); border: none; border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; text-align: left; font-family: var(--sans); transition: opacity 0.12s; }
-  .chat-example:hover { opacity: 0.8; }
 </style>
 </head>
 <body>
@@ -381,7 +326,6 @@
 
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('agents',this)">Agents</button>
-    <button class="nav-tab" onclick="switchTab('request',this)">Request a change</button>
     <button class="nav-tab" onclick="switchTab('dev',this)">In development</button>
   </div>
 
@@ -423,64 +367,6 @@
 
     <div class="agents-grid" id="agents-grid"></div>
     <div id="drawer-container"></div>
-  </div>
-
-  <!-- REQUEST -->
-  <div id="tab-request" class="tab-pane">
-    <div class="request-view">
-      <div class="request-intro">
-        <h2>Request a change</h2>
-        <p>Fill out the form below. We'll help build the Jira ticket for you to copy.</p>
-      </div>
-      <div class="form-section">
-        <label class="form-label">What kind of change?</label>
-        <div class="type-grid">
-          <button class="type-card selected" onclick="selType(this,'modify')"><div class="type-card-name">Modify an agent</div><div class="type-card-desc">Script, routing logic, qualification criteria, or transfer behavior</div></button>
-          <button class="type-card" onclick="selType(this,'new')"><div class="type-card-name">New agent request</div><div class="type-card-desc">New vertical, buyer requirement, or publisher use case</div></button>
-          <button class="type-card" onclick="selType(this,'bug')"><div class="type-card-name">Report an issue</div><div class="type-card-desc">Agent isn't behaving as expected, wrong transfers, bad routing</div></button>
-          <button class="type-card" onclick="selType(this,'question')"><div class="type-card-name">Question</div><div class="type-card-desc">Anything else about how an agent works or how AI is being used</div></button>
-        </div>
-      </div>
-      <div class="form-section" id="agent-sel-row">
-        <label class="form-label">Which agent?</label>
-        <select class="form-fselect" id="req-agent"><option value="">Select an agent...</option></select>
-      </div>
-      <div class="form-section">
-        <label class="form-label">Your name</label>
-        <input class="form-input" type="text" id="req-name" placeholder="First and last name">
-      </div>
-      <div class="form-section">
-        <label class="form-label">Describe the change or issue</label>
-        <div class="form-hint">Be specific — buyer name, call scenario, what's happening vs. what should happen.</div>
-        <textarea class="form-textarea" id="req-desc" placeholder="e.g. 'Buyer X is seeing unqualified calls — agent should confirm homeownership before transferring.'"></textarea>
-      </div>
-      <button class="form-submit" id="submit-btn" onclick="submitRequest()">Generate Jira ticket body →</button>
-      <div id="ticket-preview" style="display:none;margin-top:28px;border:1px solid var(--brand-navy);border-radius:var(--radius);overflow:hidden;">
-        <div style="background:var(--brand-navy);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-size:13px;font-weight:500;color:white;margin-bottom:2px;">Your ticket is ready — add it to the To Do column</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.6);">Open the MK board, click + Create, and paste the content below.</div>
-          </div>
-          <a href="https://replydev.atlassian.net/jira/core/projects/MK/board?filter=&groupBy=status" target="_blank" style="font-family:var(--sans);font-size:12px;font-weight:500;padding:7px 14px;border-radius:var(--radius-sm);background:var(--brand-mint);color:var(--brand-navy);text-decoration:none;white-space:nowrap;">Open MK board ↗</a>
-        </div>
-        <div style="padding:16px 18px;background:var(--surface);">
-          <div style="margin-bottom:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="font-size:10px;font-weight:500;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-3);">Summary</div>
-              <button onclick="copyField('preview-summary', this)" style="font-family:var(--sans);font-size:11px;color:var(--text-2);background:none;border:1px solid var(--border-strong);border-radius:4px;padding:2px 8px;cursor:pointer;">Copy</button>
-            </div>
-            <div id="preview-summary" style="font-size:14px;font-weight:500;color:var(--text);background:var(--bg);border-radius:var(--radius-sm);padding:8px 10px;"></div>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="font-size:10px;font-weight:500;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-3);">Description</div>
-              <button onclick="copyField('preview-desc', this)" style="font-family:var(--sans);font-size:11px;color:var(--text-2);background:none;border:1px solid var(--border-strong);border-radius:4px;padding:2px 8px;cursor:pointer;">Copy</button>
-            </div>
-            <div id="preview-desc" style="font-size:13px;color:var(--text-2);white-space:pre-line;line-height:1.6;background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- IN DEVELOPMENT -->
@@ -660,47 +546,9 @@
   </div>
 </div>
 
-<!-- CHATBOT -->
-<button class="chat-fab" onclick="toggleChat()" title="Ask about your data">
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C6.48 2 2 6.02 2 11c0 2.55 1.09 4.86 2.86 6.5L4 22l4.5-1.86C9.58 20.63 10.77 21 12 21c5.52 0 10-4.02 10-9S17.52 2 12 2z" fill="white" opacity="0.9"/>
-    <circle cx="8.5" cy="11" r="1.2" fill="#1A2E4A"/>
-    <circle cx="12" cy="11" r="1.2" fill="#1A2E4A"/>
-    <circle cx="15.5" cy="11" r="1.2" fill="#1A2E4A"/>
-  </svg>
-</button>
-
-<div class="chat-panel hidden" id="chat-panel">
-  <div class="chat-header">
-    <div class="chat-header-left">
-      <div class="chat-header-dot"></div>
-      <div>
-        <div class="chat-header-title">Ask about your data</div>
-        <div class="chat-header-sub">Queries the loaded registry data</div>
-      </div>
-    </div>
-    <button class="chat-close" onclick="toggleChat()">×</button>
-  </div>
-  <div class="chat-messages" id="chat-messages">
-    <div class="chat-msg assistant">Ask me anything about your AI agents, publishers, advertisers, or performance data.</div>
-  </div>
-  <div class="chat-examples" id="chat-examples">
-    <button class="chat-example" onclick="sendExample(this)">Which IVRs does Vocara buy calls from?</button>
-    <button class="chat-example" onclick="sendExample(this)">Which agent had the worst conversion rate?</button>
-    <button class="chat-example" onclick="sendExample(this)">What's the top publisher by raw calls?</button>
-  </div>
-  <div class="chat-input-row">
-    <textarea class="chat-input" id="chat-input" placeholder="Ask a question..." rows="1" onkeydown="chatKeydown(event)"></textarea>
-    <button class="chat-send" id="chat-send" onclick="sendChat()">Send</button>
-  </div>
-</div>
-
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const CONFIG = {
-  jiraDomain:  'replydev.atlassian.net',
-  jiraEmail:   'pier.madsen@buyerlink.com',
-  jiraProject: 'MK',
   supabaseUrl: 'https://wvnfcxhbztnefhzjhfgg.supabase.co',
   supabaseKey: 'sb_publishable_tvamWw4pqr4dNVYPS0FF5w_cQiBGu0j'
 };
@@ -787,17 +635,8 @@ function recomputeStats() {
   document.getElementById('stat-margin').textContent  = '$' + (totalMargin/1000).toFixed(1) + 'k';
 }
 
-function populateAgentSelect() {
-  const sel = document.getElementById('req-agent');
-  sel.innerHTML = '<option value="">Select an agent...</option>';
-  [...AGENTS].filter(a => a.status !== 'test').sort((a,b) => a.ivrName.localeCompare(b.ivrName)).forEach(a => {
-    const o = document.createElement('option');
-    o.value = a.ivrName; o.textContent = a.ivrName; sel.appendChild(o);
-  });
-}
-
 // ─── TEST CALL MAP (loaded from Supabase) ────────────────────────────────────
-let testCallMap = {};  // keyed by ivr_name → url
+let testCallMap = {};
 
 async function loadTestCalls() {
   try {
@@ -817,8 +656,6 @@ async function saveTestCall(ivrName, url) {
   testCallMap[ivrName] = url;
 }
 
-// Render the test-call row for a card. Uses a unique DOM id per card so
-// inline edit doesn't interfere with other cards.
 function renderTestCallRow(ivrName, cardId) {
   const url = testCallMap[ivrName] || '';
   const safeId = cardId;
@@ -860,7 +697,6 @@ async function tcSave(cardId, ivrName) {
   } catch(e) {
     alert('Could not save: ' + e.message);
   }
-  // Re-render just this row
   const row = document.getElementById('tc-row-' + cardId);
   if (row) row.outerHTML = renderTestCallRow(ivrName, cardId);
 }
@@ -949,10 +785,6 @@ function renderDrawer(a) {
       <div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue).toLocaleString()}</div><div class="perf-lbl">Revenue — ${activeRange.label}</div></div>
       <div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin).toLocaleString()}</div><div class="perf-lbl">Direct margin — ${activeRange.label}</div></div>
     </div>
-    <div class="drawer-cta">
-      <p>Need to update this agent's routing, script, or qualification logic?</p>
-      <button class="btn-primary" onclick="goToRequest('${a.ivrName.replace(/'/g,"\\'")}')">Request a change ↗</button>
-    </div>
   </div></div>`;
 }
 
@@ -1015,43 +847,12 @@ function closeDrawer(e) {
   window.scrollTo({top:savedScrollY,behavior:'smooth'});
 }
 
-// ─── TABS / FORM ──────────────────────────────────────────────────────────────
+// ─── TABS ─────────────────────────────────────────────────────────────────────
 function switchTab(id, el) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-'+id).classList.add('active');
-}
-function goToRequest(ivrName) {
-  document.querySelectorAll('.nav-tab')[1].click();
-  setTimeout(() => {
-    const s = document.getElementById('req-agent');
-    for (let i=0;i<s.options.length;i++) { if(s.options[i].value===ivrName){s.selectedIndex=i;break;} }
-  }, 60);
-}
-let selTypeVal = 'modify';
-function selType(el, type) {
-  selTypeVal = type;
-  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
-  document.getElementById('agent-sel-row').style.display = (type==='modify'||type==='bug')?'block':'none';
-}
-
-// ─── JIRA TICKET BUILDER ──────────────────────────────────────────────────────
-const TYPE_LABELS = { modify:'Modify agent', new:'New agent request', bug:'Issue report', question:'Question' };
-
-function submitRequest() {
-  const name  = document.getElementById('req-name').value.trim();
-  const desc  = document.getElementById('req-desc').value.trim();
-  const agent = document.getElementById('req-agent').value;
-  if (!name||!desc) { alert('Please fill in your name and a description.'); return; }
-  const typeLabel = TYPE_LABELS[selTypeVal]||selTypeVal;
-  const summary   = agent ? `[${typeLabel}] ${agent}` : `[${typeLabel}] ${desc.slice(0,60)}${desc.length>60?'…':''}`;
-  const fullDesc  = `Submitted by: ${name}\nType: ${typeLabel}${agent?'\nAgent: '+agent:''}\n\n${desc}`;
-  document.getElementById('preview-summary').textContent = summary;
-  document.getElementById('preview-desc').textContent    = fullDesc;
-  document.getElementById('ticket-preview').style.display = 'block';
-  document.getElementById('ticket-preview').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function buildBQSQL() {
@@ -1081,13 +882,6 @@ function copySQL(btn) {
   navigator.clipboard.writeText(document.getElementById('bq-sql').textContent.trim()).then(() => {
     btn.textContent='Copied!'; btn.style.background='var(--teal-bg)'; btn.style.color='var(--teal)';
     setTimeout(()=>{ btn.textContent='Copy query'; btn.style.background=''; btn.style.color=''; },2000);
-  });
-}
-
-function copyField(id, btn) {
-  navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
-    btn.textContent='Copied!'; btn.style.color='var(--brand-mint)'; btn.style.borderColor='var(--brand-mint)';
-    setTimeout(()=>{ btn.textContent='Copy'; btn.style.color=''; btn.style.borderColor=''; },2000);
   });
 }
 
@@ -1237,41 +1031,6 @@ async function saveToSupabase(rows) {
   }
 }
 
-// ─── CHATBOT ──────────────────────────────────────────────────────────────────
-function toggleChat() { const p=document.getElementById('chat-panel'); p.classList.toggle('hidden'); if(!p.classList.contains('hidden')) document.getElementById('chat-input').focus(); }
-function chatKeydown(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
-function sendExample(btn) { document.getElementById('chat-input').value=btn.textContent; document.getElementById('chat-examples').style.display='none'; sendChat(); }
-
-function buildDataSummary() {
-  const w=activeRange.label;
-  const agentSummaries=AGENTS.map(a=>{
-    const pubList=(a.pubBreakdown||[]).slice(0,5).map(p=>`${p.name} (${p.raw_calls} raw, ${p.paid_calls} paid, $${Math.round(p.revenue)})`).join('; ');
-    const advList=(a.advBreakdown||[]).slice(0,5).map(d=>`${d.name} (${d.raw_calls} raw, ${d.paid_calls} paid, $${Math.round(d.revenue)})`).join('; ');
-    return `Agent: ${a.ivrName}\n  Vertical: ${a.vertical} | Status: ${getEffectiveStatus(a)} | Routing: ${a.routingType}\n  Metrics (${w}): ${a.raw_calls} raw calls, ${Math.round(a.paid_calls)} paid, ${a.conversion>0?(a.conversion*100).toFixed(1)+'%':' 0%'} conversion, $${Math.round(a.revenue)} revenue, $${Math.round(a.margin)} margin\n  Top publishers: ${pubList||'none'}\n  Top advertisers: ${advList||'none'}`;
-  }).join('\n\n');
-  return `You are a data analyst assistant for Buyerlink Calls, a call marketplace. You have access to AI IVR agent performance data for the period: ${w}.\n\nHere is the complete data for all ${AGENTS.length} agents:\n\n${agentSummaries}\n\nAnswer questions concisely and accurately based only on this data. If something isn't in the data, say so.`;
-}
-
-async function sendChat() {
-  const input=document.getElementById('chat-input');
-  const question=input.value.trim();
-  if (!question) return;
-  const messages=document.getElementById('chat-messages'), sendBtn=document.getElementById('chat-send');
-  document.getElementById('chat-examples').style.display='none';
-  messages.innerHTML+=`<div class="chat-msg user">${question}</div><div class="chat-msg thinking" id="chat-thinking">Thinking...</div>`;
-  input.value=''; sendBtn.disabled=true; messages.scrollTop=messages.scrollHeight;
-  try {
-    const data=await(await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildDataSummary(),messages:[{role:'user',content:question}]})})).json();
-    const answer=data.content?.[0]?.text||'Sorry, I could not get a response.';
-    document.getElementById('chat-thinking').remove();
-    messages.innerHTML+=`<div class="chat-msg assistant">${answer.replace(/\n/g,'<br>')}</div>`;
-  } catch(e) {
-    document.getElementById('chat-thinking').remove();
-    messages.innerHTML+=`<div class="chat-msg assistant">Sorry, something went wrong: ${e.message}</div>`;
-  }
-  sendBtn.disabled=false; messages.scrollTop=messages.scrollHeight;
-}
-
 // ─── IN DEVELOPMENT ───────────────────────────────────────────────────────────
 let devCurrentIvr=null, devDeleteTarget=null, devSignoffState={supply:'pending',demand:'pending'};
 
@@ -1405,10 +1164,8 @@ async function devDoDelete(){
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 recomputeStats();
-populateAgentSelect();
 applyFilters();
 document.getElementById('bq-sql').textContent = buildBQSQL();
-// Load test calls first, then kick off the data load
 loadTestCalls().then(() => {
   setTimeout(() => setPreset(30, document.querySelector('.preset-btn[onclick*="30"]')), 0);
 });
