@@ -884,15 +884,34 @@ function getSorted(arr) {
   });
 }
 function applyFilters() {
-  const q = document.getElementById('search-input').value.toLowerCase();
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
   document.getElementById('drawer-container').innerHTML = '';
   openAgent = null;
   const filtered = AGENTS.filter(a => {
-    if (activeFilter!=='all' && a.vertical!==activeFilter) return false;
+    if (activeFilter !== 'all' && a.vertical !== activeFilter) return false;
     if (!q) return true;
-    const hay = [a.name, a.vertical, a.routingType, ...(a.qualifying||[]), ...(a.publisherCampaigns||[]).map(p=>p.publisher+' '+p.campaign), ...(a.ivrTargets||[]).map(t=>[t.publisher,t.advertiser,t.vertical,t.campaign].join(' '))].join(' ').toLowerCase();
+
+    const parts = [
+      a.name,
+      a.vertical,
+      a.routingType,
+      a.notes || '',
+      // Static metadata: publisher campaigns
+      ...(a.publisherCampaigns || []).flatMap(p => [p.campaign, p.publisher]),
+      // Static metadata: IVR targets (publisher + advertiser names)
+      ...(a.ivrTargets || []).flatMap(t => [t.publisher, t.advertiser, t.vertical]),
+      // Live call data: publisher breakdown (populated after metrics load)
+      ...(a.pubBreakdown || []).map(p => p.name),
+      // Live call data: advertiser breakdown (populated after metrics load)
+      ...(a.advBreakdown || []).map(p => p.name),
+      // Qualifying criteria
+      ...(a.qualifying || []),
+    ];
+
+    const hay = parts.filter(Boolean).join(' ').toLowerCase();
     return hay.includes(q);
   });
+
   const sortedAgents = getSorted(filtered);
   document.getElementById('agents-grid').innerHTML = sortedAgents.length
     ? sortedAgents.map(a => renderCard(a, AGENTS.indexOf(a))).join('')
