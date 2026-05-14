@@ -24,22 +24,6 @@
   body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
   .shell { max-width: 1200px; margin: 0 auto; padding: 0 32px 80px; }
 
-  /* Gate */
-  #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
-  #gate-overlay.hidden { display: none; }
-  .gate-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 36px; max-width: 380px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
-  .gate-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
-  .gate-logo svg { width: 28px; height: 28px; }
-  .gate-logo-text { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--brand-navy); }
-  .gate-logo-text span { color: var(--brand-mint); }
-  .gate-title { font-family: var(--serif); font-size: 24px; line-height: 1.2; margin-bottom: 6px; }
-  .gate-sub { font-size: 13px; color: var(--text-2); margin-bottom: 22px; line-height: 1.5; }
-  .gate-input { width: 100%; font-family: var(--sans); font-size: 14px; padding: 11px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
-  .gate-input:focus { border-color: var(--brand-navy); }
-  .gate-btn { width: 100%; margin-top: 12px; font-family: var(--sans); font-size: 14px; font-weight: 500; padding: 11px; border-radius: var(--radius-sm); background: var(--brand-navy); color: white; border: none; cursor: pointer; transition: opacity 0.12s; }
-  .gate-btn:hover { opacity: 0.88; }
-  .gate-error { font-size: 12px; color: var(--coral); margin-top: 10px; min-height: 16px; }
-
   /* Logo bar */
   .logo-bar { padding: 20px 0 0; display: flex; align-items: center; gap: 12px; margin-bottom: 0; }
   .logo-mark { display: flex; align-items: center; gap: 8px; text-decoration: none; }
@@ -193,8 +177,6 @@
   .page-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   .footer-note { font-size: 11px; color: var(--text-3); }
   .footer-right { display: flex; gap: 14px; align-items: center; }
-  .footer-logout { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; font-family: var(--sans); }
-  .footer-logout:hover { color: var(--text-2); }
 
   .empty { text-align: center; padding: 60px 20px; color: var(--text-3); font-size: 14px; grid-column: 1/-1; }
   .tab-pane { display: none; }
@@ -293,25 +275,6 @@
 </head>
 <body>
 
-<!-- PASSWORD GATE -->
-<div id="gate-overlay">
-  <div class="gate-box">
-    <div class="gate-logo">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="32" height="32" rx="6" fill="#1A2E4A"/>
-        <path d="M8 8h8c2.2 0 4 1.8 4 4s-1.8 4-4 4H8V8z" fill="#00C896"/>
-        <path d="M8 16h9c2.5 0 4.5 2 4.5 4.5S19.5 25 17 25H8V16z" fill="white" opacity="0.9"/>
-      </svg>
-      <span class="gate-logo-text">buyerlink<span>calls</span></span>
-    </div>
-    <div class="gate-title">Agent Registry</div>
-    <div class="gate-sub">Enter the team password to view the dashboard.</div>
-    <input class="gate-input" id="gate-input" type="password" placeholder="Password" autocomplete="off">
-    <button class="gate-btn" id="gate-btn">Continue</button>
-    <div class="gate-error" id="gate-error"></div>
-  </div>
-</div>
-
 <div class="shell">
 
   <div class="logo-bar">
@@ -405,7 +368,6 @@
     <div class="footer-note" id="last-updated">Loading data...</div>
     <div class="footer-right">
       <button class="update-link" onclick="toggleUpdatePanel()">update data</button>
-      <button class="footer-logout" onclick="gateLogout()">sign out</button>
     </div>
   </div>
 
@@ -571,33 +533,8 @@
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const CONFIG = {
   supabaseUrl: 'https://wvnfcxhbztnefhzjhfgg.supabase.co',
-  supabaseKey: 'sb_publishable_tvamWw4pqr4dNVYPS0FF5w_cQiBGu0j',
-  dashboardPassword: 'BLCalls123'   // ← set your team password here
+  supabaseKey: 'sb_publishable_tvamWw4pqr4dNVYPS0FF5w_cQiBGu0j'
 };
-
-// ─── PASSWORD GATE ────────────────────────────────────────────────────────────
-const GATE_KEY = 'agentRegistry.gateOk';
-function gateCheck() {
-  if (localStorage.getItem(GATE_KEY) === '1') {
-    document.getElementById('gate-overlay').classList.add('hidden');
-    return true;
-  }
-  return false;
-}
-function gateSubmit() {
-  if (document.getElementById('gate-input').value === CONFIG.dashboardPassword) {
-    localStorage.setItem(GATE_KEY, '1');
-    document.getElementById('gate-overlay').classList.add('hidden');
-    bootDashboard();
-  } else {
-    const err = document.getElementById('gate-error');
-    err.textContent = 'Incorrect password.';
-    setTimeout(() => err.textContent = '', 2500);
-  }
-}
-function gateLogout() { localStorage.removeItem(GATE_KEY); location.reload(); }
-document.getElementById('gate-btn').addEventListener('click', gateSubmit);
-document.getElementById('gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') gateSubmit(); });
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let AGENTS = [];
@@ -650,9 +587,6 @@ function updateDataWindowLabels() {
 }
 
 // ─── METRICS ──────────────────────────────────────────────────────────────────
-// Sent definition:
-//   advertiser_payin > 0   OR
-//   (ivr_duration > 0 AND NOT (result = 'connected' AND connect_duration > 0))
 function isSent(c) {
   if ((c.advertiser_payin||0) > 0) return true;
   if ((c.ivr_duration||0) > 0) {
@@ -833,7 +767,6 @@ function vClass(v) { return v==='Home Services'?'v-home':v==='Insurance'?'v-insu
 function rtLabel(t) { return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown'; }
 function getEffectiveStatus(a) { if (a.status==='test') return 'test'; if (a.raw_calls>0) return 'live'; return 'inactive'; }
 
-// ── CARD: shows raw, paid, conv (paid/raw), revenue ──
 function renderCard(a, idx) {
   const isOpen = openAgent === idx, es = getEffectiveStatus(a), cardId = 'c' + idx;
   const conv = fmtPct(a.paid_calls, a.raw_calls);
@@ -855,7 +788,6 @@ function renderCard(a, idx) {
   </div>`;
 }
 
-// ── DRAWER ──
 function renderDrawer(a) {
   const hasPC = (a.publisherCampaigns||[]).length > 0;
   const hasIVR = (a.ivrTargets||[]).length > 0;
@@ -875,7 +807,6 @@ function renderDrawer(a) {
       ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`
       : '<div class="canoe-none">No qualification data on record</div>';
 
-  // Publishers table — Raw, Sent, Paid, Conv (paid/raw), Revenue
   const pubs = a.pubBreakdown||[];
   const pubRows = pubs.length
     ? pubs.map(p => {
@@ -892,7 +823,6 @@ function renderDrawer(a) {
     : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
   const pubTable = `<table class="canoe-table"><thead><tr><th>Publisher</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${pubRows}</tbody></table>${pubs.length?`<div class="canoe-count">top ${pubs.length} by volume</div>`:''}`;
 
-  // Advertisers table — Raw, Sent, Paid, Conv (paid/raw), Revenue
   const advs = a.advBreakdown||[];
   const advRows = advs.length
     ? advs.map(p => {
@@ -909,7 +839,6 @@ function renderDrawer(a) {
     : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
   const advTable = `<table class="canoe-table"><thead><tr><th>Advertiser</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${advRows}</tbody></table>${advs.length?`<div class="canoe-count">top ${advs.length} by revenue</div>`:''}`;
 
-  // Bottom perf strip — Raw, Sent, Paid, Sent/Raw, Paid/Raw, Revenue, Margin
   const sentOverRaw = fmtPct(a.sent_calls, a.raw_calls);
   const paidOverRaw = fmtPct(a.paid_calls, a.raw_calls);
 
@@ -1347,8 +1276,7 @@ async function bootDashboard() {
   devLoadIvrs();
 }
 
-if (gateCheck()) bootDashboard();
-else setTimeout(() => document.getElementById('gate-input').focus(), 100);
+bootDashboard();
 </script>
 </body>
 </html>
