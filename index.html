@@ -1068,18 +1068,21 @@ async function handleFile(file) {
   }
 
   const dataRows = rows.slice(1).filter(r => r.length >= headerRow.length && r[idx.id]);
-  status.innerHTML = `<span style="color:var(--text-2)">Found <strong>${dataRows.length.toLocaleString()}</strong> rows. Uploading…</span>`;
+  status.innerHTML = `<span style="color:var(--text-2)">Found <strong>${dataRows.length.toLocaleString()}</strong> rows. Deduplicating…</span>`;
 
   // Build payload + track ivr_names to detect new agents
   const knownIvrs = new Set(AGENTS.map(a => a.ivrName));
   const newAgents = {};   // ivr_name -> sample row
-  const payload = [];
+  const byId = new Map();   // dedupe: last occurrence wins
+  let skippedNoId = 0;
   for (const r of dataRows) {
+    const rowId = r[idx.id];
     const ivrName = r[idx.ivr_name];
+    if (!rowId) { skippedNoId++; continue; }
     if (!ivrName) continue;
     if (!knownIvrs.has(ivrName) && !newAgents[ivrName]) newAgents[ivrName] = r;
-    payload.push({
-      id: r[idx.id],
+    byId.set(rowId, {
+      id: rowId,
       ivr_name: ivrName,
       created_at: r[idx.created_at],
       call_date: r[idx.call_date],
@@ -1092,6 +1095,12 @@ async function handleFile(file) {
       result: r[idx.result] || null
     });
   }
+  const payload = Array.from(byId.values());
+  const duplicatesRemoved = dataRows.length - payload.length - skippedNoId;
+  if (duplicatesRemoved > 0) {
+    console.log(`[updater] removed ${duplicatesRemoved} duplicate id(s) from CSV`);
+  }
+  status.innerHTML = `<span style="color:var(--text-2)">Uploading <strong>${payload.length.toLocaleString()}</strong> unique rows${duplicatesRemoved>0?` (deduped ${duplicatesRemoved})`:''}…</span>`;
 
   // Upload in chunks
   progressWrap.style.display = 'block';
