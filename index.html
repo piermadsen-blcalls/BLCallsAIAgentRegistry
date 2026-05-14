@@ -14,9 +14,7 @@
     --teal: #0F6E56; --teal-bg: #E1F5EE; --amber: #854F0B; --amber-bg: #FAEEDA;
     --coral: #993C1D; --coral-bg: #FAECE7; --blue: #185FA5; --blue-bg: #E6F1FB;
     --gray-bg: #F1EFE8; --purple: #534AB7; --purple-bg: #EEEDFE;
-    --brand-navy: #1A2E4A;
-    --brand-mint: #00C896;
-    --brand-mint-bg: #E6FAF5;
+    --brand-navy: #1A2E4A; --brand-mint: #00C896; --brand-mint-bg: #E6FAF5;
     --serif: 'Instrument Serif', Georgia, serif;
     --sans: 'DM Sans', system-ui, sans-serif;
     --mono: 'DM Mono', monospace;
@@ -26,7 +24,7 @@
   body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
   .shell { max-width: 1200px; margin: 0 auto; padding: 0 32px 80px; }
 
-  /* ── Password gate ── */
+  /* Gate */
   #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
   #gate-overlay.hidden { display: none; }
   .gate-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 36px; max-width: 380px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
@@ -86,10 +84,8 @@
   .preset-btn.active { background: var(--brand-navy); color: var(--surface); }
   .preset-btn:hover:not(.active) { color: var(--brand-navy); }
 
-  /* Grid */
+  /* Grid + card */
   .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-
-  /* Card */
   .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; position: relative; animation: fadeIn 0.2s ease both; }
   .agent-card:hover { border-color: var(--border-strong); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
   .agent-card.open { border-color: var(--brand-navy); box-shadow: 0 2px 20px rgba(26,46,74,0.1); }
@@ -108,7 +104,7 @@
   .card-chevron { position: absolute; bottom: 18px; right: 18px; font-size: 13px; color: var(--text-3); transition: transform 0.2s; }
   .agent-card.open .card-chevron { transform: rotate(180deg); }
 
-  /* ── Test call row ── */
+  /* Test call row */
   .card-test-call { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; min-height: 20px; }
   .card-test-link { font-size: 11px; color: var(--brand-navy); text-decoration: none; display: flex; align-items: center; gap: 4px; font-family: var(--sans); }
   .card-test-link:hover { text-decoration: underline; }
@@ -116,12 +112,9 @@
   .card-test-edit-btn { background: none; border: none; cursor: pointer; padding: 2px 5px; border-radius: 3px; color: var(--text-3); font-size: 11px; line-height: 1; transition: color 0.12s; flex-shrink: 0; }
   .card-test-edit-btn:hover { color: var(--text); background: var(--bg); }
   .card-test-input-row { display: flex; gap: 5px; align-items: center; width: 100%; }
-  .card-test-input { font-family: var(--mono); font-size: 10px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 3px 7px; color: var(--text); background: var(--bg); outline: none; flex: 1; min-width: 0; transition: border-color 0.12s; }
-  .card-test-input:focus { border-color: var(--brand-navy); }
-  .card-test-save-btn { font-family: var(--sans); font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 4px; background: var(--brand-navy); color: white; border: none; cursor: pointer; flex-shrink: 0; white-space: nowrap; transition: opacity 0.12s; }
-  .card-test-save-btn:hover { opacity: 0.85; }
-  .card-test-cancel-btn { font-family: var(--sans); font-size: 10px; padding: 3px 7px; border-radius: 4px; background: none; color: var(--text-3); border: 1px solid var(--border-strong); cursor: pointer; flex-shrink: 0; transition: all 0.12s; }
-  .card-test-cancel-btn:hover { color: var(--text); border-color: var(--text); }
+  .card-test-input { font-family: var(--mono); font-size: 10px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 3px 7px; color: var(--text); background: var(--bg); outline: none; flex: 1; min-width: 0; }
+  .card-test-save-btn { font-family: var(--sans); font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 4px; background: var(--brand-navy); color: white; border: none; cursor: pointer; flex-shrink: 0; }
+  .card-test-cancel-btn { font-family: var(--sans); font-size: 10px; padding: 3px 7px; border-radius: 4px; background: none; color: var(--text-3); border: 1px solid var(--border-strong); cursor: pointer; flex-shrink: 0; }
 
   /* Vertical colors */
   .v-home { background: #FFF4ED; color: #7C3D14; }
@@ -139,20 +132,16 @@
   .drawer-close { font-family: var(--sans); font-size: 12px; color: var(--text-2); background: none; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.12s; }
   .drawer-close:hover { border-color: var(--text); color: var(--text); }
 
-  /* Drawer sections */
   .drawer-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
   @media (max-width: 760px) { .drawer-sections { grid-template-columns: 1fr; } }
   .drawer-col { display: flex; flex-direction: column; gap: 24px; }
-  .dsec { }
   .dsec-title { font-size: 10px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 
-  /* Qualifying for */
   .qual-list { display: flex; flex-direction: column; gap: 6px; }
   .qual-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text); line-height: 1.5; }
   .qual-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); margin-top: 7px; flex-shrink: 0; }
   .qual-disqualify { font-size: 11px; color: var(--coral); font-family: var(--mono); margin-top: 8px; padding: 6px 10px; background: var(--coral-bg); border-radius: var(--radius-sm); }
 
-  /* Canoe routing tables */
   .canoe-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .canoe-table th { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: left; padding: 0 8px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
   .canoe-table td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; line-height: 1.4; }
@@ -161,7 +150,6 @@
   .canoe-none { font-size: 13px; color: var(--text-3); font-style: italic; }
   .canoe-count { font-size: 11px; color: var(--text-3); margin-top: 8px; font-family: var(--mono); }
 
-  /* Performance row */
   .perf-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   .perf-item { padding-right: 14px; }
   .perf-item + .perf-item { border-left: 1px solid var(--border); padding-left: 14px; }
@@ -169,17 +157,22 @@
   .perf-val.zero { color: var(--text-3); }
   .perf-lbl { font-size: 10px; color: var(--text-3); margin-top: 3px; }
 
-  /* Update data panel */
-  .update-link { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; transition: color 0.12s; background: none; border: none; font-family: var(--sans); }
+  /* Update panel */
+  .update-link { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; font-family: var(--sans); }
   .update-link:hover { color: var(--text-2); }
   .update-panel { display: none; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 24px 28px; margin-top: 16px; }
   .update-panel.open { display: block; }
   .update-panel h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; margin-bottom: 6px; }
   .update-panel p { font-size: 13px; color: var(--text-2); margin-bottom: 16px; line-height: 1.6; }
-  .update-textarea { width: 100%; font-family: var(--mono); font-size: 12px; color: var(--text); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 12px; min-height: 160px; resize: vertical; outline: none; transition: border-color 0.15s; }
-  .update-textarea:focus { border-color: var(--text); }
-  .update-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 9px 20px; border-radius: var(--radius-sm); background: var(--brand-navy); color: var(--surface); border: none; cursor: pointer; margin-top: 12px; transition: opacity 0.12s; }
-  .update-btn:hover { opacity: 0.85; }
+  .file-drop { border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg); }
+  .file-drop.dragover { border-color: var(--brand-navy); background: var(--brand-mint-bg); }
+  .file-drop:hover { border-color: var(--brand-navy); }
+  .file-drop-text { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+  .file-drop-sub { font-size: 12px; color: var(--text-3); }
+  .file-input-hidden { display: none; }
+  .file-status { margin-top: 14px; font-size: 13px; font-family: var(--mono); }
+  .progress-wrap { margin-top: 14px; background: var(--bg); border-radius: var(--radius-sm); height: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .progress-bar { height: 100%; background: var(--brand-mint); width: 0%; transition: width 0.2s ease; }
   .update-results { margin-top: 16px; font-size: 13px; line-height: 1.7; }
   .update-ok { color: var(--teal); }
   .update-warn { color: var(--amber); }
@@ -191,12 +184,10 @@
   .intake-agent-name span { color: var(--text-2); font-style: italic; }
   .intake-field { margin-bottom: 16px; }
   .intake-label { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 5px; display: block; }
-  .intake-input, .intake-select, .intake-textarea { width: 100%; font-family: var(--sans); font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; outline: none; transition: border-color 0.15s; }
+  .intake-input, .intake-select, .intake-textarea { width: 100%; font-family: var(--sans); font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; outline: none; }
   .intake-textarea { min-height: 70px; resize: vertical; }
-  .intake-input:focus, .intake-select:focus, .intake-textarea:focus { border-color: var(--text); }
   .intake-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; padding-right: 28px; }
-  .intake-save-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: var(--radius-sm); background: var(--blue); color: white; border: none; cursor: pointer; margin-top: 4px; transition: opacity 0.12s; }
-  .intake-save-btn:hover { opacity: 0.85; }
+  .intake-save-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: var(--radius-sm); background: var(--blue); color: white; border: none; cursor: pointer; margin-top: 4px; }
 
   /* Footer */
   .page-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -205,22 +196,20 @@
   .footer-logout { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; font-family: var(--sans); }
   .footer-logout:hover { color: var(--text-2); }
 
-  /* Misc */
   .empty { text-align: center; padding: 60px 20px; color: var(--text-3); font-size: 14px; grid-column: 1/-1; }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 
-  /* ── In Development tab ─────────────────────────────────────────────────── */
+  /* In Development tab */
   .dev-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
   .dev-page-title { font-family:var(--serif); font-size:28px; font-weight:400; color:var(--text); }
   .dev-page-sub { font-size:13px; color:var(--text-2); margin-top:3px; }
-  .dev-btn-primary { background:var(--brand-navy); color:#fff; border:none; border-radius:var(--radius-sm); padding:9px 18px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-family:var(--sans); transition:opacity 0.12s; }
+  .dev-btn-primary { background:var(--brand-navy); color:#fff; border:none; border-radius:var(--radius-sm); padding:9px 18px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-family:var(--sans); }
   .dev-btn-primary:hover { opacity:0.85; }
   .dev-btn-primary:disabled { opacity:0.35; cursor:not-allowed; }
   .dev-ivr-list { display:flex; flex-direction:column; gap:10px; }
-  .dev-ivr-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); display:flex; align-items:stretch; position:relative; transition:border-color 0.15s; }
-  .dev-ivr-card:hover { border-color:var(--border-strong); }
+  .dev-ivr-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); display:flex; align-items:stretch; position:relative; }
   .dev-card-menu-col { display:flex; align-items:center; justify-content:center; padding:0 10px; position:relative; flex-shrink:0; border-right:1px solid var(--border); }
   .dev-dots-btn { background:none; border:none; cursor:pointer; padding:6px 4px; border-radius:4px; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-3); }
   .dev-dots-btn:hover { background:var(--bg); color:var(--text-2); }
@@ -241,22 +230,19 @@
   .dev-badge-approved { background:var(--teal-bg); color:var(--teal); }
   .dev-badge-live { background:var(--blue-bg); color:var(--blue); }
   .dev-modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:300; align-items:center; justify-content:center; }
-  .dev-modal-backdrop.open { display:flex; }  .dev-modal { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border-strong); padding:1.5rem; width:min(620px,94vw); max-height:88vh; overflow-y:auto; }
+  .dev-modal { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border-strong); padding:1.5rem; width:min(620px,94vw); max-height:88vh; overflow-y:auto; }
   .dev-modal-sm { width:min(400px,92vw); max-height:unset; }
   .dev-modal-title { font-family:var(--serif); font-size:22px; font-weight:400; margin-bottom:1.25rem; color:var(--text); }
   .dev-modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border); }
-  .dev-btn-cancel { background:transparent; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 16px; font-size:13px; cursor:pointer; color:var(--text); font-family:var(--sans); transition:all 0.12s; }
-  .dev-btn-cancel:hover { border-color:var(--text); }
+  .dev-btn-cancel { background:transparent; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 16px; font-size:13px; cursor:pointer; color:var(--text); font-family:var(--sans); }
   .dev-section-label { font-size:10px; font-weight:500; color:var(--text-3); letter-spacing:0.6px; text-transform:uppercase; margin-bottom:12px; }
   .dev-field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
   .dev-full { grid-template-columns:1fr; }
   .dev-field-group { display:flex; flex-direction:column; gap:5px; }
   .dev-label { font-size:12px; color:var(--text-2); font-weight:500; }
-  .dev-input, .dev-select { width:100%; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; font-size:13px; color:var(--text); background:var(--surface); font-family:var(--sans); outline:none; transition:border-color 0.15s; }
+  .dev-input, .dev-select { width:100%; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; font-size:13px; color:var(--text); background:var(--surface); font-family:var(--sans); outline:none; }
   .dev-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; padding-right:28px; }
-  .dev-input:focus, .dev-select:focus { border-color:var(--text); }
-  .dev-textarea { width:100%; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; font-size:13px; color:var(--text); background:var(--surface); font-family:var(--sans); resize:vertical; min-height:72px; outline:none; transition:border-color 0.15s; }
-  .dev-textarea:focus { border-color:var(--text); }
+  .dev-textarea { width:100%; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; font-size:13px; color:var(--text); background:var(--surface); font-family:var(--sans); resize:vertical; min-height:72px; outline:none; }
   .dev-radio-group { display:flex; gap:12px; flex-wrap:wrap; }
   .dev-radio-opt { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text); cursor:pointer; }
   .dev-divider { border:none; border-top:1px solid var(--border); margin:1rem 0; }
@@ -276,16 +262,14 @@
   .dev-summary-item { background:var(--bg); border-radius:var(--radius-sm); padding:10px 12px; }
   .dev-summary-key { font-size:11px; color:var(--text-3); margin-bottom:3px; }
   .dev-summary-val { font-size:13px; color:var(--text); font-weight:500; }
-  .dev-upload-list { margin-top:0; display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .dev-upload-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
   .dev-upload-item { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); gap:10px; }
   .dev-upload-item-left { display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
   .dev-upload-icon { flex-shrink:0; width:28px; height:28px; border-radius:4px; background:var(--bg); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-3); }
   .dev-upload-info { min-width:0; }
   .dev-upload-name { font-size:13px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
   .dev-upload-url { font-size:11px; color:var(--brand-navy); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; text-decoration:none; }
-  .dev-upload-url:hover { text-decoration:underline; }
-  .dev-btn-open { background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 10px; font-size:12px; color:var(--text-2); cursor:pointer; display:flex; align-items:center; gap:5px; flex-shrink:0; font-family:var(--sans); transition:all 0.12s; text-decoration:none; white-space:nowrap; }
-  .dev-btn-open:hover { background:var(--bg); color:var(--text); }
+  .dev-btn-open { background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 10px; font-size:12px; color:var(--text-2); cursor:pointer; display:flex; align-items:center; gap:5px; flex-shrink:0; font-family:var(--sans); text-decoration:none; white-space:nowrap; }
   .dev-add-link-row { display:flex; align-items:flex-end; gap:8px; margin-top:4px; flex-wrap:wrap; }
   .dev-signoff-block { background:var(--bg); border-radius:var(--radius-sm); padding:1rem; display:flex; flex-direction:column; gap:10px; border:1px solid var(--border); }
   .dev-signoff-block.approved { border-color:var(--teal); }
@@ -297,18 +281,13 @@
   .dev-sig-pending { background:var(--gray-bg); color:var(--text-3); border:1px solid var(--border-strong); }
   .dev-sig-approved { background:var(--teal-bg); color:var(--teal); }
   .dev-sig-rejected { background:#FCEBEB; color:#A32D2D; }
-  .dev-signoff-textarea { width:100%; font-size:13px; min-height:60px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; font-family:var(--sans); color:var(--text); background:var(--surface); resize:vertical; outline:none; transition:border-color 0.15s; }
-  .dev-signoff-textarea:focus { border-color:var(--text); }
+  .dev-signoff-textarea { width:100%; font-size:13px; min-height:60px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; font-family:var(--sans); color:var(--text); background:var(--surface); resize:vertical; outline:none; }
   .dev-note-required { border-color:#F09595 !important; }
   .dev-note-hint { font-size:12px; color:#A32D2D; display:none; margin-top:4px; }
   .dev-note-hint.visible { display:block; }
   .dev-signoff-actions { display:flex; gap:8px; }
-  .dev-btn-approve { background:var(--teal-bg); color:var(--teal); border:1px solid #5DCAA5; border-radius:var(--radius-sm); padding:6px 14px; font-size:13px; cursor:pointer; font-weight:500; font-family:var(--sans); transition:background 0.12s; }
-  .dev-btn-approve:hover { background:#9FE1CB; }
-  .dev-btn-approve:disabled { opacity:0.4; cursor:not-allowed; }
-  .dev-btn-reject { background:#FCEBEB; color:#A32D2D; border:1px solid #F09595; border-radius:var(--radius-sm); padding:6px 14px; font-size:13px; cursor:pointer; font-weight:500; font-family:var(--sans); transition:background 0.12s; }
-  .dev-btn-reject:hover { background:#F7C1C1; }
-  .dev-btn-reject:disabled { opacity:0.4; cursor:not-allowed; }
+  .dev-btn-approve { background:var(--teal-bg); color:var(--teal); border:1px solid #5DCAA5; border-radius:var(--radius-sm); padding:6px 14px; font-size:13px; cursor:pointer; font-weight:500; font-family:var(--sans); }
+  .dev-btn-reject { background:#FCEBEB; color:#A32D2D; border:1px solid #F09595; border-radius:var(--radius-sm); padding:6px 14px; font-size:13px; cursor:pointer; font-weight:500; font-family:var(--sans); }
   .dev-launch-gate { border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; color:var(--text-2); background:var(--bg); border:1px solid var(--border); display:flex; align-items:center; gap:8px; margin-top:12px; }
 </style>
 </head>
@@ -335,7 +314,6 @@
 
 <div class="shell">
 
-  <!-- Logo bar -->
   <div class="logo-bar">
     <div class="logo-mark">
       <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -352,7 +330,7 @@
   <header class="site-header">
     <div class="header-left">
       <h1>Agent Registry <em>— voice AI</em></h1>
-      <p id="header-desc">All deployed voice AI agents, their qualification logic, and exactly how calls reach them.</p>
+      <p>All deployed voice AI agents, their qualification logic, and exactly how calls reach them.</p>
       <div class="data-freshness"><div class="freshness-dot"></div><span id="freshness-label">Loading...</span></div>
     </div>
     <div class="header-stats">
@@ -403,7 +381,6 @@
         </select>
       </div>
     </div>
-
     <div class="agents-grid" id="agents-grid"></div>
     <div id="drawer-container"></div>
   </div>
@@ -420,7 +397,7 @@
       </button>
     </div>
     <div class="dev-ivr-list" id="dev-ivr-list">
-      <div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;" id="dev-empty-state">Loading...</div>
+      <div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">Loading...</div>
     </div>
   </div>
 
@@ -435,23 +412,25 @@
   <!-- UPDATE PANEL -->
   <div class="update-panel" id="update-panel">
     <h3>Update agent data</h3>
-    <p>Run the query below in BigQuery, copy the results, and paste them into the box beneath. <strong>Safe to re-run the same dates</strong> — duplicate rows are automatically overwritten, never double-counted.</p>
+    <p>Run the query below in BigQuery, save the results as <strong>CSV (local file)</strong>, then upload it here. Existing rows for the same call IDs will be overwritten — safe to re-upload any date range.</p>
     <div style="margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
         <div>
           <div style="font-size:12px;font-weight:500;color:var(--text);">BigQuery query</div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Dates auto-populate to the last 5 full days. Copy and run as-is, or adjust the <code style="font-family:var(--mono);background:var(--brand-mint-bg);color:var(--brand-navy);padding:1px 4px;border-radius:3px;">BETWEEN</code> clause if you need a different range.</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Dates auto-populate to the last 5 full days. Adjust the <code style="font-family:var(--mono);background:var(--brand-mint-bg);color:var(--brand-navy);padding:1px 4px;border-radius:3px;">BETWEEN</code> clause for backfills.</div>
         </div>
-        <button onclick="copySQL(this)" style="font-family:var(--sans);font-size:12px;font-weight:500;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:5px 14px;cursor:pointer;white-space:nowrap;transition:all 0.12s;">Copy query</button>
+        <button onclick="copySQL(this)" style="font-family:var(--sans);font-size:12px;font-weight:500;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:5px 14px;cursor:pointer;white-space:nowrap;">Copy query</button>
       </div>
-      <pre id="bq-sql" style="font-family:var(--mono);font-size:11.5px;color:var(--text);background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;white-space:pre;line-height:1.7;pointer-events:none;cursor:default;"></pre>
+      <pre id="bq-sql" style="font-family:var(--mono);font-size:11.5px;color:var(--text);background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;white-space:pre;line-height:1.7;"></pre>
     </div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:14px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border-left:3px solid var(--brand-mint);">
-      <strong>Paste results here</strong> — tab-separated, header row included. Each row = one agent + one day + one publisher + one advertiser combination.
+
+    <div class="file-drop" id="file-drop" onclick="document.getElementById('file-input').click()">
+      <div class="file-drop-text"><strong>Click to upload</strong> or drag a CSV file here</div>
+      <div class="file-drop-sub">Save BigQuery results → CSV (local file)</div>
+      <input type="file" class="file-input-hidden" id="file-input" accept=".csv,text/csv">
     </div>
-    <textarea class="update-textarea" id="update-paste" placeholder="Paste BigQuery output here..."></textarea>
-    <br>
-    <button class="update-btn" onclick="processUpdate()">Process update</button>
+    <div class="file-status" id="file-status"></div>
+    <div class="progress-wrap" id="progress-wrap" style="display:none;"><div class="progress-bar" id="progress-bar"></div></div>
     <div class="update-results" id="update-results"></div>
     <div id="new-agent-intakes"></div>
   </div>
@@ -474,11 +453,11 @@
   <div class="dev-modal">
     <div class="dev-modal-title">New AI IVR</div>
     <div class="dev-section-label">Identity</div>
-    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">IVR name / working title</label><input type="text" class="dev-input" id="dev-f-name" placeholder="e.g. Home warranty inbound qualifier"></div></div>
-    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Vertical</label><input type="text" class="dev-input" id="dev-f-vertical" placeholder="e.g. Legal, Home services, Insurance"></div></div>
+    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">IVR name / working title</label><input type="text" class="dev-input" id="dev-f-name"></div></div>
+    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Vertical</label><input type="text" class="dev-input" id="dev-f-vertical"></div></div>
     <div class="dev-divider"></div>
     <div class="dev-section-label">Purpose</div>
-    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">What is this IVR qualifying for?</label><textarea class="dev-textarea" id="dev-f-qualifying" placeholder="Describe the buyer intent, campaign objective, or case type being screened for…"></textarea></div></div>
+    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">What is this IVR qualifying for?</label><textarea class="dev-textarea" id="dev-f-qualifying"></textarea></div></div>
     <div class="dev-divider"></div>
     <div class="dev-section-label">Ownership model</div>
     <div class="dev-field-row dev-full">
@@ -491,14 +470,14 @@
         </div>
       </div>
     </div>
-    <div class="dev-cond-section" id="dev-cond-adv"><div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Which advertisers will use this?</label><input type="text" class="dev-input" id="dev-f-advertisers" placeholder="Names or IDs, comma-separated"></div></div></div>
-    <div class="dev-cond-section" id="dev-cond-pub"><div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Which publishers will use this?</label><input type="text" class="dev-input" id="dev-f-publishers" placeholder="Names or IDs, comma-separated"></div></div></div>
+    <div class="dev-cond-section" id="dev-cond-adv"><div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Which advertisers will use this?</label><input type="text" class="dev-input" id="dev-f-advertisers"></div></div></div>
+    <div class="dev-cond-section" id="dev-cond-pub"><div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Which publishers will use this?</label><input type="text" class="dev-input" id="dev-f-publishers"></div></div></div>
     <div class="dev-divider"></div>
     <div class="dev-section-label">Call logic</div>
-    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Hard disqualification conditions</label><textarea class="dev-textarea" id="dev-f-harddq" placeholder="e.g. Wrong state, already has coverage, under 18, no recent incident…"></textarea></div></div>
-    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Data to collect and pass on qualified calls</label><textarea class="dev-textarea" id="dev-f-datacollected" placeholder="e.g. Name, zip, product type, prior claim history, incident date…"></textarea></div></div>
+    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Hard disqualification conditions</label><textarea class="dev-textarea" id="dev-f-harddq"></textarea></div></div>
+    <div class="dev-field-row dev-full"><div class="dev-field-group"><label class="dev-label">Data to collect and pass on qualified calls</label><textarea class="dev-textarea" id="dev-f-datacollected"></textarea></div></div>
     <div class="dev-field-row">
-      <div class="dev-field-group"><label class="dev-label">Expected avg call duration</label><input type="text" class="dev-input" id="dev-f-duration" placeholder="e.g. 90–150 seconds"></div>
+      <div class="dev-field-group"><label class="dev-label">Expected avg call duration</label><input type="text" class="dev-input" id="dev-f-duration"></div>
       <div class="dev-field-group">
         <label class="dev-label">On disqualification</label>
         <select class="dev-select" id="dev-f-ondq" onchange="devToggleRepingFields()">
@@ -509,11 +488,11 @@
       </div>
     </div>
     <div class="dev-reping-fields" id="dev-reping-fields">
-      <div class="dev-field-row dev-full" style="margin-bottom:0"><div class="dev-field-group"><label class="dev-label">How will repinging work for this AI IVR?</label><textarea class="dev-textarea" id="dev-f-repinglogic" placeholder="e.g. After DQ, repings to what vertical(s)?"></textarea></div></div>
+      <div class="dev-field-row dev-full" style="margin-bottom:0"><div class="dev-field-group"><label class="dev-label">How will repinging work for this AI IVR?</label><textarea class="dev-textarea" id="dev-f-repinglogic"></textarea></div></div>
     </div>
     <div class="dev-divider"></div>
     <div class="dev-section-label">Notes</div>
-    <div class="dev-field-row dev-full" style="margin-bottom:0"><div class="dev-field-group"><label class="dev-label">Additional context or edge cases</label><textarea class="dev-textarea" id="dev-f-notes" placeholder="Anything else the team needs to know to build or test this IVR…"></textarea></div></div>
+    <div class="dev-field-row dev-full" style="margin-bottom:0"><div class="dev-field-group"><label class="dev-label">Additional context or edge cases</label><textarea class="dev-textarea" id="dev-f-notes"></textarea></div></div>
     <div class="dev-modal-footer">
       <button class="dev-btn-cancel" onclick="devCloseModal('dev-modal-new')">Cancel</button>
       <button class="dev-btn-primary" id="dev-save-btn" onclick="devSubmitNew()">Save</button>
@@ -554,7 +533,7 @@
           <span class="dev-sig-badge dev-sig-pending" id="dev-badge-supply">Pending</span>
         </div>
         <div>
-          <textarea id="dev-note-supply" class="dev-signoff-textarea" placeholder="Notes on call quality, publisher-side concerns, or required changes…"></textarea>
+          <textarea id="dev-note-supply" class="dev-signoff-textarea"></textarea>
           <div class="dev-note-hint" id="dev-hint-supply">A note is required before submitting.</div>
         </div>
         <div class="dev-signoff-actions">
@@ -568,7 +547,7 @@
           <span class="dev-sig-badge dev-sig-pending" id="dev-badge-demand">Pending</span>
         </div>
         <div>
-          <textarea id="dev-note-demand" class="dev-signoff-textarea" placeholder="Notes on qualification accuracy, data pass-through, or advertiser-specific edge cases…"></textarea>
+          <textarea id="dev-note-demand" class="dev-signoff-textarea"></textarea>
           <div class="dev-note-hint" id="dev-hint-demand">A note is required before submitting.</div>
         </div>
         <div class="dev-signoff-actions">
@@ -593,13 +572,11 @@
 const CONFIG = {
   supabaseUrl: 'https://wvnfcxhbztnefhzjhfgg.supabase.co',
   supabaseKey: 'sb_publishable_tvamWw4pqr4dNVYPS0FF5w_cQiBGu0j',
-  dashboardPassword: 'ChangeMe123'  // ← edit this to set your team password
+  dashboardPassword: 'ChangeMe123'   // ← set your team password here
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
 // ─── PASSWORD GATE ────────────────────────────────────────────────────────────
 const GATE_KEY = 'agentRegistry.gateOk';
-
 function gateCheck() {
   if (localStorage.getItem(GATE_KEY) === '1') {
     document.getElementById('gate-overlay').classList.add('hidden');
@@ -608,34 +585,42 @@ function gateCheck() {
   return false;
 }
 function gateSubmit() {
-  const v = document.getElementById('gate-input').value;
-  if (v === CONFIG.dashboardPassword) {
+  if (document.getElementById('gate-input').value === CONFIG.dashboardPassword) {
     localStorage.setItem(GATE_KEY, '1');
     document.getElementById('gate-overlay').classList.add('hidden');
     bootDashboard();
   } else {
     const err = document.getElementById('gate-error');
     err.textContent = 'Incorrect password.';
-    setTimeout(() => { err.textContent = ''; }, 2500);
+    setTimeout(() => err.textContent = '', 2500);
   }
 }
-function gateLogout() {
-  localStorage.removeItem(GATE_KEY);
-  location.reload();
-}
-
+function gateLogout() { localStorage.removeItem(GATE_KEY); location.reload(); }
 document.getElementById('gate-btn').addEventListener('click', gateSubmit);
 document.getElementById('gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') gateSubmit(); });
 
-// ─── AGENTS STATE (loaded from Supabase) ─────────────────────────────────────
-let AGENTS = [];
-
-// ─── DATE RANGE STATE ────────────────────────────────────────────────────────
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let AGENTS = [];                 // agent metadata from `agents` table
 let activeRange = { start: null, end: null, label: '—', short: '—' };
+let activeFilter = 'all', openAgent = null, savedScrollY = 0;
+const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
 
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function toISO(d) { return d.toISOString().split('T')[0]; }
-function fmtDate(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
+function normalize(s) { return (s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
 
+async function sbFetch(path, options={}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}`, 'Content-Type':'application/json', 'Prefer':'count=none', ...(options.headers||{}) }
+  });
+  if (!res.ok) { const err = await res.text(); throw new Error(`Supabase ${res.status}: ${err}`); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// ─── DATE RANGE ───────────────────────────────────────────────────────────────
 function setPreset(days, el) {
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -643,53 +628,168 @@ function setPreset(days, el) {
   const start = new Date(end); start.setDate(start.getDate() - (days - 1));
   activeRange = { start, end, label: fmtDate(start) + ' – ' + fmtDate(end), short: days + 'd' };
   document.getElementById('range-start').value = toISO(start);
-  document.getElementById('range-end').value   = toISO(end);
-  loadFromSupabase();
+  document.getElementById('range-end').value = toISO(end);
+  refreshMetrics();
 }
-
 function setCustomRange() {
-  const sv = document.getElementById('range-start').value;
-  const ev = document.getElementById('range-end').value;
+  const sv = document.getElementById('range-start').value, ev = document.getElementById('range-end').value;
   if (!sv || !ev) return;
   const s = new Date(sv + 'T00:00:00'), e = new Date(ev + 'T00:00:00');
   if (isNaN(s.getTime()) || isNaN(e.getTime()) || s > e) return;
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   const days = Math.round((e - s) / 86400000) + 1;
   activeRange = { start: s, end: e, label: fmtDate(s) + ' – ' + fmtDate(e), short: days + 'd' };
-  loadFromSupabase();
+  refreshMetrics();
 }
-
 function updateDataWindowLabels() {
   const w = activeRange;
-  document.getElementById('stat-calls-label').textContent   = 'calls / ' + w.short;
+  document.getElementById('stat-calls-label').textContent = 'calls / ' + w.short;
   document.getElementById('stat-revenue-label').textContent = 'revenue / ' + w.short;
-  document.getElementById('stat-margin-label').textContent  = 'margin / ' + w.short;
+  document.getElementById('stat-margin-label').textContent = 'margin / ' + w.short;
   document.getElementById('last-updated').textContent = 'Data window: ' + w.label;
 }
 
-// ─── INIT ────────────────────────────────────────────────────────────────────
-function recomputeStats() {
-  const totalCalls   = AGENTS.reduce((s,a) => s + (a.raw_calls||0), 0);
-  const totalRevenue = AGENTS.reduce((s,a) => s + (a.revenue||0),   0);
-  const totalMargin  = AGENTS.reduce((s,a) => s + (a.margin||0),    0);
-  document.getElementById('stat-agents').textContent  = AGENTS.length;
-  document.getElementById('stat-calls').textContent   = totalCalls.toLocaleString();
-  document.getElementById('stat-revenue').textContent = '$' + (totalRevenue/1000).toFixed(1) + 'k';
-  document.getElementById('stat-margin').textContent  = '$' + (totalMargin/1000).toFixed(1) + 'k';
+// ─── METRICS: aggregate raw call rows in JS ──────────────────────────────────
+// Sent definition:
+//   advertiser_payin > 0   OR
+//   (ivr_duration > 0 AND NOT (result = 'connected' AND connect_duration > 0))
+function isSent(c) {
+  if ((c.advertiser_payin||0) > 0) return true;
+  if ((c.ivr_duration||0) > 0) {
+    return !(c.result === 'connected' && (c.connect_duration||0) > 0);
+  }
+  return false;
+}
+function isPaid(c) { return (c.advertiser_payin||0) > 0; }
+
+function aggregateForAgent(agent, calls) {
+  let raw = 0, sent = 0, paid = 0, revenue = 0, margin = 0;
+  const pubMap = {}, advMap = {};
+  for (const c of calls) {
+    raw++;
+    const s = isSent(c), p = isPaid(c);
+    if (s) sent++;
+    if (p) paid++;
+    revenue += c.advertiser_payin || 0;
+    margin += (c.advertiser_payin || 0) - (c.publisher_payout || 0);
+    const pub = c.publisher_name || '(unknown)';
+    if (!pubMap[pub]) pubMap[pub] = { name: pub, raw_calls: 0, sent_calls: 0, paid_calls: 0, revenue: 0 };
+    pubMap[pub].raw_calls++;
+    if (s) pubMap[pub].sent_calls++;
+    if (p) pubMap[pub].paid_calls++;
+    pubMap[pub].revenue += c.advertiser_payin || 0;
+    const adv = c.advertiser_name || '(unknown)';
+    if (!advMap[adv]) advMap[adv] = { name: adv, raw_calls: 0, sent_calls: 0, paid_calls: 0, revenue: 0 };
+    advMap[adv].raw_calls++;
+    if (s) advMap[adv].sent_calls++;
+    if (p) advMap[adv].paid_calls++;
+    advMap[adv].revenue += c.advertiser_payin || 0;
+  }
+  agent.raw_calls = raw;
+  agent.sent_calls = sent;
+  agent.paid_calls = paid;
+  agent.revenue = revenue;
+  agent.margin = margin;
+  agent.conversion = raw > 0 ? paid / raw : 0;
+  agent.pubBreakdown = Object.values(pubMap).sort((a,b) => b.raw_calls - a.raw_calls).slice(0, 10);
+  agent.advBreakdown = Object.values(advMap).sort((a,b) => b.revenue - a.revenue).slice(0, 10);
 }
 
-// ─── TEST CALL MAP (loaded from Supabase) ────────────────────────────────────
-let testCallMap = {};
+async function refreshMetrics() {
+  if (!activeRange.start || !activeRange.end || !AGENTS.length) return;
+  const startISO = toISO(activeRange.start), endISO = toISO(activeRange.end);
 
+  // Zero out
+  AGENTS.forEach(a => {
+    a.raw_calls = 0; a.sent_calls = 0; a.paid_calls = 0;
+    a.revenue = 0; a.margin = 0; a.conversion = 0;
+    a.pubBreakdown = []; a.advBreakdown = [];
+  });
+
+  // Bucket raw calls by ivr_name
+  const callsByIvr = {};
+  try {
+    const PAGE = 1000;
+    let offset = 0;
+    while (true) {
+      const batch = await sbFetch(
+        `agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&call_date=gte.${startISO}&call_date=lte.${endISO}`,
+        { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+PAGE-1}` } }
+      );
+      if (!batch || batch.length === 0) break;
+      for (const r of batch) {
+        if (!callsByIvr[r.ivr_name]) callsByIvr[r.ivr_name] = [];
+        callsByIvr[r.ivr_name].push(r);
+      }
+      if (batch.length < PAGE) break;
+      offset += PAGE;
+    }
+
+    // Aggregate per agent
+    AGENTS.forEach(a => {
+      const calls = callsByIvr[a.ivrName] || [];
+      aggregateForAgent(a, calls);
+    });
+
+    // Freshness label = latest call_date in db
+    const latest = await sbFetch('agent_calls_raw?select=call_date&order=call_date.desc&limit=1');
+    if (latest && latest.length) {
+      const d = new Date(latest[0].call_date + 'T00:00:00');
+      document.getElementById('freshness-label').textContent = 'Data current through ' + fmtDate(d);
+    } else {
+      document.getElementById('freshness-label').textContent = 'No data uploaded yet';
+    }
+  } catch(e) {
+    console.warn('Metric load failed:', e.message);
+    document.getElementById('freshness-label').textContent = 'Could not load data: ' + e.message;
+  }
+  recomputeStats(); updateDataWindowLabels(); applyFilters();
+}
+
+function recomputeStats() {
+  const totalCalls = AGENTS.reduce((s,a) => s + (a.raw_calls||0), 0);
+  const totalRevenue = AGENTS.reduce((s,a) => s + (a.revenue||0), 0);
+  const totalMargin = AGENTS.reduce((s,a) => s + (a.margin||0), 0);
+  document.getElementById('stat-agents').textContent = AGENTS.length;
+  document.getElementById('stat-calls').textContent = totalCalls.toLocaleString();
+  document.getElementById('stat-revenue').textContent = '$' + (totalRevenue/1000).toFixed(1) + 'k';
+  document.getElementById('stat-margin').textContent = '$' + (totalMargin/1000).toFixed(1) + 'k';
+}
+
+// ─── AGENT METADATA from `agents` table ───────────────────────────────────────
+async function loadAgentsFromSupabase() {
+  try {
+    const rows = await sbFetch('agents?select=*&order=name.asc');
+    if (!rows || !rows.length) { AGENTS = []; return; }
+    AGENTS = rows.map(r => ({
+      ivrName: r.ivr_name,
+      name: r.name,
+      vertical: r.vertical || 'Other',
+      status: r.status || 'live',
+      routingType: r.routing_type || 'unknown',
+      qualifying: Array.isArray(r.qualifying) ? r.qualifying : [],
+      disqualify: r.disqualify,
+      publisherCampaigns: Array.isArray(r.publisher_campaigns) ? r.publisher_campaigns : [],
+      ivrTargets: Array.isArray(r.ivr_targets) ? r.ivr_targets : [],
+      notes: r.notes,
+      raw_calls: 0, sent_calls: 0, paid_calls: 0, revenue: 0, margin: 0,
+      conversion: 0, pubBreakdown: [], advBreakdown: []
+    }));
+  } catch(e) {
+    console.error('Could not load agents:', e.message);
+    AGENTS = [];
+    document.getElementById('agents-grid').innerHTML = `<div class="empty">Could not load agents: ${e.message}</div>`;
+  }
+}
+
+// ─── TEST CALL LINKS ──────────────────────────────────────────────────────────
+let testCallMap = {};
 async function loadTestCalls() {
   try {
     const rows = await sbFetch('agent_test_calls?select=ivr_name,url');
     if (rows) rows.forEach(r => { if (r.ivr_name && r.url) testCallMap[r.ivr_name] = r.url; });
-  } catch(e) {
-    console.warn('Could not load test calls:', e.message);
-  }
+  } catch(e) { console.warn('test calls:', e.message); }
 }
-
 async function saveTestCall(ivrName, url) {
   await sbFetch('agent_test_calls?on_conflict=ivr_name', {
     method: 'POST',
@@ -698,76 +798,47 @@ async function saveTestCall(ivrName, url) {
   });
   testCallMap[ivrName] = url;
 }
-
 function renderTestCallRow(ivrName, cardId) {
   const url = testCallMap[ivrName] || '';
-  const safeId = cardId;
   if (url) {
-    return `<div class="card-test-call" id="tc-row-${safeId}">
+    return `<div class="card-test-call" id="tc-row-${cardId}">
       <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--brand-navy)"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
       <a class="card-test-link" href="${url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a>
-      <button class="card-test-edit-btn" title="Edit URL" onclick="event.stopPropagation();tcShowEdit('${safeId}','${ivrName.replace(/'/g,"\\'")}')" >✎</button>
-    </div>`;
-  } else {
-    return `<div class="card-test-call" id="tc-row-${safeId}">
-      <span class="card-test-empty">No test call</span>
-      <button class="card-test-edit-btn" title="Add URL" onclick="event.stopPropagation();tcShowEdit('${safeId}','${ivrName.replace(/'/g,"\\'")}')">+ add</button>
+      <button class="card-test-edit-btn" title="Edit" onclick="event.stopPropagation();tcShowEdit('${cardId}','${ivrName.replace(/'/g,"\\'")}')">✎</button>
     </div>`;
   }
+  return `<div class="card-test-call" id="tc-row-${cardId}">
+    <span class="card-test-empty">No test call</span>
+    <button class="card-test-edit-btn" onclick="event.stopPropagation();tcShowEdit('${cardId}','${ivrName.replace(/'/g,"\\'")}')">+ add</button>
+  </div>`;
 }
-
 function tcShowEdit(cardId, ivrName) {
-  const row = document.getElementById('tc-row-' + cardId);
-  if (!row) return;
-  const current = testCallMap[ivrName] || '';
+  const row = document.getElementById('tc-row-' + cardId); if (!row) return;
   row.innerHTML = `<div class="card-test-input-row">
-    <input class="card-test-input" id="tc-input-${cardId}" type="url" placeholder="https://..." value="${current}" onclick="event.stopPropagation()">
+    <input class="card-test-input" id="tc-input-${cardId}" type="url" placeholder="https://..." value="${testCallMap[ivrName]||''}" onclick="event.stopPropagation()">
     <button class="card-test-save-btn" onclick="event.stopPropagation();tcSave('${cardId}','${ivrName.replace(/'/g,"\\'")}')">Save</button>
     <button class="card-test-cancel-btn" onclick="event.stopPropagation();tcCancel('${cardId}','${ivrName.replace(/'/g,"\\'")}')">✕</button>
   </div>`;
-  const inp = document.getElementById('tc-input-' + cardId);
-  if (inp) { inp.focus(); inp.select(); }
+  const inp = document.getElementById('tc-input-' + cardId); inp && inp.focus();
 }
-
 async function tcSave(cardId, ivrName) {
-  const inp = document.getElementById('tc-input-' + cardId);
-  if (!inp) return;
-  const url = inp.value.trim();
-  const btn = inp.parentElement.querySelector('.card-test-save-btn');
-  if (btn) { btn.textContent = '…'; btn.disabled = true; }
-  try {
-    await saveTestCall(ivrName, url);
-  } catch(e) {
-    alert('Could not save: ' + e.message);
-  }
+  const inp = document.getElementById('tc-input-' + cardId); if (!inp) return;
+  try { await saveTestCall(ivrName, inp.value.trim()); } catch(e) { alert('Could not save: ' + e.message); }
   const row = document.getElementById('tc-row-' + cardId);
   if (row) row.outerHTML = renderTestCallRow(ivrName, cardId);
 }
-
 function tcCancel(cardId, ivrName) {
   const row = document.getElementById('tc-row-' + cardId);
   if (row) row.outerHTML = renderTestCallRow(ivrName, cardId);
 }
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
-let activeFilter = 'all', openAgent = null;
-
-function vClass(v) {
-  return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other';
-}
-function rtLabel(t) {
-  return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown';
-}
-function getEffectiveStatus(a) {
-  if (a.status==='test') return 'test';
-  if (a.raw_calls>0) return 'live';
-  return 'inactive';
-}
+function vClass(v) { return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other'; }
+function rtLabel(t) { return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown'; }
+function getEffectiveStatus(a) { if (a.status==='test') return 'test'; if (a.raw_calls>0) return 'live'; return 'inactive'; }
 
 function renderCard(a, idx) {
-  const isOpen = openAgent === idx;
-  const es = getEffectiveStatus(a);
-  const cardId = 'c' + idx;
+  const isOpen = openAgent === idx, es = getEffectiveStatus(a), cardId = 'c' + idx;
   return `<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s">
     <div class="card-header">
       <span class="card-vtag ${vClass(a.vertical)}">${a.vertical||''}</span>
@@ -778,8 +849,8 @@ function renderCard(a, idx) {
     ${renderTestCallRow(a.ivrName, cardId)}
     <div class="card-metrics">
       <div><div class="metric-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div>
-      <div><div class="metric-val${(a.sent_calls||0)===0?' zero':''}">${Math.round(a.sent_calls||0)}</div><div class="metric-label">sent</div></div>
-      <div><div class="metric-val${a.paid_calls===0?' zero':''}">${Math.round(a.paid_calls||0)}</div><div class="metric-label">paid</div></div>
+      <div><div class="metric-val${(a.sent_calls||0)===0?' zero':''}">${Math.round(a.sent_calls||0).toLocaleString()}</div><div class="metric-label">sent</div></div>
+      <div><div class="metric-val${a.paid_calls===0?' zero':''}">${Math.round(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div>
       <div><div class="metric-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div>
     </div>
     <div class="card-chevron">▾</div>
@@ -790,10 +861,9 @@ function renderDrawer(a) {
   const hasPC = (a.publisherCampaigns||[]).length > 0;
   const hasIVR = (a.ivrTargets||[]).length > 0;
   const hasQual = (a.qualifying||[]).length > 0;
-
   const pcTable = hasPC ? `<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>` : '<div class="canoe-none">No publisher campaign IVRs configured</div>';
   const ivrTable = hasIVR ? `<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>` : '<div class="canoe-none">No IVR targets after listing search</div>';
-  const qualSection = getEffectiveStatus(a)==='test' ? '<div class="canoe-none">Internal test agent — no qualification logic</div>' : hasQual ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}` : '<div class="canoe-none">No qualification data on record</div>';
+  const qualSection = getEffectiveStatus(a)==='test' ? '<div class="canoe-none">Internal test agent</div>' : hasQual ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}` : '<div class="canoe-none">No qualification data on record</div>';
   const cv = a.conversion>0?(a.conversion*100).toFixed(1)+'%':'—';
 
   const pubs = a.pubBreakdown||[];
@@ -823,9 +893,9 @@ function renderDrawer(a) {
       <div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${advTable}</div></div>
     </div>
     <div class="perf-strip">
-      <div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls (${activeRange.short})</div></div>
-      <div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${Math.round(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent calls</div></div>
-      <div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${Math.round(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid calls</div></div>
+      <div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div>
+      <div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${Math.round(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div>
+      <div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${Math.round(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div>
       <div class="perf-item"><div class="perf-val${a.conversion===0?' zero':''}">${cv}</div><div class="perf-lbl">Paid / raw</div></div>
       <div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div>
       <div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div>
@@ -837,206 +907,242 @@ function getSorted(arr) {
   const s = document.getElementById('sort-select').value;
   return [...arr].sort((a,b) => {
     if (s==='name') return a.name.localeCompare(b.name);
-    if (s==='revenue') return (b.revenue||0)-(a.revenue||0);
-    if (s==='margin') return (b.margin||0)-(a.margin||0);
-    if (s==='calls') return (b.raw_calls||0)-(a.raw_calls||0);
-    if (s==='conversion') return (b.conversion||0)-(a.conversion||0);
+    if (s==='revenue') return (b.revenue||0) - (a.revenue||0);
+    if (s==='margin') return (b.margin||0) - (a.margin||0);
+    if (s==='calls') return (b.raw_calls||0) - (a.raw_calls||0);
+    if (s==='conversion') return (b.conversion||0) - (a.conversion||0);
     return 0;
   });
 }
-
 function applyFilters() {
   const q = document.getElementById('search-input').value.toLowerCase();
-  const drawer = document.getElementById('drawer-container');
-  drawer.innerHTML = '';
+  document.getElementById('drawer-container').innerHTML = '';
   openAgent = null;
-  let filtered = AGENTS.map((a,i) => ({a,i})).filter(({a}) => {
+  const filtered = AGENTS.filter(a => {
     if (activeFilter!=='all' && a.vertical!==activeFilter) return false;
     if (!q) return true;
-    const hay = [a.name,a.vertical,a.routingType,...(a.qualifying||[]),...(a.publisherCampaigns||[]).map(p=>p.publisher+' '+p.campaign),...(a.ivrTargets||[]).map(t=>[t.publisher,t.advertiser,t.vertical,t.campaign].join(' '))].join(' ').toLowerCase();
+    const hay = [a.name, a.vertical, a.routingType, ...(a.qualifying||[]), ...(a.publisherCampaigns||[]).map(p=>p.publisher+' '+p.campaign), ...(a.ivrTargets||[]).map(t=>[t.publisher,t.advertiser,t.vertical,t.campaign].join(' '))].join(' ').toLowerCase();
     return hay.includes(q);
   });
-  const sortedAgents = getSorted(filtered.map(f=>f.a));
-  const remapped = sortedAgents.map(a=>({a, i:AGENTS.indexOf(a)}));
-  document.getElementById('agents-grid').innerHTML = remapped.length ? remapped.map(({a,i})=>renderCard(a,i)).join('') : '<div class="empty">No agents match.</div>';
+  const sortedAgents = getSorted(filtered);
+  document.getElementById('agents-grid').innerHTML = sortedAgents.length
+    ? sortedAgents.map(a => renderCard(a, AGENTS.indexOf(a))).join('')
+    : '<div class="empty">No agents match.</div>';
 }
-
 function setFilter(v, el) {
   activeFilter = v;
-  document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   applyFilters();
 }
-
-let savedScrollY = 0;
-
 function toggleAgent(idx) {
   const drawer = document.getElementById('drawer-container');
-  if (openAgent===idx) { openAgent=null; drawer.innerHTML=''; applyFilters(); window.scrollTo({top:savedScrollY,behavior:'smooth'}); return; }
+  if (openAgent === idx) { openAgent = null; drawer.innerHTML = ''; applyFilters(); window.scrollTo({top:savedScrollY,behavior:'smooth'}); return; }
   savedScrollY = window.scrollY;
   openAgent = idx;
   applyFilters();
   drawer.innerHTML = renderDrawer(AGENTS[idx]);
   requestAnimationFrame(() => {
-    const rect = drawer.getBoundingClientRect();
-    const bottomGap = rect.bottom - window.innerHeight;
-    if (bottomGap>0) window.scrollBy({top:bottomGap+24,behavior:'smooth'});
+    const gap = drawer.getBoundingClientRect().bottom - window.innerHeight;
+    if (gap > 0) window.scrollBy({top: gap+24, behavior:'smooth'});
   });
 }
-
 function closeDrawer(e) {
   e.stopPropagation();
   openAgent = null;
   document.getElementById('drawer-container').innerHTML = '';
   applyFilters();
-  window.scrollTo({top:savedScrollY,behavior:'smooth'});
+  window.scrollTo({top: savedScrollY, behavior:'smooth'});
 }
 
-// ─── TABS ─────────────────────────────────────────────────────────────────────
+// ─── TABS ────────────────────────────────────────────────────────────────────
 function switchTab(id, el) {
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
 }
 
+// ─── BIGQUERY HELPER ─────────────────────────────────────────────────────────
 function buildBQSQL() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const end   = new Date(today); end.setDate(end.getDate()-1);
-  const start = new Date(today); start.setDate(start.getDate()-5);
-  const fmt = d => d.toISOString().split('T')[0];
+  const end = new Date(today); end.setDate(end.getDate() - 1);
+  const start = new Date(today); start.setDate(start.getDate() - 5);
+  const f = d => d.toISOString().split('T')[0];
   return `SELECT
+  id,
   ivr_name,
+  FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%S', created_at) AS created_at,
   FORMAT_DATE('%Y-%m-%d', DATE(created_at, 'America/Denver')) AS call_date,
   COALESCE(publisher_name, '(direct)') AS publisher_name,
   COALESCE(advertiser_name, '(direct)') AS advertiser_name,
-  COUNT(*) AS raw_calls,
-  COUNTIF(
-    advertiser_payin > 0
-    OR (ivr_duration > 0 AND NOT (result = 'connected' AND connect_duration > 0))
-  ) AS sent_calls,
-  COUNTIF(advertiser_payin > 0) AS paid_calls,
-  SAFE_DIVIDE(COUNTIF(advertiser_payin > 0), COUNT(*)) AS conversion,
-  AVG(IF(advertiser_payin > 0, ivr_duration, NULL)) AS avg_duration,
-  SUM(advertiser_payin) AS revenue,
-  SUM(advertiser_payin - publisher_payout) AS margin
+  ivr_duration,
+  connect_duration,
+  advertiser_payin,
+  publisher_payout,
+  result
 FROM \`ringpartner-exchange.phone_lead_transactions.phone_lead_transactions\`
 WHERE LOWER(ivr_name) LIKE 'ascnd%'
-  AND DATE(created_at, 'America/Denver') BETWEEN '${fmt(start)}' AND '${fmt(end)}'
-GROUP BY ivr_name, call_date, publisher_name, advertiser_name
-ORDER BY call_date DESC, revenue DESC`;
+  AND is_test = FALSE
+  AND DATE(created_at, 'America/Denver') BETWEEN '${f(start)}' AND '${f(end)}'
+ORDER BY created_at DESC`;
 }
-
 function copySQL(btn) {
   navigator.clipboard.writeText(document.getElementById('bq-sql').textContent.trim()).then(() => {
-    btn.textContent='Copied!'; btn.style.background='var(--teal-bg)'; btn.style.color='var(--teal)';
-    setTimeout(()=>{ btn.textContent='Copy query'; btn.style.background=''; btn.style.color=''; },2000);
+    btn.textContent = 'Copied!'; btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)';
+    setTimeout(() => { btn.textContent = 'Copy query'; btn.style.background = ''; btn.style.color = ''; }, 2000);
   });
 }
 
-// ─── UPDATE DATA ──────────────────────────────────────────────────────────────
+// ─── CSV UPLOAD ──────────────────────────────────────────────────────────────
 function toggleUpdatePanel() { document.getElementById('update-panel').classList.toggle('open'); }
 
-function normalize(s) { return (s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
-
-function parseDate(str) {
-  if (!str||str==='null'||str==='') return null;
-  const mdy4=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(mdy4) return `${mdy4[3]}-${mdy4[1].padStart(2,'0')}-${mdy4[2].padStart(2,'0')}`;
-  const mdy2=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/); if(mdy2) return `20${mdy2[3]}-${mdy2[1].padStart(2,'0')}-${mdy2[2].padStart(2,'0')}`;
-  if(/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  return null;
+// Minimal RFC-4180 CSV parser — handles quoted fields with commas / embedded quotes
+function parseCSV(text) {
+  const rows = [];
+  let cur = '', row = [], inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (text[i+1] === '"') { cur += '"'; i++; }
+        else { inQ = false; }
+      } else cur += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(cur); cur = ''; }
+      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else cur += ch;
+    }
+  }
+  if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
+  return rows;
 }
 
-function processUpdate() {
-  const raw = document.getElementById('update-paste').value.trim();
-  if (!raw) { alert('Nothing to process — paste in your BigQuery export first.'); return; }
-  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  if (lines.length<2) { alert('Not enough data rows.'); return; }
-  const headerCols = lines[0].split('\t').map(c=>c.trim().toLowerCase());
-  console.log('[updater] detected columns:', headerCols);
+function setupFileUpload() {
+  const drop = document.getElementById('file-drop');
+  const input = document.getElementById('file-input');
+  input.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('dragover'); }));
+  drop.addEventListener('drop', e => { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+}
+
+async function handleFile(file) {
+  const status = document.getElementById('file-status');
+  const results = document.getElementById('update-results');
+  const progressWrap = document.getElementById('progress-wrap');
+  const progressBar = document.getElementById('progress-bar');
+  document.getElementById('new-agent-intakes').innerHTML = '';
+  results.innerHTML = '';
+
+  status.innerHTML = `<span style="color:var(--text-2)">Reading <strong>${file.name}</strong> (${(file.size/1024/1024).toFixed(2)} MB)…</span>`;
+
+  let text;
+  try { text = await file.text(); }
+  catch(e) { status.innerHTML = `<span style="color:var(--coral)">Could not read file: ${e.message}</span>`; return; }
+
+  status.innerHTML = `<span style="color:var(--text-2)">Parsing CSV…</span>`;
+  const rows = parseCSV(text);
+  if (rows.length < 2) { status.innerHTML = `<span style="color:var(--coral)">Empty file or no data rows.</span>`; return; }
+
+  const headerRow = rows[0].map(c => c.trim().toLowerCase());
   const idx = {
-    ivr: headerCols.findIndex(h=>h==='ivr_name'||h==='ai_ivr'||h.includes('ivr_name')),
-    date: headerCols.findIndex(h=>h==='call_date'||h==='week_start'),
-    publisher: headerCols.findIndex(h=>h==='publisher_name'),
-    advertiser: headerCols.findIndex(h=>h==='advertiser_name'),
-    raw_calls: headerCols.findIndex(h=>h==='raw_calls'||h.includes('raw_call')||h.includes('raw call')),
-    sent_calls: headerCols.findIndex(h=>h==='sent_calls'||h.includes('sent_call')||h.includes('sent call')),
-    paid_calls: headerCols.findIndex(h=>h==='paid_calls'||h.includes('paid_call')||h.includes('paid call')),
-    conversion: headerCols.findIndex(h=>h==='conversion'||h.includes('conversion')),
-    avg_dur: headerCols.findIndex(h=>h==='avg_duration'||(h.includes('avg')&&h.includes('dur'))),
-    revenue: headerCols.findIndex(h=>h==='revenue'||h.includes('total revenue')),
-    margin: headerCols.findIndex(h=>h==='margin'||h.includes('direct margin')),
+    id: headerRow.indexOf('id'),
+    ivr_name: headerRow.indexOf('ivr_name'),
+    created_at: headerRow.indexOf('created_at'),
+    call_date: headerRow.indexOf('call_date'),
+    publisher_name: headerRow.indexOf('publisher_name'),
+    advertiser_name: headerRow.indexOf('advertiser_name'),
+    ivr_duration: headerRow.indexOf('ivr_duration'),
+    connect_duration: headerRow.indexOf('connect_duration'),
+    advertiser_payin: headerRow.indexOf('advertiser_payin'),
+    publisher_payout: headerRow.indexOf('publisher_payout'),
+    result: headerRow.indexOf('result')
   };
-  console.log('[updater] column indexes:', idx);
-  if (idx.ivr===-1||idx.revenue===-1||idx.margin===-1) {
-    document.getElementById('update-results').innerHTML=`<div style="color:var(--coral)">⚠ Could not detect required columns. Found: ${headerCols.join(', ')}</div>`;
+  const missing = Object.entries(idx).filter(([k,v]) => v === -1).map(([k]) => k);
+  if (missing.length) {
+    status.innerHTML = `<span style="color:var(--coral)">Missing columns: ${missing.join(', ')}. Found: ${headerRow.join(', ')}</span>`;
     return;
   }
-  const dataLines = lines.slice(1).filter(l=>l.trim().length>0);
-  const payload=[]; let updated=[], newAgents=[];
-  dataLines.forEach(line => {
-    const cols=line.split('\t').map(c=>c.trim());
-    const ivrName=idx.ivr>=0?cols[idx.ivr]:null;
-    const callDate=idx.date>=0?parseDate(cols[idx.date]):null;
-    const publisherName=idx.publisher>=0?(cols[idx.publisher]||null):null;
-    const advertiserName=idx.advertiser>=0?(cols[idx.advertiser]||null):null;
-    const raw_calls=Math.round(parseFloat(cols[idx.raw_calls])||0);
-    const paid_calls=Math.round(parseFloat(cols[idx.paid_calls])||0);
-    // Sent: if column present, use it; otherwise default to paid_calls (best fallback)
-    const sent_calls = idx.sent_calls>=0 ? Math.round(parseFloat(cols[idx.sent_calls])||0) : paid_calls;
-    const conversion=parseFloat(cols[idx.conversion])||0;
-    const avgVal=idx.avg_dur>=0?cols[idx.avg_dur]:null;
-    const avg_dur=!avgVal||avgVal==='null'||avgVal===''?null:parseFloat(avgVal)||null;
-    const revenue=parseFloat(cols[idx.revenue])||0;
-    const margin=parseFloat(cols[idx.margin])||0;
-    if (!ivrName) return;
-    payload.push({ivrName,callDate,publisherName,advertiserName,raw_calls,sent_calls,paid_calls,conversion,avg_dur,revenue,margin});
-    const match=AGENTS.find(a=>normalize(a.ivrName)===normalize(ivrName));
-    if (match) {
-      if (!match._updated) { match.raw_calls=0;match.sent_calls=0;match.paid_calls=0;match.revenue=0;match.margin=0;match.conversion=0;match.avg_duration=null;match._updated=true;match._pubMap={};match._advMap={}; }
-      match.raw_calls+=raw_calls; match.sent_calls+=sent_calls; match.paid_calls+=paid_calls; match.revenue+=revenue; match.margin+=margin; match.avg_duration=avg_dur;
-      if (publisherName) { if(!match._pubMap[publisherName]) match._pubMap[publisherName]={raw_calls:0,sent_calls:0,paid_calls:0,revenue:0}; match._pubMap[publisherName].raw_calls+=raw_calls; match._pubMap[publisherName].sent_calls+=sent_calls; match._pubMap[publisherName].paid_calls+=paid_calls; match._pubMap[publisherName].revenue+=revenue; }
-      if (advertiserName) { if(!match._advMap[advertiserName]) match._advMap[advertiserName]={raw_calls:0,sent_calls:0,paid_calls:0,revenue:0}; match._advMap[advertiserName].raw_calls+=raw_calls; match._advMap[advertiserName].sent_calls+=sent_calls; match._advMap[advertiserName].paid_calls+=paid_calls; match._advMap[advertiserName].revenue+=revenue; }
-      if (!updated.includes(match.ivrName)) updated.push(match.ivrName);
-    } else {
-      if (!newAgents.find(n=>n.ivrName===ivrName)) newAgents.push({ivrName,raw_calls,sent_calls,paid_calls,conversion,avg_duration:avg_dur,revenue,margin});
-    }
-  });
-  AGENTS.forEach(a => {
-    if (a._pubMap) { a.pubBreakdown=Object.entries(a._pubMap).map(([name,d])=>({name,...d})).sort((x,y)=>y.raw_calls-x.raw_calls).slice(0,10); a.advBreakdown=Object.entries(a._advMap||{}).map(([name,d])=>({name,...d})).sort((x,y)=>y.revenue-x.revenue).slice(0,10); }
-    a.conversion=a.raw_calls>0?a.paid_calls/a.raw_calls:0;
-    delete a._updated; delete a._pubMap; delete a._advMap;
-  });
-  const results=document.getElementById('update-results');
-  let html='';
-  if (updated.length) html+=`<div class="update-ok">✓ ${updated.length} agent${updated.length>1?'s':''} updated — saving to Supabase...</div>`;
-  if (newAgents.length) html+=`<div class="update-new" style="margin-top:8px">⊕ ${newAgents.length} new agent${newAgents.length>1?'s':''} detected — complete intake below.</div>`;
-  if (!updated.length&&!newAgents.length) html='<div style="color:var(--text-3)">No matching agents found. Check column headers.</div>';
-  results.innerHTML=html;
-  if (updated.length) {
-    recomputeStats(); updateDataWindowLabels(); applyFilters();
-    saveToSupabase(payload).then(()=>{ results.innerHTML=results.innerHTML.replace('saving to Supabase...','saved to Supabase ✓'); }).catch(e=>{ results.innerHTML+=`<div style="color:var(--coral);margin-top:6px">⚠ Supabase save failed: ${e.message}</div>`; });
+
+  const dataRows = rows.slice(1).filter(r => r.length >= headerRow.length && r[idx.id]);
+  status.innerHTML = `<span style="color:var(--text-2)">Found <strong>${dataRows.length.toLocaleString()}</strong> rows. Uploading…</span>`;
+
+  // Build payload + track ivr_names to detect new agents
+  const knownIvrs = new Set(AGENTS.map(a => a.ivrName));
+  const newAgents = {};   // ivr_name -> sample row
+  const payload = [];
+  for (const r of dataRows) {
+    const ivrName = r[idx.ivr_name];
+    if (!ivrName) continue;
+    if (!knownIvrs.has(ivrName) && !newAgents[ivrName]) newAgents[ivrName] = r;
+    payload.push({
+      id: r[idx.id],
+      ivr_name: ivrName,
+      created_at: r[idx.created_at],
+      call_date: r[idx.call_date],
+      publisher_name: r[idx.publisher_name] || null,
+      advertiser_name: r[idx.advertiser_name] || null,
+      ivr_duration: parseInt(r[idx.ivr_duration]) || 0,
+      connect_duration: parseInt(r[idx.connect_duration]) || 0,
+      advertiser_payin: parseFloat(r[idx.advertiser_payin]) || 0,
+      publisher_payout: parseFloat(r[idx.publisher_payout]) || 0,
+      result: r[idx.result] || null
+    });
   }
-  // Clear any existing intake forms
-  document.getElementById('new-agent-intakes').innerHTML = '';
-  newAgents.forEach((na,ni) => {
-    const div=document.createElement('div'); div.className='new-agent-intake';
-    div.innerHTML=`<div class="intake-agent-name">New agent detected: <span>${na.ivrName}</span></div>
-      <div class="intake-field"><label class="intake-label">Display name</label><input class="intake-input" type="text" id="intake-name-${ni}" placeholder="Short name shown on the card" value="${na.ivrName.replace(/^ASCND\s*AI?\s*Agent\s*-\s*/i,'').replace(/\s*-\s*Outgoing\s*$/i,'').trim()}"></div>
-      <div class="intake-field"><label class="intake-label">Vertical</label><select class="intake-select" id="intake-vertical-${ni}"><option>Home Services</option><option>Insurance</option><option>Legal</option><option>Financial</option><option>Other</option></select></div>
-      <div class="intake-field"><label class="intake-label">Routing type</label><select class="intake-select" id="intake-routing-${ni}"><option value="publisher-led">Publisher-led</option><option value="advertiser-led">Advertiser-led</option><option value="both">Both</option><option value="test-only">Internal / test</option></select></div>
-      <div class="intake-field"><label class="intake-label">Qualifying criteria (one per line)</label><textarea class="intake-textarea" id="intake-qual-${ni}"></textarea></div>
-      <div class="intake-field"><label class="intake-label">Hard disqualify keywords (optional)</label><input class="intake-input" type="text" id="intake-dq-${ni}" placeholder="e.g. Facebook, Craigslist"></div>
-      <div class="intake-field"><label class="intake-label">Publisher Campaign IVRs (campaign — publisher, one per line)</label><textarea class="intake-textarea" id="intake-pc-${ni}"></textarea></div>
-      <div class="intake-field"><label class="intake-label">IVR Targets After Listing Search (publisher | advertiser | vertical, one per line)</label><textarea class="intake-textarea" id="intake-ivr-${ni}"></textarea></div>
-      <div class="intake-field"><label class="intake-label">Notes (optional)</label><input class="intake-input" type="text" id="intake-notes-${ni}"></div>
-      <button class="intake-save-btn" id="intake-save-${ni}" onclick="saveNewAgent(${ni},'${na.ivrName.replace(/'/g,"\\'")}',${na.raw_calls},${na.sent_calls},${na.paid_calls},${na.conversion},${na.avg_duration||'null'},${na.revenue},${na.margin})">Add to registry</button>`;
-    document.getElementById('new-agent-intakes').appendChild(div);
-  });
+
+  // Upload in chunks
+  progressWrap.style.display = 'block';
+  const CHUNK = 1000;
+  let uploaded = 0;
+  try {
+    for (let i = 0; i < payload.length; i += CHUNK) {
+      const slice = payload.slice(i, i + CHUNK);
+      await sbFetch('agent_calls_raw?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(slice)
+      });
+      uploaded += slice.length;
+      progressBar.style.width = ((uploaded / payload.length) * 100).toFixed(1) + '%';
+      status.innerHTML = `<span style="color:var(--text-2)">Uploaded ${uploaded.toLocaleString()} / ${payload.length.toLocaleString()} rows…</span>`;
+    }
+    status.innerHTML = `<span style="color:var(--teal)">✓ Uploaded ${uploaded.toLocaleString()} call rows to Supabase.</span>`;
+    progressBar.style.width = '100%';
+
+    let resultsHtml = `<div class="update-ok">✓ ${uploaded.toLocaleString()} call rows saved.</div>`;
+    const newCount = Object.keys(newAgents).length;
+    if (newCount) resultsHtml += `<div class="update-new" style="margin-top:8px">⊕ ${newCount} new agent${newCount>1?'s':''} detected — complete intake below.</div>`;
+    results.innerHTML = resultsHtml;
+
+    // Trigger new-agent intake forms
+    Object.entries(newAgents).forEach(([ivrName, _], ni) => {
+      const div = document.createElement('div');
+      div.className = 'new-agent-intake';
+      div.innerHTML = `<div class="intake-agent-name">New agent detected: <span>${ivrName}</span></div>
+        <div class="intake-field"><label class="intake-label">Display name</label><input class="intake-input" type="text" id="intake-name-${ni}" value="${ivrName.replace(/^ASCND\s*AI?\s*Agent\s*-\s*/i,'').replace(/\s*-\s*Outgoing\s*$/i,'').trim()}"></div>
+        <div class="intake-field"><label class="intake-label">Vertical</label><select class="intake-select" id="intake-vertical-${ni}"><option>Home Services</option><option>Insurance</option><option>Legal</option><option>Financial</option><option>Other</option></select></div>
+        <div class="intake-field"><label class="intake-label">Routing type</label><select class="intake-select" id="intake-routing-${ni}"><option value="publisher-led">Publisher-led</option><option value="advertiser-led">Advertiser-led</option><option value="both">Both</option><option value="test-only">Internal / test</option></select></div>
+        <div class="intake-field"><label class="intake-label">Qualifying criteria (one per line)</label><textarea class="intake-textarea" id="intake-qual-${ni}"></textarea></div>
+        <div class="intake-field"><label class="intake-label">Hard disqualify keywords (optional)</label><input class="intake-input" type="text" id="intake-dq-${ni}"></div>
+        <div class="intake-field"><label class="intake-label">Publisher Campaign IVRs (campaign — publisher, one per line)</label><textarea class="intake-textarea" id="intake-pc-${ni}"></textarea></div>
+        <div class="intake-field"><label class="intake-label">IVR Targets After Listing Search (publisher | advertiser | vertical, one per line)</label><textarea class="intake-textarea" id="intake-ivr-${ni}"></textarea></div>
+        <div class="intake-field"><label class="intake-label">Notes (optional)</label><input class="intake-input" type="text" id="intake-notes-${ni}"></div>
+        <button class="intake-save-btn" id="intake-save-${ni}" onclick="saveNewAgent(${ni},'${ivrName.replace(/'/g,"\\'")}')">Add to registry</button>`;
+      document.getElementById('new-agent-intakes').appendChild(div);
+    });
+
+    // Reload and re-aggregate
+    await loadAgentsFromSupabase();
+    await refreshMetrics();
+  } catch(e) {
+    status.innerHTML = `<span style="color:var(--coral)">Upload failed: ${e.message}</span>`;
+  }
 }
 
-// ─── SAVE NEW AGENT (writes to Supabase agents table) ─────────────────────────
-async function saveNewAgent(ni, ivrName, raw_calls, sent_calls, paid_calls, conversion, avg_duration, revenue, margin) {
+async function saveNewAgent(ni, ivrName) {
   const btn = document.getElementById('intake-save-' + ni);
   const name = document.getElementById('intake-name-' + ni).value.trim() || ivrName;
   const vertical = document.getElementById('intake-vertical-' + ni).value;
@@ -1062,187 +1168,40 @@ async function saveNewAgent(ni, ivrName, raw_calls, sent_calls, paid_calls, conv
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({
-        ivr_name: ivrName,
-        name,
-        vertical,
-        status: 'live',
-        routing_type: routing,
-        qualifying,
-        disqualify,
-        publisher_campaigns: publisherCampaigns,
-        ivr_targets: ivrTargets,
-        notes,
-        updated_at: new Date().toISOString()
+        ivr_name: ivrName, name, vertical, status: 'live', routing_type: routing,
+        qualifying, disqualify, publisher_campaigns: publisherCampaigns,
+        ivr_targets: ivrTargets, notes, updated_at: new Date().toISOString()
       })
     });
-    // Add to local AGENTS array
-    AGENTS.push({
-      ivrName, name, vertical, status:'live', routingType: routing,
-      qualifying, disqualify, publisherCampaigns, ivrTargets, notes,
-      raw_calls, sent_calls, paid_calls, conversion,
-      avg_duration: avg_duration === null ? null : avg_duration,
-      revenue, margin,
-      pubBreakdown: [], advBreakdown: []
-    });
-    btn.textContent = '✓ Added';
-    btn.style.background = 'var(--teal)';
-    recomputeStats();
-    applyFilters();
+    btn.textContent = '✓ Added'; btn.style.background = 'var(--teal)';
+    await loadAgentsFromSupabase();
+    await refreshMetrics();
   } catch(e) {
-    alert('Could not save new agent: ' + e.message);
+    alert('Could not save: ' + e.message);
     btn.disabled = false; btn.textContent = 'Add to registry';
   }
 }
 
-// ─── SUPABASE ─────────────────────────────────────────────────────────────────
-const SB_URL = CONFIG.supabaseUrl;
-const SB_KEY = CONFIG.supabaseKey;
-
-async function sbFetch(path, options={}) {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}`, 'Content-Type':'application/json', 'Prefer':'count=none', ...(options.headers||{}) }
-  });
-  if (!res.ok) { const err=await res.text(); throw new Error(`Supabase error ${res.status}: ${err}`); }
-  const text=await res.text();
-  return text ? JSON.parse(text) : null;
-}
-
-// Load agent definitions from the new `agents` table
-async function loadAgentsFromSupabase() {
-  try {
-    const rows = await sbFetch('agents?select=*&order=name.asc');
-    if (!rows || !rows.length) {
-      console.warn('No agents found in database. Did you run the seed SQL?');
-      AGENTS = [];
-      return;
-    }
-    AGENTS = rows.map(r => ({
-      ivrName: r.ivr_name,
-      name: r.name,
-      vertical: r.vertical || 'Other',
-      status: r.status || 'live',
-      routingType: r.routing_type || 'unknown',
-      qualifying: Array.isArray(r.qualifying) ? r.qualifying : [],
-      disqualify: r.disqualify,
-      publisherCampaigns: Array.isArray(r.publisher_campaigns) ? r.publisher_campaigns : [],
-      ivrTargets: Array.isArray(r.ivr_targets) ? r.ivr_targets : [],
-      notes: r.notes,
-      // Metrics — zeroed; loadFromSupabase() fills in
-      raw_calls: 0, sent_calls: 0, paid_calls: 0, revenue: 0, margin: 0,
-      conversion: 0, avg_duration: null,
-      pubBreakdown: [], advBreakdown: []
-    }));
-  } catch(e) {
-    console.error('Could not load agents:', e.message);
-    AGENTS = [];
-    document.getElementById('agents-grid').innerHTML = `<div class="empty">Could not load agents from database: ${e.message}</div>`;
-  }
-}
-
-async function loadFromSupabase() {
-  if (!activeRange.start||!activeRange.end) return;
-  if (!AGENTS.length) return;
-  const startISO=toISO(activeRange.start), endISO=toISO(activeRange.end);
-  AGENTS.forEach(a => { a.raw_calls=0;a.sent_calls=0;a.paid_calls=0;a.revenue=0;a.margin=0;a.conversion=0;a.avg_duration=null;a._pubMap={};a._advMap={}; });
-  try {
-    const PAGE=1000; let allRows=[], offset=0;
-    while (true) {
-      const batch=await sbFetch(`agent_metrics_v2?select=ivr_name,raw_calls,sent_calls,paid_calls,conversion,avg_duration,revenue,margin,call_date,publisher_name,advertiser_name&call_date=gte.${startISO}&call_date=lte.${endISO}&order=call_date.asc`, {headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
-      if (!batch||batch.length===0) break;
-      allRows=allRows.concat(batch);
-      if (batch.length<PAGE) break;
-      offset+=PAGE;
-    }
-    const latest=await sbFetch('agent_metrics_v2?select=call_date&order=call_date.desc&limit=1');
-    if (allRows.length) {
-      allRows.forEach(row => {
-        const match=AGENTS.find(a=>normalize(a.ivrName)===normalize(row.ivr_name));
-        if (!match) return;
-        match.raw_calls+=row.raw_calls||0;
-        match.sent_calls+=row.sent_calls||0;
-        match.paid_calls+=row.paid_calls||0;
-        match.revenue+=row.revenue||0;
-        match.margin+=row.margin||0;
-        match.avg_duration=row.avg_duration||match.avg_duration;
-        const pub=row.publisher_name||'(unknown)';
-        if(!match._pubMap[pub]) match._pubMap[pub]={raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};
-        match._pubMap[pub].raw_calls+=row.raw_calls||0;
-        match._pubMap[pub].sent_calls+=row.sent_calls||0;
-        match._pubMap[pub].paid_calls+=row.paid_calls||0;
-        match._pubMap[pub].revenue+=row.revenue||0;
-        const adv=row.advertiser_name||'(unknown)';
-        if(!match._advMap[adv]) match._advMap[adv]={raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};
-        match._advMap[adv].raw_calls+=row.raw_calls||0;
-        match._advMap[adv].sent_calls+=row.sent_calls||0;
-        match._advMap[adv].paid_calls+=row.paid_calls||0;
-        match._advMap[adv].revenue+=row.revenue||0;
-      });
-      AGENTS.forEach(a => {
-        a.pubBreakdown=Object.entries(a._pubMap).map(([name,d])=>({name,...d})).sort((x,y)=>y.raw_calls-x.raw_calls).slice(0,10);
-        a.advBreakdown=Object.entries(a._advMap).map(([name,d])=>({name,...d})).sort((x,y)=>y.revenue-x.revenue).slice(0,10);
-        a.conversion=a.raw_calls>0?a.paid_calls/a.raw_calls:0;
-        delete a._pubMap; delete a._advMap;
-      });
-    }
-    if (latest&&latest.length&&latest[0].call_date) { const d=new Date(latest[0].call_date+'T00:00:00'); document.getElementById('freshness-label').textContent='Data current through '+fmtDate(d); }
-    else document.getElementById('freshness-label').textContent='No data loaded yet';
-  } catch(e) {
-    console.warn('Supabase load failed:',e.message);
-    document.getElementById('freshness-label').textContent='Could not load data';
-  }
-  recomputeStats(); updateDataWindowLabels(); applyFilters();
-}
-
-async function saveToSupabase(rows) {
-  const payload=rows.filter(r=>r.callDate).map(r=>({
-    ivr_name:r.ivrName,
-    call_date:r.callDate,
-    publisher_name:r.publisherName||null,
-    advertiser_name:r.advertiserName||null,
-    raw_calls:Math.round(r.raw_calls||0),
-    sent_calls:Math.round(r.sent_calls||0),
-    paid_calls:Math.round(r.paid_calls||0),
-    conversion:parseFloat((r.conversion||0).toFixed(8)),
-    avg_duration:r.avg_dur!=null?parseFloat(r.avg_dur.toFixed(4)):null,
-    revenue:parseFloat((r.revenue||0).toFixed(4)),
-    margin:parseFloat((r.margin||0).toFixed(4))
-  }));
-  if (!payload.length) throw new Error('No valid dates in export — check call_date column.');
-  const CHUNK=500;
-  for (let i=0;i<payload.length;i+=CHUNK) {
-    await sbFetch('agent_metrics_v2?on_conflict=ivr_name,call_date,publisher_name,advertiser_name', {method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload.slice(i,i+CHUNK))});
-  }
-}
-
-// ─── IN DEVELOPMENT ───────────────────────────────────────────────────────────
-let devCurrentIvr=null, devDeleteTarget=null, devSignoffState={supply:'pending',demand:'pending'};
-
+// ═══════════════ IN DEVELOPMENT (unchanged from before) ════════════════════
+let devCurrentIvr = null, devDeleteTarget = null, devSignoffState = {supply:'pending',demand:'pending'};
 async function devSbFetch(path, opts={}) {
-  const res=await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});
+  const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});
   if (!res.ok){const err=await res.text();throw new Error(`Supabase error: ${err}`);}
   const text=await res.text(); return text?JSON.parse(text):null;
 }
-
 function devOpenModal(id){document.getElementById(id).style.display='flex';}
 function devCloseModal(id){document.getElementById(id).style.display='none';}
-
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.dev-modal-backdrop').forEach(b=>{b.addEventListener('click',e=>{if(e.target===b)b.style.display='none';});});
-  document.querySelectorAll('.dev-signoff-textarea').forEach(t=>{t.addEventListener('input',()=>t.classList.remove('dev-note-required'));});
 });
-
 function devToggleMenu(id,e){e.stopPropagation();const menu=document.getElementById(id);const isOpen=menu.classList.contains('open');document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));if(!isOpen)menu.classList.add('open');}
 document.addEventListener('click',()=>{document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));});
-
 function devShowLed(v){document.getElementById('dev-cond-adv').className='dev-cond-section'+(v==='advertiser'||v==='both'?' visible':'');document.getElementById('dev-cond-pub').className='dev-cond-section'+(v==='publisher'||v==='both'?' visible':'');}
 function devToggleRepingFields(){const val=document.getElementById('dev-f-ondq').value;document.getElementById('dev-reping-fields').className='dev-reping-fields'+(val==='reping'?' visible':'');}
 function devGetLed(){const sel=document.querySelector('input[name="dev-led"]:checked');return sel?sel.value:'';}
-
 async function devLoadIvrs(){
-  try{const rows=await devSbFetch('ivr_development?order=created_at.desc&select=*');const list=document.getElementById('dev-ivr-list');list.innerHTML='';if(!rows||rows.length===0){list.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">No IVRs in development yet. Click "+ Build new AI IVR" to get started.</div>';return;}rows.forEach(row=>list.appendChild(devBuildCard(row)));}catch(e){document.getElementById('dev-ivr-list').innerHTML=`<div style="padding:20px;color:#A32D2D;font-size:13px;">Could not load IVRs: ${e.message}</div>`;}
+  try{const rows=await devSbFetch('ivr_development?order=created_at.desc&select=*');const list=document.getElementById('dev-ivr-list');list.innerHTML='';if(!rows||rows.length===0){list.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">No IVRs in development yet.</div>';return;}rows.forEach(row=>list.appendChild(devBuildCard(row)));}catch(e){document.getElementById('dev-ivr-list').innerHTML=`<div style="padding:20px;color:#A32D2D;font-size:13px;">Could not load IVRs: ${e.message}</div>`;}
 }
-
 function devBuildCard(row){
   const c=document.createElement('div');c.className='dev-ivr-card';c.id='dev-card-'+row.id;
   const badgeClass={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'}[row.status]||'dev-badge-draft';
@@ -1253,7 +1212,6 @@ function devBuildCard(row){
   c.innerHTML=`<div class="dev-card-menu-col"><button class="dev-dots-btn" onclick="devToggleMenu('${menuId}',event)"><div class="dev-dot"></div><div class="dev-dot"></div><div class="dev-dot"></div></button><div class="dev-dropdown" id="${menuId}"><button class="dev-dropdown-item dev-danger" onclick="devConfirmDelete('${row.id}','${row.name.replace(/'/g,"\\'")}')">Delete</button></div></div><div class="dev-card-body" onclick="devOpenDetail('${row.id}')"><div class="dev-card-name">${row.name}</div><div class="dev-card-meta">${meta}</div></div><div class="dev-card-right"><span class="dev-badge ${badgeClass}">${badgeLabel}</span><span class="dev-card-chevron">›</span></div>`;
   return c;
 }
-
 async function devSubmitNew(){
   const name=document.getElementById('dev-f-name').value.trim();
   if(!name){document.getElementById('dev-f-name').focus();return;}
@@ -1262,7 +1220,6 @@ async function devSubmitNew(){
   try{await devSbFetch('ivr_development',{method:'POST',body:JSON.stringify(payload)});devCloseModal('dev-modal-new');devResetNewForm();await devLoadIvrs();}catch(e){alert('Could not save: '+e.message);}
   btn.disabled=false;btn.textContent='Save';
 }
-
 function devResetNewForm(){
   ['dev-f-name','dev-f-vertical','dev-f-qualifying','dev-f-advertisers','dev-f-publishers','dev-f-harddq','dev-f-datacollected','dev-f-duration','dev-f-notes','dev-f-repinglogic'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('dev-f-ondq').value='';
@@ -1271,11 +1228,9 @@ function devResetNewForm(){
   document.getElementById('dev-cond-pub').className='dev-cond-section';
   document.getElementById('dev-reping-fields').className='dev-reping-fields';
 }
-
 async function devOpenDetail(ivrId,alreadyOpen){
   try{const rows=await devSbFetch(`ivr_development?id=eq.${ivrId}&select=*`);if(!rows||!rows.length)return;devCurrentIvr=rows[0];const signoffs=await devSbFetch(`ivr_signoffs?ivr_id=eq.${ivrId}&select=*`);const recordings=await devSbFetch(`ivr_recordings?ivr_id=eq.${ivrId}&order=uploaded_at.desc&select=*`);devPopulateDetail(devCurrentIvr,signoffs||[],recordings||[]);if(!alreadyOpen)devOpenModal('dev-modal-detail');}catch(e){alert('Could not load IVR: '+e.message);}
 }
-
 function devPopulateDetail(row,signoffs,recordings){
   const statusLabels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};
   const badgeClasses={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'};
@@ -1299,7 +1254,6 @@ function devPopulateDetail(row,signoffs,recordings){
   });
   devCheckLaunch();
 }
-
 async function devAddRecording(){
   const label=document.getElementById('dev-link-label').value.trim(),url=document.getElementById('dev-link-url').value.trim();
   if(!label){document.getElementById('dev-link-label').focus();return;}if(!url){document.getElementById('dev-link-url').focus();return;}
@@ -1307,7 +1261,6 @@ async function devAddRecording(){
   try{await devSbFetch('ivr_recordings',{method:'POST',body:JSON.stringify({ivr_id:devCurrentIvr.id,filename:label,filesize:url})});document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';await devOpenDetail(devCurrentIvr.id,true);}catch(e){alert('Could not save link: '+e.message);}
   btn.disabled=false;btn.textContent='Add link';
 }
-
 async function devSignoff(team,action){
   const note=document.getElementById('dev-note-'+team),hint=document.getElementById('dev-hint-'+team);
   if(!note.value.trim()){note.classList.add('dev-note-required');hint.classList.add('visible');note.focus();return;}
@@ -1322,7 +1275,6 @@ async function devSignoff(team,action){
     if(devSignoffState.supply==='approve'&&devSignoffState.demand==='approve'){await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'approved'})});devCurrentIvr.status='approved';await devLoadIvrs();}
   }catch(e){alert('Could not save sign-off: '+e.message);}
 }
-
 function devCheckLaunch(){
   const allApproved=devSignoffState.supply==='approve'&&devSignoffState.demand==='approve';
   const anyRejected=Object.values(devSignoffState).includes('reject');
@@ -1332,14 +1284,11 @@ function devCheckLaunch(){
   else if(anyRejected){btn.disabled=true;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✕';text.textContent='Changes have been requested. Resolve before launch.';}
   else{btn.disabled=true;gate.style.cssText='';icon.textContent='⏳';text.textContent=`Waiting for ${pending} more sign-off${pending!==1?'s':''} before launch is available.`;}
 }
-
 async function devMarkLive(){
   if(!devCurrentIvr)return;
   try{await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'live'})});devCloseModal('dev-modal-detail');await devLoadIvrs();}catch(e){alert('Could not update status: '+e.message);}
 }
-
 function devConfirmDelete(ivrId,name){devDeleteTarget=ivrId;document.getElementById('dev-confirm-name').textContent=name;document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));devOpenModal('dev-modal-confirm');}
-
 async function devDoDelete(){
   if(!devDeleteTarget)return;
   try{await devSbFetch(`ivr_development?id=eq.${devDeleteTarget}`,{method:'DELETE',prefer:''});devDeleteTarget=null;devCloseModal('dev-modal-confirm');await devLoadIvrs();}catch(e){alert('Could not delete: '+e.message);}
@@ -1348,6 +1297,7 @@ async function devDoDelete(){
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 async function bootDashboard() {
   document.getElementById('bq-sql').textContent = buildBQSQL();
+  setupFileUpload();
   await loadAgentsFromSupabase();
   await loadTestCalls();
   recomputeStats();
@@ -1356,11 +1306,8 @@ async function bootDashboard() {
   devLoadIvrs();
 }
 
-if (gateCheck()) {
-  bootDashboard();
-} else {
-  setTimeout(() => document.getElementById('gate-input').focus(), 100);
-}
+if (gateCheck()) bootDashboard();
+else setTimeout(() => document.getElementById('gate-input').focus(), 100);
 </script>
 </body>
 </html>
