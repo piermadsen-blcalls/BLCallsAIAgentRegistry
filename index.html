@@ -911,7 +911,10 @@ function buildBQSQL() {
   COALESCE(publisher_name, '(direct)') AS publisher_name,
   COALESCE(advertiser_name, '(direct)') AS advertiser_name,
   COUNT(*) AS raw_calls,
-  COUNTIF(advertiser_payin > 0 OR (ivr_duration > 0 AND connect_duration = 0 AND result = 'abandoned')) AS sent_calls,
+  COUNTIF(
+    advertiser_payin > 0
+    OR (ivr_duration > 0 AND NOT (result = 'connected' AND connect_duration > 0))
+  ) AS sent_calls,
   COUNTIF(advertiser_payin > 0) AS paid_calls,
   SAFE_DIVIDE(COUNTIF(advertiser_payin > 0), COUNT(*)) AS conversion,
   AVG(IF(advertiser_payin > 0, ivr_duration, NULL)) AS avg_duration,
@@ -950,19 +953,21 @@ function processUpdate() {
   const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
   if (lines.length<2) { alert('Not enough data rows.'); return; }
   const headerCols = lines[0].split('\t').map(c=>c.trim().toLowerCase());
+  console.log('[updater] detected columns:', headerCols);
   const idx = {
     ivr: headerCols.findIndex(h=>h==='ivr_name'||h==='ai_ivr'||h.includes('ivr_name')),
     date: headerCols.findIndex(h=>h==='call_date'||h==='week_start'),
     publisher: headerCols.findIndex(h=>h==='publisher_name'),
     advertiser: headerCols.findIndex(h=>h==='advertiser_name'),
-    raw_calls: headerCols.findIndex(h=>h==='raw_calls'||h.includes('raw calls')),
-    sent_calls: headerCols.findIndex(h=>h==='sent_calls'||h.includes('sent calls')),
-    paid_calls: headerCols.findIndex(h=>h==='paid_calls'||h.includes('paid calls')),
+    raw_calls: headerCols.findIndex(h=>h==='raw_calls'||h.includes('raw_call')||h.includes('raw call')),
+    sent_calls: headerCols.findIndex(h=>h==='sent_calls'||h.includes('sent_call')||h.includes('sent call')),
+    paid_calls: headerCols.findIndex(h=>h==='paid_calls'||h.includes('paid_call')||h.includes('paid call')),
     conversion: headerCols.findIndex(h=>h==='conversion'||h.includes('conversion')),
     avg_dur: headerCols.findIndex(h=>h==='avg_duration'||(h.includes('avg')&&h.includes('dur'))),
     revenue: headerCols.findIndex(h=>h==='revenue'||h.includes('total revenue')),
     margin: headerCols.findIndex(h=>h==='margin'||h.includes('direct margin')),
   };
+  console.log('[updater] column indexes:', idx);
   if (idx.ivr===-1||idx.revenue===-1||idx.margin===-1) {
     document.getElementById('update-results').innerHTML=`<div style="color:var(--coral)">⚠ Could not detect required columns. Found: ${headerCols.join(', ')}</div>`;
     return;
