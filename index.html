@@ -150,7 +150,7 @@
   .canoe-none { font-size: 13px; color: var(--text-3); font-style: italic; }
   .canoe-count { font-size: 11px; color: var(--text-3); margin-top: 8px; font-family: var(--mono); }
 
-  .perf-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .perf-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   .perf-item { padding-right: 14px; }
   .perf-item + .perf-item { border-left: 1px solid var(--border); padding-left: 14px; }
   .perf-val { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--text); }
@@ -600,7 +600,7 @@ document.getElementById('gate-btn').addEventListener('click', gateSubmit);
 document.getElementById('gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') gateSubmit(); });
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-let AGENTS = [];                 // agent metadata from `agents` table
+let AGENTS = [];
 let activeRange = { start: null, end: null, label: '—', short: '—' };
 let activeFilter = 'all', openAgent = null, savedScrollY = 0;
 const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
@@ -608,7 +608,7 @@ const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function toISO(d) { return d.toISOString().split('T')[0]; }
 function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
-function normalize(s) { return (s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : '—'; }
 
 async function sbFetch(path, options={}) {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -649,7 +649,7 @@ function updateDataWindowLabels() {
   document.getElementById('last-updated').textContent = 'Data window: ' + w.label;
 }
 
-// ─── METRICS: aggregate raw call rows in JS ──────────────────────────────────
+// ─── METRICS ──────────────────────────────────────────────────────────────────
 // Sent definition:
 //   advertiser_payin > 0   OR
 //   (ivr_duration > 0 AND NOT (result = 'connected' AND connect_duration > 0))
@@ -699,14 +699,12 @@ async function refreshMetrics() {
   if (!activeRange.start || !activeRange.end || !AGENTS.length) return;
   const startISO = toISO(activeRange.start), endISO = toISO(activeRange.end);
 
-  // Zero out
   AGENTS.forEach(a => {
     a.raw_calls = 0; a.sent_calls = 0; a.paid_calls = 0;
     a.revenue = 0; a.margin = 0; a.conversion = 0;
     a.pubBreakdown = []; a.advBreakdown = [];
   });
 
-  // Bucket raw calls by ivr_name
   const callsByIvr = {};
   try {
     const PAGE = 1000;
@@ -725,13 +723,11 @@ async function refreshMetrics() {
       offset += PAGE;
     }
 
-    // Aggregate per agent
     AGENTS.forEach(a => {
       const calls = callsByIvr[a.ivrName] || [];
       aggregateForAgent(a, calls);
     });
 
-    // Freshness label = latest call_date in db
     const latest = await sbFetch('agent_calls_raw?select=call_date&order=call_date.desc&limit=1');
     if (latest && latest.length) {
       const d = new Date(latest[0].call_date + 'T00:00:00');
@@ -756,7 +752,7 @@ function recomputeStats() {
   document.getElementById('stat-margin').textContent = '$' + (totalMargin/1000).toFixed(1) + 'k';
 }
 
-// ─── AGENT METADATA from `agents` table ───────────────────────────────────────
+// ─── AGENT METADATA ───────────────────────────────────────────────────────────
 async function loadAgentsFromSupabase() {
   try {
     const rows = await sbFetch('agents?select=*&order=name.asc');
@@ -837,8 +833,10 @@ function vClass(v) { return v==='Home Services'?'v-home':v==='Insurance'?'v-insu
 function rtLabel(t) { return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown'; }
 function getEffectiveStatus(a) { if (a.status==='test') return 'test'; if (a.raw_calls>0) return 'live'; return 'inactive'; }
 
+// ── CARD: shows raw, paid, conv (paid/raw), revenue ──
 function renderCard(a, idx) {
   const isOpen = openAgent === idx, es = getEffectiveStatus(a), cardId = 'c' + idx;
+  const conv = fmtPct(a.paid_calls, a.raw_calls);
   return `<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s">
     <div class="card-header">
       <span class="card-vtag ${vClass(a.vertical)}">${a.vertical||''}</span>
@@ -849,30 +847,71 @@ function renderCard(a, idx) {
     ${renderTestCallRow(a.ivrName, cardId)}
     <div class="card-metrics">
       <div><div class="metric-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div>
-      <div><div class="metric-val${(a.sent_calls||0)===0?' zero':''}">${Math.round(a.sent_calls||0).toLocaleString()}</div><div class="metric-label">sent</div></div>
-      <div><div class="metric-val${a.paid_calls===0?' zero':''}">${Math.round(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div>
+      <div><div class="metric-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div>
+      <div><div class="metric-val${a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div>
       <div><div class="metric-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div>
     </div>
     <div class="card-chevron">▾</div>
   </div>`;
 }
 
+// ── DRAWER ──
 function renderDrawer(a) {
   const hasPC = (a.publisherCampaigns||[]).length > 0;
   const hasIVR = (a.ivrTargets||[]).length > 0;
   const hasQual = (a.qualifying||[]).length > 0;
-  const pcTable = hasPC ? `<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>` : '<div class="canoe-none">No publisher campaign IVRs configured</div>';
-  const ivrTable = hasIVR ? `<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>` : '<div class="canoe-none">No IVR targets after listing search</div>';
-  const qualSection = getEffectiveStatus(a)==='test' ? '<div class="canoe-none">Internal test agent</div>' : hasQual ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}` : '<div class="canoe-none">No qualification data on record</div>';
-  const cv = a.conversion>0?(a.conversion*100).toFixed(1)+'%':'—';
 
+  const pcTable = hasPC
+    ? `<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`
+    : '<div class="canoe-none">No publisher campaign IVRs configured</div>';
+
+  const ivrTable = hasIVR
+    ? `<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`
+    : '<div class="canoe-none">No IVR targets after listing search</div>';
+
+  const qualSection = getEffectiveStatus(a)==='test'
+    ? '<div class="canoe-none">Internal test agent</div>'
+    : hasQual
+      ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`
+      : '<div class="canoe-none">No qualification data on record</div>';
+
+  // Publishers table — Raw, Sent, Paid, Conv (paid/raw), Revenue
   const pubs = a.pubBreakdown||[];
-  const pubRows = pubs.length ? pubs.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="5" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
-  const pubTable = `<table class="canoe-table"><thead><tr><th>Publisher</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${pubRows}</tbody></table>${pubs.length?`<div class="canoe-count">top ${pubs.length} by volume</div>`:''}`;
+  const pubRows = pubs.length
+    ? pubs.map(p => {
+        const conv = fmtPct(p.paid_calls, p.raw_calls);
+        return `<tr>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${conv}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
+  const pubTable = `<table class="canoe-table"><thead><tr><th>Publisher</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${pubRows}</tbody></table>${pubs.length?`<div class="canoe-count">top ${pubs.length} by volume</div>`:''}`;
 
+  // Advertisers table — Raw, Sent, Paid, Conv (paid/raw), Revenue
   const advs = a.advBreakdown||[];
-  const advRows = advs.length ? advs.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="5" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
-  const advTable = `<table class="canoe-table"><thead><tr><th>Advertiser</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${advRows}</tbody></table>${advs.length?`<div class="canoe-count">top ${advs.length} by revenue</div>`:''}`;
+  const advRows = advs.length
+    ? advs.map(p => {
+        const conv = fmtPct(p.paid_calls, p.raw_calls);
+        return `<tr>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${conv}</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
+  const advTable = `<table class="canoe-table"><thead><tr><th>Advertiser</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${advRows}</tbody></table>${advs.length?`<div class="canoe-count">top ${advs.length} by revenue</div>`:''}`;
+
+  // Bottom perf strip — Raw, Sent, Paid, Sent/Raw, Paid/Raw, Revenue, Margin
+  const sentOverRaw = fmtPct(a.sent_calls, a.raw_calls);
+  const paidOverRaw = fmtPct(a.paid_calls, a.raw_calls);
 
   return `<div class="detail-drawer"><div class="drawer-inner">
     <div class="drawer-top">
@@ -894,9 +933,10 @@ function renderDrawer(a) {
     </div>
     <div class="perf-strip">
       <div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div>
-      <div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${Math.round(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div>
-      <div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${Math.round(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div>
-      <div class="perf-item"><div class="perf-val${a.conversion===0?' zero':''}">${cv}</div><div class="perf-lbl">Paid / raw</div></div>
+      <div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div>
+      <div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div>
+      <div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div>
+      <div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div>
       <div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div>
       <div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div>
     </div>
@@ -997,7 +1037,6 @@ function copySQL(btn) {
 // ─── CSV UPLOAD ──────────────────────────────────────────────────────────────
 function toggleUpdatePanel() { document.getElementById('update-panel').classList.toggle('open'); }
 
-// Minimal RFC-4180 CSV parser — handles quoted fields with commas / embedded quotes
 function parseCSV(text) {
   const rows = [];
   let cur = '', row = [], inQ = false;
@@ -1070,14 +1109,13 @@ async function handleFile(file) {
   const dataRows = rows.slice(1).filter(r => r.length >= headerRow.length && r[idx.id]);
   status.innerHTML = `<span style="color:var(--text-2)">Found <strong>${dataRows.length.toLocaleString()}</strong> rows. Deduplicating…</span>`;
 
-  // Build payload + track ivr_names to detect new agents
   const knownIvrs = new Set(AGENTS.map(a => a.ivrName));
-  const newAgents = {};   // ivr_name -> sample row
-  const byId = new Map();   // dedupe: last occurrence wins
+  const newAgents = {};
+  const byId = new Map();
   let skippedNoId = 0;
   for (const r of dataRows) {
-    const rowId = r[idx.id];
-    const ivrName = r[idx.ivr_name];
+    const rowId = (r[idx.id] || '').trim();
+    const ivrName = (r[idx.ivr_name] || '').trim();
     if (!rowId) { skippedNoId++; continue; }
     if (!ivrName) continue;
     if (!knownIvrs.has(ivrName) && !newAgents[ivrName]) newAgents[ivrName] = r;
@@ -1086,49 +1124,30 @@ async function handleFile(file) {
       ivr_name: ivrName,
       created_at: r[idx.created_at],
       call_date: r[idx.call_date],
-      publisher_name: r[idx.publisher_name] || null,
-      advertiser_name: r[idx.advertiser_name] || null,
+      publisher_name: (r[idx.publisher_name] || '').trim() || null,
+      advertiser_name: (r[idx.advertiser_name] || '').trim() || null,
       ivr_duration: parseInt(r[idx.ivr_duration]) || 0,
       connect_duration: parseInt(r[idx.connect_duration]) || 0,
       advertiser_payin: parseFloat(r[idx.advertiser_payin]) || 0,
       publisher_payout: parseFloat(r[idx.publisher_payout]) || 0,
-      result: r[idx.result] || null
+      result: (r[idx.result] || '').trim() || null
     });
   }
   const payload = Array.from(byId.values());
   const duplicatesRemoved = dataRows.length - payload.length - skippedNoId;
-  if (duplicatesRemoved > 0) {
-    console.log(`[updater] removed ${duplicatesRemoved} duplicate id(s) from CSV`);
-  }
   status.innerHTML = `<span style="color:var(--text-2)">Uploading <strong>${payload.length.toLocaleString()}</strong> unique rows${duplicatesRemoved>0?` (deduped ${duplicatesRemoved})`:''}…</span>`;
 
-  // Upload in chunks
   progressWrap.style.display = 'block';
   const CHUNK = 1000;
   let uploaded = 0;
   try {
     for (let i = 0; i < payload.length; i += CHUNK) {
       const slice = payload.slice(i, i + CHUNK);
-      // Sanity check: log if this slice has any duplicate ids (shouldn't happen after dedupe)
-      const sliceIds = new Set();
-      const sliceDupes = [];
-      for (const row of slice) {
-        if (sliceIds.has(row.id)) sliceDupes.push(row.id);
-        sliceIds.add(row.id);
-      }
-      if (sliceDupes.length) {
-        console.error('[updater] chunk has duplicate ids:', sliceDupes.slice(0, 5));
-      }
-      try {
-        await sbFetch('agent_calls_raw?on_conflict=id', {
-          method: 'POST',
-          headers: { 'Prefer': 'resolution=merge-duplicates' },
-          body: JSON.stringify(slice)
-        });
-      } catch(chunkErr) {
-        console.error('[updater] chunk failed at offset', i, 'first row:', slice[0], 'error:', chunkErr.message);
-        throw chunkErr;
-      }
+      await sbFetch('agent_calls_raw?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(slice)
+      });
       uploaded += slice.length;
       progressBar.style.width = ((uploaded / payload.length) * 100).toFixed(1) + '%';
       status.innerHTML = `<span style="color:var(--text-2)">Uploaded ${uploaded.toLocaleString()} / ${payload.length.toLocaleString()} rows…</span>`;
@@ -1141,7 +1160,6 @@ async function handleFile(file) {
     if (newCount) resultsHtml += `<div class="update-new" style="margin-top:8px">⊕ ${newCount} new agent${newCount>1?'s':''} detected — complete intake below.</div>`;
     results.innerHTML = resultsHtml;
 
-    // Trigger new-agent intake forms
     Object.entries(newAgents).forEach(([ivrName, _], ni) => {
       const div = document.createElement('div');
       div.className = 'new-agent-intake';
@@ -1158,7 +1176,6 @@ async function handleFile(file) {
       document.getElementById('new-agent-intakes').appendChild(div);
     });
 
-    // Reload and re-aggregate
     await loadAgentsFromSupabase();
     await refreshMetrics();
   } catch(e) {
@@ -1206,7 +1223,7 @@ async function saveNewAgent(ni, ivrName) {
   }
 }
 
-// ═══════════════ IN DEVELOPMENT (unchanged from before) ════════════════════
+// ═══════════════ IN DEVELOPMENT ════════════════════
 let devCurrentIvr = null, devDeleteTarget = null, devSignoffState = {supply:'pending',demand:'pending'};
 async function devSbFetch(path, opts={}) {
   const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});
