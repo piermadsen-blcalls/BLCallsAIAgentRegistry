@@ -1109,11 +1109,26 @@ async function handleFile(file) {
   try {
     for (let i = 0; i < payload.length; i += CHUNK) {
       const slice = payload.slice(i, i + CHUNK);
-      await sbFetch('agent_calls_raw?on_conflict=id', {
-        method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify(slice)
-      });
+      // Sanity check: log if this slice has any duplicate ids (shouldn't happen after dedupe)
+      const sliceIds = new Set();
+      const sliceDupes = [];
+      for (const row of slice) {
+        if (sliceIds.has(row.id)) sliceDupes.push(row.id);
+        sliceIds.add(row.id);
+      }
+      if (sliceDupes.length) {
+        console.error('[updater] chunk has duplicate ids:', sliceDupes.slice(0, 5));
+      }
+      try {
+        await sbFetch('agent_calls_raw?on_conflict=id', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify(slice)
+        });
+      } catch(chunkErr) {
+        console.error('[updater] chunk failed at offset', i, 'first row:', slice[0], 'error:', chunkErr.message);
+        throw chunkErr;
+      }
       uploaded += slice.length;
       progressBar.style.width = ((uploaded / payload.length) * 100).toFixed(1) + '%';
       status.innerHTML = `<span style="color:var(--text-2)">Uploaded ${uploaded.toLocaleString()} / ${payload.length.toLocaleString()} rows…</span>`;
