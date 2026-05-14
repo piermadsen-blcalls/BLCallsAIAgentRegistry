@@ -24,7 +24,6 @@
   body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
   .shell { max-width: 1200px; margin: 0 auto; padding: 0 32px 80px; }
 
-  /* Logo bar */
   .logo-bar { padding: 20px 0 0; display: flex; align-items: center; gap: 12px; margin-bottom: 0; }
   .logo-mark { display: flex; align-items: center; gap: 8px; text-decoration: none; }
   .logo-icon { width: 32px; height: 32px; }
@@ -33,7 +32,6 @@
   .logo-divider { width: 1px; height: 16px; background: var(--border-strong); }
   .logo-product { font-family: var(--sans); font-size: 12px; color: var(--text-3); }
 
-  /* Header */
   .site-header { padding: 20px 0 36px; border-bottom: 1px solid var(--border); margin-bottom: 40px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
   .header-left h1 { font-family: var(--serif); font-size: 38px; font-weight: 400; line-height: 1.1; letter-spacing: -0.5px; }
   .header-left h1 em { font-style: italic; color: var(--text-2); }
@@ -45,13 +43,11 @@
   .stat-num { font-family: var(--serif); font-size: 32px; color: var(--text); line-height: 1; }
   .stat-label { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
-  /* Tabs */
   .nav-tabs { display: flex; gap: 0; margin-bottom: 32px; border-bottom: 1px solid var(--border); }
   .nav-tab { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text-2); background: none; border: none; padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
   .nav-tab.active { color: var(--brand-navy); border-bottom-color: var(--brand-mint); }
   .nav-tab:hover:not(.active) { color: var(--text); }
 
-  /* Toolbar */
   .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; align-items: center; justify-content: space-between; }
   .toolbar-left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .toolbar-right { display: flex; gap: 8px; align-items: center; }
@@ -68,7 +64,6 @@
   .preset-btn.active { background: var(--brand-navy); color: var(--surface); }
   .preset-btn:hover:not(.active) { color: var(--brand-navy); }
 
-  /* Grid + card */
   .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; position: relative; animation: fadeIn 0.2s ease both; }
   .agent-card:hover { border-color: var(--border-strong); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
@@ -88,7 +83,6 @@
   .card-chevron { position: absolute; bottom: 18px; right: 18px; font-size: 13px; color: var(--text-3); transition: transform 0.2s; }
   .agent-card.open .card-chevron { transform: rotate(180deg); }
 
-  /* Test call row */
   .card-test-call { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; min-height: 20px; }
   .card-test-link { font-size: 11px; color: var(--brand-navy); text-decoration: none; display: flex; align-items: center; gap: 4px; font-family: var(--sans); }
   .card-test-link:hover { text-decoration: underline; }
@@ -100,14 +94,12 @@
   .card-test-save-btn { font-family: var(--sans); font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 4px; background: var(--brand-navy); color: white; border: none; cursor: pointer; flex-shrink: 0; }
   .card-test-cancel-btn { font-family: var(--sans); font-size: 10px; padding: 3px 7px; border-radius: 4px; background: none; color: var(--text-3); border: 1px solid var(--border-strong); cursor: pointer; flex-shrink: 0; }
 
-  /* Vertical colors */
   .v-home { background: #FFF4ED; color: #7C3D14; }
   .v-insurance { background: #EEF4FF; color: #1E3A8A; }
   .v-legal { background: #F5F3FF; color: #4C1D95; }
   .v-financial { background: #ECFDF5; color: #065F46; }
   .v-other { background: var(--gray-bg); color: var(--text-2); }
 
-  /* Drawer */
   .detail-drawer { background: var(--surface); border: 1px solid var(--brand-navy); border-radius: var(--radius); margin-bottom: 20px; animation: fadeIn 0.18s ease both; }
   .drawer-inner { padding: 28px 32px; }
   .drawer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; gap: 16px; }
@@ -127,12 +119,21 @@
   .qual-disqualify { font-size: 11px; color: var(--coral); font-family: var(--mono); margin-top: 8px; padding: 6px 10px; background: var(--coral-bg); border-radius: var(--radius-sm); }
 
   .canoe-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .canoe-table th { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: left; padding: 0 8px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .canoe-table th { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: left; padding: 0 8px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; background: var(--surface); z-index: 1; }
   .canoe-table td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; line-height: 1.4; }
   .canoe-table tr:last-child td { border-bottom: none; }
   .canoe-table td.muted { color: var(--text-3); font-style: italic; }
   .canoe-none { font-size: 13px; color: var(--text-3); font-style: italic; }
   .canoe-count { font-size: 11px; color: var(--text-3); margin-top: 8px; font-family: var(--mono); }
+
+  /* Scrollable table wrapper — sized to show ~10 rows */
+  .table-scroll { max-height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .table-scroll::-webkit-scrollbar { width: 5px; }
+  .table-scroll::-webkit-scrollbar-track { background: transparent; }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  .table-scroll .canoe-table { border-radius: var(--radius-sm); }
+  .table-scroll .canoe-table th { padding-top: 6px; padding-left: 8px; padding-right: 8px; background: var(--bg); }
+  .table-scroll .canoe-table td { padding-left: 8px; padding-right: 8px; }
 
   .perf-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   .perf-item { padding-right: 14px; }
@@ -141,7 +142,6 @@
   .perf-val.zero { color: var(--text-3); }
   .perf-lbl { font-size: 10px; color: var(--text-3); margin-top: 3px; }
 
-  /* Update panel */
   .update-link { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; font-family: var(--sans); }
   .update-link:hover { color: var(--text-2); }
   .update-panel { display: none; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 24px 28px; margin-top: 16px; }
@@ -162,7 +162,6 @@
   .update-warn { color: var(--amber); }
   .update-new { color: var(--blue); }
 
-  /* New agent intake */
   .new-agent-intake { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
   .intake-agent-name { font-family: var(--serif); font-size: 18px; margin-bottom: 16px; }
   .intake-agent-name span { color: var(--text-2); font-style: italic; }
@@ -173,7 +172,6 @@
   .intake-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; padding-right: 28px; }
   .intake-save-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: var(--radius-sm); background: var(--blue); color: white; border: none; cursor: pointer; margin-top: 4px; }
 
-  /* Footer */
   .page-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   .footer-note { font-size: 11px; color: var(--text-3); }
   .footer-right { display: flex; gap: 14px; align-items: center; }
@@ -183,7 +181,6 @@
   .tab-pane.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 
-  /* In Development tab */
   .dev-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
   .dev-page-title { font-family:var(--serif); font-size:28px; font-weight:400; color:var(--text); }
   .dev-page-sub { font-size:13px; color:var(--text-2); margin-top:3px; }
@@ -309,7 +306,6 @@
     <button class="nav-tab" onclick="switchTab('dev',this)">In development</button>
   </div>
 
-  <!-- AGENTS -->
   <div id="tab-agents" class="tab-pane active">
     <div class="toolbar">
       <div class="toolbar-left">
@@ -348,7 +344,6 @@
     <div id="drawer-container"></div>
   </div>
 
-  <!-- IN DEVELOPMENT -->
   <div id="tab-dev" class="tab-pane">
     <div class="dev-header-row">
       <div>
@@ -371,7 +366,6 @@
     </div>
   </div>
 
-  <!-- UPDATE PANEL -->
   <div class="update-panel" id="update-panel">
     <h3>Update agent data</h3>
     <p>Run the query below in BigQuery, save the results as <strong>CSV (local file)</strong>, then upload it here. Existing rows for the same call IDs will be overwritten — safe to re-upload any date range.</p>
@@ -385,7 +379,6 @@
       </div>
       <pre id="bq-sql" style="font-family:var(--mono);font-size:11.5px;color:var(--text);background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;white-space:pre;line-height:1.7;"></pre>
     </div>
-
     <div class="file-drop" id="file-drop" onclick="document.getElementById('file-input').click()">
       <div class="file-drop-text"><strong>Click to upload</strong> or drag a CSV file here</div>
       <div class="file-drop-sub">Save BigQuery results → CSV (local file)</div>
@@ -530,19 +523,16 @@
 </div>
 
 <script>
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
 const CONFIG = {
   supabaseUrl: 'https://wvnfcxhbztnefhzjhfgg.supabase.co',
   supabaseKey: 'sb_publishable_tvamWw4pqr4dNVYPS0FF5w_cQiBGu0j'
 };
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
 let AGENTS = [];
 let activeRange = { start: null, end: null, label: '—', short: '—' };
 let activeFilter = 'all', openAgent = null, savedScrollY = 0;
 const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function toISO(d) { return d.toISOString().split('T')[0]; }
 function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
 function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : '—'; }
@@ -557,7 +547,6 @@ async function sbFetch(path, options={}) {
   return text ? JSON.parse(text) : null;
 }
 
-// ─── DATE RANGE ───────────────────────────────────────────────────────────────
 function setPreset(days, el) {
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -586,12 +575,9 @@ function updateDataWindowLabels() {
   document.getElementById('last-updated').textContent = 'Data window: ' + w.label;
 }
 
-// ─── METRICS ──────────────────────────────────────────────────────────────────
 function isSent(c) {
   if ((c.advertiser_payin||0) > 0) return true;
-  if ((c.ivr_duration||0) > 0) {
-    return !(c.result === 'connected' && (c.connect_duration||0) > 0);
-  }
+  if ((c.ivr_duration||0) > 0) return !(c.result === 'connected' && (c.connect_duration||0) > 0);
   return false;
 }
 function isPaid(c) { return (c.advertiser_payin||0) > 0; }
@@ -625,20 +611,19 @@ function aggregateForAgent(agent, calls) {
   agent.revenue = revenue;
   agent.margin = margin;
   agent.conversion = raw > 0 ? paid / raw : 0;
-  agent.pubBreakdown = Object.values(pubMap).sort((a,b) => b.raw_calls - a.raw_calls).slice(0, 10);
-  agent.advBreakdown = Object.values(advMap).sort((a,b) => b.revenue - a.revenue).slice(0, 10);
+  // No slice — keep ALL publishers and advertisers
+  agent.pubBreakdown = Object.values(pubMap).sort((a,b) => b.raw_calls - a.raw_calls);
+  agent.advBreakdown = Object.values(advMap).sort((a,b) => b.revenue - a.revenue);
 }
 
 async function refreshMetrics() {
   if (!activeRange.start || !activeRange.end || !AGENTS.length) return;
   const startISO = toISO(activeRange.start), endISO = toISO(activeRange.end);
-
   AGENTS.forEach(a => {
     a.raw_calls = 0; a.sent_calls = 0; a.paid_calls = 0;
     a.revenue = 0; a.margin = 0; a.conversion = 0;
     a.pubBreakdown = []; a.advBreakdown = [];
   });
-
   const callsByIvr = {};
   try {
     const PAGE = 1000;
@@ -656,12 +641,9 @@ async function refreshMetrics() {
       if (batch.length < PAGE) break;
       offset += PAGE;
     }
-
     AGENTS.forEach(a => {
-      const calls = callsByIvr[a.ivrName] || [];
-      aggregateForAgent(a, calls);
+      aggregateForAgent(a, callsByIvr[a.ivrName] || []);
     });
-
     const latest = await sbFetch('agent_calls_raw?select=call_date&order=call_date.desc&limit=1');
     if (latest && latest.length) {
       const d = new Date(latest[0].call_date + 'T00:00:00');
@@ -686,17 +668,13 @@ function recomputeStats() {
   document.getElementById('stat-margin').textContent = '$' + (totalMargin/1000).toFixed(1) + 'k';
 }
 
-// ─── AGENT METADATA ───────────────────────────────────────────────────────────
 async function loadAgentsFromSupabase() {
   try {
     const rows = await sbFetch('agents?select=*&order=name.asc');
     if (!rows || !rows.length) { AGENTS = []; return; }
     AGENTS = rows.map(r => ({
-      ivrName: r.ivr_name,
-      name: r.name,
-      vertical: r.vertical || 'Other',
-      status: r.status || 'live',
-      routingType: r.routing_type || 'unknown',
+      ivrName: r.ivr_name, name: r.name, vertical: r.vertical || 'Other',
+      status: r.status || 'live', routingType: r.routing_type || 'unknown',
       qualifying: Array.isArray(r.qualifying) ? r.qualifying : [],
       disqualify: r.disqualify,
       publisherCampaigns: Array.isArray(r.publisher_campaigns) ? r.publisher_campaigns : [],
@@ -712,7 +690,6 @@ async function loadAgentsFromSupabase() {
   }
 }
 
-// ─── TEST CALL LINKS ──────────────────────────────────────────────────────────
 let testCallMap = {};
 async function loadTestCalls() {
   try {
@@ -762,7 +739,6 @@ function tcCancel(cardId, ivrName) {
   if (row) row.outerHTML = renderTestCallRow(ivrName, cardId);
 }
 
-// ─── RENDER ──────────────────────────────────────────────────────────────────
 function vClass(v) { return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other'; }
 function rtLabel(t) { return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown'; }
 function getEffectiveStatus(a) { if (a.status==='test') return 'test'; if (a.raw_calls>0) return 'live'; return 'inactive'; }
@@ -788,17 +764,31 @@ function renderCard(a, idx) {
   </div>`;
 }
 
+function buildScrollableTable(rows, headers, emptyMsg) {
+  if (!rows.length) return `<div class="canoe-none">${emptyMsg}</div>`;
+  const theadCells = headers.map((h, i) => `<th${i > 0 ? ' style="text-align:right"' : ''}>${h}</th>`).join('');
+  const tbodyRows = rows.map(r => `<tr>${r.map((cell, i) => `<td${i > 0 ? ' style="text-align:right;font-family:var(--mono);font-size:11px;"' : ''}>${cell}</td>`).join('')}</tr>`).join('');
+  const countLabel = rows.length === 1 ? '1 total' : `${rows.length} total`;
+  return `<div class="table-scroll">
+    <table class="canoe-table">
+      <thead><tr>${theadCells}</tr></thead>
+      <tbody>${tbodyRows}</tbody>
+    </table>
+  </div>
+  <div class="canoe-count">${countLabel}</div>`;
+}
+
 function renderDrawer(a) {
   const hasPC = (a.publisherCampaigns||[]).length > 0;
   const hasIVR = (a.ivrTargets||[]).length > 0;
   const hasQual = (a.qualifying||[]).length > 0;
 
   const pcTable = hasPC
-    ? `<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`
+    ? `<div class="table-scroll"><table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table></div><div class="canoe-count">${a.publisherCampaigns.length} total</div>`
     : '<div class="canoe-none">No publisher campaign IVRs configured</div>';
 
   const ivrTable = hasIVR
-    ? `<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`
+    ? `<div class="table-scroll"><table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table></div><div class="canoe-count">${a.ivrTargets.length} total</div>`
     : '<div class="canoe-none">No IVR targets after listing search</div>';
 
   const qualSection = getEffectiveStatus(a)==='test'
@@ -807,37 +797,29 @@ function renderDrawer(a) {
       ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`
       : '<div class="canoe-none">No qualification data on record</div>';
 
-  const pubs = a.pubBreakdown||[];
-  const pubRows = pubs.length
-    ? pubs.map(p => {
-        const conv = fmtPct(p.paid_calls, p.raw_calls);
-        return `<tr>
-          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${conv}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td>
-        </tr>`;
-      }).join('')
-    : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
-  const pubTable = `<table class="canoe-table"><thead><tr><th>Publisher</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${pubRows}</tbody></table>${pubs.length?`<div class="canoe-count">top ${pubs.length} by volume</div>`:''}`;
+  // Publishers — ALL rows, scrollable
+  const pubs = a.pubBreakdown || [];
+  const pubRows = pubs.map(p => [
+    `<span style="max-width:160px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</span>`,
+    p.raw_calls.toLocaleString(),
+    (p.sent_calls||0).toString(),
+    p.paid_calls.toString(),
+    fmtPct(p.paid_calls, p.raw_calls),
+    '$' + Math.round(p.revenue).toLocaleString()
+  ]);
+  const pubTable = buildScrollableTable(pubRows, ['Publisher','Raw','Sent','Paid','Conv.','Revenue'], 'No data for selected period');
 
-  const advs = a.advBreakdown||[];
-  const advRows = advs.length
-    ? advs.map(p => {
-        const conv = fmtPct(p.paid_calls, p.raw_calls);
-        return `<tr>
-          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">${conv}</td>
-          <td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td>
-        </tr>`;
-      }).join('')
-    : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
-  const advTable = `<table class="canoe-table"><thead><tr><th>Advertiser</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${advRows}</tbody></table>${advs.length?`<div class="canoe-count">top ${advs.length} by revenue</div>`:''}`;
+  // Advertisers — ALL rows, scrollable
+  const advs = a.advBreakdown || [];
+  const advRows = advs.map(p => [
+    `<span style="max-width:160px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</span>`,
+    p.raw_calls.toLocaleString(),
+    (p.sent_calls||0).toString(),
+    p.paid_calls.toString(),
+    fmtPct(p.paid_calls, p.raw_calls),
+    '$' + Math.round(p.revenue).toLocaleString()
+  ]);
+  const advTable = buildScrollableTable(advRows, ['Advertiser','Raw','Sent','Paid','Conv.','Revenue'], 'No data for selected period');
 
   const sentOverRaw = fmtPct(a.sent_calls, a.raw_calls);
   const paidOverRaw = fmtPct(a.paid_calls, a.raw_calls);
@@ -890,28 +872,16 @@ function applyFilters() {
   const filtered = AGENTS.filter(a => {
     if (activeFilter !== 'all' && a.vertical !== activeFilter) return false;
     if (!q) return true;
-
     const parts = [
-      a.name,
-      a.vertical,
-      a.routingType,
-      a.notes || '',
-      // Static metadata: publisher campaigns
+      a.name, a.vertical, a.routingType, a.notes || '',
       ...(a.publisherCampaigns || []).flatMap(p => [p.campaign, p.publisher]),
-      // Static metadata: IVR targets (publisher + advertiser names)
       ...(a.ivrTargets || []).flatMap(t => [t.publisher, t.advertiser, t.vertical]),
-      // Live call data: publisher breakdown (populated after metrics load)
       ...(a.pubBreakdown || []).map(p => p.name),
-      // Live call data: advertiser breakdown (populated after metrics load)
       ...(a.advBreakdown || []).map(p => p.name),
-      // Qualifying criteria
       ...(a.qualifying || []),
     ];
-
-    const hay = parts.filter(Boolean).join(' ').toLowerCase();
-    return hay.includes(q);
+    return parts.filter(Boolean).join(' ').toLowerCase().includes(q);
   });
-
   const sortedAgents = getSorted(filtered);
   document.getElementById('agents-grid').innerHTML = sortedAgents.length
     ? sortedAgents.map(a => renderCard(a, AGENTS.indexOf(a))).join('')
@@ -943,7 +913,6 @@ function closeDrawer(e) {
   window.scrollTo({top: savedScrollY, behavior:'smooth'});
 }
 
-// ─── TABS ────────────────────────────────────────────────────────────────────
 function switchTab(id, el) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
@@ -951,7 +920,6 @@ function switchTab(id, el) {
   document.getElementById('tab-' + id).classList.add('active');
 }
 
-// ─── BIGQUERY HELPER ─────────────────────────────────────────────────────────
 function buildBQSQL() {
   const today = new Date(); today.setHours(0,0,0,0);
   const end = new Date(today); end.setDate(end.getDate() - 1);
@@ -982,34 +950,21 @@ function copySQL(btn) {
   });
 }
 
-// ─── CSV UPLOAD ──────────────────────────────────────────────────────────────
 function toggleUpdatePanel() { document.getElementById('update-panel').classList.toggle('open'); }
 
 function parseCSV(text) {
-  const rows = [];
-  let cur = '', row = [], inQ = false;
+  const rows = []; let cur = '', row = [], inQ = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    if (inQ) {
-      if (ch === '"') {
-        if (text[i+1] === '"') { cur += '"'; i++; }
-        else { inQ = false; }
-      } else cur += ch;
-    } else {
-      if (ch === '"') inQ = true;
-      else if (ch === ',') { row.push(cur); cur = ''; }
-      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
-      else if (ch === '\r') { /* skip */ }
-      else cur += ch;
-    }
+    if (inQ) { if (ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else{inQ=false;}}else cur+=ch; }
+    else { if(ch==='"')inQ=true; else if(ch===','){row.push(cur);cur='';} else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';} else if(ch!=='\r')cur+=ch; }
   }
   if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
   return rows;
 }
 
 function setupFileUpload() {
-  const drop = document.getElementById('file-drop');
-  const input = document.getElementById('file-input');
+  const drop = document.getElementById('file-drop'), input = document.getElementById('file-input');
   input.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
   ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); }));
   ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('dragover'); }));
@@ -1017,273 +972,68 @@ function setupFileUpload() {
 }
 
 async function handleFile(file) {
-  const status = document.getElementById('file-status');
-  const results = document.getElementById('update-results');
-  const progressWrap = document.getElementById('progress-wrap');
-  const progressBar = document.getElementById('progress-bar');
-  document.getElementById('new-agent-intakes').innerHTML = '';
-  results.innerHTML = '';
-
-  status.innerHTML = `<span style="color:var(--text-2)">Reading <strong>${file.name}</strong> (${(file.size/1024/1024).toFixed(2)} MB)…</span>`;
-
-  let text;
-  try { text = await file.text(); }
-  catch(e) { status.innerHTML = `<span style="color:var(--coral)">Could not read file: ${e.message}</span>`; return; }
-
-  status.innerHTML = `<span style="color:var(--text-2)">Parsing CSV…</span>`;
-  const rows = parseCSV(text);
-  if (rows.length < 2) { status.innerHTML = `<span style="color:var(--coral)">Empty file or no data rows.</span>`; return; }
-
-  const headerRow = rows[0].map(c => c.trim().toLowerCase());
-  const idx = {
-    id: headerRow.indexOf('id'),
-    ivr_name: headerRow.indexOf('ivr_name'),
-    created_at: headerRow.indexOf('created_at'),
-    call_date: headerRow.indexOf('call_date'),
-    publisher_name: headerRow.indexOf('publisher_name'),
-    advertiser_name: headerRow.indexOf('advertiser_name'),
-    ivr_duration: headerRow.indexOf('ivr_duration'),
-    connect_duration: headerRow.indexOf('connect_duration'),
-    advertiser_payin: headerRow.indexOf('advertiser_payin'),
-    publisher_payout: headerRow.indexOf('publisher_payout'),
-    result: headerRow.indexOf('result')
-  };
-  const missing = Object.entries(idx).filter(([k,v]) => v === -1).map(([k]) => k);
-  if (missing.length) {
-    status.innerHTML = `<span style="color:var(--coral)">Missing columns: ${missing.join(', ')}. Found: ${headerRow.join(', ')}</span>`;
-    return;
-  }
-
-  const dataRows = rows.slice(1).filter(r => r.length >= headerRow.length && r[idx.id]);
-  status.innerHTML = `<span style="color:var(--text-2)">Found <strong>${dataRows.length.toLocaleString()}</strong> rows. Deduplicating…</span>`;
-
-  const knownIvrs = new Set(AGENTS.map(a => a.ivrName));
-  const newAgents = {};
-  const byId = new Map();
-  let skippedNoId = 0;
-  for (const r of dataRows) {
-    const rowId = (r[idx.id] || '').trim();
-    const ivrName = (r[idx.ivr_name] || '').trim();
-    if (!rowId) { skippedNoId++; continue; }
-    if (!ivrName) continue;
-    if (!knownIvrs.has(ivrName) && !newAgents[ivrName]) newAgents[ivrName] = r;
-    byId.set(rowId, {
-      id: rowId,
-      ivr_name: ivrName,
-      created_at: r[idx.created_at],
-      call_date: r[idx.call_date],
-      publisher_name: (r[idx.publisher_name] || '').trim() || null,
-      advertiser_name: (r[idx.advertiser_name] || '').trim() || null,
-      ivr_duration: parseInt(r[idx.ivr_duration]) || 0,
-      connect_duration: parseInt(r[idx.connect_duration]) || 0,
-      advertiser_payin: parseFloat(r[idx.advertiser_payin]) || 0,
-      publisher_payout: parseFloat(r[idx.publisher_payout]) || 0,
-      result: (r[idx.result] || '').trim() || null
-    });
-  }
-  const payload = Array.from(byId.values());
-  const duplicatesRemoved = dataRows.length - payload.length - skippedNoId;
-  status.innerHTML = `<span style="color:var(--text-2)">Uploading <strong>${payload.length.toLocaleString()}</strong> unique rows${duplicatesRemoved>0?` (deduped ${duplicatesRemoved})`:''}…</span>`;
-
-  progressWrap.style.display = 'block';
-  const CHUNK = 1000;
-  let uploaded = 0;
-  try {
-    for (let i = 0; i < payload.length; i += CHUNK) {
-      const slice = payload.slice(i, i + CHUNK);
-      await sbFetch('agent_calls_raw?on_conflict=id', {
-        method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify(slice)
-      });
-      uploaded += slice.length;
-      progressBar.style.width = ((uploaded / payload.length) * 100).toFixed(1) + '%';
-      status.innerHTML = `<span style="color:var(--text-2)">Uploaded ${uploaded.toLocaleString()} / ${payload.length.toLocaleString()} rows…</span>`;
-    }
-    status.innerHTML = `<span style="color:var(--teal)">✓ Uploaded ${uploaded.toLocaleString()} call rows to Supabase.</span>`;
-    progressBar.style.width = '100%';
-
-    let resultsHtml = `<div class="update-ok">✓ ${uploaded.toLocaleString()} call rows saved.</div>`;
-    const newCount = Object.keys(newAgents).length;
-    if (newCount) resultsHtml += `<div class="update-new" style="margin-top:8px">⊕ ${newCount} new agent${newCount>1?'s':''} detected — complete intake below.</div>`;
-    results.innerHTML = resultsHtml;
-
-    Object.entries(newAgents).forEach(([ivrName, _], ni) => {
-      const div = document.createElement('div');
-      div.className = 'new-agent-intake';
-      div.innerHTML = `<div class="intake-agent-name">New agent detected: <span>${ivrName}</span></div>
-        <div class="intake-field"><label class="intake-label">Display name</label><input class="intake-input" type="text" id="intake-name-${ni}" value="${ivrName.replace(/^ASCND\s*AI?\s*Agent\s*-\s*/i,'').replace(/\s*-\s*Outgoing\s*$/i,'').trim()}"></div>
-        <div class="intake-field"><label class="intake-label">Vertical</label><select class="intake-select" id="intake-vertical-${ni}"><option>Home Services</option><option>Insurance</option><option>Legal</option><option>Financial</option><option>Other</option></select></div>
-        <div class="intake-field"><label class="intake-label">Routing type</label><select class="intake-select" id="intake-routing-${ni}"><option value="publisher-led">Publisher-led</option><option value="advertiser-led">Advertiser-led</option><option value="both">Both</option><option value="test-only">Internal / test</option></select></div>
-        <div class="intake-field"><label class="intake-label">Qualifying criteria (one per line)</label><textarea class="intake-textarea" id="intake-qual-${ni}"></textarea></div>
-        <div class="intake-field"><label class="intake-label">Hard disqualify keywords (optional)</label><input class="intake-input" type="text" id="intake-dq-${ni}"></div>
-        <div class="intake-field"><label class="intake-label">Publisher Campaign IVRs (campaign — publisher, one per line)</label><textarea class="intake-textarea" id="intake-pc-${ni}"></textarea></div>
-        <div class="intake-field"><label class="intake-label">IVR Targets After Listing Search (publisher | advertiser | vertical, one per line)</label><textarea class="intake-textarea" id="intake-ivr-${ni}"></textarea></div>
-        <div class="intake-field"><label class="intake-label">Notes (optional)</label><input class="intake-input" type="text" id="intake-notes-${ni}"></div>
-        <button class="intake-save-btn" id="intake-save-${ni}" onclick="saveNewAgent(${ni},'${ivrName.replace(/'/g,"\\'")}')">Add to registry</button>`;
-      document.getElementById('new-agent-intakes').appendChild(div);
-    });
-
-    await loadAgentsFromSupabase();
-    await refreshMetrics();
-  } catch(e) {
-    status.innerHTML = `<span style="color:var(--coral)">Upload failed: ${e.message}</span>`;
-  }
+  const status=document.getElementById('file-status'),results=document.getElementById('update-results'),progressWrap=document.getElementById('progress-wrap'),progressBar=document.getElementById('progress-bar');
+  document.getElementById('new-agent-intakes').innerHTML=''; results.innerHTML='';
+  status.innerHTML=`<span style="color:var(--text-2)">Reading <strong>${file.name}</strong> (${(file.size/1024/1024).toFixed(2)} MB)…</span>`;
+  let text; try{text=await file.text();}catch(e){status.innerHTML=`<span style="color:var(--coral)">Could not read file: ${e.message}</span>`;return;}
+  status.innerHTML=`<span style="color:var(--text-2)">Parsing CSV…</span>`;
+  const rows=parseCSV(text);
+  if(rows.length<2){status.innerHTML=`<span style="color:var(--coral)">Empty file or no data rows.</span>`;return;}
+  const headerRow=rows[0].map(c=>c.trim().toLowerCase());
+  const idx={id:headerRow.indexOf('id'),ivr_name:headerRow.indexOf('ivr_name'),created_at:headerRow.indexOf('created_at'),call_date:headerRow.indexOf('call_date'),publisher_name:headerRow.indexOf('publisher_name'),advertiser_name:headerRow.indexOf('advertiser_name'),ivr_duration:headerRow.indexOf('ivr_duration'),connect_duration:headerRow.indexOf('connect_duration'),advertiser_payin:headerRow.indexOf('advertiser_payin'),publisher_payout:headerRow.indexOf('publisher_payout'),result:headerRow.indexOf('result')};
+  const missing=Object.entries(idx).filter(([k,v])=>v===-1).map(([k])=>k);
+  if(missing.length){status.innerHTML=`<span style="color:var(--coral)">Missing columns: ${missing.join(', ')}. Found: ${headerRow.join(', ')}</span>`;return;}
+  const dataRows=rows.slice(1).filter(r=>r.length>=headerRow.length&&r[idx.id]);
+  status.innerHTML=`<span style="color:var(--text-2)">Found <strong>${dataRows.length.toLocaleString()}</strong> rows. Deduplicating…</span>`;
+  const knownIvrs=new Set(AGENTS.map(a=>a.ivrName));
+  const newAgents={},byId=new Map();let skippedNoId=0;
+  for(const r of dataRows){const rowId=(r[idx.id]||'').trim(),ivrName=(r[idx.ivr_name]||'').trim();if(!rowId){skippedNoId++;continue;}if(!ivrName)continue;if(!knownIvrs.has(ivrName)&&!newAgents[ivrName])newAgents[ivrName]=r;byId.set(rowId,{id:rowId,ivr_name:ivrName,created_at:r[idx.created_at],call_date:r[idx.call_date],publisher_name:(r[idx.publisher_name]||'').trim()||null,advertiser_name:(r[idx.advertiser_name]||'').trim()||null,ivr_duration:parseInt(r[idx.ivr_duration])||0,connect_duration:parseInt(r[idx.connect_duration])||0,advertiser_payin:parseFloat(r[idx.advertiser_payin])||0,publisher_payout:parseFloat(r[idx.publisher_payout])||0,result:(r[idx.result]||'').trim()||null});}
+  const payload=Array.from(byId.values()),duplicatesRemoved=dataRows.length-payload.length-skippedNoId;
+  status.innerHTML=`<span style="color:var(--text-2)">Uploading <strong>${payload.length.toLocaleString()}</strong> unique rows${duplicatesRemoved>0?` (deduped ${duplicatesRemoved})`:''}…</span>`;
+  progressWrap.style.display='block';
+  const CHUNK=1000;let uploaded=0;
+  try{
+    for(let i=0;i<payload.length;i+=CHUNK){const slice=payload.slice(i,i+CHUNK);await sbFetch('agent_calls_raw?on_conflict=id',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(slice)});uploaded+=slice.length;progressBar.style.width=((uploaded/payload.length)*100).toFixed(1)+'%';status.innerHTML=`<span style="color:var(--text-2)">Uploaded ${uploaded.toLocaleString()} / ${payload.length.toLocaleString()} rows…</span>`;}
+    status.innerHTML=`<span style="color:var(--teal)">✓ Uploaded ${uploaded.toLocaleString()} call rows to Supabase.</span>`;progressBar.style.width='100%';
+    let resultsHtml=`<div class="update-ok">✓ ${uploaded.toLocaleString()} call rows saved.</div>`;
+    const newCount=Object.keys(newAgents).length;
+    if(newCount)resultsHtml+=`<div class="update-new" style="margin-top:8px">⊕ ${newCount} new agent${newCount>1?'s':''} detected — complete intake below.</div>`;
+    results.innerHTML=resultsHtml;
+    Object.entries(newAgents).forEach(([ivrName,_],ni)=>{const div=document.createElement('div');div.className='new-agent-intake';div.innerHTML=`<div class="intake-agent-name">New agent detected: <span>${ivrName}</span></div><div class="intake-field"><label class="intake-label">Display name</label><input class="intake-input" type="text" id="intake-name-${ni}" value="${ivrName.replace(/^ASCND\s*AI?\s*Agent\s*-\s*/i,'').replace(/\s*-\s*Outgoing\s*$/i,'').trim()}"></div><div class="intake-field"><label class="intake-label">Vertical</label><select class="intake-select" id="intake-vertical-${ni}"><option>Home Services</option><option>Insurance</option><option>Legal</option><option>Financial</option><option>Other</option></select></div><div class="intake-field"><label class="intake-label">Routing type</label><select class="intake-select" id="intake-routing-${ni}"><option value="publisher-led">Publisher-led</option><option value="advertiser-led">Advertiser-led</option><option value="both">Both</option><option value="test-only">Internal / test</option></select></div><div class="intake-field"><label class="intake-label">Qualifying criteria (one per line)</label><textarea class="intake-textarea" id="intake-qual-${ni}"></textarea></div><div class="intake-field"><label class="intake-label">Hard disqualify keywords (optional)</label><input class="intake-input" type="text" id="intake-dq-${ni}"></div><div class="intake-field"><label class="intake-label">Publisher Campaign IVRs (campaign — publisher, one per line)</label><textarea class="intake-textarea" id="intake-pc-${ni}"></textarea></div><div class="intake-field"><label class="intake-label">IVR Targets After Listing Search (publisher | advertiser | vertical, one per line)</label><textarea class="intake-textarea" id="intake-ivr-${ni}"></textarea></div><div class="intake-field"><label class="intake-label">Notes (optional)</label><input class="intake-input" type="text" id="intake-notes-${ni}"></div><button class="intake-save-btn" id="intake-save-${ni}" onclick="saveNewAgent(${ni},'${ivrName.replace(/'/g,"\\'")}')">Add to registry</button>`;document.getElementById('new-agent-intakes').appendChild(div);});
+    await loadAgentsFromSupabase();await refreshMetrics();
+  }catch(e){status.innerHTML=`<span style="color:var(--coral)">Upload failed: ${e.message}</span>`;}
 }
 
 async function saveNewAgent(ni, ivrName) {
-  const btn = document.getElementById('intake-save-' + ni);
-  const name = document.getElementById('intake-name-' + ni).value.trim() || ivrName;
-  const vertical = document.getElementById('intake-vertical-' + ni).value;
-  const routing = document.getElementById('intake-routing-' + ni).value;
-  const qualText = document.getElementById('intake-qual-' + ni).value.trim();
-  const qualifying = qualText ? qualText.split('\n').map(l=>l.trim()).filter(Boolean) : [];
-  const disqualify = document.getElementById('intake-dq-' + ni).value.trim() || null;
-  const pcText = document.getElementById('intake-pc-' + ni).value.trim();
-  const publisherCampaigns = pcText ? pcText.split('\n').map(l=>l.trim()).filter(Boolean).map(line => {
-    const parts = line.split('—').map(s=>s.trim());
-    return { campaign: parts[0]||line, publisher: parts[1]||'' };
-  }) : [];
-  const ivrText = document.getElementById('intake-ivr-' + ni).value.trim();
-  const ivrTargets = ivrText ? ivrText.split('\n').map(l=>l.trim()).filter(Boolean).map(line => {
-    const parts = line.split('|').map(s=>s.trim());
-    return { publisher: parts[0]||'', advertiser: parts[1]||'', vertical: parts[2]||'', campaign: '' };
-  }) : [];
-  const notes = document.getElementById('intake-notes-' + ni).value.trim() || null;
-
-  btn.disabled = true; btn.textContent = 'Saving…';
-  try {
-    await sbFetch('agents?on_conflict=ivr_name', {
-      method: 'POST',
-      headers: { 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({
-        ivr_name: ivrName, name, vertical, status: 'live', routing_type: routing,
-        qualifying, disqualify, publisher_campaigns: publisherCampaigns,
-        ivr_targets: ivrTargets, notes, updated_at: new Date().toISOString()
-      })
-    });
-    btn.textContent = '✓ Added'; btn.style.background = 'var(--teal)';
-    await loadAgentsFromSupabase();
-    await refreshMetrics();
-  } catch(e) {
-    alert('Could not save: ' + e.message);
-    btn.disabled = false; btn.textContent = 'Add to registry';
-  }
+  const btn=document.getElementById('intake-save-'+ni),name=document.getElementById('intake-name-'+ni).value.trim()||ivrName,vertical=document.getElementById('intake-vertical-'+ni).value,routing=document.getElementById('intake-routing-'+ni).value,qualText=document.getElementById('intake-qual-'+ni).value.trim(),qualifying=qualText?qualText.split('\n').map(l=>l.trim()).filter(Boolean):[],disqualify=document.getElementById('intake-dq-'+ni).value.trim()||null,pcText=document.getElementById('intake-pc-'+ni).value.trim(),publisherCampaigns=pcText?pcText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const parts=line.split('—').map(s=>s.trim());return{campaign:parts[0]||line,publisher:parts[1]||''};}):[],ivrText=document.getElementById('intake-ivr-'+ni).value.trim(),ivrTargets=ivrText?ivrText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const parts=line.split('|').map(s=>s.trim());return{publisher:parts[0]||'',advertiser:parts[1]||'',vertical:parts[2]||'',campaign:''};}):[],notes=document.getElementById('intake-notes-'+ni).value.trim()||null;
+  btn.disabled=true;btn.textContent='Saving…';
+  try{await sbFetch('agents?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,name,vertical,status:'live',routing_type:routing,qualifying,disqualify,publisher_campaigns:publisherCampaigns,ivr_targets:ivrTargets,notes,updated_at:new Date().toISOString()})});btn.textContent='✓ Added';btn.style.background='var(--teal)';await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save: '+e.message);btn.disabled=false;btn.textContent='Add to registry';}
 }
 
 // ═══════════════ IN DEVELOPMENT ════════════════════
-let devCurrentIvr = null, devDeleteTarget = null, devSignoffState = {supply:'pending',demand:'pending'};
-async function devSbFetch(path, opts={}) {
-  const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});
-  if (!res.ok){const err=await res.text();throw new Error(`Supabase error: ${err}`);}
-  const text=await res.text(); return text?JSON.parse(text):null;
-}
+let devCurrentIvr=null,devDeleteTarget=null,devSignoffState={supply:'pending',demand:'pending'};
+async function devSbFetch(path,opts={}){const res=await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});if(!res.ok){const err=await res.text();throw new Error(`Supabase error: ${err}`);}const text=await res.text();return text?JSON.parse(text):null;}
 function devOpenModal(id){document.getElementById(id).style.display='flex';}
 function devCloseModal(id){document.getElementById(id).style.display='none';}
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.dev-modal-backdrop').forEach(b=>{b.addEventListener('click',e=>{if(e.target===b)b.style.display='none';});});
-});
+document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.dev-modal-backdrop').forEach(b=>{b.addEventListener('click',e=>{if(e.target===b)b.style.display='none';});});});
 function devToggleMenu(id,e){e.stopPropagation();const menu=document.getElementById(id);const isOpen=menu.classList.contains('open');document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));if(!isOpen)menu.classList.add('open');}
 document.addEventListener('click',()=>{document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));});
 function devShowLed(v){document.getElementById('dev-cond-adv').className='dev-cond-section'+(v==='advertiser'||v==='both'?' visible':'');document.getElementById('dev-cond-pub').className='dev-cond-section'+(v==='publisher'||v==='both'?' visible':'');}
 function devToggleRepingFields(){const val=document.getElementById('dev-f-ondq').value;document.getElementById('dev-reping-fields').className='dev-reping-fields'+(val==='reping'?' visible':'');}
 function devGetLed(){const sel=document.querySelector('input[name="dev-led"]:checked');return sel?sel.value:'';}
-async function devLoadIvrs(){
-  try{const rows=await devSbFetch('ivr_development?order=created_at.desc&select=*');const list=document.getElementById('dev-ivr-list');list.innerHTML='';if(!rows||rows.length===0){list.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">No IVRs in development yet.</div>';return;}rows.forEach(row=>list.appendChild(devBuildCard(row)));}catch(e){document.getElementById('dev-ivr-list').innerHTML=`<div style="padding:20px;color:#A32D2D;font-size:13px;">Could not load IVRs: ${e.message}</div>`;}
-}
-function devBuildCard(row){
-  const c=document.createElement('div');c.className='dev-ivr-card';c.id='dev-card-'+row.id;
-  const badgeClass={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'}[row.status]||'dev-badge-draft';
-  const badgeLabel={draft:'Draft',review:'In review',approved:'Approved',live:'Live'}[row.status]||'Draft';
-  const date=row.created_at?new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
-  const meta=[row.vertical,row.led_by?(row.led_by.charAt(0).toUpperCase()+row.led_by.slice(1)+'-led'):'',date?'Started '+date:''].filter(Boolean).join(' · ');
-  const menuId='dev-menu-'+row.id;
-  c.innerHTML=`<div class="dev-card-menu-col"><button class="dev-dots-btn" onclick="devToggleMenu('${menuId}',event)"><div class="dev-dot"></div><div class="dev-dot"></div><div class="dev-dot"></div></button><div class="dev-dropdown" id="${menuId}"><button class="dev-dropdown-item dev-danger" onclick="devConfirmDelete('${row.id}','${row.name.replace(/'/g,"\\'")}')">Delete</button></div></div><div class="dev-card-body" onclick="devOpenDetail('${row.id}')"><div class="dev-card-name">${row.name}</div><div class="dev-card-meta">${meta}</div></div><div class="dev-card-right"><span class="dev-badge ${badgeClass}">${badgeLabel}</span><span class="dev-card-chevron">›</span></div>`;
-  return c;
-}
-async function devSubmitNew(){
-  const name=document.getElementById('dev-f-name').value.trim();
-  if(!name){document.getElementById('dev-f-name').focus();return;}
-  const btn=document.getElementById('dev-save-btn');btn.disabled=true;btn.textContent='Saving…';
-  const payload={name,vertical:document.getElementById('dev-f-vertical').value.trim()||null,qualifying_for:document.getElementById('dev-f-qualifying').value.trim()||null,led_by:devGetLed()||null,advertisers:document.getElementById('dev-f-advertisers')?.value.trim()||null,publishers:document.getElementById('dev-f-publishers')?.value.trim()||null,hard_dq:document.getElementById('dev-f-harddq').value.trim()||null,data_collected:document.getElementById('dev-f-datacollected').value.trim()||null,expected_duration:document.getElementById('dev-f-duration').value.trim()||null,on_dq:document.getElementById('dev-f-ondq').value||null,reping_logic:document.getElementById('dev-f-repinglogic')?.value.trim()||null,notes:document.getElementById('dev-f-notes').value.trim()||null,status:'draft'};
-  try{await devSbFetch('ivr_development',{method:'POST',body:JSON.stringify(payload)});devCloseModal('dev-modal-new');devResetNewForm();await devLoadIvrs();}catch(e){alert('Could not save: '+e.message);}
-  btn.disabled=false;btn.textContent='Save';
-}
-function devResetNewForm(){
-  ['dev-f-name','dev-f-vertical','dev-f-qualifying','dev-f-advertisers','dev-f-publishers','dev-f-harddq','dev-f-datacollected','dev-f-duration','dev-f-notes','dev-f-repinglogic'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('dev-f-ondq').value='';
-  document.querySelectorAll('input[name="dev-led"]').forEach(r=>r.checked=false);
-  document.getElementById('dev-cond-adv').className='dev-cond-section';
-  document.getElementById('dev-cond-pub').className='dev-cond-section';
-  document.getElementById('dev-reping-fields').className='dev-reping-fields';
-}
-async function devOpenDetail(ivrId,alreadyOpen){
-  try{const rows=await devSbFetch(`ivr_development?id=eq.${ivrId}&select=*`);if(!rows||!rows.length)return;devCurrentIvr=rows[0];const signoffs=await devSbFetch(`ivr_signoffs?ivr_id=eq.${ivrId}&select=*`);const recordings=await devSbFetch(`ivr_recordings?ivr_id=eq.${ivrId}&order=uploaded_at.desc&select=*`);devPopulateDetail(devCurrentIvr,signoffs||[],recordings||[]);if(!alreadyOpen)devOpenModal('dev-modal-detail');}catch(e){alert('Could not load IVR: '+e.message);}
-}
-function devPopulateDetail(row,signoffs,recordings){
-  const statusLabels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};
-  const badgeClasses={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'};
-  document.getElementById('dev-detail-title').textContent=row.name;
-  const badge=document.getElementById('dev-detail-badge');badge.textContent=statusLabels[row.status]||'Draft';badge.className='dev-badge '+(badgeClasses[row.status]||'dev-badge-draft');
-  const date=row.created_at?new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
-  document.getElementById('dev-detail-meta').textContent=[row.vertical,row.led_by?(row.led_by.charAt(0).toUpperCase()+row.led_by.slice(1)+'-led'):'',date?'Started '+date:''].filter(Boolean).join(' · ');
-  const steps=['draft','review','approved','live'];const labels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};const cur=steps.indexOf(row.status);
-  document.getElementById('dev-detail-rail').innerHTML=steps.map((s,i)=>{const cls=i<cur?'dev-status-step dev-done':i===cur?'dev-status-step dev-active':'dev-status-step';return(i>0?'<div class="dev-status-line"></div>':'')+`<div class="${cls}"><div class="dev-status-dot"></div>${labels[s]}</div>`;}).join('');
-  const summaryFields=[{key:'Qualifying for',val:row.qualifying_for},{key:'Expected call duration',val:row.expected_duration},{key:'Hard disqualification',val:row.hard_dq},{key:'Data passed on qualified call',val:row.data_collected},{key:'On disqualification',val:row.on_dq},{key:'Repinging',val:row.reping_logic},{key:'Advertisers',val:row.advertisers},{key:'Publishers',val:row.publishers},{key:'Notes',val:row.notes}].filter(f=>f.val);
-  document.getElementById('dev-detail-summary').innerHTML=summaryFields.map(f=>`<div class="dev-summary-item"><div class="dev-summary-key">${f.key}</div><div class="dev-summary-val">${f.val}</div></div>`).join('')||'<div style="font-size:13px;color:var(--text-3);font-style:italic">No requirements entered yet.</div>';
-  const recList=document.getElementById('dev-detail-recordings');
-  const linkIcon=`<svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px"><path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
-  recList.innerHTML=recordings.length?recordings.map(r=>`<div class="dev-upload-item"><div class="dev-upload-item-left"><div class="dev-upload-icon">${linkIcon}</div><div class="dev-upload-info"><div class="dev-upload-name">${r.filename}</div><a class="dev-upload-url" href="${r.filesize||'#'}" target="_blank" rel="noopener">${r.filesize||'No URL'}</a></div></div><a class="dev-btn-open" href="${r.filesize||'#'}" target="_blank" rel="noopener">Open ↗</a></div>`).join(''):'';
-  document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';
-  devSignoffState={supply:'pending',demand:'pending'};signoffs.forEach(s=>{devSignoffState[s.team]=s.decision;});
-  ['supply','demand'].forEach(team=>{
-    const sig=signoffs.find(s=>s.team===team);const badge=document.getElementById('dev-badge-'+team);const block=document.getElementById('dev-sb-'+team);const noteEl=document.getElementById('dev-note-'+team);const btnA=document.getElementById('dev-btn-app-'+team);const btnR=document.getElementById('dev-btn-rej-'+team);
-    block.className='dev-signoff-block';noteEl.value='';noteEl.disabled=false;btnA.disabled=false;btnR.disabled=false;
-    if(sig){noteEl.value=sig.note||'';noteEl.disabled=true;btnA.disabled=true;btnR.disabled=true;if(sig.decision==='approve'){badge.className='dev-sig-badge dev-sig-approved';badge.textContent='Approved';block.className='dev-signoff-block approved';}else{badge.className='dev-sig-badge dev-sig-rejected';badge.textContent='Changes requested';block.className='dev-signoff-block rejected';}}else{badge.className='dev-sig-badge dev-sig-pending';badge.textContent='Pending';}
-  });
-  devCheckLaunch();
-}
-async function devAddRecording(){
-  const label=document.getElementById('dev-link-label').value.trim(),url=document.getElementById('dev-link-url').value.trim();
-  if(!label){document.getElementById('dev-link-label').focus();return;}if(!url){document.getElementById('dev-link-url').focus();return;}
-  const btn=document.querySelector('#dev-add-link-row .dev-btn-primary');btn.disabled=true;btn.textContent='Saving…';
-  try{await devSbFetch('ivr_recordings',{method:'POST',body:JSON.stringify({ivr_id:devCurrentIvr.id,filename:label,filesize:url})});document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';await devOpenDetail(devCurrentIvr.id,true);}catch(e){alert('Could not save link: '+e.message);}
-  btn.disabled=false;btn.textContent='Add link';
-}
-async function devSignoff(team,action){
-  const note=document.getElementById('dev-note-'+team),hint=document.getElementById('dev-hint-'+team);
-  if(!note.value.trim()){note.classList.add('dev-note-required');hint.classList.add('visible');note.focus();return;}
-  note.classList.remove('dev-note-required');hint.classList.remove('visible');
-  try{
-    await devSbFetch('ivr_signoffs',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_id:devCurrentIvr.id,team,decision:action,note:note.value.trim()})});
-    devSignoffState[team]=action;
-    const badge=document.getElementById('dev-badge-'+team),block=document.getElementById('dev-sb-'+team),btnA=document.getElementById('dev-btn-app-'+team),btnR=document.getElementById('dev-btn-rej-'+team);
-    note.disabled=true;btnA.disabled=true;btnR.disabled=true;
-    if(action==='approve'){badge.className='dev-sig-badge dev-sig-approved';badge.textContent='Approved';block.className='dev-signoff-block approved';}else{badge.className='dev-sig-badge dev-sig-rejected';badge.textContent='Changes requested';block.className='dev-signoff-block rejected';}
-    devCheckLaunch();
-    if(devSignoffState.supply==='approve'&&devSignoffState.demand==='approve'){await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'approved'})});devCurrentIvr.status='approved';await devLoadIvrs();}
-  }catch(e){alert('Could not save sign-off: '+e.message);}
-}
-function devCheckLaunch(){
-  const allApproved=devSignoffState.supply==='approve'&&devSignoffState.demand==='approve';
-  const anyRejected=Object.values(devSignoffState).includes('reject');
-  const pending=Object.values(devSignoffState).filter(v=>v==='pending').length;
-  const btn=document.getElementById('dev-btn-launch'),gate=document.getElementById('dev-launch-gate'),icon=document.getElementById('dev-gate-icon'),text=document.getElementById('dev-gate-text');
-  if(allApproved){btn.disabled=false;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:var(--teal-bg);color:var(--teal);border:1px solid #5DCAA5;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✓';text.textContent='Both teams have approved. Ready to mark for launch.';}
-  else if(anyRejected){btn.disabled=true;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✕';text.textContent='Changes have been requested. Resolve before launch.';}
-  else{btn.disabled=true;gate.style.cssText='';icon.textContent='⏳';text.textContent=`Waiting for ${pending} more sign-off${pending!==1?'s':''} before launch is available.`;}
-}
-async function devMarkLive(){
-  if(!devCurrentIvr)return;
-  try{await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'live'})});devCloseModal('dev-modal-detail');await devLoadIvrs();}catch(e){alert('Could not update status: '+e.message);}
-}
+async function devLoadIvrs(){try{const rows=await devSbFetch('ivr_development?order=created_at.desc&select=*');const list=document.getElementById('dev-ivr-list');list.innerHTML='';if(!rows||rows.length===0){list.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">No IVRs in development yet.</div>';return;}rows.forEach(row=>list.appendChild(devBuildCard(row)));}catch(e){document.getElementById('dev-ivr-list').innerHTML=`<div style="padding:20px;color:#A32D2D;font-size:13px;">Could not load IVRs: ${e.message}</div>`;}}
+function devBuildCard(row){const c=document.createElement('div');c.className='dev-ivr-card';c.id='dev-card-'+row.id;const badgeClass={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'}[row.status]||'dev-badge-draft';const badgeLabel={draft:'Draft',review:'In review',approved:'Approved',live:'Live'}[row.status]||'Draft';const date=row.created_at?new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';const meta=[row.vertical,row.led_by?(row.led_by.charAt(0).toUpperCase()+row.led_by.slice(1)+'-led'):'',date?'Started '+date:''].filter(Boolean).join(' · ');const menuId='dev-menu-'+row.id;c.innerHTML=`<div class="dev-card-menu-col"><button class="dev-dots-btn" onclick="devToggleMenu('${menuId}',event)"><div class="dev-dot"></div><div class="dev-dot"></div><div class="dev-dot"></div></button><div class="dev-dropdown" id="${menuId}"><button class="dev-dropdown-item dev-danger" onclick="devConfirmDelete('${row.id}','${row.name.replace(/'/g,"\\'")}')">Delete</button></div></div><div class="dev-card-body" onclick="devOpenDetail('${row.id}')"><div class="dev-card-name">${row.name}</div><div class="dev-card-meta">${meta}</div></div><div class="dev-card-right"><span class="dev-badge ${badgeClass}">${badgeLabel}</span><span class="dev-card-chevron">›</span></div>`;return c;}
+async function devSubmitNew(){const name=document.getElementById('dev-f-name').value.trim();if(!name){document.getElementById('dev-f-name').focus();return;}const btn=document.getElementById('dev-save-btn');btn.disabled=true;btn.textContent='Saving…';const payload={name,vertical:document.getElementById('dev-f-vertical').value.trim()||null,qualifying_for:document.getElementById('dev-f-qualifying').value.trim()||null,led_by:devGetLed()||null,advertisers:document.getElementById('dev-f-advertisers')?.value.trim()||null,publishers:document.getElementById('dev-f-publishers')?.value.trim()||null,hard_dq:document.getElementById('dev-f-harddq').value.trim()||null,data_collected:document.getElementById('dev-f-datacollected').value.trim()||null,expected_duration:document.getElementById('dev-f-duration').value.trim()||null,on_dq:document.getElementById('dev-f-ondq').value||null,reping_logic:document.getElementById('dev-f-repinglogic')?.value.trim()||null,notes:document.getElementById('dev-f-notes').value.trim()||null,status:'draft'};try{await devSbFetch('ivr_development',{method:'POST',body:JSON.stringify(payload)});devCloseModal('dev-modal-new');devResetNewForm();await devLoadIvrs();}catch(e){alert('Could not save: '+e.message);}btn.disabled=false;btn.textContent='Save';}
+function devResetNewForm(){['dev-f-name','dev-f-vertical','dev-f-qualifying','dev-f-advertisers','dev-f-publishers','dev-f-harddq','dev-f-datacollected','dev-f-duration','dev-f-notes','dev-f-repinglogic'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('dev-f-ondq').value='';document.querySelectorAll('input[name="dev-led"]').forEach(r=>r.checked=false);document.getElementById('dev-cond-adv').className='dev-cond-section';document.getElementById('dev-cond-pub').className='dev-cond-section';document.getElementById('dev-reping-fields').className='dev-reping-fields';}
+async function devOpenDetail(ivrId,alreadyOpen){try{const rows=await devSbFetch(`ivr_development?id=eq.${ivrId}&select=*`);if(!rows||!rows.length)return;devCurrentIvr=rows[0];const signoffs=await devSbFetch(`ivr_signoffs?ivr_id=eq.${ivrId}&select=*`);const recordings=await devSbFetch(`ivr_recordings?ivr_id=eq.${ivrId}&order=uploaded_at.desc&select=*`);devPopulateDetail(devCurrentIvr,signoffs||[],recordings||[]);if(!alreadyOpen)devOpenModal('dev-modal-detail');}catch(e){alert('Could not load IVR: '+e.message);}}
+function devPopulateDetail(row,signoffs,recordings){const statusLabels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};const badgeClasses={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'};document.getElementById('dev-detail-title').textContent=row.name;const badge=document.getElementById('dev-detail-badge');badge.textContent=statusLabels[row.status]||'Draft';badge.className='dev-badge '+(badgeClasses[row.status]||'dev-badge-draft');const date=row.created_at?new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';document.getElementById('dev-detail-meta').textContent=[row.vertical,row.led_by?(row.led_by.charAt(0).toUpperCase()+row.led_by.slice(1)+'-led'):'',date?'Started '+date:''].filter(Boolean).join(' · ');const steps=['draft','review','approved','live'];const labels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};const cur=steps.indexOf(row.status);document.getElementById('dev-detail-rail').innerHTML=steps.map((s,i)=>{const cls=i<cur?'dev-status-step dev-done':i===cur?'dev-status-step dev-active':'dev-status-step';return(i>0?'<div class="dev-status-line"></div>':'')+`<div class="${cls}"><div class="dev-status-dot"></div>${labels[s]}</div>`;}).join('');const summaryFields=[{key:'Qualifying for',val:row.qualifying_for},{key:'Expected call duration',val:row.expected_duration},{key:'Hard disqualification',val:row.hard_dq},{key:'Data passed on qualified call',val:row.data_collected},{key:'On disqualification',val:row.on_dq},{key:'Repinging',val:row.reping_logic},{key:'Advertisers',val:row.advertisers},{key:'Publishers',val:row.publishers},{key:'Notes',val:row.notes}].filter(f=>f.val);document.getElementById('dev-detail-summary').innerHTML=summaryFields.map(f=>`<div class="dev-summary-item"><div class="dev-summary-key">${f.key}</div><div class="dev-summary-val">${f.val}</div></div>`).join('')||'<div style="font-size:13px;color:var(--text-3);font-style:italic">No requirements entered yet.</div>';const recList=document.getElementById('dev-detail-recordings');const linkIcon=`<svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px"><path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;recList.innerHTML=recordings.length?recordings.map(r=>`<div class="dev-upload-item"><div class="dev-upload-item-left"><div class="dev-upload-icon">${linkIcon}</div><div class="dev-upload-info"><div class="dev-upload-name">${r.filename}</div><a class="dev-upload-url" href="${r.filesize||'#'}" target="_blank" rel="noopener">${r.filesize||'No URL'}</a></div></div><a class="dev-btn-open" href="${r.filesize||'#'}" target="_blank" rel="noopener">Open ↗</a></div>`).join(''):'';document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';devSignoffState={supply:'pending',demand:'pending'};signoffs.forEach(s=>{devSignoffState[s.team]=s.decision;});['supply','demand'].forEach(team=>{const sig=signoffs.find(s=>s.team===team);const badge=document.getElementById('dev-badge-'+team);const block=document.getElementById('dev-sb-'+team);const noteEl=document.getElementById('dev-note-'+team);const btnA=document.getElementById('dev-btn-app-'+team);const btnR=document.getElementById('dev-btn-rej-'+team);block.className='dev-signoff-block';noteEl.value='';noteEl.disabled=false;btnA.disabled=false;btnR.disabled=false;if(sig){noteEl.value=sig.note||'';noteEl.disabled=true;btnA.disabled=true;btnR.disabled=true;if(sig.decision==='approve'){badge.className='dev-sig-badge dev-sig-approved';badge.textContent='Approved';block.className='dev-signoff-block approved';}else{badge.className='dev-sig-badge dev-sig-rejected';badge.textContent='Changes requested';block.className='dev-signoff-block rejected';}}else{badge.className='dev-sig-badge dev-sig-pending';badge.textContent='Pending';}});devCheckLaunch();}
+async function devAddRecording(){const label=document.getElementById('dev-link-label').value.trim(),url=document.getElementById('dev-link-url').value.trim();if(!label){document.getElementById('dev-link-label').focus();return;}if(!url){document.getElementById('dev-link-url').focus();return;}const btn=document.querySelector('#dev-add-link-row .dev-btn-primary');btn.disabled=true;btn.textContent='Saving…';try{await devSbFetch('ivr_recordings',{method:'POST',body:JSON.stringify({ivr_id:devCurrentIvr.id,filename:label,filesize:url})});document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';await devOpenDetail(devCurrentIvr.id,true);}catch(e){alert('Could not save link: '+e.message);}btn.disabled=false;btn.textContent='Add link';}
+async function devSignoff(team,action){const note=document.getElementById('dev-note-'+team),hint=document.getElementById('dev-hint-'+team);if(!note.value.trim()){note.classList.add('dev-note-required');hint.classList.add('visible');note.focus();return;}note.classList.remove('dev-note-required');hint.classList.remove('visible');try{await devSbFetch('ivr_signoffs',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_id:devCurrentIvr.id,team,decision:action,note:note.value.trim()})});devSignoffState[team]=action;const badge=document.getElementById('dev-badge-'+team),block=document.getElementById('dev-sb-'+team),btnA=document.getElementById('dev-btn-app-'+team),btnR=document.getElementById('dev-btn-rej-'+team);note.disabled=true;btnA.disabled=true;btnR.disabled=true;if(action==='approve'){badge.className='dev-sig-badge dev-sig-approved';badge.textContent='Approved';block.className='dev-signoff-block approved';}else{badge.className='dev-sig-badge dev-sig-rejected';badge.textContent='Changes requested';block.className='dev-signoff-block rejected';}devCheckLaunch();if(devSignoffState.supply==='approve'&&devSignoffState.demand==='approve'){await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'approved'})});devCurrentIvr.status='approved';await devLoadIvrs();}}catch(e){alert('Could not save sign-off: '+e.message);}}
+function devCheckLaunch(){const allApproved=devSignoffState.supply==='approve'&&devSignoffState.demand==='approve';const anyRejected=Object.values(devSignoffState).includes('reject');const pending=Object.values(devSignoffState).filter(v=>v==='pending').length;const btn=document.getElementById('dev-btn-launch'),gate=document.getElementById('dev-launch-gate'),icon=document.getElementById('dev-gate-icon'),text=document.getElementById('dev-gate-text');if(allApproved){btn.disabled=false;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:var(--teal-bg);color:var(--teal);border:1px solid #5DCAA5;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✓';text.textContent='Both teams have approved. Ready to mark for launch.';}else if(anyRejected){btn.disabled=true;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✕';text.textContent='Changes have been requested. Resolve before launch.';}else{btn.disabled=true;gate.style.cssText='';icon.textContent='⏳';text.textContent=`Waiting for ${pending} more sign-off${pending!==1?'s':''} before launch is available.`;}}
+async function devMarkLive(){if(!devCurrentIvr)return;try{await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'live'})});devCloseModal('dev-modal-detail');await devLoadIvrs();}catch(e){alert('Could not update status: '+e.message);}}
 function devConfirmDelete(ivrId,name){devDeleteTarget=ivrId;document.getElementById('dev-confirm-name').textContent=name;document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));devOpenModal('dev-modal-confirm');}
-async function devDoDelete(){
-  if(!devDeleteTarget)return;
-  try{await devSbFetch(`ivr_development?id=eq.${devDeleteTarget}`,{method:'DELETE',prefer:''});devDeleteTarget=null;devCloseModal('dev-modal-confirm');await devLoadIvrs();}catch(e){alert('Could not delete: '+e.message);}
-}
+async function devDoDelete(){if(!devDeleteTarget)return;try{await devSbFetch(`ivr_development?id=eq.${devDeleteTarget}`,{method:'DELETE',prefer:''});devDeleteTarget=null;devCloseModal('dev-modal-confirm');await devLoadIvrs();}catch(e){alert('Could not delete: '+e.message);}}
 
-// ─── BOOT ────────────────────────────────────────────────────────────────────
 async function bootDashboard() {
   document.getElementById('bq-sql').textContent = buildBQSQL();
   setupFileUpload();
@@ -1294,7 +1044,6 @@ async function bootDashboard() {
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
   devLoadIvrs();
 }
-
 bootDashboard();
 </script>
 </body>
