@@ -365,23 +365,11 @@
           <button class="preset-btn" onclick="setPreset(30,this)">30d</button>
           <button class="preset-btn" onclick="setPreset(90,this)">90d</button>
           <div style="width:1px;height:16px;background:var(--border-strong);margin:0 2px;"></div>
-          <div class="drp-wrap" id="drp-wrap">
+          <div style="display:inline-flex;align-items:center;">
             <button class="drp-trigger" id="drp-trigger" onclick="drpToggle(event)">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-              <span id="drp-label">Custom range</span>
+              <span id="drp-label">—</span>
             </button>
-            <div class="drp-popover" id="drp-popover">
-              <div class="drp-cal-header">
-                <button class="drp-nav-btn" onclick="drpNav(-1)">‹</button>
-                <div class="drp-cal-title" id="drp-month-title"></div>
-                <button class="drp-nav-btn" onclick="drpNav(1)">›</button>
-              </div>
-              <div class="drp-grid" id="drp-grid"></div>
-              <div class="drp-footer">
-                <div class="drp-selection" id="drp-selection">Click a start date</div>
-                <button class="drp-apply" id="drp-apply" onclick="drpApply()" disabled>Apply</button>
-              </div>
-            </div>
           </div>
         </div>
         <span class="sort-label">Sort by</span>
@@ -622,29 +610,60 @@ function aliasesForAgent(canonicalIvrName) {
 
 // ─── CUSTOM DATE RANGE PICKER ─────────────────────────────────────────────────
 let drpViewYear, drpViewMonth, drpPickStart = null, drpPickEnd = null, drpSelecting = false;
+let drpPopover = null;
+
+function drpBuildPopover() {
+  const el = document.createElement('div');
+  el.id = 'drp-popover';
+  el.innerHTML = `
+    <div class="drp-cal-header">
+      <button class="drp-nav-btn" id="drp-prev">‹</button>
+      <div class="drp-cal-title" id="drp-month-title"></div>
+      <button class="drp-nav-btn" id="drp-next">›</button>
+    </div>
+    <div class="drp-grid" id="drp-grid"></div>
+    <div class="drp-footer">
+      <div class="drp-selection" id="drp-selection">Click a start date</div>
+      <button class="drp-apply" id="drp-apply" disabled>Apply</button>
+    </div>`;
+  document.body.appendChild(el);
+  el.querySelector('#drp-prev').addEventListener('click', e => { e.stopPropagation(); drpNav(-1); });
+  el.querySelector('#drp-next').addEventListener('click', e => { e.stopPropagation(); drpNav(1); });
+  el.querySelector('#drp-apply').addEventListener('click', e => { e.stopPropagation(); drpApply(); });
+  drpPopover = el;
+}
 
 function drpInit() {
   const now = new Date();
   drpViewYear = now.getFullYear();
   drpViewMonth = now.getMonth();
-  drpRender();
+  drpBuildPopover();
 }
 
 function drpToggle(e) {
   e.stopPropagation();
-  const pop = document.getElementById('drp-popover');
-  const isOpen = pop.classList.contains('open');
-  if (isOpen) { pop.classList.remove('open'); return; }
-  drpPickStart = null; drpPickEnd = null; drpSelecting = false;
+  if (!drpPopover) return;
+  const isOpen = drpPopover.classList.contains('open');
+  if (isOpen) { drpPopover.classList.remove('open'); return; }
+  // Position below trigger
+  const rect = document.getElementById('drp-trigger').getBoundingClientRect();
+  drpPopover.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  drpPopover.style.left = Math.max(8, rect.right - 280) + 'px';
+  // Seed with current active range
+  if (activeRange.start && activeRange.end) {
+    drpPickStart = toISO(activeRange.start);
+    drpPickEnd = toISO(activeRange.end);
+    drpSelecting = false;
+    // Navigate calendar to end month
+    drpViewYear = activeRange.end.getFullYear();
+    drpViewMonth = activeRange.end.getMonth();
+  }
   drpRender();
-  pop.classList.add('open');
+  drpPopover.classList.add('open');
 }
 
-document.addEventListener('click', e => {
-  const wrap = document.getElementById('drp-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('drp-popover')?.classList.remove('open');
-  }
+document.addEventListener('click', () => {
+  drpPopover && drpPopover.classList.remove('open');
 });
 
 function drpNav(dir) {
@@ -655,19 +674,20 @@ function drpNav(dir) {
 }
 
 function drpRender() {
+  if (!drpPopover) return;
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-  document.getElementById('drp-month-title').textContent = MONTHS[drpViewMonth] + ' ' + drpViewYear;
-  const grid = document.getElementById('drp-grid');
+  drpPopover.querySelector('#drp-month-title').textContent = MONTHS[drpViewMonth] + ' ' + drpViewYear;
+  const grid = drpPopover.querySelector('#drp-grid');
   let html = DAYS.map(d => `<div class="drp-dow">${d}</div>`).join('');
   const firstDay = new Date(drpViewYear, drpViewMonth, 1).getDay();
   const daysInMonth = new Date(drpViewYear, drpViewMonth + 1, 0).getDate();
-  const today = toISO(new Date());
+  const todayISO = toISO(new Date());
   for (let i = 0; i < firstDay; i++) html += `<div class="drp-day drp-empty"></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const iso = drpViewYear + '-' + String(drpViewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     let cls = 'drp-day';
-    if (iso === today) cls += ' drp-today';
+    if (iso === todayISO) cls += ' drp-today';
     if (drpPickStart && drpPickEnd) {
       if (iso === drpPickStart && iso === drpPickEnd) cls += ' drp-selected';
       else if (iso === drpPickStart) cls += ' drp-range-start';
@@ -676,11 +696,16 @@ function drpRender() {
     } else if (drpPickStart && iso === drpPickStart) {
       cls += ' drp-selected';
     }
-    html += `<div class="${cls}" onclick="drpClickDay('${iso}')">${d}</div>`;
+    html += `<div class="${cls}" data-iso="${iso}">${d}</div>`;
   }
   grid.innerHTML = html;
-  const selEl = document.getElementById('drp-selection');
-  const applyBtn = document.getElementById('drp-apply');
+  // Attach day click listeners
+  grid.querySelectorAll('.drp-day:not(.drp-empty)').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); drpClickDay(el.dataset.iso); });
+  });
+  // Footer
+  const selEl = drpPopover.querySelector('#drp-selection');
+  const applyBtn = drpPopover.querySelector('#drp-apply');
   if (!drpPickStart) { selEl.textContent = 'Click a start date'; applyBtn.disabled = true; }
   else if (!drpPickEnd) { selEl.textContent = fmt(drpPickStart) + ' → ?'; applyBtn.disabled = true; }
   else { selEl.textContent = fmt(drpPickStart) + ' – ' + fmt(drpPickEnd); applyBtn.disabled = false; }
@@ -693,7 +718,7 @@ function fmt(iso) {
 }
 
 function drpClickDay(iso) {
-  if (!drpPickStart || drpSelecting === false) {
+  if (!drpPickStart || !drpSelecting) {
     drpPickStart = iso; drpPickEnd = null; drpSelecting = true;
   } else {
     if (iso < drpPickStart) { drpPickEnd = drpPickStart; drpPickStart = iso; }
@@ -715,7 +740,7 @@ function drpApply() {
   const days = Math.round((e - s) / 86400000) + 1;
   activeRange = { start: s, end: e, label: fmtDate(s) + ' – ' + fmtDate(e), short: days + 'd' };
   drpSyncTrigger(drpPickStart, drpPickEnd);
-  document.getElementById('drp-popover').classList.remove('open');
+  drpPopover.classList.remove('open');
   refreshMetrics();
 }
 
