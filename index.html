@@ -176,9 +176,9 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 </header>
 
 <div class="nav-tabs">
-  <button class="nav-tab">Agents</button>
+  <button class="nav-tab" onclick="alert('Switch to the main registry to access this tab.')">Agents</button>
   <button class="nav-tab active">Insights</button>
-  <button class="nav-tab">In development</button>
+  <button class="nav-tab" onclick="alert('Switch to the main registry to access this tab.')">In development</button>
 </div>
 
 <!-- PERIOD SELECTOR -->
@@ -186,14 +186,10 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
   <div class="period-group">
     <div class="period-label">Period A (comparison)</div>
     <div class="period-inner">
-      <button class="preset-btn" onclick="setPreset('a',7,this)">7d</button>
-      <button class="preset-btn active" onclick="setPreset('a',30,this)">30d</button>
-      <button class="preset-btn" onclick="setPreset('a',90,this)">90d</button>
-      <div class="divider-v"></div>
       <div class="drp-anchor" id="drp-a-anchor">
         <button class="drp-trigger" id="drp-a-trigger" onclick="drpToggle('a',event)">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <span id="drp-a-label" class="period-display">—</span>
+          <span id="drp-a-label" class="period-display">Select dates</span>
         </button>
         <div class="drp-popover" id="drp-a-pop"></div>
       </div>
@@ -205,14 +201,10 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
   <div class="period-group">
     <div class="period-label">Period B (current)</div>
     <div class="period-inner">
-      <button class="preset-btn" onclick="setPreset('b',7,this)">7d</button>
-      <button class="preset-btn active" onclick="setPreset('b',30,this)">30d</button>
-      <button class="preset-btn" onclick="setPreset('b',90,this)">90d</button>
-      <div class="divider-v"></div>
       <div class="drp-anchor" id="drp-b-anchor">
         <button class="drp-trigger" id="drp-b-trigger" onclick="drpToggle('b',event)">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <span id="drp-b-label" class="period-display">—</span>
+          <span id="drp-b-label" class="period-display">Select dates</span>
         </button>
         <div class="drp-popover" id="drp-b-pop"></div>
       </div>
