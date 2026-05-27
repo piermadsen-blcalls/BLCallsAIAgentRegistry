@@ -50,7 +50,7 @@
 
   .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; align-items: center; justify-content: space-between; }
   .toolbar-left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .toolbar-right { display: flex; gap: 8px; align-items: center; }
+  .toolbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .search-wrap { position: relative; }
   .search-input { font-family: var(--sans); font-size: 13px; padding: 8px 12px 8px 34px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; width: 260px; transition: border-color 0.15s; }
   .search-input:focus { border-color: var(--text); }
@@ -63,6 +63,34 @@
   .preset-btn { font-family: var(--sans); font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 4px; border: none; background: transparent; color: var(--text-2); cursor: pointer; transition: all 0.12s; }
   .preset-btn.active { background: var(--brand-navy); color: var(--surface); }
   .preset-btn:hover:not(.active) { color: var(--brand-navy); }
+
+  /* Custom date range picker */
+  .drp-wrap { position: relative; display: inline-flex; align-items: center; }
+  .drp-trigger { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--text); white-space: nowrap; user-select: none; }
+  .drp-trigger:hover { border-color: var(--brand-navy); }
+  .drp-trigger svg { color: var(--text-3); flex-shrink: 0; }
+
+  .drp-popover { display: none; position: absolute; top: calc(100% + 6px); right: 0; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999; padding: 16px; width: 280px; }
+  .drp-popover.open { display: block; }
+  .drp-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .drp-cal-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .drp-nav-btn { background: none; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 14px; line-height: 1; padding: 0; }
+  .drp-nav-btn:hover { border-color: var(--brand-navy); color: var(--brand-navy); }
+  .drp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .drp-dow { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: center; padding: 4px 0 6px; }
+  .drp-day { font-size: 12px; font-family: var(--mono); text-align: center; padding: 5px 2px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text); transition: background 0.1s; }
+  .drp-day:hover:not(.drp-empty):not(.drp-selected):not(.drp-in-range) { background: var(--bg); }
+  .drp-day.drp-selected { background: var(--brand-navy); color: white; font-weight: 500; }
+  .drp-day.drp-range-start { background: var(--brand-navy); color: white; border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+  .drp-day.drp-range-end { background: var(--brand-navy); color: white; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .drp-day.drp-range-start.drp-range-end { border-radius: var(--radius-sm); }
+  .drp-day.drp-in-range { background: var(--brand-mint-bg); color: var(--brand-navy); border-radius: 0; }
+  .drp-day.drp-empty { cursor: default; }
+  .drp-day.drp-today:not(.drp-selected):not(.drp-in-range):not(.drp-range-start):not(.drp-range-end) { color: var(--brand-mint); font-weight: 500; }
+  .drp-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .drp-selection { font-size: 11px; font-family: var(--mono); color: var(--text-2); }
+  .drp-apply { font-family: var(--sans); font-size: 11px; font-weight: 500; padding: 4px 12px; background: var(--brand-navy); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; }
+  .drp-apply:disabled { opacity: 0.35; cursor: default; }
 
   .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; position: relative; animation: fadeIn 0.2s ease both; }
@@ -118,13 +146,23 @@
   .qual-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); margin-top: 7px; flex-shrink: 0; }
   .qual-disqualify { font-size: 11px; color: var(--coral); font-family: var(--mono); margin-top: 8px; padding: 6px 10px; background: var(--coral-bg); border-radius: var(--radius-sm); }
 
+  /* Scrollable breakdown tables */
+  .breakdown-table-wrap { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .breakdown-table-scroll { max-height: 320px; overflow-y: auto; }
+  .breakdown-table-scroll::-webkit-scrollbar { width: 5px; }
+  .breakdown-table-scroll::-webkit-scrollbar-track { background: var(--bg); }
+  .breakdown-table-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
   .canoe-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .canoe-table th { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: left; padding: 0 8px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  .canoe-table td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; line-height: 1.4; }
-  .canoe-table tr:last-child td { border-bottom: none; }
+  .canoe-table thead th { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: left; padding: 8px 8px 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; background: var(--bg); z-index: 1; }
+  .canoe-table thead th:not(:first-child) { text-align: right; }
+  .canoe-table tbody td { padding: 7px 8px 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; line-height: 1.4; }
+  .canoe-table tbody tr:last-child td { border-bottom: none; }
   .canoe-table td.muted { color: var(--text-3); font-style: italic; }
+  /* Totals footer row */
+  .canoe-table tfoot td { padding: 7px 8px 7px 10px; font-size: 11px; font-family: var(--mono); font-weight: 500; border-top: 2px solid var(--border-strong); background: var(--bg); color: var(--text); position: sticky; bottom: 0; }
+  .canoe-table tfoot td:first-child { font-family: var(--sans); font-size: 10px; font-weight: 600; color: var(--text-3); letter-spacing: 0.4px; text-transform: uppercase; }
   .canoe-none { font-size: 13px; color: var(--text-3); font-style: italic; }
-  .canoe-count { font-size: 11px; color: var(--text-3); margin-top: 8px; font-family: var(--mono); }
+  .canoe-count { font-size: 11px; color: var(--text-3); margin-top: 6px; padding: 5px 10px; font-family: var(--mono); background: var(--bg); border-top: 1px solid var(--border); }
 
   .perf-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   .perf-item { padding-right: 14px; }
@@ -132,16 +170,6 @@
   .perf-val { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--text); }
   .perf-val.zero { color: var(--text-3); }
   .perf-lbl { font-size: 10px; color: var(--text-3); margin-top: 3px; }
-
-  /* Aliases section in drawer */
-  .aliases-list { display: flex; flex-direction: column; gap: 5px; }
-  .alias-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 8px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border); }
-  .alias-name { font-family: var(--mono); font-size: 11px; color: var(--text-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .alias-del-btn { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 13px; padding: 0 2px; line-height: 1; transition: color 0.12s; flex-shrink: 0; }
-  .alias-del-btn:hover { color: var(--coral); }
-  .alias-add-row { display: flex; gap: 6px; margin-top: 8px; }
-  .alias-add-input { font-family: var(--mono); font-size: 11px; flex: 1; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 8px; color: var(--text); background: var(--surface); outline: none; min-width: 0; }
-  .alias-add-btn { font-family: var(--sans); font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: var(--radius-sm); background: var(--brand-navy); color: white; border: none; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
 
   .update-link { font-size: 11px; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; font-family: var(--sans); }
   .update-link:hover { color: var(--text-2); }
@@ -163,7 +191,6 @@
   .update-warn { color: var(--amber); }
   .update-new { color: var(--blue); }
 
-  /* New agent intake */
   .new-agent-intake { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
   .intake-agent-name { font-family: var(--serif); font-size: 18px; margin-bottom: 16px; }
   .intake-agent-name span { color: var(--text-2); font-style: italic; }
@@ -173,8 +200,6 @@
   .intake-textarea { min-height: 70px; resize: vertical; }
   .intake-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; padding-right: 28px; }
   .intake-save-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: var(--radius-sm); background: var(--blue); color: white; border: none; cursor: pointer; margin-top: 4px; }
-
-  /* Rename / alias intake variant */
   .intake-rename-box { background: var(--amber-bg); border: 1px solid #E8C97A; border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: var(--amber); line-height: 1.5; }
   .intake-rename-box strong { font-weight: 600; }
   .intake-alias-select { width: 100%; font-family: var(--sans); font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 32px 8px 10px; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
@@ -333,15 +358,31 @@
         <button class="filter-pill" onclick="setFilter('Financial',this)">Financial</button>
         <button class="filter-pill" onclick="setFilter('Other',this)">Other</button>
       </div>
-      <div class="toolbar-right" style="gap:12px;">
+      <div class="toolbar-right">
+        <!-- Preset buttons + custom date range picker -->
         <div style="display:flex;gap:6px;align-items:center;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:4px 6px;">
-          <button class="preset-btn active" onclick="setPreset(7,this)">7d</button>
+          <button class="preset-btn" onclick="setPreset(7,this)">7d</button>
           <button class="preset-btn" onclick="setPreset(30,this)">30d</button>
           <button class="preset-btn" onclick="setPreset(90,this)">90d</button>
           <div style="width:1px;height:16px;background:var(--border-strong);margin:0 2px;"></div>
-          <input type="date" id="range-start" onchange="setCustomRange()" style="font-family:var(--mono);font-size:11px;border:none;background:transparent;color:var(--text);outline:none;cursor:pointer;">
-          <span style="font-size:11px;color:var(--text-3);">–</span>
-          <input type="date" id="range-end" onchange="setCustomRange()" style="font-family:var(--mono);font-size:11px;border:none;background:transparent;color:var(--text);outline:none;cursor:pointer;">
+          <div class="drp-wrap" id="drp-wrap">
+            <button class="drp-trigger" id="drp-trigger" onclick="drpToggle(event)">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <span id="drp-label">Custom range</span>
+            </button>
+            <div class="drp-popover" id="drp-popover">
+              <div class="drp-cal-header">
+                <button class="drp-nav-btn" onclick="drpNav(-1)">‹</button>
+                <div class="drp-cal-title" id="drp-month-title"></div>
+                <button class="drp-nav-btn" onclick="drpNav(1)">›</button>
+              </div>
+              <div class="drp-grid" id="drp-grid"></div>
+              <div class="drp-footer">
+                <div class="drp-selection" id="drp-selection">Click a start date</div>
+                <button class="drp-apply" id="drp-apply" onclick="drpApply()" disabled>Apply</button>
+              </div>
+            </div>
+          </div>
         </div>
         <span class="sort-label">Sort by</span>
         <select class="sort-select" onchange="applyFilters()" id="sort-select">
@@ -533,7 +574,7 @@ const CONFIG = {
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let AGENTS = [];
-let aliasMap = {};   // incoming_ivr_name → canonical_ivr_name
+let aliasMap = {};
 let activeRange = { start: null, end: null, label: '—', short: '—' };
 let activeFilter = 'all', openAgent = null, savedScrollY = 0;
 const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
@@ -554,9 +595,6 @@ async function sbFetch(path, options={}) {
 }
 
 // ─── ALIAS TABLE ──────────────────────────────────────────────────────────────
-// aliasMap: { "OLD IVR NAME": "CANONICAL IVR NAME", ... }
-// Loaded once at boot, reloaded after any alias mutation.
-
 async function loadAliases() {
   try {
     const rows = await sbFetch('agent_ivr_aliases?select=ivr_name,canonical_ivr_name');
@@ -565,10 +603,7 @@ async function loadAliases() {
   } catch(e) { console.warn('Could not load aliases:', e.message); }
 }
 
-// Resolve an incoming ivr_name to its canonical form (or itself if no alias)
-function resolveIvrName(name) {
-  return aliasMap[name] || name;
-}
+function resolveIvrName(name) { return aliasMap[name] || name; }
 
 async function saveAlias(incomingName, canonicalName) {
   await sbFetch('agent_ivr_aliases?on_conflict=ivr_name', {
@@ -579,16 +614,109 @@ async function saveAlias(incomingName, canonicalName) {
   aliasMap[incomingName] = canonicalName;
 }
 
-async function deleteAlias(incomingName) {
-  await sbFetch(`agent_ivr_aliases?ivr_name=eq.${encodeURIComponent(incomingName)}`, { method: 'DELETE', headers: { 'Prefer': '' } });
-  delete aliasMap[incomingName];
-}
-
-// Returns all aliases pointing to a canonical ivr_name
 function aliasesForAgent(canonicalIvrName) {
   return Object.entries(aliasMap)
     .filter(([, canon]) => canon === canonicalIvrName)
     .map(([alias]) => alias);
+}
+
+// ─── CUSTOM DATE RANGE PICKER ─────────────────────────────────────────────────
+let drpViewYear, drpViewMonth, drpPickStart = null, drpPickEnd = null, drpSelecting = false;
+
+function drpInit() {
+  const now = new Date();
+  drpViewYear = now.getFullYear();
+  drpViewMonth = now.getMonth();
+  drpRender();
+}
+
+function drpToggle(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('drp-popover');
+  const isOpen = pop.classList.contains('open');
+  if (isOpen) { pop.classList.remove('open'); return; }
+  drpPickStart = null; drpPickEnd = null; drpSelecting = false;
+  drpRender();
+  pop.classList.add('open');
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('drp-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('drp-popover')?.classList.remove('open');
+  }
+});
+
+function drpNav(dir) {
+  drpViewMonth += dir;
+  if (drpViewMonth > 11) { drpViewMonth = 0; drpViewYear++; }
+  if (drpViewMonth < 0) { drpViewMonth = 11; drpViewYear--; }
+  drpRender();
+}
+
+function drpRender() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  document.getElementById('drp-month-title').textContent = MONTHS[drpViewMonth] + ' ' + drpViewYear;
+  const grid = document.getElementById('drp-grid');
+  let html = DAYS.map(d => `<div class="drp-dow">${d}</div>`).join('');
+  const firstDay = new Date(drpViewYear, drpViewMonth, 1).getDay();
+  const daysInMonth = new Date(drpViewYear, drpViewMonth + 1, 0).getDate();
+  const today = toISO(new Date());
+  for (let i = 0; i < firstDay; i++) html += `<div class="drp-day drp-empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = drpViewYear + '-' + String(drpViewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    let cls = 'drp-day';
+    if (iso === today) cls += ' drp-today';
+    if (drpPickStart && drpPickEnd) {
+      if (iso === drpPickStart && iso === drpPickEnd) cls += ' drp-selected';
+      else if (iso === drpPickStart) cls += ' drp-range-start';
+      else if (iso === drpPickEnd) cls += ' drp-range-end';
+      else if (iso > drpPickStart && iso < drpPickEnd) cls += ' drp-in-range';
+    } else if (drpPickStart && iso === drpPickStart) {
+      cls += ' drp-selected';
+    }
+    html += `<div class="${cls}" onclick="drpClickDay('${iso}')">${d}</div>`;
+  }
+  grid.innerHTML = html;
+  const selEl = document.getElementById('drp-selection');
+  const applyBtn = document.getElementById('drp-apply');
+  if (!drpPickStart) { selEl.textContent = 'Click a start date'; applyBtn.disabled = true; }
+  else if (!drpPickEnd) { selEl.textContent = fmt(drpPickStart) + ' → ?'; applyBtn.disabled = true; }
+  else { selEl.textContent = fmt(drpPickStart) + ' – ' + fmt(drpPickEnd); applyBtn.disabled = false; }
+}
+
+function fmt(iso) {
+  const [y,m,d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[parseInt(m)-1] + ' ' + parseInt(d);
+}
+
+function drpClickDay(iso) {
+  if (!drpPickStart || drpSelecting === false) {
+    drpPickStart = iso; drpPickEnd = null; drpSelecting = true;
+  } else {
+    if (iso < drpPickStart) { drpPickEnd = drpPickStart; drpPickStart = iso; }
+    else { drpPickEnd = iso; }
+    drpSelecting = false;
+  }
+  drpRender();
+}
+
+function drpSyncTrigger(startIso, endIso) {
+  drpPickStart = startIso; drpPickEnd = endIso;
+  document.getElementById('drp-label').textContent = fmt(startIso) + ' – ' + fmt(endIso);
+}
+
+function drpApply() {
+  if (!drpPickStart || !drpPickEnd) return;
+  const s = new Date(drpPickStart + 'T00:00:00'), e = new Date(drpPickEnd + 'T00:00:00');
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  const days = Math.round((e - s) / 86400000) + 1;
+  activeRange = { start: s, end: e, label: fmtDate(s) + ' – ' + fmtDate(e), short: days + 'd' };
+  drpSyncTrigger(drpPickStart, drpPickEnd);
+  document.getElementById('drp-popover').classList.remove('open');
+  refreshMetrics();
 }
 
 // ─── DATE RANGE ───────────────────────────────────────────────────────────────
@@ -598,18 +726,7 @@ function setPreset(days, el) {
   const end = new Date(); end.setHours(0,0,0,0);
   const start = new Date(end); start.setDate(start.getDate() - (days - 1));
   activeRange = { start, end, label: fmtDate(start) + ' – ' + fmtDate(end), short: days + 'd' };
-  document.getElementById('range-start').value = toISO(start);
-  document.getElementById('range-end').value = toISO(end);
-  refreshMetrics();
-}
-function setCustomRange() {
-  const sv = document.getElementById('range-start').value, ev = document.getElementById('range-end').value;
-  if (!sv || !ev) return;
-  const s = new Date(sv + 'T00:00:00'), e = new Date(ev + 'T00:00:00');
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || s > e) return;
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  const days = Math.round((e - s) / 86400000) + 1;
-  activeRange = { start: s, end: e, label: fmtDate(s) + ' – ' + fmtDate(e), short: days + 'd' };
+  drpSyncTrigger(toISO(start), toISO(end));
   refreshMetrics();
 }
 function updateDataWindowLabels() {
@@ -648,8 +765,9 @@ function aggregateForAgent(agent, calls) {
   agent.raw_calls = raw; agent.sent_calls = sent; agent.paid_calls = paid;
   agent.revenue = revenue; agent.margin = margin;
   agent.conversion = raw > 0 ? paid / raw : 0;
-  agent.pubBreakdown = Object.values(pubMap).sort((a,b) => b.raw_calls - a.raw_calls).slice(0, 10);
-  agent.advBreakdown = Object.values(advMap).sort((a,b) => b.revenue - a.revenue).slice(0, 10);
+  // Store ALL rows, sorted — no slice
+  agent.pubBreakdown = Object.values(pubMap).sort((a,b) => b.raw_calls - a.raw_calls);
+  agent.advBreakdown = Object.values(advMap).sort((a,b) => b.revenue - a.revenue);
 }
 
 async function refreshMetrics() {
@@ -657,7 +775,6 @@ async function refreshMetrics() {
   const startISO = toISO(activeRange.start), endISO = toISO(activeRange.end);
   AGENTS.forEach(a => { a.raw_calls=0; a.sent_calls=0; a.paid_calls=0; a.revenue=0; a.margin=0; a.conversion=0; a.pubBreakdown=[]; a.advBreakdown=[]; });
 
-  // Build a map: canonical ivr_name → agent, covering both the agent's own name and all aliases
   const ivrToAgent = {};
   AGENTS.forEach(a => {
     ivrToAgent[a.ivrName] = a;
@@ -676,7 +793,6 @@ async function refreshMetrics() {
       );
       if (!batch || !batch.length) break;
       for (const r of batch) {
-        // Resolve alias before looking up agent — this is where renames are healed
         const canonical = resolveIvrName(r.ivr_name);
         const agent = ivrToAgent[canonical];
         if (agent) callsByAgent.get(agent).push(r);
@@ -802,82 +918,65 @@ function renderCard(a, idx) {
   </div>`;
 }
 
-function renderAliasSection(agent) {
-  const aliases = aliasesForAgent(agent.ivrName);
-  const rows = aliases.length
-    ? aliases.map(a => `<div class="alias-row">
-        <span class="alias-name" title="${a}">${a}</span>
-        <button class="alias-del-btn" title="Remove alias" onclick="removeAlias('${a.replace(/'/g,"\\'")}','${agent.ivrName.replace(/'/g,"\\'")}')">×</button>
-      </div>`).join('')
-    : '<div style="font-size:12px;color:var(--text-3);font-style:italic;">No aliases — add one if this agent was renamed in Canoe.</div>';
-  return `<div class="dsec">
-    <div class="dsec-title">IVR Name Aliases</div>
-    <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;line-height:1.5;">If this agent was renamed in Canoe, add the old name here so historical calls still roll up correctly.</div>
-    <div class="aliases-list" id="aliases-list-${agent.ivrName.replace(/\s+/g,'_')}">${rows}</div>
-    <div class="alias-add-row">
-      <input class="alias-add-input" type="text" id="alias-input-${agent.ivrName.replace(/\s+/g,'_')}" placeholder="Old IVR name from Canoe">
-      <button class="alias-add-btn" onclick="addAlias('${agent.ivrName.replace(/'/g,"\\'")}')">Add alias</button>
-    </div>
-  </div>`;
-}
-
-async function addAlias(canonicalIvrName) {
-  const safeId = canonicalIvrName.replace(/\s+/g,'_');
-  const inp = document.getElementById('alias-input-' + safeId);
-  if (!inp) return;
-  const val = inp.value.trim();
-  if (!val) { inp.focus(); return; }
-  if (val === canonicalIvrName) { alert("The alias can't be the same as the current IVR name."); return; }
-  // Check it doesn't already point somewhere else
-  if (aliasMap[val] && aliasMap[val] !== canonicalIvrName) {
-    alert(`"${val}" is already an alias for "${aliasMap[val]}". Remove it there first.`);
-    return;
-  }
-  try {
-    await saveAlias(val, canonicalIvrName);
-    inp.value = '';
-    // Re-render just the aliases section
-    const listEl = document.getElementById('aliases-list-' + safeId);
-    if (listEl) {
-      const aliases = aliasesForAgent(canonicalIvrName);
-      listEl.innerHTML = aliases.map(a => `<div class="alias-row">
-        <span class="alias-name" title="${a}">${a}</span>
-        <button class="alias-del-btn" title="Remove alias" onclick="removeAlias('${a.replace(/'/g,"\\'")}','${canonicalIvrName.replace(/'/g,"\\'")}')">×</button>
-      </div>`).join('');
-    }
-  } catch(e) { alert('Could not save alias: ' + e.message); }
-}
-
-async function removeAlias(aliasName, canonicalIvrName) {
-  if (!confirm(`Remove alias "${aliasName}"? Historical calls under this name will no longer roll up to this agent.`)) return;
-  try {
-    await deleteAlias(aliasName);
-    const safeId = canonicalIvrName.replace(/\s+/g,'_');
-    const listEl = document.getElementById('aliases-list-' + safeId);
-    if (listEl) {
-      const aliases = aliasesForAgent(canonicalIvrName);
-      listEl.innerHTML = aliases.length
-        ? aliases.map(a => `<div class="alias-row">
-            <span class="alias-name" title="${a}">${a}</span>
-            <button class="alias-del-btn" title="Remove alias" onclick="removeAlias('${a.replace(/'/g,"\\'")}','${canonicalIvrName.replace(/'/g,"\\'")}')">×</button>
-          </div>`).join('')
-        : '<div style="font-size:12px;color:var(--text-3);font-style:italic;">No aliases — add one if this agent was renamed in Canoe.</div>';
-    }
-  } catch(e) { alert('Could not remove alias: ' + e.message); }
-}
-
 function renderDrawer(a) {
   const hasPC = (a.publisherCampaigns||[]).length > 0, hasIVR = (a.ivrTargets||[]).length > 0, hasQual = (a.qualifying||[]).length > 0;
-  const pcTable = hasPC ? `<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>` : '<div class="canoe-none">No publisher campaign IVRs configured</div>';
-  const ivrTable = hasIVR ? `<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>` : '<div class="canoe-none">No IVR targets after listing search</div>';
-  const qualSection = getEffectiveStatus(a)==='test' ? '<div class="canoe-none">Internal test agent</div>' : hasQual ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}` : '<div class="canoe-none">No qualification data on record</div>';
+  const pcTable = hasPC
+    ? `<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`
+    : '<div class="canoe-none">No publisher campaign IVRs configured</div>';
+  const ivrTable = hasIVR
+    ? `<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`
+    : '<div class="canoe-none">No IVR targets after listing search</div>';
+  const qualSection = getEffectiveStatus(a)==='test'
+    ? '<div class="canoe-none">Internal test agent</div>'
+    : hasQual
+      ? `<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`
+      : '<div class="canoe-none">No qualification data on record</div>';
 
-  const mkTable = (rows, headers) => {
-    const body = rows.length ? rows.map(p => {
+  const mkBreakdownTable = (rows, firstColLabel, sortByRevenue) => {
+    if (!rows.length) return '<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';
+
+    // Totals
+    const totRaw = rows.reduce((s,r) => s+r.raw_calls, 0);
+    const totSent = rows.reduce((s,r) => s+(r.sent_calls||0), 0);
+    const totPaid = rows.reduce((s,r) => s+r.paid_calls, 0);
+    const totRev = rows.reduce((s,r) => s+r.revenue, 0);
+    const avgConv = totRaw > 0 ? fmtPct(totPaid, totRaw) : '—';
+
+    const bodyRows = rows.map(p => {
       const conv = fmtPct(p.paid_calls, p.raw_calls);
-      return `<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${conv}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`;
-    }).join('') : '<tr><td colspan="6" style="color:var(--text-3);font-style:italic;padding:8px 0;">No data for selected period</td></tr>';
-    return `<table class="canoe-table"><thead><tr>${headers.map(h=>`<th${h!==headers[0]?' style="text-align:right"':''}>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>${rows.length?`<div class="canoe-count">top ${rows.length} by ${headers[0]==='Publisher'?'volume':'revenue'}</div>`:''}`;
+      return `<tr>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
+        <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td>
+        <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td>
+        <td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td>
+        <td style="text-align:right;font-family:var(--mono);font-size:11px;">${conv}</td>
+        <td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="breakdown-table-wrap">
+      <div class="breakdown-table-scroll">
+        <table class="canoe-table">
+          <thead><tr>
+            <th>${firstColLabel}</th>
+            <th style="text-align:right">Raw</th>
+            <th style="text-align:right">Sent</th>
+            <th style="text-align:right">Paid</th>
+            <th style="text-align:right">Conv.</th>
+            <th style="text-align:right">Revenue</th>
+          </tr></thead>
+          <tbody>${bodyRows}</tbody>
+          <tfoot><tr>
+            <td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length !== 1 ? 's' : ''}</td>
+            <td style="text-align:right">${totRaw.toLocaleString()}</td>
+            <td style="text-align:right">${totSent.toLocaleString()}</td>
+            <td style="text-align:right">${totPaid.toLocaleString()}</td>
+            <td style="text-align:right">${avgConv}</td>
+            <td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
   };
 
   const sentOverRaw = fmtPct(a.sent_calls, a.raw_calls), paidOverRaw = fmtPct(a.paid_calls, a.raw_calls);
@@ -891,15 +990,14 @@ function renderDrawer(a) {
       <div class="drawer-col">
         <div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div>
         <div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div>
-        ${renderAliasSection(a)}
       </div>
       <div class="drawer-col">
         <div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div>
       </div>
     </div>
     <div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-      <div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${mkTable(a.pubBreakdown||[], ['Publisher','Raw','Sent','Paid','Conv.','Revenue'])}</div></div>
-      <div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${mkTable(a.advBreakdown||[], ['Advertiser','Raw','Sent','Paid','Conv.','Revenue'])}</div></div>
+      <div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${mkBreakdownTable(a.pubBreakdown||[], 'Publisher', false)}</div></div>
+      <div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${mkBreakdownTable(a.advBreakdown||[], 'Advertiser', true)}</div></div>
     </div>
     <div class="perf-strip">
       <div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div>
@@ -937,7 +1035,7 @@ function applyFilters() {
       ...(a.pubBreakdown||[]).map(p=>p.name),
       ...(a.advBreakdown||[]).map(p=>p.name),
       ...(a.qualifying||[]),
-      ...aliasesForAgent(a.ivrName)   // aliases are searchable too
+      ...aliasesForAgent(a.ivrName)
     ];
     return parts.filter(Boolean).join(' ').toLowerCase().includes(q);
   });
@@ -1049,26 +1147,18 @@ async function handleFile(file) {
   const dataRows=rows.slice(1).filter(r=>r.length>=headerRow.length&&r[idx.id]);
   const knownIvrs=new Set(AGENTS.map(a=>a.ivrName));
 
-  // ── ALIAS RESOLUTION: separate "new" from "aliased" ──────────────────────
-  const genuinelyNew = {};   // ivr_name → sample row  (no alias, not known)
-  const resolvedNew  = {};   // ivr_name → canonical   (has alias, treated as existing)
-
+  const genuinelyNew = {};
   const byId=new Map();
   for (const r of dataRows) {
     const rowId=(r[idx.id]||'').trim();
     const rawName=(r[idx.ivr_name]||'').trim();
     if (!rowId||!rawName) continue;
     const canonical=resolveIvrName(rawName);
-    if (!knownIvrs.has(canonical)) {
-      if (aliasMap[rawName]) {
-        // Has an alias but the canonical doesn't exist yet — treat as new under canonical name
-        resolvedNew[canonical] = rawName;
-      } else if (!genuinelyNew[rawName]) {
-        genuinelyNew[rawName] = r;
-      }
+    if (!knownIvrs.has(canonical) && !aliasMap[rawName] && !genuinelyNew[rawName]) {
+      genuinelyNew[rawName] = r;
     }
     byId.set(rowId,{
-      id:rowId, ivr_name:canonical,   // store under canonical name
+      id:rowId, ivr_name:canonical,
       created_at:r[idx.created_at], call_date:r[idx.call_date],
       publisher_name:(r[idx.publisher_name]||'').trim()||null,
       advertiser_name:(r[idx.advertiser_name]||'').trim()||null,
@@ -1099,7 +1189,6 @@ async function handleFile(file) {
     if (newCount) resultsHtml+=`<div class="update-new" style="margin-top:8px">⊕ ${newCount} new agent name${newCount>1?'s':''} detected — see below.</div>`;
     results.innerHTML=resultsHtml;
 
-    // Render one intake card per genuinely-new ivr_name
     Object.entries(genuinelyNew).forEach(([ivrName,], ni) => {
       document.getElementById('new-agent-intakes').appendChild(buildIntakeCard(ivrName, ni));
     });
@@ -1111,17 +1200,13 @@ async function handleFile(file) {
   }
 }
 
-// Builds the intake card with the "renamed agent?" section + full form toggle
 function buildIntakeCard(ivrName, ni) {
   const div=document.createElement('div');
   div.className='new-agent-intake';
   div.id='intake-card-'+ni;
-
   const agentOptions=AGENTS.map(a=>`<option value="${a.ivrName}">${a.name} (${a.ivrName})</option>`).join('');
-
   div.innerHTML=`
     <div class="intake-agent-name">New agent name detected: <span>${ivrName}</span></div>
-
     <div class="intake-rename-box">
       <strong>Is this a renamed existing agent?</strong> If this name appeared in Canoe because an existing agent was renamed, select it below and save the alias. All data from this upload (and future uploads) will roll up to that agent.
     </div>
@@ -1136,7 +1221,6 @@ function buildIntakeCard(ivrName, ni) {
       <button class="intake-alias-save-btn" onclick="saveIntakeAlias(${ni},'${ivrName.replace(/'/g,"\\'")}')">Save alias &amp; finish</button>
       <button class="intake-new-anyway-btn" onclick="showIntakeFullForm(${ni})">No, this is a new agent →</button>
     </div>
-
     <div class="intake-full-form" id="intake-full-${ni}">
       <div class="intake-field"><label class="intake-label">Display name</label><input class="intake-input" type="text" id="intake-name-${ni}" value="${ivrName.replace(/^ASCND\s*AI?\s*Agent\s*-\s*/i,'').replace(/\s*-\s*Outgoing\s*$/i,'').trim()}"></div>
       <div class="intake-field"><label class="intake-label">Vertical</label><select class="intake-select" id="intake-vertical-${ni}"><option>Home Services</option><option>Insurance</option><option>Legal</option><option>Financial</option><option>Other</option></select></div>
@@ -1151,9 +1235,7 @@ function buildIntakeCard(ivrName, ni) {
   return div;
 }
 
-function showIntakeFullForm(ni) {
-  document.getElementById('intake-full-'+ni).classList.add('visible');
-}
+function showIntakeFullForm(ni) { document.getElementById('intake-full-'+ni).classList.add('visible'); }
 
 async function saveIntakeAlias(ni, incomingIvrName) {
   const sel=document.getElementById('intake-alias-sel-'+ni);
@@ -1222,11 +1304,12 @@ async function devDoDelete(){if(!devDeleteTarget)return;try{await devSbFetch(`iv
 async function bootDashboard() {
   document.getElementById('bq-sql').textContent = buildBQSQL();
   setupFileUpload();
-  await loadAliases();                  // load alias map first
+  await loadAliases();
   await loadAgentsFromSupabase();
   await loadTestCalls();
   recomputeStats();
   applyFilters();
+  drpInit();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
   devLoadIvrs();
 }
