@@ -365,7 +365,7 @@
           <button class="preset-btn" onclick="setPreset(30,this)">30d</button>
           <button class="preset-btn" onclick="setPreset(90,this)">90d</button>
           <div style="width:1px;height:16px;background:var(--border-strong);margin:0 2px;"></div>
-          <div style="display:inline-flex;align-items:center;">
+          <div class="drp-anchor" id="drp-anchor">
             <button class="drp-trigger" id="drp-trigger" onclick="drpToggle(event)">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
               <span id="drp-label">—</span>
@@ -613,8 +613,10 @@ let drpViewYear, drpViewMonth, drpPickStart = null, drpPickEnd = null, drpSelect
 let drpPopover = null;
 
 function drpBuildPopover() {
+  const anchor = document.getElementById('drp-anchor');
   const el = document.createElement('div');
   el.id = 'drp-popover';
+  el.style.display = 'none';
   el.innerHTML = `
     <div class="drp-cal-header">
       <button class="drp-nav-btn" id="drp-prev">‹</button>
@@ -626,7 +628,7 @@ function drpBuildPopover() {
       <div class="drp-selection" id="drp-selection">Click a start date</div>
       <button class="drp-apply" id="drp-apply" disabled>Apply</button>
     </div>`;
-  document.body.appendChild(el);
+  anchor.appendChild(el);
   el.querySelector('#drp-prev').addEventListener('click', e => { e.stopPropagation(); drpNav(-1); });
   el.querySelector('#drp-next').addEventListener('click', e => { e.stopPropagation(); drpNav(1); });
   el.querySelector('#drp-apply').addEventListener('click', e => { e.stopPropagation(); drpApply(); });
@@ -638,32 +640,33 @@ function drpInit() {
   drpViewYear = now.getFullYear();
   drpViewMonth = now.getMonth();
   drpBuildPopover();
+  // Don't render yet — popover stays hidden until user clicks
 }
+
+let drpJustOpened = false;
 
 function drpToggle(e) {
   e.stopPropagation();
   if (!drpPopover) return;
-  const isOpen = drpPopover.classList.contains('open');
-  if (isOpen) { drpPopover.classList.remove('open'); return; }
-  // Position below trigger
-  const rect = document.getElementById('drp-trigger').getBoundingClientRect();
-  drpPopover.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-  drpPopover.style.left = Math.max(8, rect.right - 280) + 'px';
-  // Seed with current active range
+  const isOpen = drpPopover.style.display !== 'none';
+  if (isOpen) { drpPopover.style.display = 'none'; return; }
   if (activeRange.start && activeRange.end) {
     drpPickStart = toISO(activeRange.start);
     drpPickEnd = toISO(activeRange.end);
     drpSelecting = false;
-    // Navigate calendar to end month
     drpViewYear = activeRange.end.getFullYear();
     drpViewMonth = activeRange.end.getMonth();
   }
   drpRender();
-  drpPopover.classList.add('open');
+  drpPopover.style.display = 'block';
+  drpJustOpened = true;
 }
 
-document.addEventListener('click', () => {
-  drpPopover && drpPopover.classList.remove('open');
+document.addEventListener('click', e => {
+  if (!drpPopover) return;
+  if (drpJustOpened) { drpJustOpened = false; return; }
+  const anchor = document.getElementById('drp-anchor');
+  if (anchor && !anchor.contains(e.target)) drpPopover.style.display = 'none';
 });
 
 function drpNav(dir) {
@@ -740,7 +743,7 @@ function drpApply() {
   const days = Math.round((e - s) / 86400000) + 1;
   activeRange = { start: s, end: e, label: fmtDate(s) + ' – ' + fmtDate(e), short: days + 'd' };
   drpSyncTrigger(drpPickStart, drpPickEnd);
-  drpPopover.classList.remove('open');
+  drpPopover.style.display = 'none';
   refreshMetrics();
 }
 
