@@ -51,8 +51,9 @@
   .tab-pane.active { display: block; }
 
   /* AGENTS TAB */
-  .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; align-items: center; justify-content: space-between; overflow: visible; }
-  .toolbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; position: relative; }
+  .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; align-items: center; justify-content: space-between; }
+  .toolbar-left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .toolbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .search-wrap { position: relative; }
   .search-input { font-family: var(--sans); font-size: 13px; padding: 8px 12px 8px 34px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; width: 260px; transition: border-color 0.15s; }
   .search-input:focus { border-color: var(--text); }
@@ -69,7 +70,7 @@
   .drp-trigger { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--text); white-space: nowrap; user-select: none; }
   .drp-trigger:hover { border-color: var(--brand-navy); }
   .drp-trigger svg { color: var(--text-3); flex-shrink: 0; }
-  .drp-popover { display: none; position: absolute; top: calc(100% + 6px); left: 0; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999; padding: 16px; width: 280px; }
+  .drp-popover { display: none; position: absolute; top: calc(100% + 6px); right: 0; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999; padding: 16px; width: 280px; }
   .drp-popover.open { display: block; }
   .drp-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .drp-cal-title { font-size: 13px; font-weight: 500; color: var(--text); }
@@ -427,7 +428,6 @@
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
               <span id="drp-label">—</span>
             </button>
-            <div class="drp-popover" id="drp-popover"></div>
           </div>
         </div>
         <span class="sort-label">Sort by</span>
@@ -553,7 +553,7 @@
   </div>
 </div>
 
-<!-- DEV MODALS (unchanged) -->
+<!-- DEV MODALS -->
 <div class="dev-modal-backdrop" id="dev-modal-confirm">
   <div class="dev-modal dev-modal-sm">
     <div class="dev-modal-title" style="margin-bottom:8px">Delete this IVR?</div>
@@ -706,6 +706,9 @@ let agentDrpViewYear, agentDrpViewMonth, agentDrpPickStart=null, agentDrpPickEnd
 
 function agentDrpInit() {
   const now = new Date(); agentDrpViewYear = now.getFullYear(); agentDrpViewMonth = now.getMonth();
+  const anchor = document.getElementById('drp-anchor');
+  const el = document.createElement('div'); el.id = 'drp-popover'; el.className = 'drp-popover';
+  anchor.appendChild(el);
 }
 function agentDrpToggle(e) {
   e.stopPropagation();
@@ -720,9 +723,19 @@ document.addEventListener('click', e => {
   const pop = document.getElementById('drp-popover');
   const anchor = document.getElementById('drp-anchor');
   if (pop && anchor && !anchor.contains(e.target)) pop.classList.remove('open');
-  document.querySelectorAll('.ins-drp-popover').forEach(p => { const anc = p.closest('.ins-drp-anchor'); if (anc && !anc.contains(e.target)) p.classList.remove('open'); });
+  // Close insights popovers if click is outside their anchor
+  document.querySelectorAll('.ins-drp-popover').forEach(p => {
+    const anc = p.closest('.ins-drp-anchor');
+    if (anc && !anc.contains(e.target)) p.classList.remove('open');
+  });
 });
-function agentDrpNav(dir) { agentDrpViewMonth+=dir; if(agentDrpViewMonth>11){agentDrpViewMonth=0;agentDrpViewYear++;}if(agentDrpViewMonth<0){agentDrpViewMonth=11;agentDrpViewYear--;} agentDrpRender(); }
+function agentDrpNav(dir, e) {
+  if (e) e.stopPropagation();
+  agentDrpViewMonth+=dir;
+  if(agentDrpViewMonth>11){agentDrpViewMonth=0;agentDrpViewYear++;}
+  if(agentDrpViewMonth<0){agentDrpViewMonth=11;agentDrpViewYear--;}
+  agentDrpRender();
+}
 function agentDrpRender() {
   const pop=document.getElementById('drp-popover'); if(!pop)return;
   const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'],DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -731,7 +744,11 @@ function agentDrpRender() {
   for(let i=0;i<first;i++)grid+=`<div class="drp-day drp-empty"></div>`;
   for(let d=1;d<=total;d++){const iso=agentDrpViewYear+'-'+String(agentDrpViewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');let cls='drp-day';if(iso===todayISO)cls+=' drp-today';if(agentDrpPickStart&&agentDrpPickEnd){if(iso===agentDrpPickStart&&iso===agentDrpPickEnd)cls+=' drp-selected';else if(iso===agentDrpPickStart)cls+=' drp-range-start';else if(iso===agentDrpPickEnd)cls+=' drp-range-end';else if(iso>agentDrpPickStart&&iso<agentDrpPickEnd)cls+=' drp-in-range';}else if(agentDrpPickStart&&iso===agentDrpPickStart)cls+=' drp-selected';grid+=`<div class="${cls}" data-iso="${iso}">${d}</div>`;}
   const selText=!agentDrpPickStart?'Click a start date':!agentDrpPickEnd?fmtShortD(agentDrpPickStart)+' → ?':fmtShortD(agentDrpPickStart)+' – '+fmtShortD(agentDrpPickEnd);
-  pop.innerHTML=`<div class="drp-cal-header"><button class="drp-nav-btn" onclick="agentDrpNav(-1)">‹</button><div class="drp-cal-title">${MONTHS[agentDrpViewMonth]} ${agentDrpViewYear}</div><button class="drp-nav-btn" onclick="agentDrpNav(1)">›</button></div><div class="drp-grid">${grid}</div><div class="drp-footer"><div class="drp-selection">${selText}</div><button class="drp-apply" ${!agentDrpPickEnd?'disabled':''} onclick="agentDrpApply()">Apply</button></div>`;
+  pop.innerHTML=`<div class="drp-cal-header"><button class="drp-nav-btn" id="drp-prev">‹</button><div class="drp-cal-title">${MONTHS[agentDrpViewMonth]} ${agentDrpViewYear}</div><button class="drp-nav-btn" id="drp-next">›</button></div><div class="drp-grid">${grid}</div><div class="drp-footer"><div class="drp-selection">${selText}</div><button class="drp-apply" ${!agentDrpPickEnd?'disabled':''} id="drp-apply-btn">Apply</button></div>`;
+  // Attach listeners directly — avoids onclick string bubbling issues
+  pop.querySelector('#drp-prev').addEventListener('click', e => { e.stopPropagation(); agentDrpNav(-1); });
+  pop.querySelector('#drp-next').addEventListener('click', e => { e.stopPropagation(); agentDrpNav(1); });
+  pop.querySelector('#drp-apply-btn').addEventListener('click', e => { e.stopPropagation(); agentDrpApply(); });
   pop.querySelectorAll('.drp-day:not(.drp-empty)').forEach(el=>el.addEventListener('click',ev=>{ev.stopPropagation();agentDrpClickDay(el.dataset.iso);}));
 }
 function agentDrpClickDay(iso){if(!agentDrpPickStart||!agentDrpSelecting){agentDrpPickStart=iso;agentDrpPickEnd=null;agentDrpSelecting=true;}else{if(iso<agentDrpPickStart){agentDrpPickEnd=agentDrpPickStart;agentDrpPickStart=iso;}else agentDrpPickEnd=iso;agentDrpSelecting=false;}agentDrpRender();}
@@ -801,19 +818,45 @@ function insDrpToggle(side, e) {
   else { const now=new Date(); s.year=now.getFullYear(); s.month=now.getMonth(); }
   insDrpRender(side); pop.classList.add('open');
 }
-function insDrpNav(side, dir) { const s=insDrpState[side]; s.month+=dir; if(s.month>11){s.month=0;s.year++;}if(s.month<0){s.month=11;s.year--;} insDrpRender(side); }
+
+function insDrpNav(side, dir, e) {
+  if (e) e.stopPropagation();
+  const s = insDrpState[side];
+  s.month += dir;
+  if (s.month > 11) { s.month = 0; s.year++; }
+  if (s.month < 0) { s.month = 11; s.year--; }
+  insDrpRender(side);
+}
+
 function insDrpRender(side) {
-  const pop=document.getElementById('ins-drp-'+side+'-pop'); if(!pop)return;
-  const s=insDrpState[side];
+  const pop = document.getElementById('ins-drp-'+side+'-pop'); if (!pop) return;
+  const s = insDrpState[side];
   const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'],DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
   const todayISO=toISO(new Date()),first=new Date(s.year,s.month,1).getDay(),total=new Date(s.year,s.month+1,0).getDate();
   let grid=DAYS.map(d=>`<div class="drp-dow">${d}</div>`).join('');
   for(let i=0;i<first;i++)grid+=`<div class="drp-day drp-empty"></div>`;
   for(let d=1;d<=total;d++){const iso=s.year+'-'+String(s.month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');let cls='drp-day';if(iso===todayISO)cls+=' drp-today';if(s.pickStart&&s.pickEnd){if(iso===s.pickStart&&iso===s.pickEnd)cls+=' drp-selected';else if(iso===s.pickStart)cls+=' drp-range-start';else if(iso===s.pickEnd)cls+=' drp-range-end';else if(iso>s.pickStart&&iso<s.pickEnd)cls+=' drp-in-range';}else if(s.pickStart&&iso===s.pickStart)cls+=' drp-selected';grid+=`<div class="${cls}" data-iso="${iso}">${d}</div>`;}
   const selText=!s.pickStart?'Click start date':!s.pickEnd?fmtShortD(s.pickStart)+' → ?':fmtShortD(s.pickStart)+' – '+fmtShortD(s.pickEnd);
-  pop.innerHTML=`<div class="drp-cal-header"><button class="drp-nav-btn" onclick="insDrpNav('${side}',-1)">‹</button><div class="drp-cal-title">${MONTHS[s.month]} ${s.year}</div><button class="drp-nav-btn" onclick="insDrpNav('${side}',1)">›</button></div><div class="drp-grid">${grid}</div><div class="drp-footer"><div class="drp-selection">${selText}</div><button class="drp-apply" ${!s.pickEnd?'disabled':''} onclick="insDrpApply('${side}')">Apply</button></div>`;
-  pop.querySelectorAll('.drp-day:not(.drp-empty)').forEach(el=>el.addEventListener('click',ev=>{ev.stopPropagation();insDrpClickDay(side,el.dataset.iso);}));
+
+  pop.innerHTML=`
+    <div class="drp-cal-header">
+      <button class="drp-nav-btn" id="ins-drp-${side}-prev">‹</button>
+      <div class="drp-cal-title">${MONTHS[s.month]} ${s.year}</div>
+      <button class="drp-nav-btn" id="ins-drp-${side}-next">›</button>
+    </div>
+    <div class="drp-grid">${grid}</div>
+    <div class="drp-footer">
+      <div class="drp-selection">${selText}</div>
+      <button class="drp-apply" id="ins-drp-${side}-apply" ${!s.pickEnd?'disabled':''}>Apply</button>
+    </div>`;
+
+  // Attach all listeners via JS — no inline onclick strings so stopPropagation works correctly
+  pop.querySelector(`#ins-drp-${side}-prev`).addEventListener('click', e => { e.stopPropagation(); insDrpNav(side, -1); });
+  pop.querySelector(`#ins-drp-${side}-next`).addEventListener('click', e => { e.stopPropagation(); insDrpNav(side, 1); });
+  pop.querySelector(`#ins-drp-${side}-apply`).addEventListener('click', e => { e.stopPropagation(); insDrpApply(side); });
+  pop.querySelectorAll('.drp-day:not(.drp-empty)').forEach(el => el.addEventListener('click', ev => { ev.stopPropagation(); insDrpClickDay(side, el.dataset.iso); }));
 }
+
 function insDrpClickDay(side, iso) { const s=insDrpState[side]; if(!s.pickStart||!s.selecting){s.pickStart=iso;s.pickEnd=null;s.selecting=true;}else{if(iso<s.pickStart){s.pickEnd=s.pickStart;s.pickStart=iso;}else s.pickEnd=iso;s.selecting=false;}insDrpRender(side); }
 function insDrpApply(side) { const s=insDrpState[side]; if(!s.pickStart||!s.pickEnd)return; insPeriods[side]={start:s.pickStart,end:s.pickEnd}; const lbl=document.getElementById('ins-drp-'+side+'-label'); if(lbl)lbl.textContent=fmtShortD(s.pickStart)+' – '+fmtShortD(s.pickEnd); document.getElementById('ins-drp-'+side+'-pop').classList.remove('open'); }
 
