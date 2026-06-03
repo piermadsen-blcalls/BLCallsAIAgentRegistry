@@ -312,6 +312,14 @@
   .thr-toggle input[type=checkbox]:checked + .thr-check::after { content:''; display:block; width:7px; height:4px; border-left:1.5px solid white; border-bottom:1.5px solid white; transform:rotate(-45deg) translateY(-1px); }
   .run-btn { margin-left:auto; font-family:var(--sans); font-size:13px; font-weight:500; padding:8px 18px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
   .run-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .ins-vertical-wrap { position:relative; }
+  .ins-vertical-trigger { display:flex; align-items:center; gap:6px; font-family:var(--sans); font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 10px; cursor:pointer; white-space:nowrap; }
+  .ins-vertical-trigger:hover { border-color:var(--brand-navy); }
+  .ins-vertical-popover { display:none; position:absolute; top:calc(100% + 6px); left:0; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:9999; padding:8px 0; min-width:160px; }
+  .ins-vertical-popover.open { display:block; }
+  .ins-vertical-opt { display:flex; align-items:center; gap:8px; padding:7px 14px; cursor:pointer; font-size:13px; color:var(--text); }
+  .ins-vertical-opt:hover { background:var(--bg); }
+  .ins-vertical-opt input[type=checkbox] { accent-color:var(--brand-navy); width:13px; height:13px; cursor:pointer; }
   .summary-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:28px; overflow:hidden; }
   .summary-item { padding:16px 20px; }
   .summary-item + .summary-item { border-left:1px solid var(--border); }
@@ -473,33 +481,46 @@
         </div>
       </div>
     </div>
-
     <div class="threshold-bar">
       <div class="threshold-group">
         <label class="thr-toggle"><input type="checkbox" id="en-calls" checked onchange="toggleThr('calls')"><span class="thr-check"></span></label>
         <span class="threshold-label">Min raw calls</span>
         <input class="threshold-input" type="number" id="thr-calls" value="25" min="0">
-        <span class="threshold-unit">calls</span>
       </div>
       <div class="thr-divider"></div>
       <div class="threshold-group">
         <label class="thr-toggle"><input type="checkbox" id="en-rev" checked onchange="toggleThr('rev')"><span class="thr-check"></span></label>
         <span class="threshold-label">Revenue change</span>
         <input class="threshold-input" type="number" id="thr-rev-pct" value="20" min="0" max="100">
-        <span class="threshold-unit">% or</span>
-        <input class="threshold-input" type="number" id="thr-rev-abs" value="500" min="0">
-        <span class="threshold-unit">$</span>
+        <span class="threshold-unit">%</span>
       </div>
       <div class="thr-divider"></div>
       <div class="threshold-group">
         <label class="thr-toggle"><input type="checkbox" id="en-conv" checked onchange="toggleThr('conv')"><span class="thr-check"></span></label>
         <span class="threshold-label">Conversion change</span>
         <input class="threshold-input" type="number" id="thr-conv" value="5" min="0" max="100">
-        <span class="threshold-unit">pp</span>
+        <span class="threshold-unit">%</span>
+      </div>
+      <div class="thr-divider"></div>
+      <div class="threshold-group">
+        <span class="threshold-label">Vertical</span>
+        <div class="ins-vertical-wrap" id="ins-vertical-wrap">
+          <button class="ins-vertical-trigger" id="ins-vertical-trigger" onclick="insVerticalToggle(event)">
+            <span id="ins-vertical-label">All verticals</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="ins-vertical-popover" id="ins-vertical-popover">
+            <label class="ins-vertical-opt"><input type="checkbox" value="all" checked onchange="insVerticalAll(this)"><span>All verticals</span></label>
+            <label class="ins-vertical-opt"><input type="checkbox" value="Home Services" onchange="insVerticalChange()"><span>Home Services</span></label>
+            <label class="ins-vertical-opt"><input type="checkbox" value="Insurance" onchange="insVerticalChange()"><span>Insurance</span></label>
+            <label class="ins-vertical-opt"><input type="checkbox" value="Legal" onchange="insVerticalChange()"><span>Legal</span></label>
+            <label class="ins-vertical-opt"><input type="checkbox" value="Financial" onchange="insVerticalChange()"><span>Financial</span></label>
+            <label class="ins-vertical-opt"><input type="checkbox" value="Other" onchange="insVerticalChange()"><span>Other</span></label>
+          </div>
+        </div>
       </div>
       <button class="run-btn" id="run-btn" onclick="runInsights()">Run analysis</button>
     </div>
-
     <div id="ins-output">
       <div class="ins-loading">Set your periods above and click <strong>Run analysis</strong>.</div>
     </div>
@@ -727,6 +748,8 @@ document.addEventListener('click', e => {
     const anc = p.closest('.ins-drp-anchor');
     if (anc && !anc.contains(e.target)) p.classList.remove('open');
   });
+  const vwrap = document.getElementById('ins-vertical-wrap');
+  if (vwrap && !vwrap.contains(e.target)) document.getElementById('ins-vertical-popover')?.classList.remove('open');
 });
 function agentDrpNav(dir, e) {
   if (e) e.stopPropagation();
@@ -758,13 +781,9 @@ function setPreset(days,el){document.querySelectorAll('.preset-btn').forEach(b=>
 function updateDataWindowLabels(){const w=activeRange;document.getElementById('stat-calls-label').textContent='calls / '+w.short;document.getElementById('stat-revenue-label').textContent='revenue / '+w.short;document.getElementById('stat-margin-label').textContent='margin / '+w.short;document.getElementById('last-updated').textContent='Data window: '+w.label;}
 
 // ─── AGENTS METRICS ───────────────────────────────────────────────────────────
-
-// A call is "sent" if result contains 'connected' OR connect_duration > 0
-// This matches the BigQuery definition: COUNTIF(LOWER(result) LIKE '%connected%' OR connect_duration > 0)
 function isSent(c) {
   return (c.result || '').toLowerCase().includes('connected') || (c.connect_duration || 0) > 0;
 }
-
 function isPaid(c){return(c.advertiser_payin||0)>0;}
 function aggregateForAgent(agent,calls){let raw=0,sent=0,paid=0,revenue=0,margin=0;const pubMap={},advMap={};for(const c of calls){raw++;const s=isSent(c),p=isPaid(c);if(s)sent++;if(p)paid++;revenue+=c.advertiser_payin||0;margin+=(c.advertiser_payin||0)-(c.publisher_payout||0);const pub=c.publisher_name||'(unknown)';if(!pubMap[pub])pubMap[pub]={name:pub,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};pubMap[pub].raw_calls++;if(s)pubMap[pub].sent_calls++;if(p)pubMap[pub].paid_calls++;pubMap[pub].revenue+=c.advertiser_payin||0;const adv=c.advertiser_name||'(unknown)';if(!advMap[adv])advMap[adv]={name:adv,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};advMap[adv].raw_calls++;if(s)advMap[adv].sent_calls++;if(p)advMap[adv].paid_calls++;advMap[adv].revenue+=c.advertiser_payin||0;}agent.raw_calls=raw;agent.sent_calls=sent;agent.paid_calls=paid;agent.revenue=revenue;agent.margin=margin;agent.conversion=raw>0?paid/raw:0;agent.pubBreakdown=Object.values(pubMap).sort((a,b)=>b.raw_calls-a.raw_calls);agent.advBreakdown=Object.values(advMap).sort((a,b)=>b.revenue-a.revenue);}
 
@@ -808,6 +827,7 @@ const insDrpState = {
   b:{year:0,month:0,pickStart:null,pickEnd:null,selecting:false}
 };
 let insLastResults = null;
+let insVerticalFilter = [];
 const insSortState = { pub:{col:'dRev',dir:-1}, adv:{col:'dRev',dir:-1}, agent:{col:'dRev',dir:-1} };
 
 function insDrpToggle(side, e) {
@@ -841,7 +861,6 @@ function insDrpRender(side) {
   for(let i=0;i<first;i++)grid+=`<div class="drp-day drp-empty"></div>`;
   for(let d=1;d<=total;d++){const iso=s.year+'-'+String(s.month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');let cls='drp-day';if(iso===todayISO)cls+=' drp-today';if(s.pickStart&&s.pickEnd){if(iso===s.pickStart&&iso===s.pickEnd)cls+=' drp-selected';else if(iso===s.pickStart)cls+=' drp-range-start';else if(iso===s.pickEnd)cls+=' drp-range-end';else if(iso>s.pickStart&&iso<s.pickEnd)cls+=' drp-in-range';}else if(s.pickStart&&iso===s.pickStart)cls+=' drp-selected';grid+=`<div class="${cls}" data-iso="${iso}">${d}</div>`;}
   const selText=!s.pickStart?'Click start date':!s.pickEnd?fmtShortD(s.pickStart)+' → ?':fmtShortD(s.pickStart)+' – '+fmtShortD(s.pickEnd);
-
   pop.innerHTML=`
     <div class="drp-cal-header">
       <button class="drp-nav-btn" id="ins-drp-${side}-prev">‹</button>
@@ -853,7 +872,6 @@ function insDrpRender(side) {
       <div class="drp-selection">${selText}</div>
       <button class="drp-apply" id="ins-drp-${side}-apply" ${!s.pickEnd?'disabled':''}>Apply</button>
     </div>`;
-
   pop.querySelector(`#ins-drp-${side}-prev`).addEventListener('click', e => { e.stopPropagation(); insDrpNav(side, -1); });
   pop.querySelector(`#ins-drp-${side}-next`).addEventListener('click', e => { e.stopPropagation(); insDrpNav(side, 1); });
   pop.querySelector(`#ins-drp-${side}-apply`).addEventListener('click', e => { e.stopPropagation(); insDrpApply(side); });
@@ -863,18 +881,49 @@ function insDrpRender(side) {
 function insDrpClickDay(side, iso) { const s=insDrpState[side]; if(!s.pickStart||!s.selecting){s.pickStart=iso;s.pickEnd=null;s.selecting=true;}else{if(iso<s.pickStart){s.pickEnd=s.pickStart;s.pickStart=iso;}else s.pickEnd=iso;s.selecting=false;}insDrpRender(side); }
 function insDrpApply(side) { const s=insDrpState[side]; if(!s.pickStart||!s.pickEnd)return; insPeriods[side]={start:s.pickStart,end:s.pickEnd}; const lbl=document.getElementById('ins-drp-'+side+'-label'); if(lbl)lbl.textContent=fmtShortD(s.pickStart)+' – '+fmtShortD(s.pickEnd); document.getElementById('ins-drp-'+side+'-pop').classList.remove('open'); }
 
+// ─── INSIGHTS VERTICAL FILTER ─────────────────────────────────────────────────
+function insVerticalToggle(e) {
+  e.stopPropagation();
+  document.getElementById('ins-vertical-popover').classList.toggle('open');
+}
+function insVerticalAll(cb) {
+  const popover = document.getElementById('ins-vertical-popover');
+  popover.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = cb.checked);
+  insVerticalUpdateLabel();
+}
+function insVerticalChange() {
+  const popover = document.getElementById('ins-vertical-popover');
+  const allCb = popover.querySelector('input[value="all"]');
+  const specificCbs = [...popover.querySelectorAll('input[type=checkbox]:not([value="all"])')];
+  allCb.checked = specificCbs.every(c => c.checked);
+  insVerticalUpdateLabel();
+}
+function insVerticalUpdateLabel() {
+  const popover = document.getElementById('ins-vertical-popover');
+  const allCb = popover.querySelector('input[value="all"]');
+  const selected = [...popover.querySelectorAll('input[type=checkbox]:not([value="all"])')].filter(c => c.checked).map(c => c.value);
+  insVerticalFilter = selected;
+  const label = document.getElementById('ins-vertical-label');
+  if (allCb.checked || selected.length === 0) { label.textContent = 'All verticals'; insVerticalFilter = []; }
+  else if (selected.length === 1) label.textContent = selected[0];
+  else label.textContent = selected.length + ' verticals';
+}
+
 function toggleThr(which) {
   const cb=document.getElementById('en-'+which); if(!cb)return;
   const on=cb.checked;
-  const ids=which==='rev'?['thr-rev-pct','thr-rev-abs']:which==='conv'?['thr-conv']:['thr-calls'];
+  const ids=which==='rev'?['thr-rev-pct']:which==='conv'?['thr-conv']:['thr-calls'];
   ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.disabled=!on;el.style.opacity=on?'':'0.4';});
 }
 
 async function insFetchPeriod(startISO, endISO) {
   const pubs={},advs={},agents={};
   const PAGE=1000;let offset=0;
+  const verticalQuery = insVerticalFilter.length > 0
+    ? `&or=(${insVerticalFilter.map(v=>`vertical.eq.${encodeURIComponent(v)}`).join(',')})`
+    : '';
   while(true){
-    const batch=await sbFetch(`agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&call_date=gte.${startISO}&call_date=lte.${endISO}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
+    const batch=await sbFetch(`agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical&call_date=gte.${startISO}&call_date=lte.${endISO}${verticalQuery}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
     if(!batch||!batch.length)break;
     for(const c of batch){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
     function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw++;if(s)r.sent++;if(p)r.paid++;r.rev+=rev;r.margin+=margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw++;if(p)r.byAgent[ag].paid++;r.byAgent[ag].rev+=rev;}
@@ -890,9 +939,9 @@ function insFmtRev(v){return v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+Math.round(
 function insFmtConv(paid,raw){return raw>0?(paid/raw*100).toFixed(1)+'%':'—';}
 function insPeriodLabel(r){return fmtShortD(r.start)+' – '+fmtShortD(r.end);}
 
-function insBuildMovers(aMap,bMap,thrCalls,thrRevPct,thrRevAbs,thrConv){
+function insBuildMovers(aMap,bMap,thrCalls,thrRevPct,thrConv){
   const allKeys=new Set([...Object.keys(aMap),...Object.keys(bMap)]),rows=[];
-  for(const key of allKeys){const a=aMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}},b=bMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};if(Math.max(a.raw,b.raw)<thrCalls)continue;const dRev=b.rev-a.rev,dMargin=b.margin-a.margin,dRevPct=a.rev>0?((dRev/a.rev)*100):(b.rev>0?100:0),dConv=insConv(b.paid,b.raw)-insConv(a.paid,a.raw);const flagRev=thrRevPct<Infinity&&(Math.abs(dRevPct)>=thrRevPct||Math.abs(dRev)>=thrRevAbs),flagConv=thrConv<Infinity&&Math.abs(dConv)>=thrConv;if(!flagRev&&!flagConv)continue;rows.push({key,a,b,dRev,dMargin,dRevPct,dConv,absImpact:Math.abs(dRev)});}
+  for(const key of allKeys){const a=aMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}},b=bMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};if(Math.max(a.raw,b.raw)<thrCalls)continue;const dRev=b.rev-a.rev,dMargin=b.margin-a.margin,dRevPct=a.rev>0?((dRev/a.rev)*100):(b.rev>0?100:0),dConv=insConv(b.paid,b.raw)-insConv(a.paid,a.raw);const flagRev=thrRevPct<Infinity&&Math.abs(dRevPct)>=thrRevPct,flagConv=thrConv<Infinity&&Math.abs(dConv)>=thrConv;if(!flagRev&&!flagConv)continue;rows.push({key,a,b,dRev,dMargin,dRevPct,dConv,absImpact:Math.abs(dRev)});}
   return rows;
 }
 
@@ -904,20 +953,19 @@ function runInsights(){
   const callsOn=document.getElementById('en-calls').checked,revOn=document.getElementById('en-rev').checked,convOn=document.getElementById('en-conv').checked;
   const thrCalls=callsOn?(parseInt(document.getElementById('thr-calls').value)||0):0;
   const thrRevPct=revOn?(parseFloat(document.getElementById('thr-rev-pct').value)||0):Infinity;
-  const thrRevAbs=revOn?(parseFloat(document.getElementById('thr-rev-abs').value)||0):Infinity;
   const thrConv=convOn?(parseFloat(document.getElementById('thr-conv').value)||0):Infinity;
   const btn=document.getElementById('run-btn');btn.disabled=true;btn.textContent='Loading…';
   document.getElementById('ins-output').innerHTML=`<div class="ins-loading"><span class="spinner"></span>Fetching call data for both periods…</div>`;
   Promise.all([insFetchPeriod(pA.start,pA.end),insFetchPeriod(pB.start,pB.end)]).then(([dA,dB])=>{
-    insLastResults={dA,dB,thrCalls,thrRevPct,thrRevAbs,thrConv,pA,pB};
+    insLastResults={dA,dB,thrCalls,thrRevPct,thrConv,pA,pB};
     insRenderResults(insLastResults);btn.disabled=false;btn.textContent='Run analysis';
   }).catch(e=>{document.getElementById('ins-output').innerHTML=`<div class="ins-loading" style="color:var(--coral)">Error: ${e.message}</div>`;btn.disabled=false;btn.textContent='Run analysis';});
 }
 
-function insRenderResults({dA,dB,thrCalls,thrRevPct,thrRevAbs,thrConv,pA,pB}){
-  const pubM=insBuildMovers(dA.pubs,dB.pubs,thrCalls,thrRevPct,thrRevAbs,thrConv);
-  const advM=insBuildMovers(dA.advs,dB.advs,thrCalls,thrRevPct,thrRevAbs,thrConv);
-  const agM=insBuildMovers(dA.agents,dB.agents,thrCalls,thrRevPct,thrRevAbs,thrConv);
+function insRenderResults({dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}){
+  const pubM=insBuildMovers(dA.pubs,dB.pubs,thrCalls,thrRevPct,thrConv);
+  const advM=insBuildMovers(dA.advs,dB.advs,thrCalls,thrRevPct,thrConv);
+  const agM=insBuildMovers(dA.agents,dB.agents,thrCalls,thrRevPct,thrConv);
   const totRevA=Object.values(dA.agents).reduce((s,r)=>s+r.rev,0),totRevB=Object.values(dB.agents).reduce((s,r)=>s+r.rev,0);
   const totMarA=Object.values(dA.agents).reduce((s,r)=>s+r.margin,0),totMarB=Object.values(dB.agents).reduce((s,r)=>s+r.margin,0);
   const totRawA=Object.values(dA.agents).reduce((s,r)=>s+r.raw,0),totRawB=Object.values(dB.agents).reduce((s,r)=>s+r.raw,0);
@@ -957,11 +1005,11 @@ function insAttachListeners(){
       const sect=th.dataset.sect,col=th.dataset.col;
       if(insSortState[sect].col===col)insSortState[sect].dir*=-1;else{insSortState[sect].col=col;insSortState[sect].dir=-1;}
       if(!insLastResults)return;
-      const{dA,dB,thrCalls,thrRevPct,thrRevAbs,thrConv,pA,pB}=insLastResults;
+      const{dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}=insLastResults;
       const mapA=sect==='pub'?dA.pubs:sect==='adv'?dA.advs:dA.agents;
       const mapB=sect==='pub'?dB.pubs:sect==='adv'?dB.advs:dB.agents;
       const title=sect==='pub'?'Publishers':sect==='adv'?'Advertisers':'AI agents';
-      const movers=insBuildMovers(mapA,mapB,thrCalls,thrRevPct,thrRevAbs,thrConv);
+      const movers=insBuildMovers(mapA,mapB,thrCalls,thrRevPct,thrConv);
       const sec=document.getElementById('ins-section-'+sect);
       if(sec)sec.outerHTML=insRenderSection(sect,title,movers,pA,pB);
       insAttachListeners();
@@ -1129,3 +1177,6 @@ async function bootDashboard() {
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
 }
 bootDashboard();
+</script>
+</body>
+</html>
