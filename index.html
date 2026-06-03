@@ -360,14 +360,6 @@
   .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border-strong); border-top-color:var(--brand-navy); border-radius:50%; animation:spin 0.7s linear infinite; margin-right:8px; vertical-align:middle; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
-  /* Expand tabs for agent breakdown */
-  .exp-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:12px; }
-  .exp-tab { font-family:var(--sans); font-size:11px; font-weight:500; padding:6px 14px; border:none; background:none; color:var(--text-3); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 0.12s; }
-  .exp-tab.active { color:var(--brand-navy); border-bottom-color:var(--brand-mint); }
-  .exp-tab:hover:not(.active) { color:var(--text); }
-  .exp-tab-pane { display:none; }
-  .exp-tab-pane.active { display:block; }
-
   .page-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   .footer-note { font-size: 11px; color: var(--text-3); }
   .footer-right { display: flex; gap: 14px; align-items: center; }
@@ -766,7 +758,13 @@ function setPreset(days,el){document.querySelectorAll('.preset-btn').forEach(b=>
 function updateDataWindowLabels(){const w=activeRange;document.getElementById('stat-calls-label').textContent='calls / '+w.short;document.getElementById('stat-revenue-label').textContent='revenue / '+w.short;document.getElementById('stat-margin-label').textContent='margin / '+w.short;document.getElementById('last-updated').textContent='Data window: '+w.label;}
 
 // ─── AGENTS METRICS ───────────────────────────────────────────────────────────
-function isSent(c){if((c.advertiser_payin||0)>0)return true;if((c.ivr_duration||0)>0)return!(c.result==='connected'&&(c.connect_duration||0)>0);return false;}
+
+// A call is "sent" if result contains 'connected' OR connect_duration > 0
+// This matches the BigQuery definition: COUNTIF(LOWER(result) LIKE '%connected%' OR connect_duration > 0)
+function isSent(c) {
+  return (c.result || '').toLowerCase().includes('connected') || (c.connect_duration || 0) > 0;
+}
+
 function isPaid(c){return(c.advertiser_payin||0)>0;}
 function aggregateForAgent(agent,calls){let raw=0,sent=0,paid=0,revenue=0,margin=0;const pubMap={},advMap={};for(const c of calls){raw++;const s=isSent(c),p=isPaid(c);if(s)sent++;if(p)paid++;revenue+=c.advertiser_payin||0;margin+=(c.advertiser_payin||0)-(c.publisher_payout||0);const pub=c.publisher_name||'(unknown)';if(!pubMap[pub])pubMap[pub]={name:pub,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};pubMap[pub].raw_calls++;if(s)pubMap[pub].sent_calls++;if(p)pubMap[pub].paid_calls++;pubMap[pub].revenue+=c.advertiser_payin||0;const adv=c.advertiser_name||'(unknown)';if(!advMap[adv])advMap[adv]={name:adv,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};advMap[adv].raw_calls++;if(s)advMap[adv].sent_calls++;if(p)advMap[adv].paid_calls++;advMap[adv].revenue+=c.advertiser_payin||0;}agent.raw_calls=raw;agent.sent_calls=sent;agent.paid_calls=paid;agent.revenue=revenue;agent.margin=margin;agent.conversion=raw>0?paid/raw:0;agent.pubBreakdown=Object.values(pubMap).sort((a,b)=>b.raw_calls-a.raw_calls);agent.advBreakdown=Object.values(advMap).sort((a,b)=>b.revenue-a.revenue);}
 
@@ -843,6 +841,7 @@ function insDrpRender(side) {
   for(let i=0;i<first;i++)grid+=`<div class="drp-day drp-empty"></div>`;
   for(let d=1;d<=total;d++){const iso=s.year+'-'+String(s.month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');let cls='drp-day';if(iso===todayISO)cls+=' drp-today';if(s.pickStart&&s.pickEnd){if(iso===s.pickStart&&iso===s.pickEnd)cls+=' drp-selected';else if(iso===s.pickStart)cls+=' drp-range-start';else if(iso===s.pickEnd)cls+=' drp-range-end';else if(iso>s.pickStart&&iso<s.pickEnd)cls+=' drp-in-range';}else if(s.pickStart&&iso===s.pickStart)cls+=' drp-selected';grid+=`<div class="${cls}" data-iso="${iso}">${d}</div>`;}
   const selText=!s.pickStart?'Click start date':!s.pickEnd?fmtShortD(s.pickStart)+' → ?':fmtShortD(s.pickStart)+' – '+fmtShortD(s.pickEnd);
+
   pop.innerHTML=`
     <div class="drp-cal-header">
       <button class="drp-nav-btn" id="ins-drp-${side}-prev">‹</button>
@@ -854,6 +853,7 @@ function insDrpRender(side) {
       <div class="drp-selection">${selText}</div>
       <button class="drp-apply" id="ins-drp-${side}-apply" ${!s.pickEnd?'disabled':''}>Apply</button>
     </div>`;
+
   pop.querySelector(`#ins-drp-${side}-prev`).addEventListener('click', e => { e.stopPropagation(); insDrpNav(side, -1); });
   pop.querySelector(`#ins-drp-${side}-next`).addEventListener('click', e => { e.stopPropagation(); insDrpNav(side, 1); });
   pop.querySelector(`#ins-drp-${side}-apply`).addEventListener('click', e => { e.stopPropagation(); insDrpApply(side); });
@@ -870,49 +870,16 @@ function toggleThr(which) {
   ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.disabled=!on;el.style.opacity=on?'':'0.4';});
 }
 
-// ─── FETCH: now tracks byPub and byAdv on agent rows too ──────────────────────
 async function insFetchPeriod(startISO, endISO) {
-  const pubs={}, advs={}, agents={};
-  const PAGE=1000; let offset=0;
+  const pubs={},advs={},agents={};
+  const PAGE=1000;let offset=0;
   while(true){
-    const batch=await sbFetch(
-      `agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&call_date=gte.${startISO}&call_date=lte.${endISO}`,
-      {headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}}
-    );
+    const batch=await sbFetch(`agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&call_date=gte.${startISO}&call_date=lte.${endISO}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
     if(!batch||!batch.length)break;
-    for(const c of batch){
-      const s=isSent(c), p=isPaid(c);
-      const rev=c.advertiser_payin||0, margin=rev-(c.publisher_payout||0);
-      const pub=c.publisher_name||'(unknown)', adv=c.advertiser_name||'(unknown)', ag=c.ivr_name||'(unknown)';
-
-      // accumulator helper — now also tracks byPub and byAdv sub-maps
-      function acc(map, key, altKey1, altVal1, altKey2, altVal2) {
-        if(!map[key]) map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{},byPub:{},byAdv:{}};
-        const r=map[key];
-        r.raw++; if(s)r.sent++; if(p)r.paid++; r.rev+=rev; r.margin+=margin;
-        // sub-breakdowns
-        if(altKey1==='byAgent'){
-          if(!r.byAgent[altVal1])r.byAgent[altVal1]={raw:0,paid:0,rev:0};
-          r.byAgent[altVal1].raw++; if(p)r.byAgent[altVal1].paid++; r.byAgent[altVal1].rev+=rev;
-        }
-        if(altKey1==='byPub'){
-          if(!r.byPub[altVal1])r.byPub[altVal1]={raw:0,paid:0,rev:0};
-          r.byPub[altVal1].raw++; if(p)r.byPub[altVal1].paid++; r.byPub[altVal1].rev+=rev;
-        }
-        if(altKey2==='byAdv'){
-          if(!r.byAdv[altVal2])r.byAdv[altVal2]={raw:0,paid:0,rev:0};
-          r.byAdv[altVal2].raw++; if(p)r.byAdv[altVal2].paid++; r.byAdv[altVal2].rev+=rev;
-        }
-      }
-
-      // publishers: sub-breakdown by agent
-      acc(pubs, pub, 'byAgent', ag);
-      // advertisers: sub-breakdown by agent
-      acc(advs, adv, 'byAgent', ag);
-      // agents: sub-breakdown by publisher AND advertiser
-      acc(agents, ag, 'byPub', pub, 'byAdv', adv);
-    }
-    if(batch.length<PAGE)break; offset+=PAGE;
+    for(const c of batch){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
+    function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw++;if(s)r.sent++;if(p)r.paid++;r.rev+=rev;r.margin+=margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw++;if(p)r.byAgent[ag].paid++;r.byAgent[ag].rev+=rev;}
+    acc(pubs,pub);acc(advs,adv);acc(agents,ag);}
+    if(batch.length<PAGE)break;offset+=PAGE;
   }
   return{pubs,advs,agents};
 }
@@ -925,18 +892,7 @@ function insPeriodLabel(r){return fmtShortD(r.start)+' – '+fmtShortD(r.end);}
 
 function insBuildMovers(aMap,bMap,thrCalls,thrRevPct,thrRevAbs,thrConv){
   const allKeys=new Set([...Object.keys(aMap),...Object.keys(bMap)]),rows=[];
-  for(const key of allKeys){
-    const a=aMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{},byPub:{},byAdv:{}};
-    const b=bMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{},byPub:{},byAdv:{}};
-    if(Math.max(a.raw,b.raw)<thrCalls)continue;
-    const dRev=b.rev-a.rev,dMargin=b.margin-a.margin;
-    const dRevPct=a.rev>0?((dRev/a.rev)*100):(b.rev>0?100:0);
-    const dConv=insConv(b.paid,b.raw)-insConv(a.paid,a.raw);
-    const flagRev=thrRevPct<Infinity&&(Math.abs(dRevPct)>=thrRevPct||Math.abs(dRev)>=thrRevAbs);
-    const flagConv=thrConv<Infinity&&Math.abs(dConv)>=thrConv;
-    if(!flagRev&&!flagConv)continue;
-    rows.push({key,a,b,dRev,dMargin,dRevPct,dConv,absImpact:Math.abs(dRev)});
-  }
+  for(const key of allKeys){const a=aMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}},b=bMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};if(Math.max(a.raw,b.raw)<thrCalls)continue;const dRev=b.rev-a.rev,dMargin=b.margin-a.margin,dRevPct=a.rev>0?((dRev/a.rev)*100):(b.rev>0?100:0),dConv=insConv(b.paid,b.raw)-insConv(a.paid,a.raw);const flagRev=thrRevPct<Infinity&&(Math.abs(dRevPct)>=thrRevPct||Math.abs(dRev)>=thrRevAbs),flagConv=thrConv<Infinity&&Math.abs(dConv)>=thrConv;if(!flagRev&&!flagConv)continue;rows.push({key,a,b,dRev,dMargin,dRevPct,dConv,absImpact:Math.abs(dRev)});}
   return rows;
 }
 
@@ -969,7 +925,7 @@ function insRenderResults({dA,dB,thrCalls,thrRevPct,thrRevAbs,thrConv,pA,pB}){
   const dRev=totRevB-totRevA,dMar=totMarB-totMarA,dConvTot=insConv(totPaidB,totRawB)-insConv(totPaidA,totRawA);
   const dRevPct=totRevA>0?((dRev/totRevA)*100).toFixed(1):'—',dMarPct=totMarA>0?((dMar/totMarA)*100).toFixed(1):'—';
   const pn=v=>v>=0?'pos':'neg';
-  document.getElementById('ins-output').innerHTML=`<div>
+  document.getElementById('ins-output').innerHTML=`<div class="anim">
     <div class="summary-strip">
       <div class="summary-item"><div class="summary-val ${pn(dRev)}">${insFmtDelta(dRev,'$')}</div><div class="summary-lbl">Revenue (B vs A)</div><div class="summary-sub" style="color:${dRev>=0?'var(--teal)':'var(--coral)'}">${dRevPct!=='—'?(dRev>=0?'+':'')+dRevPct+'%':'—'}</div></div>
       <div class="summary-item"><div class="summary-val ${pn(dMar)}">${insFmtDelta(dMar,'$')}</div><div class="summary-lbl">Direct margin (B vs A)</div><div class="summary-sub" style="color:${dMar>=0?'var(--teal)':'var(--coral)'}">${dMarPct!=='—'?(dMar>=0?'+':'')+dMarPct+'%':'—'}</div></div>
@@ -986,7 +942,7 @@ function insRenderResults({dA,dB,thrCalls,thrRevPct,thrRevAbs,thrConv,pA,pB}){
 function insAttachListeners(){
   document.querySelectorAll('.ins-expand-trigger').forEach(tr=>{
     tr.addEventListener('click',()=>{
-      const key=tr.dataset.key, sect=tr.dataset.sect, safeKey=key.replace(/[^a-zA-Z0-9]/g,'_');
+      const key=tr.dataset.key,sect=tr.dataset.sect,safeKey=key.replace(/[^a-zA-Z0-9]/g,'_');
       const expRow=document.getElementById('ins-exp-'+sect+'-'+safeKey);
       const chev=tr.querySelector('.ins-chevron');
       if(!expRow)return;
@@ -996,25 +952,10 @@ function insAttachListeners(){
       tr.classList.toggle('expanded',!isOpen);
     });
   });
-
-  // Tab switching inside expand rows
-  document.querySelectorAll('.exp-tab').forEach(tab=>{
-    tab.addEventListener('click', e=>{
-      e.stopPropagation();
-      const group=tab.dataset.group;
-      const pane=tab.dataset.pane;
-      document.querySelectorAll(`.exp-tab[data-group="${group}"]`).forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll(`.exp-tab-pane[data-group="${group}"]`).forEach(p=>p.classList.remove('active'));
-      tab.classList.add('active');
-      document.querySelector(`.exp-tab-pane[data-group="${group}"][data-pane="${pane}"]`)?.classList.add('active');
-    });
-  });
-
   document.querySelectorAll('.ins-sort-th').forEach(th=>{
     th.addEventListener('click',()=>{
-      const sect=th.dataset.sect, col=th.dataset.col;
-      if(insSortState[sect].col===col)insSortState[sect].dir*=-1;
-      else{insSortState[sect].col=col;insSortState[sect].dir=-1;}
+      const sect=th.dataset.sect,col=th.dataset.col;
+      if(insSortState[sect].col===col)insSortState[sect].dir*=-1;else{insSortState[sect].col=col;insSortState[sect].dir=-1;}
       if(!insLastResults)return;
       const{dA,dB,thrCalls,thrRevPct,thrRevAbs,thrConv,pA,pB}=insLastResults;
       const mapA=sect==='pub'?dA.pubs:sect==='adv'?dA.advs:dA.agents;
@@ -1028,105 +969,14 @@ function insAttachListeners(){
   });
 }
 
-// ─── MINI TABLE BUILDER ───────────────────────────────────────────────────────
-function insMiniTable(byMapA, byMapB, firstColLabel) {
-  const allKeys = new Set([...Object.keys(byMapA), ...Object.keys(byMapB)]);
-  const rows = [...allKeys].map(k => {
-    const a = byMapA[k]||{raw:0,paid:0,rev:0};
-    const b = byMapB[k]||{raw:0,paid:0,rev:0};
-    return { k, a, b, dRev: b.rev - a.rev };
-  }).sort((x,y) => Math.abs(y.dRev) - Math.abs(x.dRev)).slice(0, 12);
-
-  if (!rows.length) return `<div style="font-size:12px;color:var(--text-3);font-style:italic">No data available.</div>`;
-
-  const header = `<tr style="font-size:10px;color:var(--text-3)">
-    <td>${firstColLabel}</td><td>Raw A</td><td>Raw B</td>
-    <td>Rev A</td><td>Rev B</td><td>∆ Rev</td>
-  </tr>`;
-  const body = rows.map(r => `<tr>
-    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="${r.k}">${r.k}</td>
-    <td>${r.a.raw}</td><td>${r.b.raw}</td>
-    <td>${insFmtRev(r.a.rev)}</td><td>${insFmtRev(r.b.rev)}</td>
-    <td style="color:${r.dRev>=0?'var(--teal)':'var(--coral)'};font-weight:500">${insFmtDelta(r.dRev,'$')}</td>
-  </tr>`).join('');
-  return `<table class="mini-table">${header}${body}</table>`;
-}
-
-// ─── EXPAND CONTENT ───────────────────────────────────────────────────────────
-function insExpandContent(r, pA, pB, sect) {
-  const safeKey = r.key.replace(/[^a-zA-Z0-9]/g,'_');
-  const group = sect + '_' + safeKey; // unique tab group per row
-
-  // Left column: period stats (same for all sections)
-  const leftCol = `
-    <div>
-      <div class="expand-col-title">Period A — ${insPeriodLabel(pA)}</div>
-      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2);margin-bottom:14px">
-        ${r.a.raw.toLocaleString()} raw · ${r.a.paid.toLocaleString()} paid · ${insFmtConv(r.a.paid,r.a.raw)} conv · ${insFmtRev(r.a.rev)}
-      </div>
-      <div class="expand-col-title">Period B — ${insPeriodLabel(pB)}</div>
-      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2);margin-bottom:14px">
-        ${r.b.raw.toLocaleString()} raw · ${r.b.paid.toLocaleString()} paid · ${insFmtConv(r.b.paid,r.b.raw)} conv · ${insFmtRev(r.b.rev)}
-      </div>
-      <div class="expand-col-title" style="margin-top:2px">What changed</div>
-      <div style="font-size:12px;color:var(--text-2);line-height:2">
-        ${r.dRev>=0?'▲':'▼'} Revenue: <strong style="color:${r.dRev>=0?'var(--teal)':'var(--coral)'}">${insFmtDelta(r.dRev,'$')}</strong><br>
-        ${r.dMargin>=0?'▲':'▼'} Margin: <strong style="color:${r.dMargin>=0?'var(--teal)':'var(--coral)'}">${insFmtDelta(r.dMargin,'$')}</strong><br>
-        ${r.dConv>=0?'▲':'▼'} Conversion: <strong style="color:${r.dConv>=0?'var(--teal)':'var(--coral)'}">${insFmtDelta(r.dConv,'pp')}</strong> (${insFmtConv(r.a.paid,r.a.raw)} → ${insFmtConv(r.b.paid,r.b.raw)})<br>
-        ${(r.b.raw-r.a.raw)>=0?'▲':'▼'} Volume: <strong>${r.b.raw-r.a.raw>=0?'+':''}${(r.b.raw-r.a.raw).toLocaleString()}</strong> calls
-      </div>
-    </div>`;
-
-  // Right column: tabbed breakdowns — content depends on section type
-  let rightCol;
-
-  if (sect === 'pub') {
-    // Publishers → one tab: by agent
-    const agTable = insMiniTable(r.a.byAgent||{}, r.b.byAgent||{}, 'Agent');
-    rightCol = `
-      <div>
-        <div class="expand-col-title" style="margin-bottom:10px">Agent breakdown (top movers by ∆ revenue)</div>
-        ${agTable}
-      </div>`;
-
-  } else if (sect === 'adv') {
-    // Advertisers → one tab: by agent
-    const agTable = insMiniTable(r.a.byAgent||{}, r.b.byAgent||{}, 'Agent');
-    rightCol = `
-      <div>
-        <div class="expand-col-title" style="margin-bottom:10px">Agent breakdown (top movers by ∆ revenue)</div>
-        ${agTable}
-      </div>`;
-
-  } else {
-    // AI Agents → two tabs: Publishers | Advertisers
-    const pubTable = insMiniTable(r.a.byPub||{}, r.b.byPub||{}, 'Publisher');
-    const advTable = insMiniTable(r.a.byAdv||{}, r.b.byAdv||{}, 'Advertiser');
-    rightCol = `
-      <div>
-        <div class="exp-tabs">
-          <button class="exp-tab active" data-group="${group}" data-pane="pub">By publisher</button>
-          <button class="exp-tab" data-group="${group}" data-pane="adv">By advertiser</button>
-        </div>
-        <div class="exp-tab-pane active" data-group="${group}" data-pane="pub">${pubTable}</div>
-        <div class="exp-tab-pane" data-group="${group}" data-pane="adv">${advTable}</div>
-      </div>`;
-  }
-
-  return `<div class="expand-inner"><div class="expand-grid">${leftCol}${rightCol}</div></div>`;
-}
-
-function insRenderSection(sect, title, movers, pA, pB){
-  const ss=insSortState[sect], sorted=insSortRows(movers,ss.col,ss.dir);
-  const arrow=d=>d===-1?'↓':'↑';
-  const thCls=col=>'ins-sort-th'+(ss.col===col?' sort-active':'');
-  const thArrow=col=>ss.col===col?`<span class="sort-arrow">${arrow(ss.dir)}</span>`:'';
-
+function insRenderSection(sect,title,movers,pA,pB){
+  const ss=insSortState[sect],sorted=insSortRows(movers,ss.col,ss.dir);
+  const arrow=d=>d===-1?'↓':'↑',thCls=col=>'ins-sort-th'+(ss.col===col?' sort-active':''),thArrow=col=>ss.col===col?`<span class="sort-arrow">${arrow(ss.dir)}</span>`:'';
   const rows=sorted.map(r=>{
     const safeKey=r.key.replace(/[^a-zA-Z0-9]/g,'_');
-    const dc=v=>v>=0?'delta-pos':'delta-neg', pc=v=>v>=0?'pill-pos':'pill-neg';
+    const dc=v=>v>=0?'delta-pos':'delta-neg',pc=v=>v>=0?'pill-pos':'pill-neg';
     const dRevPctStr=r.a.rev>0?insFmtDelta(r.dRevPct,'%'):(r.b.rev>0?'new':'—');
-    const expand=insExpandContent(r, pA, pB, sect);
+    const expand=insExpandContent(r,pA,pB);
     return`<tr class="ins-expand-trigger" data-key="${r.key.replace(/"/g,'&quot;')}" data-sect="${sect}">
       <td><div class="name-cell"><div class="name-primary">${r.key}</div><div class="name-secondary">${r.a.raw.toLocaleString()} → ${r.b.raw.toLocaleString()} raw calls</div></div></td>
       <td class="ins-mono">${insFmtRev(r.a.rev)}</td>
@@ -1138,9 +988,7 @@ function insRenderSection(sect, title, movers, pA, pB){
     </tr>
     <tr class="expand-row" id="ins-exp-${sect}-${safeKey}"><td colspan="7">${expand}</td></tr>`;
   }).join('');
-
   const empty=sorted.length===0?`<tr><td colspan="7"><div class="ins-empty">No significant movers above threshold.</div></td></tr>`:'';
-
   return`<div class="insights-section" id="ins-section-${sect}">
     <div class="section-header"><div class="section-title">${title}</div><div class="section-count">${sorted.length} flagged</div></div>
     <div class="insight-table-wrap"><table class="insight-table">
@@ -1156,6 +1004,30 @@ function insRenderSection(sect, title, movers, pA, pB){
       <tbody>${rows||empty}</tbody>
     </table></div>
   </div>`;
+}
+
+function insExpandContent(r,pA,pB){
+  const allAgents=new Set([...Object.keys(r.a.byAgent||{}),...Object.keys(r.b.byAgent||{})]);
+  const agRows=[...allAgents].map(ag=>{const aa=r.a.byAgent[ag]||{raw:0,paid:0,rev:0},ab=r.b.byAgent[ag]||{raw:0,paid:0,rev:0};return{ag,aa,ab,dRev:ab.rev-aa.rev};}).sort((x,y)=>Math.abs(y.dRev)-Math.abs(x.dRev)).slice(0,10);
+  const agTable=agRows.length?`<table class="mini-table"><tr style="font-size:10px;color:var(--text-3)"><td>Agent</td><td>Raw A</td><td>Raw B</td><td>Rev A</td><td>Rev B</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.ag}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td style="color:${a.dRev>=0?'var(--teal)':'var(--coral)'};font-weight:500">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div style="font-size:12px;color:var(--text-3);font-style:italic">No agent breakdown available.</div>';
+  return`<div class="expand-inner"><div class="expand-grid">
+    <div>
+      <div class="expand-col-title">Period A — ${insPeriodLabel(pA)}</div>
+      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2);margin-bottom:10px">${r.a.raw.toLocaleString()} raw · ${r.a.paid.toLocaleString()} paid · ${insFmtConv(r.a.paid,r.a.raw)} conv · ${insFmtRev(r.a.rev)}</div>
+      <div class="expand-col-title" style="margin-top:10px">Agent breakdown (top movers)</div>${agTable}
+    </div>
+    <div>
+      <div class="expand-col-title">Period B — ${insPeriodLabel(pB)}</div>
+      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2);margin-bottom:10px">${r.b.raw.toLocaleString()} raw · ${r.b.paid.toLocaleString()} paid · ${insFmtConv(r.b.paid,r.b.raw)} conv · ${insFmtRev(r.b.rev)}</div>
+      <div class="expand-col-title" style="margin-top:10px">What changed</div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.9">
+        ${r.dRev>=0?'▲':'▼'} Revenue: <strong style="color:${r.dRev>=0?'var(--teal)':'var(--coral)'}">${insFmtDelta(r.dRev,'$')}</strong><br>
+        ${r.dMargin>=0?'▲':'▼'} Margin: <strong style="color:${r.dMargin>=0?'var(--teal)':'var(--coral)'}">${insFmtDelta(r.dMargin,'$')}</strong><br>
+        ${r.dConv>=0?'▲':'▼'} Conversion: <strong style="color:${r.dConv>=0?'var(--teal)':'var(--coral)'}">${insFmtDelta(r.dConv,'pp')}</strong> (${insFmtConv(r.a.paid,r.a.raw)} → ${insFmtConv(r.b.paid,r.b.raw)})<br>
+        ${(r.b.raw-r.a.raw)>=0?'▲':'▼'} Volume: <strong>${r.b.raw-r.a.raw>=0?'+':''}${(r.b.raw-r.a.raw).toLocaleString()}</strong> calls
+      </div>
+    </div>
+  </div></div>`;
 }
 
 // ─── IN DEVELOPMENT ───────────────────────────────────────────────────────────
