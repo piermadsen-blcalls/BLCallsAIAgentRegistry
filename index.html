@@ -1368,7 +1368,7 @@ async function crExportAll() {
   if (btn) { btn.disabled = false; btn.textContent = 'Export all rows'; }
 }
 
-unction crRender() {
+function crRender() {
 function crSort(col) {
   if (crSortCol === col) crSortDir *= -1; else { crSortCol = col; crSortDir = -1; }
   crLoad(false);
