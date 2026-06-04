@@ -606,6 +606,13 @@
         </div>
       </div>
       <div class="cr-toolbar-right">
+        <div class="ins-vertical-wrap" id="cr-colpicker-wrap">
+          <button class="ins-vertical-trigger" onclick="crColPickerToggle(event)">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 2v12M2 7h12" stroke="currentColor" stroke-width="1.3"/></svg>
+            <span>Columns</span>
+          </button>
+          <div class="ins-vertical-popover" id="cr-colpicker-popover"></div>
+        </div>
         <button class="run-btn" id="cr-run-btn" onclick="crLoad()">Load calls</button>
       </div>
     </div>
@@ -799,6 +806,7 @@ function switchTab(id, el) {
   el.classList.add('active');
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'dev') devLoadIvrs();
+  if (id === 'reporting') crAutoLoad();
 }
 
 // ─── ALIAS TABLE ──────────────────────────────────────────────────────────────
@@ -865,6 +873,8 @@ document.addEventListener('click', e => {
   if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
   const crDWrap = document.getElementById('cr-drp-wrap');
   if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
+  const crCpWrap = document.getElementById('cr-colpicker-wrap');
+  if (crCpWrap && !crCpWrap.contains(e.target)) document.getElementById('cr-colpicker-popover')?.classList.remove('open');
 });
 function agentDrpNav(dir, e) {
   if (e) e.stopPropagation();
@@ -1199,6 +1209,40 @@ let crVerticalFilter = [];
 let crRows = [], crOffset = 0, crPageSize = 25, crHasMore = false, crTotal = 0;
 let crSortCol = 'created_at', crSortDir = -1;
 
+// Column definitions: key, label, sortable, default-visible
+const CR_COLUMNS = [
+  { key:'id',          label:'Call ID',     sortable:true,  def:false },
+  { key:'created_at',  label:'Date & Time', sortable:true,  def:true  },
+  { key:'recording',   label:'Recording',   sortable:false, def:true  },
+  { key:'sent',        label:'Sent',        sortable:false, def:true  },
+  { key:'vertical',    label:'Vertical',    sortable:false, def:true  },
+  { key:'ivr_name',    label:'Agent',       sortable:true,  def:true  },
+  { key:'publisher_name', label:'Publisher', sortable:true, def:true  },
+  { key:'advertiser_name',label:'Advertiser',sortable:true, def:true  },
+  { key:'phone',       label:'Caller',      sortable:false, def:true  },
+  { key:'ivr_duration',label:'Duration',    sortable:true,  def:true  },
+  { key:'disposition', label:'Disposition', sortable:true,  def:true  },
+  { key:'disposition_description', label:'Reason', sortable:false, def:false },
+  { key:'advertiser_payin', label:'Revenue', sortable:true, def:true  }
+];
+let crVisibleCols = {};
+CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
+
+async function crLoadColPrefs() {
+  try {
+    const r = await window.storage.get('cr_visible_cols');
+    if (r && r.value) { const saved = JSON.parse(r.value); CR_COLUMNS.forEach(c => { if (saved[c.key] !== undefined) crVisibleCols[c.key] = saved[c.key]; }); }
+  } catch(e) { /* no saved prefs yet */ }
+}
+async function crSaveColPrefs() {
+  try { await window.storage.set('cr_visible_cols', JSON.stringify(crVisibleCols), false); } catch(e) { console.warn('save col prefs:', e.message); }
+}
+function crColPickerToggle(e) { e.stopPropagation(); document.getElementById('cr-colpicker-popover').classList.toggle('open'); }
+function crColToggle(key) { crVisibleCols[key] = !crVisibleCols[key]; crSaveColPrefs(); crRender(); }
+function crBuildColPicker() {
+  return CR_COLUMNS.map(c => `<label class="ins-vertical-opt"><input type="checkbox" ${crVisibleCols[c.key]?'checked':''} onchange="crColToggle('${c.key}')"><span>${c.label}</span></label>`).join('');
+}
+
 // Date picker
 function crDrpToggle(e) {
   e.stopPropagation();
@@ -1245,7 +1289,7 @@ function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();
 
 // Build query
 function crBuildQuery(offset) {
-  let q = `agent_calls_raw?select=id,created_at,vertical,ivr_name,publisher_name,advertiser_name,phone,ivr_duration,disposition,disposition_description,recording_url,advertiser_payin`;
+  let q = `agent_calls_raw?select=id,created_at,vertical,ivr_name,publisher_name,advertiser_name,phone,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
   q += `&call_date=gte.${crDrpPickStart}&call_date=lte.${crDrpPickEnd}`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
@@ -1378,20 +1422,7 @@ function crRender() {
     <div class="cr-table-wrap">
       <div style="overflow-x:auto">
         <table class="cr-table">
-          <thead><tr>
-            <th class="${thCls('id')}">Call ID</th>
-            <th class="${thCls('created_at')}" onclick="crSort('created_at')">Date & Time${thArrow('created_at')}</th>
-            <th>Recording</th>
-            <th>Vertical</th>
-            <th class="${thCls('ivr_name')}" onclick="crSort('ivr_name')">Agent${thArrow('ivr_name')}</th>
-            <th class="${thCls('publisher_name')}" onclick="crSort('publisher_name')">Publisher${thArrow('publisher_name')}</th>
-            <th class="${thCls('advertiser_name')}" onclick="crSort('advertiser_name')">Advertiser${thArrow('advertiser_name')}</th>
-            <th>Caller</th>
-            <th class="${thCls('ivr_duration')}" onclick="crSort('ivr_duration')">Duration${thArrow('ivr_duration')}</th>
-            <th class="${thCls('disposition')}" onclick="crSort('disposition')">Disposition${thArrow('disposition')}</th>
-            <th>Reason</th>
-            <th class="${thCls('advertiser_payin')}" onclick="crSort('advertiser_payin')" style="text-align:right">Revenue${thArrow('advertiser_payin')}</th>
-          </tr></thead>
+          <thead><tr>${headHtml}</tr></thead>
           <tbody>${tbody}</tbody>
         </table>
       </div>
@@ -1401,6 +1432,22 @@ function crRender() {
 
 function crSort(col) {
   if (crSortCol === col) crSortDir *= -1; else { crSortCol = col; crSortDir = -1; }
+  crLoad(false);
+}
+
+let crAutoLoaded = false;
+function crAutoLoad() {
+  if (crAutoLoaded) return;
+  crAutoLoaded = true;
+  // Default to last 7 days through today if no range chosen yet
+  if (!crDrpPickStart || !crDrpPickEnd) {
+    const end = new Date(); end.setHours(0,0,0,0);
+    const start = new Date(end); start.setDate(start.getDate() - 6);
+    crDrpPickStart = toISO(start);
+    crDrpPickEnd = toISO(end);
+    const lbl = document.getElementById('cr-drp-label');
+    if (lbl) lbl.textContent = fmtShortD(crDrpPickStart) + ' – ' + fmtShortD(crDrpPickEnd);
+  }
   crLoad(false);
 }
 
@@ -1534,6 +1581,8 @@ async function bootDashboard() {
   await loadTestCalls();
   await loadVerticals();
   populateVerticalDropdowns();
+  await crLoadColPrefs();
+  document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();
   recomputeStats();
   applyFilters();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
