@@ -627,6 +627,8 @@
   <div class="page-footer">
     <div class="footer-note" id="last-updated">Loading data...</div>
     <div class="footer-right">
+      <span id="sync-status" style="font-size:11px;color:var(--text-3)"></span>
+      <button class="update-link" onclick="syncHlData(this)">sync ASCND data</button>
       <button class="update-link" onclick="toggleUpdatePanel()">update data</button>
     </div>
   </div>
@@ -1400,6 +1402,26 @@ async function devDoDelete(){if(!devDeleteTarget)return;try{await devSbFetch(`iv
 function buildBQSQL(){const today=new Date();today.setHours(0,0,0,0);const end=new Date(today);end.setDate(end.getDate()-1);const start=new Date(today);start.setDate(start.getDate()-5);const f=d=>d.toISOString().split('T')[0];return`SELECT\n  id,\n  ivr_name,\n  FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,\n  FORMAT_DATE('%Y-%m-%d', DATE(created_at, 'America/Denver')) AS call_date,\n  COALESCE(publisher_name, '(direct)') AS publisher_name,\n  COALESCE(advertiser_name, '(direct)') AS advertiser_name,\n  ivr_duration,\n  connect_duration,\n  advertiser_payin,\n  publisher_payout,\n  result,\n  called_from AS phone,\n  vertical_name AS vertical\nFROM \`ringpartner-exchange.phone_lead_transactions.phone_lead_transactions\`\nWHERE LOWER(ivr_name) LIKE 'ascnd%'\n  AND is_test = FALSE\n  AND DATE(created_at, 'America/Denver') BETWEEN '${f(start)}' AND '${f(end)}'\nORDER BY created_at DESC`;}
 function copySQL(btn){navigator.clipboard.writeText(document.getElementById('bq-sql').textContent.trim()).then(()=>{btn.textContent='Copied!';btn.style.background='var(--teal-bg)';btn.style.color='var(--teal)';setTimeout(()=>{btn.textContent='Copy query';btn.style.background='';btn.style.color='';},2000);});}
 function toggleUpdatePanel(){document.getElementById('update-panel').classList.toggle('open');}
+
+async function syncHlData(btn){
+  const status=document.getElementById('sync-status');
+  btn.disabled=true; btn.textContent='syncing…';
+  if(status) status.textContent='';
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/sync_hl_to_calls`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+      body:'{}'
+    });
+    if(!res.ok){const err=await res.text();throw new Error(`${res.status}: ${err}`);}
+    const count=await res.json();
+    if(status){status.textContent=`✓ enriched ${Number(count).toLocaleString()} call${count===1?'':'s'}`;status.style.color='var(--teal)';}
+    if(crRows.length) crLoad(false);
+  }catch(e){
+    if(status){status.textContent='sync failed: '+e.message;status.style.color='var(--coral)';}
+  }
+  btn.disabled=false; btn.textContent='sync ASCND data';
+}
 function parseCSV(text){const rows=[];let cur='',row=[],inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(inQ){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=ch;}else{if(ch==='"')inQ=true;else if(ch===','){row.push(cur);cur='';}else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(ch==='\r'){}else cur+=ch;}}if(cur.length>0||row.length>0){row.push(cur);rows.push(row);}return rows;}
 function setupFileUpload(){const drop=document.getElementById('file-drop'),input=document.getElementById('file-input');input.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('dragover');}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('dragover');}));drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});}
 
@@ -1408,9 +1430,10 @@ async function enrichUploadedCalls(uploadedRows) {
   const dates = uploadedRows.map(r => r.call_date).filter(Boolean).sort();
   if (!dates.length) return;
   const bufferStart = new Date(dates[0] + 'T00:00:00Z');
-  bufferStart.setDate(bufferStart.getDate() - 1);
+  bufferStart.setDate(bufferStart.getDate() - 2);
   const bufferEnd = new Date(dates[dates.length - 1] + 'T00:00:00Z');
-  bufferEnd.setDate(bufferEnd.getDate() + 1);
+  bufferEnd.setDate(bufferEnd.getDate() + 2);
+  // (buffer widened to ±2 days to absorb Denver call_date vs UTC call_timestamp skew)
   let hlRows = [];
   try {
     const PAGE = 1000; let offset = 0;
