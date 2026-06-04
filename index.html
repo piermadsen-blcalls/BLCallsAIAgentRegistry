@@ -1528,7 +1528,7 @@ async function syncHlData(btn){
       method:'POST',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
       body:'{}'
-    });
+});
     if(!res.ok){const err=await res.text();throw new Error(`${res.status}: ${err}`);}
     const count=await res.json();
     if(status){status.textContent=`✓ enriched ${Number(count).toLocaleString()} call${count===1?'':'s'}`;status.style.color='var(--teal)';}
