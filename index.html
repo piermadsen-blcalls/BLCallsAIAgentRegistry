@@ -1368,68 +1368,7 @@ async function crExportAll() {
   if (btn) { btn.disabled = false; btn.textContent = 'Export all rows'; }
 }
 
-function crRender() {
-  const search = document.getElementById('cr-search').value.toLowerCase().trim();
-  const agentMap = {};
-  AGENTS.forEach(a => { agentMap[a.ivrName] = a; aliasesForAgent(a.ivrName).forEach(alias => agentMap[alias] = a); });
-
-  let rows = crRows;
-  if (search) {
-    rows = rows.filter(r => {
-      const agentName = agentMap[r.ivr_name]?.name || r.ivr_name || '';
-      return [agentName, r.ivr_name, r.phone, r.publisher_name, r.advertiser_name, r.disposition_description].filter(Boolean).join(' ').toLowerCase().includes(search);
-    });
-  }
-
-  if (!rows.length) {
-    document.getElementById('cr-output').innerHTML = `<div class="ins-empty">No calls found for the selected filters.</div>`;
-    return;
-  }
-
-  const thCls = col => 'cr-sort-th' + (crSortCol === col ? ' cr-sort-active' : '');
-  const thArrow = col => crSortCol === col ? (crSortDir === -1 ? ' ↓' : ' ↑') : '';
-
-  const tbody = rows.map(r => {
-    const agent = agentMap[r.ivr_name];
-    const agentName = agent ? agent.name : (r.ivr_name || '—');
-    const vertical = r.vertical || (agent ? agent.vertical : '') || '—';
-    const dispoClass = crDispoClass(r.disposition);
-    const recording = r.recording_url ? `<a class="cr-link" href="${r.recording_url}" target="_blank" rel="noopener">Listen</a>` : `<span class="cr-null">—</span>`;
-    return `<tr>
-      <td class="cr-mono" style="font-size:10px;color:var(--text-3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.id}">${r.id}</td>
-      <td class="cr-mono">${crFmtDateTime(r.created_at)}</td>
-      <td>${recording}</td>
-      <td><span class="card-vtag ${vClass(vertical)}" style="font-size:10px">${vertical}</span></td>
-      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${agentName}">${agentName}</td>
-      <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.publisher_name||''}">${r.publisher_name||'—'}</td>
-      <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.advertiser_name||''}">${r.advertiser_name||'—'}</td>
-      <td class="cr-mono">${r.phone||'—'}</td>
-      <td class="cr-mono">${crFmtDuration(r.ivr_duration)}</td>
-      <td><span class="${dispoClass}">${r.disposition||'—'}</span></td>
-      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${r.disposition_description||''}">${r.disposition_description||'<span class="cr-null">—</span>'}</td>
-      <td class="cr-mono" style="text-align:right">${crFmtRev(r.advertiser_payin)}</td>
-    </tr>`;
-  }).join('');
-
-  const totalLabel = crTotal.toLocaleString();
-  const footerText = search
-    ? `Showing ${rows.length.toLocaleString()} of ${crRows.length.toLocaleString()} loaded (${totalLabel} total match filters)`
-    : `Showing ${rows.length.toLocaleString()} of ${totalLabel} rows`;
-  const loadMoreBtn = (!search && crHasMore) ? `<button class="cr-load-more" onclick="crLoad(true)">Load more</button>` : '';
-  const exportBtn = `<button class="cr-load-more" style="background:var(--surface);color:var(--brand-navy);border:1px solid var(--border-strong)" onclick="crExportAll()" id="cr-export-btn">Export all rows</button>`;
-
-  document.getElementById('cr-output').innerHTML = `
-    <div class="cr-table-wrap">
-      <div style="overflow-x:auto">
-        <table class="cr-table">
-          <thead><tr>${headHtml}</tr></thead>
-          <tbody>${tbody}</tbody>
-        </table>
-      </div>
-      <div class="cr-footer"><span>${footerText}</span><span style="display:flex;gap:8px;align-items:center">${loadMoreBtn}${exportBtn}</span></div>
-    </div>`;
-}
-
+unction crRender() {
 function crSort(col) {
   if (crSortCol === col) crSortDir *= -1; else { crSortCol = col; crSortDir = -1; }
   crLoad(false);
