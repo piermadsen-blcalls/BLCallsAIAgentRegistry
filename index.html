@@ -371,6 +371,7 @@
   .page-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   .footer-note { font-size: 11px; color: var(--text-3); }
   .footer-right { display: flex; gap: 14px; align-items: center; }
+
   /* CALL REPORTING TAB */
   .cr-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
   .cr-toolbar-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -399,7 +400,7 @@
   .cr-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg); font-size:12px; color:var(--text-3); }
   .cr-load-more { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 16px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
   .cr-load-more:disabled { opacity:0.4; cursor:not-allowed; }
-
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
@@ -607,7 +608,7 @@
     </div>
   </div>
 
-
+  <!-- IN DEVELOPMENT TAB -->
   <div id="tab-dev" class="tab-pane">
     <div class="dev-header-row">
       <div>
@@ -831,6 +832,10 @@ document.addEventListener('click', e => {
   });
   const vwrap = document.getElementById('ins-vertical-wrap');
   if (vwrap && !vwrap.contains(e.target)) document.getElementById('ins-vertical-popover')?.classList.remove('open');
+  const crVWrap = document.getElementById('cr-vertical-wrap');
+  if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
+  const crDWrap = document.getElementById('cr-drp-wrap');
+  if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
 });
 function agentDrpNav(dir, e) {
   if (e) e.stopPropagation();
@@ -1203,120 +1208,10 @@ function crVerticalAll(cb) { document.getElementById('cr-vertical-popover').quer
 function crVerticalChange() { const pop=document.getElementById('cr-vertical-popover'); const allCb=pop.querySelector('input[value="all"]'); allCb.checked=[...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].every(c=>c.checked); crVerticalUpdateLabel(); }
 function crVerticalUpdateLabel() { const pop=document.getElementById('cr-vertical-popover'); const allCb=pop.querySelector('input[value="all"]'); const sel=[...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].filter(c=>c.checked).map(c=>c.value); crVerticalFilter=sel; const lbl=document.getElementById('cr-vertical-label'); if(allCb.checked||sel.length===0){lbl.textContent='All verticals';crVerticalFilter=[];}else if(sel.length===1)lbl.textContent=sel[0];else lbl.textContent=sel.length+' verticals'; }
 
-// Close dropdowns on outside click — merged into existing document click listener via crWrap check
-document.addEventListener('click', e => {
-  const crVWrap = document.getElementById('cr-vertical-wrap');
-  if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
-  const crDWrap = document.getElementById('cr-drp-wrap');
-  if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
-});
-
 // Format helpers
 function crFmtDuration(secs) { if (!secs) return '—'; const m=Math.floor(secs/60),s=secs%60; return m+'m '+String(s).padStart(2,'0')+'s'; }
 function crFmtDateTime(iso) { if (!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}); }
-function crFmtRev(v) { return v>0?'
-let devCurrentIvr=null,devDeleteTarget=null,devSignoffState={supply:'pending',demand:'pending'};
-async function devSbFetch(path,opts={}){const res=await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});if(!res.ok){const err=await res.text();throw new Error(`Supabase error: ${err}`);}const text=await res.text();return text?JSON.parse(text):null;}
-function devOpenModal(id){document.getElementById(id).style.display='flex';}
-function devCloseModal(id){document.getElementById(id).style.display='none';}
-document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.dev-modal-backdrop').forEach(b=>{b.addEventListener('click',e=>{if(e.target===b)b.style.display='none';});});});
-function devToggleMenu(id,e){e.stopPropagation();const menu=document.getElementById(id);const isOpen=menu.classList.contains('open');document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));if(!isOpen)menu.classList.add('open');}
-document.addEventListener('click',()=>{document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));});
-function devShowLed(v){document.getElementById('dev-cond-adv').className='dev-cond-section'+(v==='advertiser'||v==='both'?' visible':'');document.getElementById('dev-cond-pub').className='dev-cond-section'+(v==='publisher'||v==='both'?' visible':'');}
-function devToggleRepingFields(){const val=document.getElementById('dev-f-ondq').value;document.getElementById('dev-reping-fields').className='dev-reping-fields'+(val==='reping'?' visible':'');}
-function devGetLed(){const sel=document.querySelector('input[name="dev-led"]:checked');return sel?sel.value:'';}
-async function devLoadIvrs(){try{const rows=await devSbFetch('ivr_development?order=created_at.desc&select=*');const list=document.getElementById('dev-ivr-list');list.innerHTML='';if(!rows||!rows.length){list.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">No IVRs in development yet.</div>';return;}rows.forEach(row=>list.appendChild(devBuildCard(row)));}catch(e){document.getElementById('dev-ivr-list').innerHTML=`<div style="padding:20px;color:#A32D2D;font-size:13px;">Could not load IVRs: ${e.message}</div>`;}}
-function devBuildCard(row){const c=document.createElement('div');c.className='dev-ivr-card';c.id='dev-card-'+row.id;const badgeClass={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'}[row.status]||'dev-badge-draft';const badgeLabel={draft:'Draft',review:'In review',approved:'Approved',live:'Live'}[row.status]||'Draft';const date=row.created_at?new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';const meta=[row.vertical,row.led_by?(row.led_by.charAt(0).toUpperCase()+row.led_by.slice(1)+'-led'):'',date?'Started '+date:''].filter(Boolean).join(' · ');const menuId='dev-menu-'+row.id;c.innerHTML=`<div class="dev-card-menu-col"><button class="dev-dots-btn" onclick="devToggleMenu('${menuId}',event)"><div class="dev-dot"></div><div class="dev-dot"></div><div class="dev-dot"></div></button><div class="dev-dropdown" id="${menuId}"><button class="dev-dropdown-item dev-danger" onclick="devConfirmDelete('${row.id}','${row.name.replace(/'/g,"\\'")}')">Delete</button></div></div><div class="dev-card-body" onclick="devOpenDetail('${row.id}')"><div class="dev-card-name">${row.name}</div><div class="dev-card-meta">${meta}</div></div><div class="dev-card-right"><span class="dev-badge ${badgeClass}">${badgeLabel}</span><span class="dev-card-chevron">›</span></div>`;return c;}
-async function devSubmitNew(){const name=document.getElementById('dev-f-name').value.trim();if(!name){document.getElementById('dev-f-name').focus();return;}const btn=document.getElementById('dev-save-btn');btn.disabled=true;btn.textContent='Saving…';const payload={name,vertical:document.getElementById('dev-f-vertical').value.trim()||null,qualifying_for:document.getElementById('dev-f-qualifying').value.trim()||null,led_by:devGetLed()||null,advertisers:document.getElementById('dev-f-advertisers')?.value.trim()||null,publishers:document.getElementById('dev-f-publishers')?.value.trim()||null,hard_dq:document.getElementById('dev-f-harddq').value.trim()||null,data_collected:document.getElementById('dev-f-datacollected').value.trim()||null,expected_duration:document.getElementById('dev-f-duration').value.trim()||null,on_dq:document.getElementById('dev-f-ondq').value||null,reping_logic:document.getElementById('dev-f-repinglogic')?.value.trim()||null,notes:document.getElementById('dev-f-notes').value.trim()||null,status:'draft'};try{await devSbFetch('ivr_development',{method:'POST',body:JSON.stringify(payload)});devCloseModal('dev-modal-new');devResetNewForm();await devLoadIvrs();}catch(e){alert('Could not save: '+e.message);}btn.disabled=false;btn.textContent='Save';}
-function devResetNewForm(){['dev-f-name','dev-f-vertical','dev-f-qualifying','dev-f-advertisers','dev-f-publishers','dev-f-harddq','dev-f-datacollected','dev-f-duration','dev-f-notes','dev-f-repinglogic'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('dev-f-ondq').value='';document.querySelectorAll('input[name="dev-led"]').forEach(r=>r.checked=false);document.getElementById('dev-cond-adv').className='dev-cond-section';document.getElementById('dev-cond-pub').className='dev-cond-section';document.getElementById('dev-reping-fields').className='dev-reping-fields';}
-async function devOpenDetail(ivrId,alreadyOpen){try{const rows=await devSbFetch(`ivr_development?id=eq.${ivrId}&select=*`);if(!rows||!rows.length)return;devCurrentIvr=rows[0];const signoffs=await devSbFetch(`ivr_signoffs?ivr_id=eq.${ivrId}&select=*`);const recordings=await devSbFetch(`ivr_recordings?ivr_id=eq.${ivrId}&order=uploaded_at.desc&select=*`);devPopulateDetail(devCurrentIvr,signoffs||[],recordings||[]);if(!alreadyOpen)devOpenModal('dev-modal-detail');}catch(e){alert('Could not load IVR: '+e.message);}}
-function devPopulateDetail(row,signoffs,recordings){const statusLabels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};const badgeClasses={draft:'dev-badge-draft',review:'dev-badge-review',approved:'dev-badge-approved',live:'dev-badge-live'};document.getElementById('dev-detail-title').textContent=row.name;const badge=document.getElementById('dev-detail-badge');badge.textContent=statusLabels[row.status]||'Draft';badge.className='dev-badge '+(badgeClasses[row.status]||'dev-badge-draft');const date=row.created_at?new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';document.getElementById('dev-detail-meta').textContent=[row.vertical,row.led_by?(row.led_by.charAt(0).toUpperCase()+row.led_by.slice(1)+'-led'):'',date?'Started '+date:''].filter(Boolean).join(' · ');const steps=['draft','review','approved','live'];const labels={draft:'Draft',review:'In review',approved:'Approved',live:'Live'};const cur=steps.indexOf(row.status);document.getElementById('dev-detail-rail').innerHTML=steps.map((s,i)=>{const cls=i<cur?'dev-status-step dev-done':i===cur?'dev-status-step dev-active':'dev-status-step';return(i>0?'<div class="dev-status-line"></div>':'')+`<div class="${cls}"><div class="dev-status-dot"></div>${labels[s]}</div>`;}).join('');const summaryFields=[{key:'Qualifying for',val:row.qualifying_for},{key:'Expected call duration',val:row.expected_duration},{key:'Hard disqualification',val:row.hard_dq},{key:'Data passed on qualified call',val:row.data_collected},{key:'On disqualification',val:row.on_dq},{key:'Repinging',val:row.reping_logic},{key:'Advertisers',val:row.advertisers},{key:'Publishers',val:row.publishers},{key:'Notes',val:row.notes}].filter(f=>f.val);document.getElementById('dev-detail-summary').innerHTML=summaryFields.map(f=>`<div class="dev-summary-item"><div class="dev-summary-key">${f.key}</div><div class="dev-summary-val">${f.val}</div></div>`).join('')||'<div style="font-size:13px;color:var(--text-3);font-style:italic">No requirements entered yet.</div>';const recList=document.getElementById('dev-detail-recordings');const linkIcon=`<svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px"><path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;recList.innerHTML=recordings.length?recordings.map(r=>`<div class="dev-upload-item"><div class="dev-upload-item-left"><div class="dev-upload-icon">${linkIcon}</div><div class="dev-upload-info"><div class="dev-upload-name">${r.filename}</div><a class="dev-upload-url" href="${r.filesize||'#'}" target="_blank" rel="noopener">${r.filesize||'No URL'}</a></div></div><a class="dev-btn-open" href="${r.filesize||'#'}" target="_blank" rel="noopener">Open ↗</a></div>`).join(''):'';document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';devSignoffState={supply:'pending',demand:'pending'};signoffs.forEach(s=>{devSignoffState[s.team]=s.decision;});['supply','demand'].forEach(team=>{const sig=signoffs.find(s=>s.team===team);const badge=document.getElementById('dev-badge-'+team);const block=document.getElementById('dev-sb-'+team);const noteEl=document.getElementById('dev-note-'+team);const btnA=document.getElementById('dev-btn-app-'+team);const btnR=document.getElementById('dev-btn-rej-'+team);block.className='dev-signoff-block';noteEl.value='';noteEl.disabled=false;btnA.disabled=false;btnR.disabled=false;if(sig){noteEl.value=sig.note||'';noteEl.disabled=true;btnA.disabled=true;btnR.disabled=true;if(sig.decision==='approve'){badge.className='dev-sig-badge dev-sig-approved';badge.textContent='Approved';block.className='dev-signoff-block approved';}else{badge.className='dev-sig-badge dev-sig-rejected';badge.textContent='Changes requested';block.className='dev-signoff-block rejected';}}else{badge.className='dev-sig-badge dev-sig-pending';badge.textContent='Pending';}});devCheckLaunch();}
-async function devAddRecording(){const label=document.getElementById('dev-link-label').value.trim(),url=document.getElementById('dev-link-url').value.trim();if(!label){document.getElementById('dev-link-label').focus();return;}if(!url){document.getElementById('dev-link-url').focus();return;}const btn=document.querySelector('#dev-add-link-row .dev-btn-primary');btn.disabled=true;btn.textContent='Saving…';try{await devSbFetch('ivr_recordings',{method:'POST',body:JSON.stringify({ivr_id:devCurrentIvr.id,filename:label,filesize:url})});document.getElementById('dev-link-label').value='';document.getElementById('dev-link-url').value='';await devOpenDetail(devCurrentIvr.id,true);}catch(e){alert('Could not save link: '+e.message);}btn.disabled=false;btn.textContent='Add link';}
-async function devSignoff(team,action){const note=document.getElementById('dev-note-'+team),hint=document.getElementById('dev-hint-'+team);if(!note.value.trim()){note.classList.add('dev-note-required');hint.classList.add('visible');note.focus();return;}note.classList.remove('dev-note-required');hint.classList.remove('visible');try{await devSbFetch('ivr_signoffs',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_id:devCurrentIvr.id,team,decision:action,note:note.value.trim()})});devSignoffState[team]=action;const badge=document.getElementById('dev-badge-'+team),block=document.getElementById('dev-sb-'+team),btnA=document.getElementById('dev-btn-app-'+team),btnR=document.getElementById('dev-btn-rej-'+team);note.disabled=true;btnA.disabled=true;btnR.disabled=true;if(action==='approve'){badge.className='dev-sig-badge dev-sig-approved';badge.textContent='Approved';block.className='dev-signoff-block approved';}else{badge.className='dev-sig-badge dev-sig-rejected';badge.textContent='Changes requested';block.className='dev-signoff-block rejected';}devCheckLaunch();if(devSignoffState.supply==='approve'&&devSignoffState.demand==='approve'){await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'approved'})});devCurrentIvr.status='approved';await devLoadIvrs();}}catch(e){alert('Could not save sign-off: '+e.message);}}
-function devCheckLaunch(){const allApproved=devSignoffState.supply==='approve'&&devSignoffState.demand==='approve';const anyRejected=Object.values(devSignoffState).includes('reject');const pending=Object.values(devSignoffState).filter(v=>v==='pending').length;const btn=document.getElementById('dev-btn-launch'),gate=document.getElementById('dev-launch-gate'),icon=document.getElementById('dev-gate-icon'),text=document.getElementById('dev-gate-text');if(allApproved){btn.disabled=false;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:var(--teal-bg);color:var(--teal);border:1px solid #5DCAA5;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✓';text.textContent='Both teams have approved. Ready to mark for launch.';}else if(anyRejected){btn.disabled=true;gate.style.cssText='border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;display:flex;align-items:center;gap:8px;margin-top:12px';icon.textContent='✕';text.textContent='Changes have been requested. Resolve before launch.';}else{btn.disabled=true;gate.style.cssText='';icon.textContent='⏳';text.textContent=`Waiting for ${pending} more sign-off${pending!==1?'s':''} before launch is available.`;}}
-async function devMarkLive(){if(!devCurrentIvr)return;try{await devSbFetch(`ivr_development?id=eq.${devCurrentIvr.id}`,{method:'PATCH',body:JSON.stringify({status:'live'})});devCloseModal('dev-modal-detail');await devLoadIvrs();}catch(e){alert('Could not update status: '+e.message);}}
-function devConfirmDelete(ivrId,name){devDeleteTarget=ivrId;document.getElementById('dev-confirm-name').textContent=name;document.querySelectorAll('.dev-dropdown').forEach(d=>d.classList.remove('open'));devOpenModal('dev-modal-confirm');}
-async function devDoDelete(){if(!devDeleteTarget)return;try{await devSbFetch(`ivr_development?id=eq.${devDeleteTarget}`,{method:'DELETE',prefer:''});devDeleteTarget=null;devCloseModal('dev-modal-confirm');await devLoadIvrs();}catch(e){alert('Could not delete: '+e.message);}}
-
-// ─── CSV / UPDATE PANEL ───────────────────────────────────────────────────────
-function buildBQSQL(){const today=new Date();today.setHours(0,0,0,0);const end=new Date(today);end.setDate(end.getDate()-1);const start=new Date(today);start.setDate(start.getDate()-5);const f=d=>d.toISOString().split('T')[0];return`SELECT\n  id,\n  ivr_name,\n  FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%S', created_at) AS created_at,\n  FORMAT_DATE('%Y-%m-%d', DATE(created_at, 'America/Denver')) AS call_date,\n  COALESCE(publisher_name, '(direct)') AS publisher_name,\n  COALESCE(advertiser_name, '(direct)') AS advertiser_name,\n  ivr_duration,\n  connect_duration,\n  advertiser_payin,\n  publisher_payout,\n  result,\n  called_from AS phone,\n  vertical\nFROM \`ringpartner-exchange.phone_lead_transactions.phone_lead_transactions\`\nWHERE LOWER(ivr_name) LIKE 'ascnd%'\n  AND is_test = FALSE\n  AND DATE(created_at, 'America/Denver') BETWEEN '${f(start)}' AND '${f(end)}'\nORDER BY created_at DESC`;}
-function copySQL(btn){navigator.clipboard.writeText(document.getElementById('bq-sql').textContent.trim()).then(()=>{btn.textContent='Copied!';btn.style.background='var(--teal-bg)';btn.style.color='var(--teal)';setTimeout(()=>{btn.textContent='Copy query';btn.style.background='';btn.style.color='';},2000);});}
-function toggleUpdatePanel(){document.getElementById('update-panel').classList.toggle('open');}
-function parseCSV(text){const rows=[];let cur='',row=[],inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(inQ){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=ch;}else{if(ch==='"')inQ=true;else if(ch===','){row.push(cur);cur='';}else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(ch==='\r'){}else cur+=ch;}}if(cur.length>0||row.length>0){row.push(cur);rows.push(row);}return rows;}
-function setupFileUpload(){const drop=document.getElementById('file-drop'),input=document.getElementById('file-input');input.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('dragover');}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('dragover');}));drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});}
-
-async function enrichUploadedCalls(uploadedRows) {
-  if (!uploadedRows || !uploadedRows.length) return;
-  const dates = uploadedRows.map(r => r.call_date).filter(Boolean).sort();
-  if (!dates.length) return;
-  const bufferStart = new Date(dates[0] + 'T00:00:00Z');
-  bufferStart.setDate(bufferStart.getDate() - 1);
-  const bufferEnd = new Date(dates[dates.length - 1] + 'T00:00:00Z');
-  bufferEnd.setDate(bufferEnd.getDate() + 1);
-  let hlRows = [];
-  try {
-    const PAGE = 1000; let offset = 0;
-    while (true) {
-      const batch = await sbFetch(`hl_call_data?select=phone,call_timestamp,disposition,disposition_description,recording_url,transcript&call_timestamp=gte.${bufferStart.toISOString()}&call_timestamp=lte.${bufferEnd.toISOString()}`, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
-      if (!batch || !batch.length) break;
-      hlRows = hlRows.concat(batch);
-      if (batch.length < PAGE) break;
-      offset += PAGE;
-    }
-  } catch (e) { console.warn('Could not fetch hl_call_data:', e.message); return; }
-  if (!hlRows.length) return;
-  const hlByPhone = {};
-  for (const row of hlRows) {
-    const p = (row.phone || '').trim(); if (!p) continue;
-    if (!hlByPhone[p]) hlByPhone[p] = [];
-    hlByPhone[p].push({ ...row, ts: new Date(row.call_timestamp).getTime() });
-  }
-  const WINDOW_MS = 7000;
-  const updates = [];
-  for (const row of uploadedRows) {
-    if (!row.phone || !row.created_at) continue;
-    const phone = row.phone.trim();
-    const rowTs = new Date(row.created_at).getTime();
-    const candidates = hlByPhone[phone] || [];
-    let best = null, bestDiff = Infinity;
-    for (const hl of candidates) {
-      const diff = Math.abs(hl.ts - rowTs);
-      if (diff <= WINDOW_MS && diff < bestDiff) { best = hl; bestDiff = diff; }
-    }
-    if (best) updates.push({ id: row.id, phone: row.phone, disposition: best.disposition || null, disposition_description: best.disposition_description || null, recording_url: best.recording_url || null, transcript: best.transcript || null });
-  }
-  if (!updates.length) return;
-  const CHUNK = 500;
-  for (let i = 0; i < updates.length; i += CHUNK) {
-    try { await sbFetch('agent_calls_raw?on_conflict=id', { method: 'POST', headers: { 'Prefer': 'resolution=merge-duplicates' }, body: JSON.stringify(updates.slice(i, i + CHUNK)) }); }
-    catch (e) { console.warn(`Enrichment upsert failed at chunk ${i}:`, e.message); }
-  }
-  console.log(`Enriched ${updates.length} of ${uploadedRows.length} rows with HL data.`);
-}
-
-async function handleFile(file){const status=document.getElementById('file-status'),results=document.getElementById('update-results'),progressWrap=document.getElementById('progress-wrap'),progressBar=document.getElementById('progress-bar');document.getElementById('new-agent-intakes').innerHTML='';results.innerHTML='';status.innerHTML=`<span style="color:var(--text-2)">Reading <strong>${file.name}</strong>…</span>`;let text;try{text=await file.text();}catch(e){status.innerHTML=`<span style="color:var(--coral)">Could not read file: ${e.message}</span>`;return;}const rows=parseCSV(text);if(rows.length<2){status.innerHTML=`<span style="color:var(--coral)">Empty file.</span>`;return;}const headerRow=rows[0].map(c=>c.trim().toLowerCase());const idx={id:headerRow.indexOf('id'),ivr_name:headerRow.indexOf('ivr_name'),created_at:headerRow.indexOf('created_at'),call_date:headerRow.indexOf('call_date'),publisher_name:headerRow.indexOf('publisher_name'),advertiser_name:headerRow.indexOf('advertiser_name'),ivr_duration:headerRow.indexOf('ivr_duration'),connect_duration:headerRow.indexOf('connect_duration'),advertiser_payin:headerRow.indexOf('advertiser_payin'),publisher_payout:headerRow.indexOf('publisher_payout'),result:headerRow.indexOf('result'),phone:headerRow.indexOf('phone'),vertical:headerRow.indexOf('vertical')};const missing=Object.entries(idx).filter(([,v])=>v===-1).map(([k])=>k);if(missing.length){status.innerHTML=`<span style="color:var(--coral)">Missing columns: ${missing.join(', ')}</span>`;return;}const dataRows=rows.slice(1).filter(r=>r.length>=headerRow.length&&r[idx.id]);const knownIvrs=new Set(AGENTS.map(a=>a.ivrName));const genuinelyNew={};const byId=new Map();for(const r of dataRows){const rowId=(r[idx.id]||'').trim(),rawName=(r[idx.ivr_name]||'').trim();if(!rowId||!rawName)continue;const canonical=resolveIvrName(rawName);if(!knownIvrs.has(canonical)&&!aliasMap[rawName]&&!genuinelyNew[rawName])genuinelyNew[rawName]=r;byId.set(rowId,{id:rowId,ivr_name:canonical,created_at:r[idx.created_at],call_date:r[idx.call_date],publisher_name:(r[idx.publisher_name]||'').trim()||null,advertiser_name:(r[idx.advertiser_name]||'').trim()||null,ivr_duration:parseInt(r[idx.ivr_duration])||0,connect_duration:parseInt(r[idx.connect_duration])||0,advertiser_payin:parseFloat(r[idx.advertiser_payin])||0,publisher_payout:parseFloat(r[idx.publisher_payout])||0,result:(r[idx.result]||'').trim()||null,phone:(r[idx.phone]||'').trim()||null,vertical:(r[idx.vertical]||'').trim()||null});}const payload=Array.from(byId.values());status.innerHTML=`<span style="color:var(--text-2)">Uploading <strong>${payload.length.toLocaleString()}</strong> rows…</span>`;progressWrap.style.display='block';const CHUNK=1000;let uploaded=0;try{for(let i=0;i<payload.length;i+=CHUNK){const slice=payload.slice(i,i+CHUNK);await sbFetch('agent_calls_raw?on_conflict=id',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(slice)});uploaded+=slice.length;progressBar.style.width=((uploaded/payload.length)*100).toFixed(1)+'%';status.innerHTML=`<span style="color:var(--text-2)">Uploaded ${uploaded.toLocaleString()} / ${payload.length.toLocaleString()} rows…</span>`;}status.innerHTML=`<span style="color:var(--teal)">✓ Uploaded ${uploaded.toLocaleString()} call rows. Enriching with HL data…</span>`;progressBar.style.width='100%';await enrichUploadedCalls(payload);let resultsHtml=`<div class="update-ok">✓ ${uploaded.toLocaleString()} call rows saved and enriched.</div>`;const newCount=Object.keys(genuinelyNew).length;if(newCount)resultsHtml+=`<div class="update-new" style="margin-top:8px">⊕ ${newCount} new agent name${newCount>1?'s':''} detected — see below.</div>`;results.innerHTML=resultsHtml;Object.entries(genuinelyNew).forEach(([ivrName,],ni)=>{document.getElementById('new-agent-intakes').appendChild(buildIntakeCard(ivrName,ni));});await loadAgentsFromSupabase();await refreshMetrics();}catch(e){status.innerHTML=`<span style="color:var(--coral)">Upload failed: ${e.message}</span>`;}}
-function buildIntakeCard(ivrName,ni){const div=document.createElement('div');div.className='new-agent-intake';div.id='intake-card-'+ni;const agentOptions=AGENTS.map(a=>`<option value="${a.ivrName}">${a.name} (${a.ivrName})</option>`).join('');div.innerHTML=`<div class="intake-agent-name">New agent name detected: <span>${ivrName}</span></div><div class="intake-rename-box"><strong>Is this a renamed existing agent?</strong> If this name appeared in Canoe because an existing agent was renamed, select it below and save the alias. All data from this upload (and future uploads) will roll up to that agent.</div><div class="intake-field"><label class="intake-label">Map to existing agent (if renamed)</label><select class="intake-alias-select" id="intake-alias-sel-${ni}"><option value="">— This is a brand new agent —</option>${agentOptions}</select></div><div class="intake-alias-actions"><button class="intake-alias-save-btn" onclick="saveIntakeAlias(${ni},'${ivrName.replace(/'/g,"\\'")}')">Save alias &amp; finish</button><button class="intake-new-anyway-btn" onclick="showIntakeFullForm(${ni})">No, this is a new agent →</button></div><div class="intake-full-form" id="intake-full-${ni}"><div class="intake-field"><label class="intake-label">Display name</label><input class="intake-input" type="text" id="intake-name-${ni}" value="${ivrName.replace(/^ASCND\s*AI?\s*Agent\s*-\s*/i,'').replace(/\s*-\s*Outgoing\s*$/i,'').trim()}"></div><div class="intake-field"><label class="intake-label">Vertical</label><select class="intake-select" id="intake-vertical-${ni}"><option>Home Services</option><option>Insurance</option><option>Legal</option><option>Financial</option><option>Other</option></select></div><div class="intake-field"><label class="intake-label">Routing type</label><select class="intake-select" id="intake-routing-${ni}"><option value="publisher-led">Publisher-led</option><option value="advertiser-led">Advertiser-led</option><option value="both">Both</option><option value="test-only">Internal / test</option></select></div><div class="intake-field"><label class="intake-label">Qualifying criteria (one per line)</label><textarea class="intake-textarea" id="intake-qual-${ni}"></textarea></div><div class="intake-field"><label class="intake-label">Hard disqualify keywords (optional)</label><input class="intake-input" type="text" id="intake-dq-${ni}"></div><div class="intake-field"><label class="intake-label">Publisher Campaign IVRs (campaign — publisher, one per line)</label><textarea class="intake-textarea" id="intake-pc-${ni}"></textarea></div><div class="intake-field"><label class="intake-label">IVR Targets After Listing Search (publisher | advertiser | vertical, one per line)</label><textarea class="intake-textarea" id="intake-ivr-${ni}"></textarea></div><div class="intake-field"><label class="intake-label">Notes (optional)</label><input class="intake-input" type="text" id="intake-notes-${ni}"></div><button class="intake-save-btn" id="intake-save-${ni}" onclick="saveNewAgent(${ni},'${ivrName.replace(/'/g,"\\'")}')">Add to registry</button></div>`;return div;}
-function showIntakeFullForm(ni){document.getElementById('intake-full-'+ni).classList.add('visible');}
-async function saveIntakeAlias(ni,incomingIvrName){const sel=document.getElementById('intake-alias-sel-'+ni),canonicalIvrName=sel.value;if(!canonicalIvrName){showIntakeFullForm(ni);return;}const btn=document.querySelector(`#intake-card-${ni} .intake-alias-save-btn`);btn.disabled=true;btn.textContent='Saving…';try{await saveAlias(incomingIvrName,canonicalIvrName);const card=document.getElementById('intake-card-'+ni),agentName=AGENTS.find(a=>a.ivrName===canonicalIvrName)?.name||canonicalIvrName;card.innerHTML=`<div style="padding:14px 16px;background:var(--teal-bg);border:1px solid #5DCAA5;border-radius:var(--radius-sm);font-size:13px;color:var(--teal);">✓ <strong>"${incomingIvrName}"</strong> is now an alias for <strong>${agentName}</strong>. Future uploads will automatically roll up.</div>`;await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save alias: '+e.message);btn.disabled=false;btn.textContent='Save alias & finish';}}
-async function saveNewAgent(ni,ivrName){const btn=document.getElementById('intake-save-'+ni),name=document.getElementById('intake-name-'+ni).value.trim()||ivrName,vertical=document.getElementById('intake-vertical-'+ni).value,routing=document.getElementById('intake-routing-'+ni).value,qualText=document.getElementById('intake-qual-'+ni).value.trim(),qualifying=qualText?qualText.split('\n').map(l=>l.trim()).filter(Boolean):[],disqualify=document.getElementById('intake-dq-'+ni).value.trim()||null,pcText=document.getElementById('intake-pc-'+ni).value.trim(),publisherCampaigns=pcText?pcText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('—').map(s=>s.trim());return{campaign:p[0]||line,publisher:p[1]||''};}):[],ivrText=document.getElementById('intake-ivr-'+ni).value.trim(),ivrTargets=ivrText?ivrText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('|').map(s=>s.trim());return{publisher:p[0]||'',advertiser:p[1]||'',vertical:p[2]||'',campaign:''};}):[],notes=document.getElementById('intake-notes-'+ni).value.trim()||null;btn.disabled=true;btn.textContent='Saving…';try{await sbFetch('agents?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,name,vertical,status:'live',routing_type:routing,qualifying,disqualify,publisher_campaigns:publisherCampaigns,ivr_targets:ivrTargets,notes,updated_at:new Date().toISOString()})});btn.textContent='✓ Added';btn.style.background='var(--teal)';await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save: '+e.message);btn.disabled=false;btn.textContent='Add to registry';}}
-
-// ─── BOOT ─────────────────────────────────────────────────────────────────────
-async function bootDashboard() {
-  document.getElementById('bq-sql').textContent = buildBQSQL();
-  setupFileUpload();
-  agentDrpInit();
-  await loadAliases();
-  await loadAgentsFromSupabase();
-  await loadTestCalls();
-  recomputeStats();
-  applyFilters();
-  setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
-}
-bootDashboard();
-</script>
-</body>
-</html>
-+v.toFixed(2):'—'; }
+function crFmtRev(v) { return v > 0 ? '$' + v.toFixed(2) : '—'; }
 function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();if(l.includes('connect'))return'cr-dispo-connected';if(l.includes('reject'))return'cr-dispo-rejected';return'cr-dispo-other'; }
 
 // Build query
@@ -1423,11 +1318,6 @@ function crRender() {
       </div>
       <div class="cr-footer"><span>${footerText}</span>${loadMoreBtn}</div>
     </div>`;
-
-  // Re-attach sort listeners
-  document.querySelectorAll('.cr-sort-th[onclick]').forEach(th => {
-    // onclick already set inline above
-  });
 }
 
 function crSort(col) {
@@ -1435,13 +1325,7 @@ function crSort(col) {
   crLoad(false);
 }
 
-// Search re-renders client-side without re-fetching
-document.addEventListener('DOMContentLoaded', () => {
-  const srch = document.getElementById('cr-search');
-  if (srch) srch.addEventListener('input', () => { if (crRows.length) crRender(); });
-});
-
-
+// ─── IN DEVELOPMENT ───────────────────────────────────────────────────────────
 let devCurrentIvr=null,devDeleteTarget=null,devSignoffState={supply:'pending',demand:'pending'};
 async function devSbFetch(path,opts={}){const res=await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`,{...opts,headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`,'Content-Type':'application/json','Prefer':opts.prefer||'return=representation',...(opts.headers||{})}});if(!res.ok){const err=await res.text();throw new Error(`Supabase error: ${err}`);}const text=await res.text();return text?JSON.parse(text):null;}
 function devOpenModal(id){document.getElementById(id).style.display='flex';}
@@ -1526,6 +1410,12 @@ function buildIntakeCard(ivrName,ni){const div=document.createElement('div');div
 function showIntakeFullForm(ni){document.getElementById('intake-full-'+ni).classList.add('visible');}
 async function saveIntakeAlias(ni,incomingIvrName){const sel=document.getElementById('intake-alias-sel-'+ni),canonicalIvrName=sel.value;if(!canonicalIvrName){showIntakeFullForm(ni);return;}const btn=document.querySelector(`#intake-card-${ni} .intake-alias-save-btn`);btn.disabled=true;btn.textContent='Saving…';try{await saveAlias(incomingIvrName,canonicalIvrName);const card=document.getElementById('intake-card-'+ni),agentName=AGENTS.find(a=>a.ivrName===canonicalIvrName)?.name||canonicalIvrName;card.innerHTML=`<div style="padding:14px 16px;background:var(--teal-bg);border:1px solid #5DCAA5;border-radius:var(--radius-sm);font-size:13px;color:var(--teal);">✓ <strong>"${incomingIvrName}"</strong> is now an alias for <strong>${agentName}</strong>. Future uploads will automatically roll up.</div>`;await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save alias: '+e.message);btn.disabled=false;btn.textContent='Save alias & finish';}}
 async function saveNewAgent(ni,ivrName){const btn=document.getElementById('intake-save-'+ni),name=document.getElementById('intake-name-'+ni).value.trim()||ivrName,vertical=document.getElementById('intake-vertical-'+ni).value,routing=document.getElementById('intake-routing-'+ni).value,qualText=document.getElementById('intake-qual-'+ni).value.trim(),qualifying=qualText?qualText.split('\n').map(l=>l.trim()).filter(Boolean):[],disqualify=document.getElementById('intake-dq-'+ni).value.trim()||null,pcText=document.getElementById('intake-pc-'+ni).value.trim(),publisherCampaigns=pcText?pcText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('—').map(s=>s.trim());return{campaign:p[0]||line,publisher:p[1]||''};}):[],ivrText=document.getElementById('intake-ivr-'+ni).value.trim(),ivrTargets=ivrText?ivrText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('|').map(s=>s.trim());return{publisher:p[0]||'',advertiser:p[1]||'',vertical:p[2]||'',campaign:''};}):[],notes=document.getElementById('intake-notes-'+ni).value.trim()||null;btn.disabled=true;btn.textContent='Saving…';try{await sbFetch('agents?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,name,vertical,status:'live',routing_type:routing,qualifying,disqualify,publisher_campaigns:publisherCampaigns,ivr_targets:ivrTargets,notes,updated_at:new Date().toISOString()})});btn.textContent='✓ Added';btn.style.background='var(--teal)';await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save: '+e.message);btn.disabled=false;btn.textContent='Add to registry';}}
+
+// ─── CR SEARCH RE-RENDER ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const srch = document.getElementById('cr-search');
+  if (srch) srch.addEventListener('input', () => { if (crRows.length) crRender(); });
+});
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 async function bootDashboard() {
