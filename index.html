@@ -1216,13 +1216,13 @@ const CR_COLUMNS = [
   { key:'recording',   label:'Recording',   sortable:false, def:true  },
   { key:'sent',        label:'Sent',        sortable:false, def:true  },
   { key:'vertical',    label:'Vertical',    sortable:false, def:true  },
-  { key:'ivr_name',    label:'Agent',       sortable:true,  def:true  },
+  { key:'ivr_name',    label:'Agent',       sortable:true,  def:false  },
   { key:'publisher_name', label:'Publisher', sortable:true, def:true  },
   { key:'advertiser_name',label:'Advertiser',sortable:true, def:true  },
   { key:'phone',       label:'Caller',      sortable:false, def:true  },
   { key:'ivr_duration',label:'Duration',    sortable:true,  def:true  },
   { key:'disposition', label:'Disposition', sortable:true,  def:true  },
-  { key:'disposition_description', label:'Reason', sortable:false, def:false },
+  { key:'disposition_description', label:'Reason', sortable:false, def:true },
   { key:'advertiser_payin', label:'Revenue', sortable:true, def:true  }
 ];
 let crVisibleCols = {};
