@@ -668,19 +668,6 @@
     <div class="progress-wrap" id="progress-wrap" style="display:none;"><div class="progress-bar" id="progress-bar"></div></div>
     <div class="update-results" id="update-results"></div>
     <div id="new-agent-intakes"></div>
-   <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-  <h3 style="font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:6px;">Historical disposition backfill (GHL)</h3>
-  <p style="font-size:13px;color:var(--text-2);margin-bottom:14px;line-height:1.6;">
-    Step 1: upload the GHL contact export to load dispositions into <code>hl_call_data</code>.
-    Step 2: click Backfill to match them onto existing calls by phone + Voice AI Call Timestamp (±90s). Old recordings/transcripts won't be filled — dispositions only.
-  </p>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <button class="dev-btn-primary" onclick="document.getElementById('ghl-file-input').click()">Upload GHL CSV</button>
-    <input type="file" id="ghl-file-input" accept=".csv,text/csv" style="display:none">
-    <button class="dev-btn-primary" id="ghl-backfill-btn" style="background:var(--teal)" onclick="backfillDispositions()">Backfill dispositions</button>
-  </div>
-  <div id="ghl-status" style="margin-top:12px;font-size:13px;font-family:var(--mono);"></div>
-</div>
   </div>
 </div>
 
@@ -1626,7 +1613,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function bootDashboard() {
   document.getElementById('bq-sql').textContent = buildBQSQL();
   setupFileUpload();
- document.getElementById('ghl-file-input').addEventListener('change', e => { if (e.target.files[0]) uploadGhlCsv(e.target.files[0]); });
   agentDrpInit();
   await Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
   loadVerticals();
