@@ -589,6 +589,12 @@
           <option value="Connected">Connected</option>
           <option value="Rejected">Rejected</option>
         </select>
+        <!-- Has recording -->
+        <select class="cr-select" id="cr-rec-filter">
+          <option value="">All calls</option>
+          <option value="yes">Has recording</option>
+          <option value="no">No recording</option>
+        </select>
         <!-- Publisher -->
         <input class="cr-filter-input" type="text" id="cr-pub-filter" placeholder="Publisher…">
         <!-- Advertiser -->
@@ -767,7 +773,7 @@ const CONFIG = { supabaseUrl: 'https://wvnfcxhbztnefhzjhfgg.supabase.co', supaba
 const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
 
 // ─── SHARED STATE ─────────────────────────────────────────────────────────────
-let AGENTS = [], aliasMap = {};
+let AGENTS = [], aliasMap = {}, VERTICALS = [];
 let activeRange = { start: null, end: null, label: '—', short: '—' };
 let activeFilter = 'all', openAgent = null, savedScrollY = 0;
 
@@ -805,6 +811,27 @@ async function saveAlias(incomingName, canonicalName) {
   aliasMap[incomingName] = canonicalName;
 }
 function aliasesForAgent(canonicalIvrName) { return Object.entries(aliasMap).filter(([,canon]) => canon===canonicalIvrName).map(([alias]) => alias); }
+
+// ─── DISTINCT VERTICALS (from raw call data) ──────────────────────────────────
+async function loadVerticals() {
+  try {
+    const rows = await sbFetch('agent_calls_raw?select=vertical&vertical=not.is.null');
+    const set = new Set();
+    if (rows) rows.forEach(r => { const v = (r.vertical||'').trim(); if (v) set.add(v); });
+    VERTICALS = [...set].sort((a,b)=>a.localeCompare(b));
+  } catch(e) { console.warn('verticals:', e.message); VERTICALS = []; }
+}
+function buildVerticalOptions(allCb, changeFn) {
+  let html = `<label class="ins-vertical-opt"><input type="checkbox" value="all" checked onchange="${allCb}(this)"><span>All verticals</span></label>`;
+  html += VERTICALS.map(v => `<label class="ins-vertical-opt"><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" onchange="${changeFn}()"><span>${v}</span></label>`).join('');
+  return html;
+}
+function populateVerticalDropdowns() {
+  const insPop = document.getElementById('ins-vertical-popover');
+  if (insPop) insPop.innerHTML = buildVerticalOptions('insVerticalAll','insVerticalChange');
+  const crPop = document.getElementById('cr-vertical-popover');
+  if (crPop) crPop.innerHTML = buildVerticalOptions('crVerticalAll','crVerticalChange');
+}
 
 // ─── AGENTS DATE RANGE PICKER ─────────────────────────────────────────────────
 let agentDrpViewYear, agentDrpViewMonth, agentDrpPickStart=null, agentDrpPickEnd=null, agentDrpSelecting=false, agentDrpJustOpened=false;
@@ -1223,6 +1250,9 @@ function crBuildQuery(offset) {
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
+  const rec = document.getElementById('cr-rec-filter').value;
+  if (rec === 'yes') q += `&recording_url=not.is.null`;
+  else if (rec === 'no') q += `&recording_url=is.null`;
   const pub = document.getElementById('cr-pub-filter').value.trim();
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
@@ -1320,10 +1350,11 @@ function crRender() {
     const agentName = agent ? agent.name : (r.ivr_name || '—');
     const vertical = r.vertical || (agent ? agent.vertical : '') || '—';
     const dispoClass = crDispoClass(r.disposition);
-    const recording = r.recording_url ? `<a class="cr-link" href="${r.recording_url}" target="_blank" rel="noopener">Open link</a>` : `<span class="cr-null">—</span>`;
+    const recording = r.recording_url ? `<a class="cr-link" href="${r.recording_url}" target="_blank" rel="noopener">Listen</a>` : `<span class="cr-null">—</span>`;
     return `<tr>
       <td class="cr-mono" style="font-size:10px;color:var(--text-3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.id}">${r.id}</td>
       <td class="cr-mono">${crFmtDateTime(r.created_at)}</td>
+      <td>${recording}</td>
       <td><span class="card-vtag ${vClass(vertical)}" style="font-size:10px">${vertical}</span></td>
       <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${agentName}">${agentName}</td>
       <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.publisher_name||''}">${r.publisher_name||'—'}</td>
@@ -1332,7 +1363,6 @@ function crRender() {
       <td class="cr-mono">${crFmtDuration(r.ivr_duration)}</td>
       <td><span class="${dispoClass}">${r.disposition||'—'}</span></td>
       <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${r.disposition_description||''}">${r.disposition_description||'<span class="cr-null">—</span>'}</td>
-      <td>${recording}</td>
       <td class="cr-mono" style="text-align:right">${crFmtRev(r.advertiser_payin)}</td>
     </tr>`;
   }).join('');
@@ -1351,6 +1381,7 @@ function crRender() {
           <thead><tr>
             <th class="${thCls('id')}">Call ID</th>
             <th class="${thCls('created_at')}" onclick="crSort('created_at')">Date & Time${thArrow('created_at')}</th>
+            <th>Recording</th>
             <th>Vertical</th>
             <th class="${thCls('ivr_name')}" onclick="crSort('ivr_name')">Agent${thArrow('ivr_name')}</th>
             <th class="${thCls('publisher_name')}" onclick="crSort('publisher_name')">Publisher${thArrow('publisher_name')}</th>
@@ -1359,7 +1390,6 @@ function crRender() {
             <th class="${thCls('ivr_duration')}" onclick="crSort('ivr_duration')">Duration${thArrow('ivr_duration')}</th>
             <th class="${thCls('disposition')}" onclick="crSort('disposition')">Disposition${thArrow('disposition')}</th>
             <th>Reason</th>
-            <th>Recording</th>
             <th class="${thCls('advertiser_payin')}" onclick="crSort('advertiser_payin')" style="text-align:right">Revenue${thArrow('advertiser_payin')}</th>
           </tr></thead>
           <tbody>${tbody}</tbody>
@@ -1502,6 +1532,8 @@ async function bootDashboard() {
   await loadAliases();
   await loadAgentsFromSupabase();
   await loadTestCalls();
+  await loadVerticals();
+  populateVerticalDropdowns();
   recomputeStats();
   applyFilters();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
