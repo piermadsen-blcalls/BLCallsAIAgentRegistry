@@ -1482,7 +1482,7 @@ function crAutoLoad() {
   if (crAutoLoaded) return;
   crAutoLoaded = true;
   if (!crDrpPickStart || !crDrpPickEnd) {
-    const end = new Date(); end.setHours(0,0,0,0);
+    const end = new Date(); end.setHours(0,0,0,0); end.setDate(end.getDate() - 1);
     const start = new Date(end); start.setDate(start.getDate() - 6);
     crDrpPickStart = toISO(start);
     crDrpPickEnd = toISO(end);
