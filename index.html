@@ -1068,9 +1068,7 @@ function insPeriodLabel(r){return fmtShortD(r.start)+' – '+fmtShortD(r.end);}
 
 function insBuildMovers(aMap,bMap,thrCalls,thrRevPct,thrConv){
   const allKeys=new Set([...Object.keys(aMap),...Object.keys(bMap)]),rows=[];
-  for(const key of allKeys){const a=aMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}},b=bMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};if(Math.max(a.raw,b.raw)<thrCalls)continue;const dRev=b.rev-a.rev,dMargin=b.margin-a.margin,dRevPct=a.rev>0?((dRev/a.rev)*100):(b.rev>0?100:0),dConv=insConv(b.paid,b.raw)-insConv(a.paid,a.raw);const flagRev=thrRevPct<Infinity&&Math.abs(dRevPct)>=thrRevPct,flagConv=thrConv<Infinity&&Math.abs(dConv)>=thrConv;
-const noFiltersActive=thrRevPct===Infinity&&thrConv===Infinity;
-if(!noFiltersActive&&!flagRev&&!flagConv)continue;;rows.push({key,a,b,dRev,dMargin,dRevPct,dConv,absImpact:Math.abs(dRev)});}
+  for(const key of allKeys){const a=aMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}},b=bMap[key]||{raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};if(Math.max(a.raw,b.raw)<thrCalls)continue;const dRev=b.rev-a.rev,dMargin=b.margin-a.margin,dRevPct=a.rev>0?((dRev/a.rev)*100):(b.rev>0?100:0),dConv=insConv(b.paid,b.raw)-insConv(a.paid,a.raw);const flagRev=thrRevPct<Infinity&&Math.abs(dRevPct)>=thrRevPct,flagConv=thrConv<Infinity&&Math.abs(dConv)>=thrConv;if(!flagRev&&!flagConv)continue;rows.push({key,a,b,dRev,dMargin,dRevPct,dConv,absImpact:Math.abs(dRev)});}
   return rows;
 }
 
@@ -1626,25 +1624,8 @@ async function bootDashboard() {
   recomputeStats();
   applyFilters();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
-
-  // Default insights to week-over-week
-  const today = new Date(); today.setHours(0,0,0,0);
-  const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - today.getDay());
-  const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7);
-  const lastWeekEnd = new Date(thisWeekStart); lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
-  insDrpState.a.pickStart = toISO(lastWeekStart);
-  insDrpState.a.pickEnd = toISO(lastWeekEnd);
-  insDrpState.b.pickStart = toISO(thisWeekStart);
-  insDrpState.b.pickEnd = toISO(today);
-  insPeriods.a = { start: toISO(lastWeekStart), end: toISO(lastWeekEnd) };
-  insPeriods.b = { start: toISO(thisWeekStart), end: toISO(today) };
-  document.getElementById('ins-drp-a-label').textContent = fmtShortD(toISO(lastWeekStart)) + ' – ' + fmtShortD(toISO(lastWeekEnd));
-  document.getElementById('ins-drp-b-label').textContent = fmtShortD(toISO(thisWeekStart)) + ' – ' + fmtShortD(toISO(today));
-
-  // Default insights filters to off (show everything)
-  document.getElementById('en-rev').checked = false;
-  document.getElementById('en-conv').checked = false;
-  toggleThr('rev');
-  toggleThr('conv');
 }
 bootDashboard();
+</script>
+</body>
+</html>
