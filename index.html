@@ -78,6 +78,7 @@
   .drp-nav-btn:hover { border-color: var(--brand-navy); color: var(--brand-navy); }
   .drp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .drp-dow { font-size: 10px; font-weight: 500; color: var(--text-3); text-align: center; padding: 4px 0 6px; }
+  .drp-anchor { position: relative; }
   .drp-day { font-size: 12px; font-family: var(--mono); text-align: center; padding: 5px 2px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text); transition: background 0.1s; }
   .drp-day:hover:not(.drp-empty):not(.drp-selected):not(.drp-in-range) { background: var(--bg); }
   .drp-day.drp-selected { background: var(--brand-navy); color: white; font-weight: 500; }
@@ -847,6 +848,7 @@ let agentDrpViewYear, agentDrpViewMonth, agentDrpPickStart=null, agentDrpPickEnd
 function agentDrpInit() {
   const now = new Date(); agentDrpViewYear = now.getFullYear(); agentDrpViewMonth = now.getMonth();
   const anchor = document.getElementById('drp-anchor');
+  anchor.style.position = 'relative';
   const el = document.createElement('div'); el.id = 'drp-popover'; el.className = 'drp-popover';
   anchor.appendChild(el);
 }
