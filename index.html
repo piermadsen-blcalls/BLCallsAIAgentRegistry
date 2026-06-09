@@ -904,7 +904,7 @@ function agentDrpApply(){if(!agentDrpPickStart||!agentDrpPickEnd)return;const s=
 function fmtShortD(iso){if(!iso)return'—';const[,m,d]=iso.split('-');return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+' '+ +d;}
 
 // ─── AGENTS PRESET ────────────────────────────────────────────────────────────
-function setPreset(days,el){document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');const end=new Date();end.setHours(0,0,0,0);const start=new Date(end);start.setDate(start.getDate()-(days-1));activeRange={start,end,label:fmtDate(start)+' – '+fmtDate(end),short:days+'d'};document.getElementById('drp-label').textContent=fmtShortD(toISO(start))+' – '+fmtShortD(toISO(end));refreshMetrics();}
+function setPreset(days,el){document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');const end=new Date();end.setHours(0,0,0,0);end.setDate(end.getDate()-1);const start=new Date(end);start.setDate(start.getDate()-(days-1));activeRange={start,end,label:fmtDate(start)+' – '+fmtDate(end),short:days+'d'};document.getElementById('drp-label').textContent=fmtShortD(toISO(start))+' – '+fmtShortD(toISO(end));refreshMetrics();}
 function updateDataWindowLabels(){const w=activeRange;document.getElementById('stat-calls-label').textContent='calls / '+w.short;document.getElementById('stat-revenue-label').textContent='revenue / '+w.short;document.getElementById('stat-margin-label').textContent='margin / '+w.short;document.getElementById('last-updated').textContent='Data window: '+w.label;}
 
 // ─── AGENTS METRICS ───────────────────────────────────────────────────────────
