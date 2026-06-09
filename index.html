@@ -786,8 +786,7 @@ let activeRange = { start: null, end: null, label: '—', short: '—' };
 let activeFilter = 'all', openAgent = null, savedScrollY = 0;
 
 // ─── SHARED HELPERS ───────────────────────────────────────────────────────────
-function toISO(d) { return d.toISOString().split('T')[0]; }
-function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
+function toISO(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
 function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : '—'; }
 
 async function sbFetch(path, options={}) {
