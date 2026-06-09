@@ -402,6 +402,101 @@
   .cr-load-more { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 16px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
   .cr-load-more:disabled { opacity:0.4; cursor:not-allowed; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  /* TEAM TAB */
+  .team-page { display:grid; grid-template-columns:260px 1fr; gap:24px; align-items:start; }
+  @media(max-width:900px){.team-page{grid-template-columns:1fr;}}
+  .team-sidebar { display:flex; flex-direction:column; gap:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; position:sticky; top:20px; }
+  .team-sidebar-header { padding:14px 16px 12px; border-bottom:1px solid var(--border); background:var(--bg); display:flex; align-items:center; justify-content:space-between; }
+  .team-sidebar-title { font-size:12px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; color:var(--text-3); }
+  .team-add-btn { font-family:var(--sans); font-size:11px; font-weight:500; padding:4px 10px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+  .team-add-btn:hover { opacity:0.85; }
+  .team-manager-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer; gap:8px; transition:background 0.1s; }
+  .team-manager-item:last-child { border-bottom:none; }
+  .team-manager-item:hover { background:var(--bg); }
+  .team-manager-item.active { background:var(--brand-mint-bg); border-left:3px solid var(--brand-mint); padding-left:11px; }
+  .team-mgr-name { font-size:13px; font-weight:500; color:var(--text); }
+  .team-mgr-email { font-size:10px; color:var(--text-3); font-family:var(--mono); margin-top:1px; }
+  .team-mgr-count { font-size:10px; font-weight:500; padding:2px 7px; border-radius:100px; background:var(--bg); border:1px solid var(--border-strong); color:var(--text-3); white-space:nowrap; flex-shrink:0; }
+  .team-manager-item.active .team-mgr-count { background:var(--brand-mint-bg); border-color:var(--brand-mint); color:var(--brand-navy); }
+  .team-sidebar-empty { padding:24px 16px; text-align:center; font-size:12px; color:var(--text-3); font-style:italic; }
+  .team-mgr-form { padding:12px 14px; border-top:1px solid var(--border); background:var(--bg); display:none; }
+  .team-mgr-form.open { display:block; }
+  .team-form-label { font-size:11px; font-weight:500; color:var(--text-2); margin-bottom:4px; display:block; }
+  .team-form-input { width:100%; font-family:var(--sans); font-size:12px; padding:6px 9px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; margin-bottom:7px; }
+  .team-form-input:focus { border-color:var(--brand-navy); }
+  .team-form-row { display:flex; gap:6px; margin-top:4px; }
+  .team-form-save { font-family:var(--sans); font-size:12px; font-weight:500; padding:5px 12px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
+  .team-form-cancel { font-family:var(--sans); font-size:12px; padding:5px 9px; border-radius:var(--radius-sm); background:none; color:var(--text-3); border:1px solid var(--border-strong); cursor:pointer; }
+  .team-form-delete { font-family:var(--sans); font-size:12px; padding:5px 9px; border-radius:var(--radius-sm); background:none; color:#A32D2D; border:1px solid #F09595; cursor:pointer; margin-left:auto; }
+  .team-main { display:flex; flex-direction:column; gap:24px; }
+  .team-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .team-panel-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg); }
+  .team-panel-title { font-family:var(--serif); font-size:17px; font-weight:400; }
+  .team-panel-count { font-size:11px; color:var(--text-3); font-family:var(--mono); }
+  .team-accts-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .team-accts-table thead th { font-size:10px; font-weight:500; color:var(--text-3); text-align:left; padding:8px 16px; border-bottom:1px solid var(--border); background:var(--bg); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; }
+  .team-accts-table tbody tr { border-bottom:1px solid var(--border); }
+  .team-accts-table tbody tr:last-child { border-bottom:none; }
+  .team-accts-table tbody tr:hover { background:var(--bg); }
+  .team-accts-table td { padding:8px 16px; vertical-align:middle; }
+  .team-acct-name { font-size:13px; font-weight:500; color:var(--text); }
+  .team-assign-select { font-family:var(--sans); font-size:12px; padding:4px 26px 4px 8px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 7px center; max-width:200px; }
+  .team-assign-select.assigned { border-color:var(--brand-mint); background-color:var(--brand-mint-bg); color:var(--brand-navy); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2300A87C' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+  .team-saving-indicator { font-size:10px; color:var(--text-3); font-style:italic; margin-left:6px; }
+  .team-empty { text-align:center; padding:40px 20px; color:var(--text-3); font-size:13px; font-style:italic; }
+
+  /* DIGEST TAB */
+  .digest-config { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; margin-bottom:24px; display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; }
+  .digest-config-group { display:flex; flex-direction:column; gap:6px; }
+  .digest-config-label { font-size:11px; font-weight:500; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-3); }
+  .digest-config-inner { display:flex; align-items:center; gap:8px; }
+  .digest-threshold-input { font-family:var(--mono); font-size:13px; width:72px; padding:5px 8px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); outline:none; }
+  .digest-unit { font-size:12px; color:var(--text-3); }
+  .digest-run-btn { font-family:var(--sans); font-size:13px; font-weight:500; padding:9px 20px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; margin-left:auto; align-self:flex-end; }
+  .digest-run-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .digest-send-all-btn { font-family:var(--sans); font-size:13px; font-weight:500; padding:9px 20px; border-radius:var(--radius-sm); background:var(--teal); color:white; border:none; cursor:pointer; }
+  .digest-send-all-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .digest-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .digest-summary-label { font-size:13px; color:var(--text-2); }
+  .digest-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px; overflow:hidden; animation:fadeIn 0.18s ease both; }
+  .digest-card-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
+  .digest-card-left { display:flex; flex-direction:column; gap:3px; }
+  .digest-card-name { font-size:14px; font-weight:500; color:var(--text); }
+  .digest-card-email { font-size:11px; color:var(--text-3); font-family:var(--mono); }
+  .digest-card-meta { font-size:11px; color:var(--text-3); }
+  .digest-card-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+  .digest-preview-btn { font-family:var(--sans); font-size:12px; padding:5px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-strong); background:none; color:var(--text-2); cursor:pointer; }
+  .digest-preview-btn:hover { border-color:var(--brand-navy); color:var(--brand-navy); }
+  .digest-send-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:5px 14px; border-radius:var(--radius-sm); border:none; background:var(--brand-navy); color:white; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+  .digest-send-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .digest-send-btn.sent { background:var(--teal); }
+  .digest-accounts-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .digest-accounts-table th { font-size:10px; font-weight:500; color:var(--text-3); text-align:left; padding:8px 18px; border-bottom:1px solid var(--border); background:var(--bg); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; }
+  .digest-accounts-table th:not(:first-child) { text-align:right; }
+  .digest-accounts-table td { padding:9px 18px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .digest-accounts-table tr:last-child td { border-bottom:none; }
+  .digest-flag { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:500; padding:2px 7px; border-radius:100px; }
+  .flag-up { background:var(--teal-bg); color:var(--teal); }
+  .flag-down { background:var(--coral-bg); color:var(--coral); }
+  .digest-preview-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:400; align-items:center; justify-content:center; }
+  .digest-preview-modal.open { display:flex; }
+  .digest-preview-inner { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border-strong); width:min(680px,95vw); max-height:88vh; overflow-y:auto; box-shadow:0 16px 48px rgba(0,0,0,0.18); }
+  .digest-preview-toolbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:1; }
+  .digest-preview-title { font-size:13px; font-weight:500; color:var(--text); }
+  .digest-preview-close { font-size:12px; color:var(--text-2); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 12px; cursor:pointer; font-family:var(--sans); }
+  .digest-email-body { padding:24px 28px; font-size:13px; line-height:1.7; color:var(--text); }
+  .digest-email-body h2 { font-family:var(--serif); font-size:22px; font-weight:400; margin-bottom:6px; }
+  .digest-email-body .email-sub { font-size:12px; color:var(--text-3); margin-bottom:20px; }
+  .digest-email-body .email-section { margin-bottom:20px; }
+  .digest-email-body .email-section-title { font-size:11px; font-weight:600; letter-spacing:0.7px; text-transform:uppercase; color:var(--text-3); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .digest-email-body .email-account-row { display:flex; align-items:baseline; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); gap:12px; }
+  .digest-email-body .email-account-row:last-child { border-bottom:none; }
+  .digest-email-body .email-acct-name { font-weight:500; font-size:13px; }
+  .digest-email-body .email-deltas { display:flex; gap:12px; font-family:var(--mono); font-size:11px; }
+  .digest-email-body .e-pos { color:var(--teal); }
+  .digest-email-body .e-neg { color:var(--coral); }
+  .digest-email-body .email-footer { font-size:11px; color:var(--text-3); margin-top:24px; padding-top:14px; border-top:1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -438,6 +533,8 @@
     <button class="nav-tab active" onclick="switchTab('agents',this)">Agents</button>
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('reporting',this)">Call Reporting</button>
+    <button class="nav-tab" onclick="switchTab('team',this)">Team</button>
+    <button class="nav-tab" onclick="switchTab('digest',this)">Weekly Digest</button>
     <button class="nav-tab" onclick="switchTab('dev',this)">In development</button>
   </div>
 
@@ -619,6 +716,105 @@
     </div>
     <div id="cr-output">
       <div class="ins-loading">Select a date range and click <strong>Load calls</strong>.</div>
+    </div>
+  </div>
+
+  <!-- TEAM TAB -->
+  <div id="tab-team" class="tab-pane">
+    <div class="team-page">
+
+      <!-- LEFT: manager list + add form -->
+      <div class="team-sidebar">
+        <div class="team-sidebar-header">
+          <span class="team-sidebar-title">Managers</span>
+          <button class="team-add-btn" onclick="teamShowNewForm()">+ Add</button>
+        </div>
+        <!-- new/edit manager form -->
+        <div class="team-mgr-form" id="team-mgr-form">
+          <label class="team-form-label">Name</label>
+          <input class="team-form-input" type="text" id="tf-mgr-name" placeholder="e.g. Jane Smith">
+          <label class="team-form-label">Email</label>
+          <input class="team-form-input" type="email" id="tf-mgr-email" placeholder="jane@example.com">
+          <div class="team-form-row">
+            <button class="team-form-save" id="tf-mgr-save-btn" onclick="teamSaveMgr()">Save</button>
+            <button class="team-form-cancel" onclick="teamHideMgrForm()">Cancel</button>
+            <button class="team-form-delete" id="tf-mgr-delete-btn" style="display:none" onclick="teamDeleteMgr()">Delete</button>
+          </div>
+          <input type="hidden" id="tf-mgr-edit-id">
+        </div>
+        <div id="team-mgr-list"><div class="team-sidebar-empty">Loading…</div></div>
+      </div>
+
+      <!-- RIGHT: two account tables -->
+      <div class="team-main">
+        <div class="team-panel">
+          <div class="team-panel-header">
+            <div class="team-panel-title">Advertisers</div>
+            <div class="team-panel-count" id="adv-assigned-count">—</div>
+          </div>
+          <div id="adv-accts-wrap"><div class="team-empty">Loading…</div></div>
+        </div>
+        <div class="team-panel">
+          <div class="team-panel-header">
+            <div class="team-panel-title">Publishers</div>
+            <div class="team-panel-count" id="pub-assigned-count">—</div>
+          </div>
+          <div id="pub-accts-wrap"><div class="team-empty">Loading…</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- WEEKLY DIGEST TAB -->
+  <div id="tab-digest" class="tab-pane">
+
+    <div class="digest-config">
+      <div class="digest-config-group">
+        <div class="digest-config-label">Comparison window</div>
+        <div class="digest-config-inner">
+          <span style="font-size:12px;color:var(--text-2)">Last</span>
+          <input class="digest-threshold-input" type="number" id="dg-days" value="7" min="1" max="90" style="width:56px">
+          <span class="digest-unit">days vs prior same period</span>
+        </div>
+      </div>
+      <div class="digest-config-group">
+        <div class="digest-config-label">Min raw calls</div>
+        <div class="digest-config-inner">
+          <input class="digest-threshold-input" type="number" id="dg-thr-calls" value="10" min="0">
+        </div>
+      </div>
+      <div class="digest-config-group">
+        <div class="digest-config-label">Revenue change ≥</div>
+        <div class="digest-config-inner">
+          <input class="digest-threshold-input" type="number" id="dg-thr-rev" value="15" min="0" max="100">
+          <span class="digest-unit">%</span>
+        </div>
+      </div>
+      <div class="digest-config-group">
+        <div class="digest-config-label">Conversion change ≥</div>
+        <div class="digest-config-inner">
+          <input class="digest-threshold-input" type="number" id="dg-thr-conv" value="5" min="0" max="100">
+          <span class="digest-unit">pp</span>
+        </div>
+      </div>
+      <button class="digest-run-btn" id="dg-run-btn" onclick="digestRun()">Build digest</button>
+    </div>
+
+    <div id="dg-output">
+      <div class="ins-loading">Configure thresholds above and click <strong>Build digest</strong>.</div>
+    </div>
+
+  </div>
+
+  <!-- DIGEST EMAIL PREVIEW MODAL -->
+  <div class="digest-preview-modal" id="digest-preview-modal">
+    <div class="digest-preview-inner">
+      <div class="digest-preview-toolbar">
+        <div class="digest-preview-title" id="dg-preview-title">Email preview</div>
+        <button class="digest-preview-close" onclick="digestClosePreview()">Close ×</button>
+      </div>
+      <div class="digest-email-body" id="dg-preview-body"></div>
     </div>
   </div>
 
@@ -807,6 +1003,7 @@ function switchTab(id, el) {
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'dev') devLoadIvrs();
   if (id === 'reporting') crAutoLoad();
+  if (id === 'team') teamLoad();
 }
 
 // ─── ALIAS TABLE ──────────────────────────────────────────────────────────────
@@ -1637,7 +1834,525 @@ function showIntakeFullForm(ni){document.getElementById('intake-full-'+ni).class
 async function saveIntakeAlias(ni,incomingIvrName){const sel=document.getElementById('intake-alias-sel-'+ni),canonicalIvrName=sel.value;if(!canonicalIvrName){showIntakeFullForm(ni);return;}const btn=document.querySelector(`#intake-card-${ni} .intake-alias-save-btn`);btn.disabled=true;btn.textContent='Saving…';try{await saveAlias(incomingIvrName,canonicalIvrName);const card=document.getElementById('intake-card-'+ni),agentName=AGENTS.find(a=>a.ivrName===canonicalIvrName)?.name||canonicalIvrName;card.innerHTML=`<div style="padding:14px 16px;background:var(--teal-bg);border:1px solid #5DCAA5;border-radius:var(--radius-sm);font-size:13px;color:var(--teal);">✓ <strong>"${incomingIvrName}"</strong> is now an alias for <strong>${agentName}</strong>. Future uploads will automatically roll up.</div>`;await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save alias: '+e.message);btn.disabled=false;btn.textContent='Save alias & finish';}}
 async function saveNewAgent(ni,ivrName){const btn=document.getElementById('intake-save-'+ni),name=document.getElementById('intake-name-'+ni).value.trim()||ivrName,vertical=document.getElementById('intake-vertical-'+ni).value,routing=document.getElementById('intake-routing-'+ni).value,qualText=document.getElementById('intake-qual-'+ni).value.trim(),qualifying=qualText?qualText.split('\n').map(l=>l.trim()).filter(Boolean):[],disqualify=document.getElementById('intake-dq-'+ni).value.trim()||null,pcText=document.getElementById('intake-pc-'+ni).value.trim(),publisherCampaigns=pcText?pcText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('—').map(s=>s.trim());return{campaign:p[0]||line,publisher:p[1]||''};}):[],ivrText=document.getElementById('intake-ivr-'+ni).value.trim(),ivrTargets=ivrText?ivrText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('|').map(s=>s.trim());return{publisher:p[0]||'',advertiser:p[1]||'',vertical:p[2]||'',campaign:''};}):[],notes=document.getElementById('intake-notes-'+ni).value.trim()||null;btn.disabled=true;btn.textContent='Saving…';try{await sbFetch('agents?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,name,vertical,status:'live',routing_type:routing,qualifying,disqualify,publisher_campaigns:publisherCampaigns,ivr_targets:ivrTargets,notes,updated_at:new Date().toISOString()})});btn.textContent='✓ Added';btn.style.background='var(--teal)';await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save: '+e.message);btn.disabled=false;btn.textContent='Add to registry';}}
 
-// ─── CR SEARCH RE-RENDER ──────────────────────────────────────────────────────
+// ─── TEAM MANAGERS ────────────────────────────────────────────────────────────
+const WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/L3tawCZ2vbExyCRLznbX/webhook-trigger/bec57dca-8ce7-4212-b5db-418dfc849541';
+
+// State: managers list + assignments map + known account names
+let teamManagers = [];          // [{id, manager_name, manager_email}]
+let teamAssignments = {};       // account_name+type -> manager_id  e.g. "Acme|advertiser" -> uuid
+let teamAdvNames = [];          // distinct advertiser names from agent_calls_raw
+let teamPubNames = [];          // distinct publisher names from agent_calls_raw
+let teamLoaded = false;
+
+// Derived helpers used by digest
+function teamAdvForMgr(mgrId) { return teamAdvNames.filter(n => teamAssignments[n+'|advertiser'] === mgrId); }
+function teamPubForMgr(mgrId) { return teamPubNames.filter(n => teamAssignments[n+'|publisher'] === mgrId); }
+function teamMgrForAccount(name, type) {
+  const id = teamAssignments[name+'|'+type];
+  return id ? teamManagers.find(m => m.id === id) : null;
+}
+
+async function teamLoad(force=false) {
+  if (teamLoaded && !force) return;
+  try {
+    // Fetch managers, assignments, and distinct account names in parallel
+    const [mgrs, assignments, advRows, pubRows] = await Promise.all([
+      sbFetch('account_managers?select=*&order=manager_name.asc'),
+      sbFetch('account_manager_assignments?select=*'),
+      sbFetch('agent_calls_raw?select=advertiser_name&advertiser_name=not.is.null'),
+      sbFetch('agent_calls_raw?select=publisher_name&publisher_name=not.is.null')
+    ]);
+
+    teamManagers = mgrs || [];
+
+    // Build assignments lookup
+    teamAssignments = {};
+    (assignments || []).forEach(a => {
+      teamAssignments[a.account_name + '|' + a.account_type] = a.manager_id;
+    });
+
+    // Distinct account names
+    const advSet = new Set(), pubSet = new Set();
+    (advRows || []).forEach(r => { const v = (r.advertiser_name||'').trim(); if (v && v !== '(direct)') advSet.add(v); });
+    (pubRows || []).forEach(r => { const v = (r.publisher_name||'').trim(); if (v && v !== '(direct)') pubSet.add(v); });
+    teamAdvNames = [...advSet].sort((a,b) => a.localeCompare(b));
+    teamPubNames = [...pubSet].sort((a,b) => a.localeCompare(b));
+
+    teamLoaded = true;
+    teamRenderSidebar();
+    teamRenderAccounts('advertiser');
+    teamRenderAccounts('publisher');
+  } catch(e) {
+    console.warn('teamLoad error:', e.message);
+    document.getElementById('team-mgr-list').innerHTML = `<div class="team-sidebar-empty" style="color:var(--coral)">Could not load: ${e.message}</div>`;
+  }
+}
+
+function teamRenderSidebar() {
+  const list = document.getElementById('team-mgr-list');
+  if (!teamManagers.length) {
+    list.innerHTML = '<div class="team-sidebar-empty">No managers yet — add one above.</div>';
+    return;
+  }
+  list.innerHTML = teamManagers.map(m => {
+    const advCount = teamAdvForMgr(m.id).length;
+    const pubCount = teamPubForMgr(m.id).length;
+    const total = advCount + pubCount;
+    return `<div class="team-manager-item" onclick="teamEditMgr('${m.id}')">
+      <div style="min-width:0">
+        <div class="team-mgr-name">${m.manager_name}</div>
+        <div class="team-mgr-email">${m.manager_email}</div>
+      </div>
+      <div class="team-mgr-count">${total} acct${total!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function teamRenderAccounts(type) {
+  const names = type === 'advertiser' ? teamAdvNames : teamPubNames;
+  const wrap = document.getElementById(type === 'advertiser' ? 'adv-accts-wrap' : 'pub-accts-wrap');
+  const countEl = document.getElementById(type === 'advertiser' ? 'adv-assigned-count' : 'pub-assigned-count');
+
+  const assigned = names.filter(n => teamAssignments[n+'|'+type]);
+  countEl.textContent = `${assigned.length} of ${names.length} assigned`;
+
+  if (!names.length) {
+    wrap.innerHTML = '<div class="team-empty">No ' + type + 's found in call data yet.</div>';
+    return;
+  }
+
+  const mgrOptions = teamManagers.map(m =>
+    `<option value="${m.id}">${m.manager_name}</option>`
+  ).join('');
+
+  const rows = names.map(name => {
+    const assignedId = teamAssignments[name+'|'+type] || '';
+    const isCls = assignedId ? 'assigned' : '';
+    return `<tr>
+      <td class="team-acct-name">${name}</td>
+      <td style="text-align:right">
+        <select class="team-assign-select ${isCls}" data-account="${name.replace(/"/g,'&quot;')}" data-type="${type}"
+          onchange="teamAssign(this)">
+          <option value="">— unassigned —</option>
+          ${mgrOptions}
+        </select>
+        <span class="team-saving-indicator" id="tsave-${type}-${CSS.escape(name)}" style="display:none">saving…</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="team-accts-table">
+    <thead><tr><th>${type.charAt(0).toUpperCase()+type.slice(1)}</th><th style="text-align:right">Assigned manager</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  // Set dropdown values after render (can't do it in template due to encoding)
+  names.forEach(name => {
+    const sel = wrap.querySelector(`select[data-account="${name.replace(/"/g,'&quot;')}"]`);
+    if (sel) sel.value = teamAssignments[name+'|'+type] || '';
+  });
+}
+
+async function teamAssign(sel) {
+  const name = sel.dataset.account;
+  const type = sel.dataset.type;
+  const mgrId = sel.value || null;
+  const key = name + '|' + type;
+  const indicatorId = `tsave-${type}-${CSS.escape(name)}`;
+  const indicator = document.getElementById(indicatorId);
+
+  sel.disabled = true;
+  if (indicator) { indicator.style.display = 'inline'; indicator.textContent = 'saving…'; }
+
+  try {
+    if (mgrId) {
+      // Upsert assignment
+      await sbFetch('account_manager_assignments?on_conflict=account_name,account_type', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ account_name: name, account_type: type, manager_id: mgrId })
+      });
+      teamAssignments[key] = mgrId;
+      sel.classList.add('assigned');
+    } else {
+      // Remove assignment
+      await sbFetch(`account_manager_assignments?account_name=eq.${encodeURIComponent(name)}&account_type=eq.${type}`, {
+        method: 'DELETE', headers: { 'Prefer': '' }
+      });
+      delete teamAssignments[key];
+      sel.classList.remove('assigned');
+    }
+    if (indicator) { indicator.textContent = '✓'; setTimeout(() => { indicator.style.display = 'none'; }, 1200); }
+    // Refresh sidebar counts
+    teamRenderSidebar();
+    // Refresh count badge for this panel
+    const names = type === 'advertiser' ? teamAdvNames : teamPubNames;
+    const assigned = names.filter(n => teamAssignments[n+'|'+type]);
+    const countEl = document.getElementById(type === 'advertiser' ? 'adv-assigned-count' : 'pub-assigned-count');
+    if (countEl) countEl.textContent = `${assigned.length} of ${names.length} assigned`;
+  } catch(e) {
+    if (indicator) { indicator.textContent = 'error'; indicator.style.color = 'var(--coral)'; }
+    alert('Could not save assignment: ' + e.message);
+  }
+  sel.disabled = false;
+}
+
+// Manager CRUD
+function teamShowNewForm() {
+  document.getElementById('tf-mgr-name').value = '';
+  document.getElementById('tf-mgr-email').value = '';
+  document.getElementById('tf-mgr-edit-id').value = '';
+  document.getElementById('tf-mgr-save-btn').textContent = 'Save';
+  document.getElementById('tf-mgr-delete-btn').style.display = 'none';
+  // Deactivate any active item
+  document.querySelectorAll('.team-manager-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('team-mgr-form').classList.add('open');
+  document.getElementById('tf-mgr-name').focus();
+}
+
+function teamEditMgr(id) {
+  const mgr = teamManagers.find(m => m.id === id);
+  if (!mgr) return;
+  document.getElementById('tf-mgr-name').value = mgr.manager_name;
+  document.getElementById('tf-mgr-email').value = mgr.manager_email;
+  document.getElementById('tf-mgr-edit-id').value = id;
+  document.getElementById('tf-mgr-save-btn').textContent = 'Update';
+  document.getElementById('tf-mgr-delete-btn').style.display = 'block';
+  document.querySelectorAll('.team-manager-item').forEach(el => el.classList.remove('active'));
+  const items = document.querySelectorAll('.team-manager-item');
+  const idx = teamManagers.findIndex(m => m.id === id);
+  if (items[idx]) items[idx].classList.add('active');
+  document.getElementById('team-mgr-form').classList.add('open');
+  document.getElementById('tf-mgr-name').focus();
+}
+
+function teamHideMgrForm() {
+  document.getElementById('team-mgr-form').classList.remove('open');
+  document.getElementById('tf-mgr-edit-id').value = '';
+  document.querySelectorAll('.team-manager-item').forEach(el => el.classList.remove('active'));
+}
+
+async function teamSaveMgr() {
+  const name = document.getElementById('tf-mgr-name').value.trim();
+  const email = document.getElementById('tf-mgr-email').value.trim();
+  const editId = document.getElementById('tf-mgr-edit-id').value;
+  if (!name) { document.getElementById('tf-mgr-name').focus(); return; }
+  if (!email) { document.getElementById('tf-mgr-email').focus(); return; }
+  const btn = document.getElementById('tf-mgr-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (editId) {
+      await sbFetch(`account_managers?id=eq.${editId}`, {
+        method: 'PATCH', headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ manager_name: name, manager_email: email })
+      });
+    } else {
+      await sbFetch('account_managers', {
+        method: 'POST', headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ manager_name: name, manager_email: email })
+      });
+    }
+    teamHideMgrForm();
+    teamLoaded = false;
+    await teamLoad(true);
+  } catch(e) { alert('Could not save: ' + e.message); }
+  btn.disabled = false; btn.textContent = editId ? 'Update' : 'Save';
+}
+
+async function teamDeleteMgr() {
+  const id = document.getElementById('tf-mgr-edit-id').value;
+  const mgr = teamManagers.find(m => m.id === id);
+  if (!mgr) return;
+  if (!confirm(`Delete manager "${mgr.manager_name}"? Their account assignments will also be removed.`)) return;
+  try {
+    // Delete assignments first, then manager
+    await sbFetch(`account_manager_assignments?manager_id=eq.${id}`, { method: 'DELETE', headers: { 'Prefer': '' } });
+    await sbFetch(`account_managers?id=eq.${id}`, { method: 'DELETE', headers: { 'Prefer': '' } });
+    teamHideMgrForm();
+    teamLoaded = false;
+    await teamLoad(true);
+  } catch(e) { alert('Could not delete: ' + e.message); }
+}
+
+// ─── WEEKLY DIGEST ────────────────────────────────────────────────────────────
+let digestResults = null;
+
+async function digestRun() {
+  await teamLoad();
+  const days = parseInt(document.getElementById('dg-days').value) || 7;
+  const thrCalls = parseInt(document.getElementById('dg-thr-calls').value) || 0;
+  const thrRevPct = parseFloat(document.getElementById('dg-thr-rev').value) || 0;
+  const thrConvPp = parseFloat(document.getElementById('dg-thr-conv').value) || 0;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const bEnd = new Date(today); bEnd.setDate(bEnd.getDate() - 1);
+  const bStart = new Date(bEnd); bStart.setDate(bStart.getDate() - (days - 1));
+  const aEnd = new Date(bStart); aEnd.setDate(aEnd.getDate() - 1);
+  const aStart = new Date(aEnd); aStart.setDate(aStart.getDate() - (days - 1));
+
+  const pA = { start: toISO(aStart), end: toISO(aEnd) };
+  const pB = { start: toISO(bStart), end: toISO(bEnd) };
+
+  const btn = document.getElementById('dg-run-btn');
+  btn.disabled = true; btn.textContent = 'Loading…';
+  document.getElementById('dg-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Fetching call data for both periods…</div>`;
+
+  try {
+    const [dA, dB] = await Promise.all([insFetchPeriod(pA.start, pA.end), insFetchPeriod(pB.start, pB.end)]);
+    digestResults = { dA, dB, pA, pB, thrCalls, thrRevPct, thrConvPp };
+    digestRenderOutput(digestResults);
+  } catch(e) {
+    document.getElementById('dg-output').innerHTML = `<div class="ins-loading" style="color:var(--coral)">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false; btn.textContent = 'Build digest';
+}
+
+function digestRenderOutput({ dA, dB, pA, pB, thrCalls, thrRevPct, thrConvPp }) {
+  const advMovers = digestBuildMovers(dA.advs, dB.advs, thrCalls, thrRevPct, thrConvPp);
+  const pubMovers = digestBuildMovers(dA.pubs, dB.pubs, thrCalls, thrRevPct, thrConvPp);
+
+  // Group by manager using new model
+  const byEmail = {};
+  function ensureEmail(mgr) {
+    if (!byEmail[mgr.manager_email]) byEmail[mgr.manager_email] = { managerName: mgr.manager_name, email: mgr.manager_email, advAccounts: [], pubAccounts: [] };
+  }
+  for (const m of advMovers) { const mgr = teamMgrForAccount(m.key, 'advertiser'); if (mgr) { ensureEmail(mgr); byEmail[mgr.manager_email].advAccounts.push(m); } }
+  for (const m of pubMovers) { const mgr = teamMgrForAccount(m.key, 'publisher'); if (mgr) { ensureEmail(mgr); byEmail[mgr.manager_email].pubAccounts.push(m); } }
+
+  const emailList = Object.values(byEmail);
+  const unmatchedAdv = advMovers.filter(m => !teamMgrForAccount(m.key, 'advertiser'));
+  const unmatchedPub = pubMovers.filter(m => !teamMgrForAccount(m.key, 'publisher'));
+  const totalFlags = advMovers.length + pubMovers.length;
+  const totalEmails = emailList.length;
+  const periodLabel = `${fmtShortD(pA.start)}–${fmtShortD(pA.end)} vs ${fmtShortD(pB.start)}–${fmtShortD(pB.end)}`;
+
+  let html = `<div class="digest-header-row">
+    <div class="digest-summary-label"><strong>${totalFlags}</strong> account${totalFlags !== 1 ? 's' : ''} flagged · <strong>${totalEmails}</strong> email${totalEmails !== 1 ? 's' : ''} to send · period: ${periodLabel}</div>
+    <div style="display:flex;gap:8px">
+      ${totalEmails > 0 ? `<button class="digest-send-all-btn" onclick="digestSendAll()">Send all ${totalEmails} digests ↑</button>` : ''}
+    </div>
+  </div>`;
+
+  if (!emailList.length) {
+    html += `<div class="ins-empty">No flagged accounts matched an assigned manager. ${totalFlags > 0 ? `${totalFlags} account${totalFlags!==1?'s':''} had notable movement but no manager is assigned — assign them in the <strong>Team</strong> tab.` : 'No accounts crossed the thresholds for this period.'}</div>`;
+  } else {
+    html += emailList.map((entry, i) => digestRenderCard(entry, i, pA, pB)).join('');
+  }
+
+  if (unmatchedAdv.length || unmatchedPub.length) {
+    const total = unmatchedAdv.length + unmatchedPub.length;
+    html += `<div style="margin-top:16px;padding:12px 16px;background:var(--amber-bg);border:1px solid #E8C97A;border-radius:var(--radius-sm);font-size:12px;color:var(--amber);">
+      ⚠ <strong>${total} flagged account${total!==1?'s':''} have no manager assigned</strong> and won't be emailed:
+      ${[...unmatchedAdv.map(m=>`${m.key} (advertiser)`), ...unmatchedPub.map(m=>`${m.key} (publisher)`)].join(', ')}.
+      Assign them in the <strong>Team</strong> tab.
+    </div>`;
+  }
+
+  document.getElementById('dg-output').innerHTML = html;
+}
+
+function digestBuildMovers(aMap, bMap, thrCalls, thrRevPct, thrConvPp) {
+  const allKeys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  const rows = [];
+  for (const key of allKeys) {
+    const a = aMap[key] || { raw:0, sent:0, paid:0, rev:0, margin:0 };
+    const b = bMap[key] || { raw:0, sent:0, paid:0, rev:0, margin:0 };
+    if (Math.max(a.raw, b.raw) < thrCalls) continue;
+    const dRev = b.rev - a.rev;
+    const dRevPct = a.rev > 0 ? (dRev / a.rev) * 100 : (b.rev > 0 ? 100 : 0);
+    const dConv = (b.raw > 0 ? b.paid/b.raw*100 : 0) - (a.raw > 0 ? a.paid/a.raw*100 : 0);
+    const dMargin = b.margin - a.margin;
+    if (Math.abs(dRevPct) < thrRevPct && Math.abs(dConv) < thrConvPp) continue;
+    rows.push({ key, a, b, dRev, dRevPct, dConv, dMargin });
+  }
+  return rows.sort((x, y) => Math.abs(y.dRev) - Math.abs(x.dRev));
+}
+
+function digestRenderCard(entry, idx, pA, pB) {
+  const allAccounts = [...entry.advAccounts.map(a => ({...a, type:'Advertiser'})), ...entry.pubAccounts.map(a => ({...a, type:'Publisher'}))];
+  const rows = allAccounts.map(m => {
+    const dc = m.dRev >= 0 ? 'delta-pos' : 'delta-neg';
+    const flagCls = m.dRev >= 0 ? 'flag-up' : 'flag-down';
+    const flagIcon = m.dRev >= 0 ? '▲' : '▼';
+    return `<tr>
+      <td><span style="font-size:12px;font-weight:500">${m.key}</span> <span style="font-size:10px;color:var(--text-3)">${m.type}</span></td>
+      <td class="ins-mono">${insFmtRev(m.a.rev)}</td>
+      <td class="ins-mono">${insFmtRev(m.b.rev)}</td>
+      <td class="ins-mono"><span class="${dc}">${insFmtDelta(m.dRev,'$')}</span> <span class="digest-flag ${flagCls}">${flagIcon} ${Math.abs(m.dRevPct).toFixed(0)}%</span></td>
+      <td class="ins-mono"><span class="${m.dConv>=0?'delta-pos':'delta-neg'}">${insFmtDelta(m.dConv,'pp')}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="digest-card" id="dg-card-${idx}">
+    <div class="digest-card-header">
+      <div class="digest-card-left">
+        <div class="digest-card-name">${entry.managerName}</div>
+        <div class="digest-card-email">${entry.email}</div>
+        <div class="digest-card-meta">${allAccounts.length} account${allAccounts.length!==1?'s':''} flagged</div>
+      </div>
+      <div class="digest-card-actions">
+        <button class="digest-preview-btn" onclick="digestPreview(${idx})">Preview email</button>
+        <button class="digest-send-btn" id="dg-send-${idx}" onclick="digestSendOne(${idx})">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8l12-6-5 14-2-5-5-3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          Send digest
+        </button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="digest-accounts-table">
+        <thead><tr><th>Account</th><th>Rev (prev)</th><th>Rev (curr)</th><th>∆ Revenue</th><th>∆ Conv.</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function digestBuildEmailBody(entry, pA, pB) {
+  const allAccounts = [...entry.advAccounts.map(a => ({...a, type:'Advertiser'})), ...entry.pubAccounts.map(a => ({...a, type:'Publisher'}))];
+  const periodLabel = `${fmtShortD(pA.start)}–${fmtShortD(pA.end)} vs ${fmtShortD(pB.start)}–${fmtShortD(pB.end)}`;
+
+  const ups = allAccounts.filter(m => m.dRev >= 0);
+  const downs = allAccounts.filter(m => m.dRev < 0);
+
+  let body = `<h2>Weekly AI Performance Digest</h2>
+  <div class="email-sub">Period: ${periodLabel} · Sent from Buyerlink Calls AI Agent Registry</div>`;
+
+  body += `<div class="email-section"><div class="email-section-title">Hi ${entry.managerName.split(' ')[0]},</div>
+  <div style="font-size:13px;color:var(--text-2);line-height:1.7">Here's a summary of notable performance movement across your AI-routed accounts this week. ${allAccounts.length} account${allAccounts.length!==1?'s':''} crossed the flagging threshold.</div></div>`;
+
+  if (ups.length) {
+    body += `<div class="email-section"><div class="email-section-title">📈 Positive movement (${ups.length})</div>`;
+    body += ups.map(m => `<div class="email-account-row">
+      <div class="email-acct-name">${m.key} <span style="font-size:10px;color:var(--text-3);font-weight:400">${m.type}</span></div>
+      <div class="email-deltas">
+        <span class="e-pos">${insFmtDelta(m.dRev,'$')} rev</span>
+        <span style="color:var(--text-3)">${insFmtRev(m.a.rev)} → ${insFmtRev(m.b.rev)}</span>
+        <span class="e-pos">${insFmtDelta(m.dConv,'pp')} conv</span>
+      </div>
+    </div>`).join('');
+    body += `</div>`;
+  }
+
+  if (downs.length) {
+    body += `<div class="email-section"><div class="email-section-title">📉 Needs attention (${downs.length})</div>`;
+    body += downs.map(m => `<div class="email-account-row">
+      <div class="email-acct-name">${m.key} <span style="font-size:10px;color:var(--text-3);font-weight:400">${m.type}</span></div>
+      <div class="email-deltas">
+        <span class="e-neg">${insFmtDelta(m.dRev,'$')} rev</span>
+        <span style="color:var(--text-3)">${insFmtRev(m.a.rev)} → ${insFmtRev(m.b.rev)}</span>
+        <span class="e-neg">${insFmtDelta(m.dConv,'pp')} conv</span>
+      </div>
+    </div>`).join('');
+    body += `</div>`;
+  }
+
+  body += `<div class="email-footer">This digest was generated automatically from the Buyerlink Calls AI Agent Registry based on your configured accounts. Reply to this email or reach out to your team contact with any questions.</div>`;
+  return body;
+}
+
+function digestPreview(idx) {
+  if (!digestResults) return;
+  const allAccounts = [...(digestResults.dA ? [] : [])]; // unused, just guard
+  const emailList = digestGetEmailList(digestResults);
+  const entry = emailList[idx];
+  if (!entry) return;
+  document.getElementById('dg-preview-title').textContent = `Preview — ${entry.email}`;
+  document.getElementById('dg-preview-body').innerHTML = digestBuildEmailBody(entry, digestResults.pA, digestResults.pB);
+  document.getElementById('digest-preview-modal').classList.add('open');
+}
+
+function digestClosePreview() {
+  document.getElementById('digest-preview-modal').classList.remove('open');
+}
+
+function digestGetEmailList(results) {
+  const { dA, dB, thrCalls, thrRevPct, thrConvPp } = results;
+  const advMovers = digestBuildMovers(dA.advs, dB.advs, thrCalls, thrRevPct, thrConvPp);
+  const pubMovers = digestBuildMovers(dA.pubs, dB.pubs, thrCalls, thrRevPct, thrConvPp);
+  const byEmail = {};
+  function ensure(mgr) { if (!byEmail[mgr.manager_email]) byEmail[mgr.manager_email] = { managerName: mgr.manager_name, email: mgr.manager_email, advAccounts: [], pubAccounts: [] }; }
+  for (const m of advMovers) { const mgr = teamMgrForAccount(m.key, 'advertiser'); if (mgr) { ensure(mgr); byEmail[mgr.manager_email].advAccounts.push(m); } }
+  for (const m of pubMovers) { const mgr = teamMgrForAccount(m.key, 'publisher'); if (mgr) { ensure(mgr); byEmail[mgr.manager_email].pubAccounts.push(m); } }
+  return Object.values(byEmail);
+}
+
+async function digestSendOne(idx) {
+  if (!digestResults) return;
+  const emailList = digestGetEmailList(digestResults);
+  const entry = emailList[idx];
+  if (!entry) return;
+  const btn = document.getElementById('dg-send-' + idx);
+  btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:11px;height:11px;margin-right:4px"></span>Sending…';
+  try {
+    await digestFireWebhook(entry, digestResults.pA, digestResults.pB);
+    btn.classList.add('sent');
+    btn.innerHTML = '✓ Sent';
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8l12-6-5 14-2-5-5-3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg> Send digest`;
+    alert('Send failed: ' + e.message);
+  }
+}
+
+async function digestSendAll() {
+  if (!digestResults) return;
+  const emailList = digestGetEmailList(digestResults);
+  for (let i = 0; i < emailList.length; i++) {
+    const btn = document.getElementById('dg-send-' + i);
+    if (btn && btn.classList.contains('sent')) continue;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:11px;height:11px;margin-right:4px"></span>Sending…'; }
+    try {
+      await digestFireWebhook(emailList[i], digestResults.pA, digestResults.pB);
+      if (btn) { btn.classList.add('sent'); btn.innerHTML = '✓ Sent'; }
+    } catch(e) {
+      if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8l12-6-5 14-2-5-5-3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg> Send digest`; }
+      alert(`Failed to send to ${emailList[i].email}: ${e.message}`);
+    }
+    await new Promise(r => setTimeout(r, 300)); // brief stagger
+  }
+}
+
+async function digestFireWebhook(entry, pA, pB) {
+  const allAccounts = [...entry.advAccounts.map(a => ({...a, type:'advertiser'})), ...entry.pubAccounts.map(a => ({...a, type:'publisher'}))];
+  const periodLabel = `${fmtShortD(pA.start)}–${fmtShortD(pA.end)} vs ${fmtShortD(pB.start)}–${fmtShortD(pB.end)}`;
+
+  const payload = {
+    to_email: entry.email,
+    to_name: entry.managerName,
+    subject: `Weekly AI Performance Digest — ${periodLabel}`,
+    period_a: pA,
+    period_b: pB,
+    period_label: periodLabel,
+    account_count: allAccounts.length,
+    accounts: allAccounts.map(m => ({
+      name: m.key,
+      type: m.type,
+      rev_prev: Math.round(m.a.rev * 100) / 100,
+      rev_curr: Math.round(m.b.rev * 100) / 100,
+      rev_delta: Math.round(m.dRev * 100) / 100,
+      rev_delta_pct: Math.round(m.dRevPct * 10) / 10,
+      conv_delta_pp: Math.round(m.dConv * 10) / 10,
+      margin_delta: Math.round(m.dMargin * 100) / 100,
+      direction: m.dRev >= 0 ? 'up' : 'down'
+    })),
+    email_body_html: digestBuildEmailBody(entry, pA, pB)
+  };
+
+  const res = await fetch(WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Webhook ${res.status}`);
+}
+
+// close preview on backdrop click
+document.addEventListener('click', e => {
+  const modal = document.getElementById('digest-preview-modal');
+  if (modal && e.target === modal) digestClosePreview();
+});
+
+
 document.addEventListener('DOMContentLoaded', () => {
   const srch = document.getElementById('cr-search');
   if (srch) srch.addEventListener('input', () => { if (crRows.length) crRender(); });
@@ -1651,6 +2366,7 @@ async function bootDashboard() {
   await Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
   loadVerticals();
   populateVerticalDropdowns();
+  teamLoad(); // pre-fetch so digest tab is instant
   crVisibleCols = {}; CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();
   recomputeStats();
