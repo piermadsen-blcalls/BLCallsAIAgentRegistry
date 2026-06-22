@@ -1646,9 +1646,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 async function checkForUnregisteredAgents() {
   try {
-    const PAGE = 1000; let offset = 0; const seen = new Set();
+    const seen = new Set();
+    const since = new Date(); since.setDate(since.getDate() - 60);
+    const sinceISO = toISO(since);
+    const PAGE = 1000; let offset = 0;
     while (true) {
-      const batch = await sbFetch(`agent_calls_raw?select=ivr_name&ivr_name=not.is.null`, { headers: { "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` } });
+      const batch = await sbFetch(`agent_calls_raw?select=ivr_name&ivr_name=not.is.null&call_date=gte.${sinceISO}`, { headers: { "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` } });
       if (!batch || !batch.length) break;
       batch.forEach(r => { if (r.ivr_name) seen.add(r.ivr_name.trim()); });
       if (batch.length < PAGE) break;
