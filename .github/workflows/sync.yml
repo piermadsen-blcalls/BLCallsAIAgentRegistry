@@ -1,0 +1,24 @@
+name: Sync Canoe Calls
+
+on:
+  schedule:
+    - cron: '0 6 * * 1,3,5'  # Mon, Wed, Fri at 6am UTC
+  workflow_dispatch:           # allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run sync
+        env:
+          CANOE_API_URL:         ${{ secrets.CANOE_API_URL }}
+          CANOE_API_KEY:         ${{ secrets.CANOE_API_KEY }}
+          SUPABASE_URL:          ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY:  ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/sync.js

@@ -402,9 +402,269 @@
   .cr-load-more { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 16px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
   .cr-load-more:disabled { opacity:0.4; cursor:not-allowed; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  /* ── LOGIN OVERLAY ─────────────────────────────────────── */
+  .login-overlay { position:fixed; inset:0; background:var(--bg); z-index:9999; display:flex; align-items:center; justify-content:center; }
+  .login-overlay.hidden { display:none; }
+  .login-card { background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); padding:40px 44px; width:380px; }
+  .login-logo { display:flex; align-items:center; gap:8px; margin-bottom:28px; }
+  .login-logo svg { width:28px; height:28px; }
+  .login-logo-text { font-family:var(--sans); font-size:13px; font-weight:500; color:var(--brand-navy); }
+  .login-logo-text span { color:var(--brand-mint); }
+  .login-title { font-family:var(--serif); font-size:22px; font-weight:400; margin-bottom:6px; }
+  .login-sub { font-size:13px; color:var(--text-2); margin-bottom:28px; }
+  .login-field { margin-bottom:16px; }
+  .login-label { font-size:11px; font-weight:500; color:var(--text-2); margin-bottom:5px; display:block; letter-spacing:0.3px; }
+  .login-input { width:100%; font-family:var(--sans); font-size:13px; padding:9px 12px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); outline:none; transition:border-color 0.15s; }
+  .login-input:focus { border-color:var(--brand-navy); background:var(--surface); }
+  .login-btn { width:100%; font-family:var(--sans); font-size:13px; font-weight:500; padding:10px; background:var(--brand-navy); color:white; border:none; border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:opacity 0.15s; }
+  .login-btn:hover { opacity:0.88; }
+  .login-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .login-error { font-size:12px; color:var(--coral); margin-top:12px; min-height:18px; }
+
+  /* ── COMPLIANCE TAB ────────────────────────────────────── */
+  .comp-header { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:28px; }
+  .comp-title { font-family:var(--serif); font-size:28px; font-weight:400; }
+  .comp-sub { font-size:13px; color:var(--text-2); margin-top:4px; }
+  .comp-header-stats { display:flex; gap:24px; flex-shrink:0; }
+  .comp-stat { text-align:right; }
+  .comp-stat-num { font-family:var(--serif); font-size:26px; color:var(--text); line-height:1; }
+  .comp-stat-label { font-size:10px; color:var(--text-3); margin-top:2px; }
+  .comp-stat-num.alert { color:var(--coral); }
+
+  .comp-subtabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:24px; }
+  .comp-subtab { font-family:var(--sans); font-size:12px; font-weight:500; color:var(--text-2); background:none; border:none; padding:9px 16px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 0.15s; }
+  .comp-subtab.active { color:var(--brand-navy); border-bottom-color:var(--brand-mint); }
+  .comp-subtab:hover:not(.active) { color:var(--text); }
+  .comp-pane { display:none; }
+  .comp-pane.active { display:block; }
+
+  /* filters */
+  .comp-filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:20px; }
+  .comp-filter-select { font-family:var(--sans); font-size:12px; padding:5px 28px 5px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-2); cursor:pointer; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; min-width:130px; }
+  .comp-filter-input { font-family:var(--sans); font-size:12px; padding:5px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; width:150px; }
+  .comp-filter-input::placeholder { color:var(--text-3); }
+  .comp-filter-toggle { font-family:var(--sans); font-size:12px; padding:5px 13px; border-radius:100px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-2); cursor:pointer; transition:all 0.12s; white-space:nowrap; }
+  .comp-filter-toggle.active { background:var(--coral); color:white; border-color:var(--coral); }
+  .comp-filter-reset { font-family:var(--sans); font-size:11px; color:var(--text-3); background:none; border:none; cursor:pointer; padding:4px 6px; }
+  .comp-filter-reset:hover { color:var(--text); }
+
+  /* flag badges */
+  .flag-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+  .flag-outbound_dial      { background:#FEE2E2; color:#991B1B; }
+  .flag-facebook_marketplace { background:#FEF3C7; color:#92400E; }
+  .flag-angry_caller       { background:#FFE4E6; color:#9F1239; }
+  .flag-wrong_business     { background:#EDE9FE; color:#4C1D95; }
+  .flag-incentivized_caller { background:#DCFCE7; color:#14532D; }
+  .flag-geo_mismatch       { background:#DBEAFE; color:#1E3A8A; }
+  .flag-duplicate_caller   { background:#F3F4F6; color:#374151; }
+
+  /* outcome badge */
+  .outcome-badge { font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:4px; background:var(--gray-bg); color:var(--text-2); white-space:nowrap; }
+  .outcome-positive { background:var(--teal-bg); color:var(--teal); }
+  .outcome-negative { background:var(--coral-bg); color:var(--coral); }
+
+  /* call log table */
+  .comp-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .comp-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .comp-table thead th { font-size:10px; font-weight:500; color:var(--text-3); text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); background:var(--bg); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; }
+  .comp-table tbody tr { border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.1s; }
+  .comp-table tbody tr:last-child { border-bottom:none; }
+  .comp-table tbody tr:hover { background:var(--bg); }
+  .comp-table td { padding:9px 12px; vertical-align:middle; }
+  .comp-table td.muted { color:var(--text-3); font-style:italic; }
+  .comp-table-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg); font-size:12px; color:var(--text-3); }
+  .comp-load-more { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 16px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
+  .comp-load-more:disabled { opacity:0.4; cursor:not-allowed; }
+  .reviewed-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .reviewed-dot.yes { background:var(--brand-mint); }
+  .reviewed-dot.no  { background:var(--border-strong); }
+
+  /* call drawer */
+  .comp-drawer { position:fixed; right:0; top:0; bottom:0; width:540px; background:var(--surface); border-left:1px solid var(--border-strong); box-shadow:-4px 0 24px rgba(0,0,0,0.08); z-index:1000; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+  .comp-drawer.open { transform:translateX(0); }
+  .comp-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:999; display:none; }
+  .comp-drawer-overlay.open { display:block; }
+  .drawer-head { padding:20px 24px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
+  .drawer-head-left { min-width:0; }
+  .drawer-call-id { font-family:var(--mono); font-size:10px; color:var(--text-3); margin-bottom:4px; }
+  .drawer-names { font-family:var(--serif); font-size:16px; line-height:1.3; }
+  .drawer-meta-row { display:flex; gap:12px; margin-top:6px; flex-wrap:wrap; }
+  .drawer-meta-item { font-size:11px; color:var(--text-2); }
+  .drawer-close { background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 10px; font-size:12px; color:var(--text-2); cursor:pointer; flex-shrink:0; }
+  .drawer-close:hover { border-color:var(--text); color:var(--text); }
+  .drawer-body { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:20px; }
+  .drawer-body::-webkit-scrollbar { width:4px; }
+  .drawer-body::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:2px; }
+  .drawer-section-title { font-size:10px; font-weight:500; letter-spacing:0.8px; text-transform:uppercase; color:var(--text-3); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .drawer-transcript { font-size:12px; line-height:1.7; color:var(--text); background:var(--bg); border-radius:var(--radius-sm); padding:14px; max-height:260px; overflow-y:auto; white-space:pre-wrap; }
+  .drawer-transcript::-webkit-scrollbar { width:4px; }
+  .drawer-transcript::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:2px; }
+  .drawer-summary { font-size:13px; line-height:1.6; color:var(--text-2); }
+  .drawer-outcome-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .drawer-canoe-outcome { font-size:11px; color:var(--text-3); }
+  .drawer-flags-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .drawer-no-flags { font-size:12px; color:var(--text-3); font-style:italic; }
+
+  /* correction form */
+  .correction-form { background:var(--bg); border-radius:var(--radius-sm); padding:16px; border:1px solid var(--border); }
+  .correction-row { display:flex; gap:10px; margin-bottom:12px; align-items:flex-start; }
+  .correction-label { font-size:11px; font-weight:500; color:var(--text-2); margin-bottom:5px; display:block; }
+  .correction-select { font-family:var(--sans); font-size:12px; padding:6px 28px 6px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; width:100%; }
+  .correction-flags { display:flex; gap:6px; flex-wrap:wrap; }
+  .correction-flag-btn { font-size:11px; padding:4px 10px; border-radius:4px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-2); cursor:pointer; transition:all 0.12s; }
+  .correction-flag-btn.active { background:var(--brand-navy); color:white; border-color:var(--brand-navy); }
+  .correction-textarea { width:100%; font-family:var(--sans); font-size:12px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; resize:vertical; min-height:70px; }
+  .correction-textarea::placeholder { color:var(--text-3); }
+  .correction-save-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:7px 18px; background:var(--brand-navy); color:white; border:none; border-radius:var(--radius-sm); cursor:pointer; }
+  .correction-save-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .correction-saved { font-size:11px; color:var(--teal); margin-left:10px; }
+
+  /* accounts view */
+  .comp-accounts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:900px) { .comp-accounts-grid { grid-template-columns:1fr; } }
+  .comp-accounts-col-title { font-size:10px; font-weight:500; letter-spacing:0.8px; text-transform:uppercase; color:var(--text-3); margin-bottom:12px; }
+  .comp-rank-list { display:flex; flex-direction:column; gap:6px; }
+  .comp-rank-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; cursor:pointer; transition:border-color 0.15s; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .comp-rank-item:hover { border-color:var(--border-strong); }
+  .comp-rank-item.selected { border-color:var(--brand-navy); }
+  .comp-rank-name { font-size:13px; color:var(--text); }
+  .comp-rank-sub { font-size:11px; color:var(--text-3); margin-top:2px; }
+  .comp-rank-count { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--coral); flex-shrink:0; }
+  .comp-rank-count.zero { color:var(--text-3); }
+  .comp-detail-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; min-height:200px; }
+  .comp-detail-empty { font-size:13px; color:var(--text-3); font-style:italic; padding:20px 0; }
+
+  /* team view */
+  .comp-team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+  .comp-team-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; }
+  .comp-team-name { font-family:var(--serif); font-size:17px; margin-bottom:12px; }
+  .comp-team-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .comp-team-stat-val { font-family:var(--mono); font-size:14px; font-weight:500; color:var(--text); }
+  .comp-team-stat-val.alert { color:var(--coral); }
+  .comp-team-stat-label { font-size:10px; color:var(--text-3); margin-top:2px; }
+
+  .comp-empty { text-align:center; padding:60px 20px; color:var(--text-3); font-size:13px; }
+  .comp-loading { text-align:center; padding:60px 20px; color:var(--text-3); font-size:13px; }
 </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#1A2E4A"/>
+        <path d="M8 8h8c2.2 0 4 1.8 4 4s-1.8 4-4 4H8V8z" fill="#00C896"/>
+        <path d="M8 16h9c2.5 0 4.5 2 4.5 4.5S19.5 25 17 25H8V16z" fill="white" opacity="0.9"/>
+      </svg>
+      <span class="login-logo-text">buyerlink<span>calls</span></span>
+    </div>
+    <div class="login-title">Sign in</div>
+    <div class="login-sub">Access the AI Agent Registry &amp; Compliance Dashboard</div>
+    <div class="login-field">
+      <label class="login-label" for="login-email">Email</label>
+      <input class="login-input" type="email" id="login-email" placeholder="you@buyerlink.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="login-password">Password</label>
+      <input class="login-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- CALL DRAWER -->
+<div class="comp-drawer-overlay" id="comp-drawer-overlay" onclick="closeCallDrawer()"></div>
+<div class="comp-drawer" id="comp-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-left">
+      <div class="drawer-call-id" id="drawer-call-id"></div>
+      <div class="drawer-names" id="drawer-names"></div>
+      <div class="drawer-meta-row" id="drawer-meta-row"></div>
+    </div>
+    <button class="drawer-close" onclick="closeCallDrawer()">✕ Close</button>
+  </div>
+  <div class="drawer-body">
+    <div>
+      <div class="drawer-section-title">Outcome</div>
+      <div class="drawer-outcome-row" id="drawer-outcome-row"></div>
+    </div>
+    <div>
+      <div class="drawer-section-title">Compliance Flags</div>
+      <div id="drawer-flags"></div>
+    </div>
+    <div>
+      <div class="drawer-section-title">Summary</div>
+      <div class="drawer-summary" id="drawer-summary"></div>
+    </div>
+    <div>
+      <div class="drawer-section-title">Transcript</div>
+      <div class="drawer-transcript" id="drawer-transcript"></div>
+    </div>
+    <div>
+      <div class="drawer-section-title">Make a Correction</div>
+      <div class="correction-form" id="correction-form">
+        <div class="correction-row">
+          <div style="flex:1">
+            <label class="correction-label">Outcome</label>
+            <select class="correction-select" id="correction-outcome">
+              <option value="">— no change —</option>
+              <option value="sale">sale</option>
+              <option value="appointment">appointment</option>
+              <option value="quoted_interested">quoted_interested</option>
+              <option value="quoted_undecided">quoted_undecided</option>
+              <option value="quoted_too_expensive">quoted_too_expensive</option>
+              <option value="quoted_not_interested">quoted_not_interested</option>
+              <option value="undecided">undecided</option>
+              <option value="not_interested">not_interested</option>
+              <option value="caller_callback">caller_callback</option>
+              <option value="agent_callback">agent_callback</option>
+              <option value="caller_hangup">caller_hangup</option>
+              <option value="ivr_hangup">ivr_hangup</option>
+              <option value="voicemail">voicemail</option>
+              <option value="agent_not_available">agent_not_available</option>
+              <option value="audio_issue">audio_issue</option>
+              <option value="outside_geo">outside_geo</option>
+              <option value="wrong_category">wrong_category</option>
+              <option value="misrouted">misrouted</option>
+              <option value="caller_confused">caller_confused</option>
+              <option value="agent_confused">agent_confused</option>
+              <option value="customer_service">customer_service</option>
+              <option value="soliciting">soliciting</option>
+              <option value="referral">referral</option>
+              <option value="outside_hours">outside_hours</option>
+              <option value="other">other</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="correction-label">Compliance Flags</label>
+          <div class="correction-flags" id="correction-flags">
+            <button class="correction-flag-btn" data-flag="outbound_dial">outbound_dial</button>
+            <button class="correction-flag-btn" data-flag="facebook_marketplace">facebook_marketplace</button>
+            <button class="correction-flag-btn" data-flag="angry_caller">angry_caller</button>
+            <button class="correction-flag-btn" data-flag="wrong_business">wrong_business</button>
+            <button class="correction-flag-btn" data-flag="incentivized_caller">incentivized_caller</button>
+            <button class="correction-flag-btn" data-flag="geo_mismatch">geo_mismatch</button>
+            <button class="correction-flag-btn" data-flag="duplicate_caller">duplicate_caller</button>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="correction-label">Note <span style="color:var(--text-3);font-weight:400">(required — explain why)</span></label>
+          <textarea class="correction-textarea" id="correction-note" placeholder="e.g. Caller clearly called in voluntarily — outbound_dial flag is incorrect"></textarea>
+        </div>
+        <div style="display:flex;align-items:center">
+          <button class="correction-save-btn" id="correction-save-btn" onclick="saveCorrection()">Save correction</button>
+          <span class="correction-saved" id="correction-saved" style="display:none">✓ Saved</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="shell">
 
   <div class="logo-bar">
@@ -439,6 +699,7 @@
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('reporting',this)">Call Reporting</button>
     <button class="nav-tab" onclick="switchTab('dev',this)">In development</button>
+    <button class="nav-tab" onclick="switchTab('compliance',this)">Compliance</button>
   </div>
 
   <!-- AGENTS TAB -->
@@ -635,6 +896,125 @@
     </div>
     <div class="dev-ivr-list" id="dev-ivr-list">
       <div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:14px;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- COMPLIANCE TAB -->
+  <div id="tab-compliance" class="tab-pane">
+    <div class="comp-header">
+      <div>
+        <div class="comp-title">Compliance <em style="font-style:italic;color:var(--text-2)">— call monitoring</em></div>
+        <div class="comp-sub">Flagged calls, outcome accuracy, and publisher/advertiser health.</div>
+      </div>
+      <div class="comp-header-stats">
+        <div class="comp-stat"><div class="comp-stat-num" id="comp-stat-total">—</div><div class="comp-stat-label">calls processed</div></div>
+        <div class="comp-stat"><div class="comp-stat-num alert" id="comp-stat-flagged">—</div><div class="comp-stat-label">flagged</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="comp-stat-rate">—</div><div class="comp-stat-label">flag rate</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="comp-stat-pending">—</div><div class="comp-stat-label">pending review</div></div>
+      </div>
+    </div>
+
+    <div class="comp-subtabs">
+      <button class="comp-subtab active" onclick="switchCompTab('calllog',this)">Call Log</button>
+      <button class="comp-subtab" onclick="switchCompTab('accounts',this)">Publishers &amp; Advertisers</button>
+      <button class="comp-subtab" onclick="switchCompTab('team',this)">Team</button>
+    </div>
+
+    <!-- CALL LOG -->
+    <div id="comp-calllog" class="comp-pane active">
+      <div class="comp-filters">
+        <input class="comp-filter-input" id="cf-publisher" placeholder="Publisher…" oninput="compApplyFilters()">
+        <input class="comp-filter-input" id="cf-advertiser" placeholder="Advertiser…" oninput="compApplyFilters()">
+        <select class="comp-filter-select" id="cf-vertical" onchange="compApplyFilters()">
+          <option value="">All verticals</option>
+        </select>
+        <select class="comp-filter-select" id="cf-manager" onchange="compApplyFilters()">
+          <option value="">All managers</option>
+        </select>
+        <select class="comp-filter-select" id="cf-flag" onchange="compApplyFilters()">
+          <option value="">All flag types</option>
+          <option value="outbound_dial">outbound_dial</option>
+          <option value="facebook_marketplace">facebook_marketplace</option>
+          <option value="angry_caller">angry_caller</option>
+          <option value="wrong_business">wrong_business</option>
+          <option value="incentivized_caller">incentivized_caller</option>
+          <option value="geo_mismatch">geo_mismatch</option>
+          <option value="duplicate_caller">duplicate_caller</option>
+        </select>
+        <select class="comp-filter-select" id="cf-outcome" onchange="compApplyFilters()">
+          <option value="">All outcomes</option>
+          <option value="sale">sale</option>
+          <option value="appointment">appointment</option>
+          <option value="quoted_interested">quoted_interested</option>
+          <option value="quoted_undecided">quoted_undecided</option>
+          <option value="quoted_too_expensive">quoted_too_expensive</option>
+          <option value="quoted_not_interested">quoted_not_interested</option>
+          <option value="undecided">undecided</option>
+          <option value="not_interested">not_interested</option>
+          <option value="caller_hangup">caller_hangup</option>
+          <option value="ivr_hangup">ivr_hangup</option>
+          <option value="voicemail">voicemail</option>
+          <option value="agent_not_available">agent_not_available</option>
+          <option value="audio_issue">audio_issue</option>
+          <option value="outside_geo">outside_geo</option>
+          <option value="wrong_category">wrong_category</option>
+          <option value="misrouted">misrouted</option>
+          <option value="caller_confused">caller_confused</option>
+          <option value="agent_confused">agent_confused</option>
+          <option value="customer_service">customer_service</option>
+          <option value="soliciting">soliciting</option>
+          <option value="referral">referral</option>
+          <option value="outside_hours">outside_hours</option>
+          <option value="other">other</option>
+        </select>
+        <button class="comp-filter-toggle" id="cf-flagged-only" onclick="toggleFlaggedOnly(this)">Flagged only</button>
+        <button class="comp-filter-reset" onclick="compResetFilters()">Reset</button>
+      </div>
+      <div class="comp-table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Publisher</th>
+              <th>Advertiser</th>
+              <th>Vertical</th>
+              <th>Duration</th>
+              <th>Location</th>
+              <th>Outcome</th>
+              <th>Flags</th>
+              <th>Reviewed</th>
+            </tr>
+          </thead>
+          <tbody id="comp-table-body">
+            <tr><td colspan="9" class="comp-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div class="comp-table-footer">
+          <span id="comp-table-count">—</span>
+          <button class="comp-load-more" id="comp-load-more" onclick="compLoadMore()" disabled>Load more</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUBLISHERS & ADVERTISERS -->
+    <div id="comp-accounts" class="comp-pane">
+      <div class="comp-accounts-grid">
+        <div>
+          <div class="comp-accounts-col-title">Advertisers by flag count</div>
+          <div class="comp-rank-list" id="comp-adv-list"><div class="comp-loading">Loading…</div></div>
+        </div>
+        <div>
+          <div class="comp-accounts-col-title" id="comp-detail-title">Select an advertiser</div>
+          <div class="comp-detail-panel" id="comp-detail-panel">
+            <div class="comp-detail-empty">Click an advertiser to see which publishers are sending flagged calls.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEAM VIEW -->
+    <div id="comp-team" class="comp-pane">
+      <div class="comp-team-grid" id="comp-team-grid"><div class="comp-loading">Loading…</div></div>
     </div>
   </div>
 
@@ -1687,6 +2067,476 @@ async function bootDashboard() {
   await checkForUnregisteredAgents();
 }
 bootDashboard();
+
+// ── AUTH ──────────────────────────────────────────────────────
+
+function getAuthToken() { return sessionStorage.getItem('sb_access_token'); }
+function getAuthUser()  { return sessionStorage.getItem('sb_user_email'); }
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Enter your email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Sign-in failed');
+    sessionStorage.setItem('sb_access_token', data.access_token);
+    sessionStorage.setItem('sb_user_email', data.user?.email || email);
+    document.getElementById('login-overlay').classList.add('hidden');
+    compInit();
+  } catch(e) {
+    errEl.textContent = e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Sign in';
+}
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function checkAuth() {
+  const token = getAuthToken();
+  if (!token) {
+    document.getElementById('login-overlay').classList.remove('hidden');
+    return false;
+  }
+  document.getElementById('login-overlay').classList.add('hidden');
+  return true;
+}
+
+// check auth on load
+checkAuth();
+
+// ── COMPLIANCE HELPERS ────────────────────────────────────────
+
+function authHeaders() {
+  return {
+    'apikey':        SB_KEY,
+    'Authorization': `Bearer ${getAuthToken()}`,
+    'Content-Type':  'application/json',
+  };
+}
+
+async function compFetch(path) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: authHeaders() });
+  if (res.status === 401) { sessionStorage.clear(); checkAuth(); throw new Error('Session expired'); }
+  if (!res.ok) throw new Error(`Supabase error ${res.status}`);
+  return res.json();
+}
+
+async function compPost(path, body, prefer = 'return=minimal') {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Prefer': prefer },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
+  return res.status === 204 ? null : res.json();
+}
+
+// ── COMPLIANCE STATE ──────────────────────────────────────────
+
+let compCalls      = [];
+let compFiltered   = [];
+let compOffset     = 0;
+const COMP_PAGE    = 50;
+let compDrawerCall = null;
+let compDrawerFlags = [];
+
+// ── COMPLIANCE INIT ───────────────────────────────────────────
+
+async function compInit() {
+  await Promise.all([compLoadStats(), compLoadCalls(), compLoadAccounts(), compLoadTeam()]);
+  compPopulateFilterDropdowns();
+}
+
+function switchCompTab(id, btn) {
+  document.querySelectorAll('.comp-subtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.comp-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('comp-' + id).classList.add('active');
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+
+async function compLoadStats() {
+  try {
+    const rows = await compFetch('canoe_calls?select=id,flags,compliance_reviewed&ai_processed_at=not.is.null&limit=5000');
+    const total    = rows.length;
+    const flagged  = rows.filter(r => (r.flags||[]).length > 0).length;
+    const pending  = rows.filter(r => (r.flags||[]).length > 0 && !r.compliance_reviewed).length;
+    const rate     = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
+    document.getElementById('comp-stat-total').textContent   = total.toLocaleString();
+    document.getElementById('comp-stat-flagged').textContent = flagged.toLocaleString();
+    document.getElementById('comp-stat-rate').textContent    = rate;
+    document.getElementById('comp-stat-pending').textContent = pending.toLocaleString();
+  } catch(e) { console.warn('compLoadStats:', e.message); }
+}
+
+// ── CALL LOG ──────────────────────────────────────────────────
+
+async function compLoadCalls() {
+  try {
+    const rows = await compFetch(
+      'canoe_calls?select=id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,flags,our_summary,transcription,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=2000'
+    );
+    compCalls = rows;
+    compApplyFilters();
+  } catch(e) {
+    document.getElementById('comp-table-body').innerHTML = `<tr><td colspan="9" style="padding:20px;color:var(--coral)">Could not load calls: ${e.message}</td></tr>`;
+  }
+}
+
+function compPopulateFilterDropdowns() {
+  const verticals = [...new Set(compCalls.map(r => r.vertical_name).filter(Boolean))].sort();
+  const managers  = [...new Set(compCalls.map(r => r.account_manager).filter(Boolean))].sort();
+
+  const vSel = document.getElementById('cf-vertical');
+  verticals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; vSel.appendChild(o); });
+
+  const mSel = document.getElementById('cf-manager');
+  managers.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; mSel.appendChild(o); });
+}
+
+function compApplyFilters() {
+  const pub       = document.getElementById('cf-publisher').value.toLowerCase();
+  const adv       = document.getElementById('cf-advertiser').value.toLowerCase();
+  const vertical  = document.getElementById('cf-vertical').value;
+  const manager   = document.getElementById('cf-manager').value;
+  const flag      = document.getElementById('cf-flag').value;
+  const outcome   = document.getElementById('cf-outcome').value;
+  const flagOnly  = document.getElementById('cf-flagged-only').classList.contains('active');
+
+  compFiltered = compCalls.filter(r => {
+    if (pub      && !(r.publisher_name||'').toLowerCase().includes(pub))   return false;
+    if (adv      && !(r.advertiser_name||'').toLowerCase().includes(adv))  return false;
+    if (vertical && r.vertical_name !== vertical)                           return false;
+    if (manager  && r.account_manager !== manager)                          return false;
+    if (flag     && !(r.flags||[]).includes(flag))                          return false;
+    if (outcome  && r.our_outcome !== outcome)                              return false;
+    if (flagOnly && (r.flags||[]).length === 0)                             return false;
+    return true;
+  });
+
+  compOffset = 0;
+  compRenderTable(false);
+}
+
+function toggleFlaggedOnly(btn) {
+  btn.classList.toggle('active');
+  compApplyFilters();
+}
+
+function compResetFilters() {
+  document.getElementById('cf-publisher').value  = '';
+  document.getElementById('cf-advertiser').value = '';
+  document.getElementById('cf-vertical').value   = '';
+  document.getElementById('cf-manager').value    = '';
+  document.getElementById('cf-flag').value       = '';
+  document.getElementById('cf-outcome').value    = '';
+  document.getElementById('cf-flagged-only').classList.remove('active');
+  compApplyFilters();
+}
+
+const POSITIVE_OUTCOMES = new Set(['sale','appointment','quoted_interested','quoted_undecided']);
+const NEGATIVE_OUTCOMES = new Set(['outside_geo','wrong_category','misrouted','caller_confused','agent_confused','soliciting','outside_hours','voicemail','agent_not_available']);
+
+function outcomeBadge(outcome) {
+  if (!outcome) return '<span class="outcome-badge">—</span>';
+  const cls = POSITIVE_OUTCOMES.has(outcome) ? 'outcome-positive' : NEGATIVE_OUTCOMES.has(outcome) ? 'outcome-negative' : '';
+  return `<span class="outcome-badge ${cls}">${outcome}</span>`;
+}
+
+function flagBadges(flags) {
+  if (!flags || flags.length === 0) return '';
+  return flags.map(f => `<span class="flag-badge flag-${f}">${f.replace(/_/g,' ')}</span>`).join(' ');
+}
+
+function compRenderTable(append) {
+  const tbody  = document.getElementById('comp-table-body');
+  const page   = compFiltered.slice(compOffset, compOffset + COMP_PAGE);
+  const total  = compFiltered.length;
+
+  if (!append) tbody.innerHTML = '';
+
+  if (total === 0 && !append) {
+    tbody.innerHTML = '<tr><td colspan="9" class="comp-empty">No calls match these filters.</td></tr>';
+    document.getElementById('comp-table-count').textContent = '0 calls';
+    document.getElementById('comp-load-more').disabled = true;
+    return;
+  }
+
+  page.forEach(r => {
+    const date     = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—';
+    const dur      = r.duration ? `${r.duration}s` : '—';
+    const loc      = [r.city, r.state].filter(Boolean).join(', ') || '—';
+    const reviewed = r.compliance_reviewed;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="cr-mono">${date}</td>
+      <td>${r.publisher_name || '<span class="muted">—</span>'}</td>
+      <td>${r.advertiser_name || '<span class="muted">—</span>'}</td>
+      <td>${r.vertical_name || '<span class="muted">—</span>'}</td>
+      <td class="cr-mono">${dur}</td>
+      <td class="cr-mono">${loc}</td>
+      <td>${outcomeBadge(r.our_outcome)}</td>
+      <td>${flagBadges(r.flags)}</td>
+      <td><span class="reviewed-dot ${reviewed ? 'yes' : 'no'}" title="${reviewed ? 'Reviewed' : 'Not reviewed'}"></span></td>
+    `;
+    tr.addEventListener('click', () => openCallDrawer(r));
+    tbody.appendChild(tr);
+  });
+
+  compOffset += page.length;
+  const showing = Math.min(compOffset, total);
+  document.getElementById('comp-table-count').textContent = `${showing.toLocaleString()} of ${total.toLocaleString()} calls`;
+  document.getElementById('comp-load-more').disabled = compOffset >= total;
+}
+
+function compLoadMore() { compRenderTable(true); }
+
+// ── CALL DRAWER ───────────────────────────────────────────────
+
+function openCallDrawer(call) {
+  compDrawerCall  = call;
+  compDrawerFlags = [...(call.flags || [])];
+
+  document.getElementById('drawer-call-id').textContent = call.id || '';
+  document.getElementById('drawer-names').textContent   = [call.publisher_name, call.advertiser_name].filter(Boolean).join(' → ') || '—';
+
+  const meta = [
+    call.vertical_name,
+    call.duration ? call.duration + 's' : null,
+    [call.city, call.state].filter(Boolean).join(', ') || null,
+    call.account_manager ? 'AM: ' + call.account_manager : null,
+  ].filter(Boolean).map(m => `<span class="drawer-meta-item">${m}</span>`).join('');
+  document.getElementById('drawer-meta-row').innerHTML = meta;
+
+  document.getElementById('drawer-outcome-row').innerHTML =
+    outcomeBadge(call.our_outcome) +
+    (call.canoe_outcome ? `<span class="drawer-canoe-outcome">Canoe: ${call.canoe_outcome}</span>` : '');
+
+  const flagsEl = document.getElementById('drawer-flags');
+  flagsEl.innerHTML = compDrawerFlags.length
+    ? `<div class="drawer-flags-row">${flagBadges(compDrawerFlags)}</div>`
+    : '<div class="drawer-no-flags">No compliance flags</div>';
+
+  document.getElementById('drawer-summary').textContent   = call.our_summary || call.canoe_summary || 'No summary available.';
+  document.getElementById('drawer-transcript').textContent = call.transcription || 'No transcript available.';
+
+  // reset correction form
+  document.getElementById('correction-outcome').value = '';
+  document.getElementById('correction-note').value    = '';
+  document.getElementById('correction-saved').style.display = 'none';
+  document.querySelectorAll('.correction-flag-btn').forEach(btn => {
+    const flag = btn.dataset.flag;
+    btn.classList.toggle('active', compDrawerFlags.includes(flag));
+  });
+
+  document.getElementById('comp-drawer').classList.add('open');
+  document.getElementById('comp-drawer-overlay').classList.add('open');
+}
+
+function closeCallDrawer() {
+  document.getElementById('comp-drawer').classList.remove('open');
+  document.getElementById('comp-drawer-overlay').classList.remove('open');
+  compDrawerCall = null;
+}
+
+document.querySelectorAll('.correction-flag-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    const flag = btn.dataset.flag;
+    if (btn.classList.contains('active')) {
+      if (!compDrawerFlags.includes(flag)) compDrawerFlags.push(flag);
+    } else {
+      compDrawerFlags = compDrawerFlags.filter(f => f !== flag);
+    }
+  });
+});
+
+async function saveCorrection() {
+  if (!compDrawerCall) return;
+  const note = document.getElementById('correction-note').value.trim();
+  if (!note) { document.getElementById('correction-note').focus(); return; }
+
+  const btn = document.getElementById('correction-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const outcomeAfter = document.getElementById('correction-outcome').value || null;
+  const correction = {
+    call_id:        compDrawerCall.id,
+    corrected_by:   getAuthUser(),
+    outcome_before: compDrawerCall.our_outcome,
+    outcome_after:  outcomeAfter || compDrawerCall.our_outcome,
+    flags_before:   compDrawerCall.flags || [],
+    flags_after:    compDrawerFlags,
+    note,
+    corrected_at:   new Date().toISOString(),
+  };
+
+  try {
+    await compPost('call_corrections', correction);
+
+    // mark call as reviewed in canoe_calls
+    await fetch(`${SB_URL}/rest/v1/canoe_calls?id=eq.${compDrawerCall.id}`, {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ compliance_reviewed: true }),
+    });
+
+    // update local state
+    compDrawerCall.compliance_reviewed = true;
+    const local = compCalls.find(c => c.id === compDrawerCall.id);
+    if (local) local.compliance_reviewed = true;
+
+    document.getElementById('correction-saved').style.display = 'inline';
+    setTimeout(() => { document.getElementById('correction-saved').style.display = 'none'; }, 3000);
+  } catch(e) {
+    alert('Could not save correction: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Save correction';
+}
+
+// ── ACCOUNTS VIEW ─────────────────────────────────────────────
+
+async function compLoadAccounts() {
+  try {
+    const rows = await compFetch(
+      'canoe_calls?select=advertiser_id,advertiser_name,publisher_id,publisher_name,flags&ai_processed_at=not.is.null&limit=5000'
+    );
+
+    // group by advertiser
+    const advMap = {};
+    rows.forEach(r => {
+      if (!r.advertiser_id) return;
+      if (!advMap[r.advertiser_id]) advMap[r.advertiser_id] = { name: r.advertiser_name, total: 0, flagged: 0, publishers: {} };
+      advMap[r.advertiser_id].total++;
+      const flagged = (r.flags||[]).length > 0;
+      if (flagged) {
+        advMap[r.advertiser_id].flagged++;
+        if (!advMap[r.advertiser_id].publishers[r.publisher_id])
+          advMap[r.advertiser_id].publishers[r.publisher_id] = { name: r.publisher_name, flagged: 0, flags: {} };
+        advMap[r.advertiser_id].publishers[r.publisher_id].flagged++;
+        (r.flags||[]).forEach(f => {
+          advMap[r.advertiser_id].publishers[r.publisher_id].flags[f] = (advMap[r.advertiser_id].publishers[r.publisher_id].flags[f]||0) + 1;
+        });
+      }
+    });
+
+    const advList = Object.entries(advMap)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.flagged - a.flagged);
+
+    const listEl = document.getElementById('comp-adv-list');
+    if (!advList.length) { listEl.innerHTML = '<div class="comp-empty">No data yet.</div>'; return; }
+
+    listEl.innerHTML = '';
+    advList.forEach(adv => {
+      const el = document.createElement('div');
+      el.className = 'comp-rank-item';
+      el.innerHTML = `
+        <div>
+          <div class="comp-rank-name">${adv.name || adv.id}</div>
+          <div class="comp-rank-sub">${adv.total.toLocaleString()} calls</div>
+        </div>
+        <div class="comp-rank-count ${adv.flagged === 0 ? 'zero' : ''}">${adv.flagged} flagged</div>
+      `;
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.comp-rank-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        compShowAdvDetail(adv);
+      });
+      listEl.appendChild(el);
+    });
+  } catch(e) { console.warn('compLoadAccounts:', e.message); }
+}
+
+function compShowAdvDetail(adv) {
+  document.getElementById('comp-detail-title').textContent = adv.name || adv.id;
+  const panel = document.getElementById('comp-detail-panel');
+
+  const pubs = Object.entries(adv.publishers)
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.flagged - a.flagged);
+
+  if (!pubs.length) { panel.innerHTML = '<div class="comp-detail-empty">No flagged calls from any publisher.</div>'; return; }
+
+  panel.innerHTML = pubs.map(p => {
+    const flagBreakdown = Object.entries(p.flags)
+      .sort((a,b) => b[1]-a[1])
+      .map(([f, n]) => `<span class="flag-badge flag-${f}">${f.replace(/_/g,' ')} ×${n}</span>`)
+      .join(' ');
+    return `
+      <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:500;margin-bottom:6px">${p.name || p.id}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:6px">${p.flagged} flagged call${p.flagged!==1?'s':''}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${flagBreakdown}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── TEAM VIEW ─────────────────────────────────────────────────
+
+async function compLoadTeam() {
+  try {
+    const rows = await compFetch(
+      'canoe_calls?select=account_manager,flags,our_outcome,compliance_reviewed&ai_processed_at=not.is.null&limit=5000'
+    );
+
+    const managerMap = {};
+    rows.forEach(r => {
+      const m = r.account_manager || 'Unassigned';
+      if (!managerMap[m]) managerMap[m] = { total: 0, flagged: 0, pending: 0 };
+      managerMap[m].total++;
+      if ((r.flags||[]).length > 0) {
+        managerMap[m].flagged++;
+        if (!r.compliance_reviewed) managerMap[m].pending++;
+      }
+    });
+
+    const managers = Object.entries(managerMap)
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.flagged - a.flagged);
+
+    const grid = document.getElementById('comp-team-grid');
+    if (!managers.length) { grid.innerHTML = '<div class="comp-empty">No data yet.</div>'; return; }
+
+    grid.innerHTML = managers.map(m => `
+      <div class="comp-team-card">
+        <div class="comp-team-name">${m.name}</div>
+        <div class="comp-team-stats">
+          <div>
+            <div class="comp-team-stat-val">${m.total.toLocaleString()}</div>
+            <div class="comp-team-stat-label">total calls</div>
+          </div>
+          <div>
+            <div class="comp-team-stat-val ${m.flagged > 0 ? 'alert' : ''}">${m.flagged.toLocaleString()}</div>
+            <div class="comp-team-stat-label">flagged</div>
+          </div>
+          <div>
+            <div class="comp-team-stat-val">${m.pending.toLocaleString()}</div>
+            <div class="comp-team-stat-label">pending review</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { console.warn('compLoadTeam:', e.message); }
+}
+
+// init compliance if already authenticated (e.g. page refresh with active session)
+if (getAuthToken()) compInit();
 </script>
 </body>
 </html>
