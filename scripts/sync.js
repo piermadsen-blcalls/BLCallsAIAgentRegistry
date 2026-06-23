@@ -116,27 +116,41 @@ async function getLastSyncedAt() {
 }
 
 async function run() {
-  console.log('Starting Canoe sync...');
+  const { from, to } = getSyncWindow();
+  console.log(`Starting Canoe sync — window: ${from} → ${to}`);
 
-  let page = 1;
+  const fromDate = new Date(from);
+  const toDate   = new Date(to);
+
+  let page        = 1;
   let totalSynced = 0;
+  let done        = false;
 
-  while (true) {
+  while (!done) {
     console.log(`Fetching page ${page}...`);
     const { data, pagination } = await fetchPage(page);
 
     if (!data || data.length === 0) break;
 
-    // Upsert in batches
-    for (let i = 0; i < data.length; i += UPSERT_BATCH) {
-      const batch = data.slice(i, i + UPSERT_BATCH).map(mapRow);
-      await upsertBatch(batch);
-      totalSynced += batch.length;
+    const inWindow = [];
+    for (const row of data) {
+      const rowDate = new Date(row.created_at);
+      if (rowDate >= toDate) continue;       // too new, skip
+      if (rowDate < fromDate) { done = true; break; } // too old, stop paging
+      inWindow.push(row);
     }
 
-    console.log(`  Page ${page}/${pagination.pageCount} — ${totalSynced} records upserted`);
+    if (inWindow.length > 0) {
+      for (let i = 0; i < inWindow.length; i += UPSERT_BATCH) {
+        const batch = inWindow.slice(i, i + UPSERT_BATCH).map(mapRow);
+        await upsertBatch(batch);
+        totalSynced += batch.length;
+      }
+    }
 
-    if (page >= pagination.pageCount) break;
+    console.log(`  Page ${page}/${pagination.pageCount} — ${inWindow.length} in window, ${totalSynced} total upserted`);
+
+    if (!done && page >= pagination.pageCount) break;
     page++;
   }
 
