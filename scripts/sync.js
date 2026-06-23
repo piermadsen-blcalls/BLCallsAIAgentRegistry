@@ -15,10 +15,25 @@ const CANOE_API_KEY     = process.env.CANOE_API_KEY;
 const SUPABASE_URL      = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-const PAGE_SIZE = 250;
+const PAGE_SIZE    = 250;
 const UPSERT_BATCH = 100;
 
+// Default: yesterday midnight → today midnight UTC
+// Override by setting SYNC_FROM and SYNC_TO env vars (ISO strings)
+function getSyncWindow() {
+  if (process.env.SYNC_FROM && process.env.SYNC_TO) {
+    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO };
+  }
+  const todayMidnight = new Date();
+  todayMidnight.setUTCHours(0, 0, 0, 0);
+  const yesterdayMidnight = new Date(todayMidnight);
+  yesterdayMidnight.setUTCDate(yesterdayMidnight.getUTCDate() - 1);
+  return { from: yesterdayMidnight.toISOString(), to: todayMidnight.toISOString() };
+}
+
 async function fetchPage(page) {
+  const { from, to } = getSyncWindow();
+
   const res = await fetch(`${CANOE_API_URL}/recordings/get`, {
     method: 'POST',
     headers: {
@@ -26,6 +41,7 @@ async function fetchPage(page) {
       'Authorization': `Bearer ${CANOE_API_KEY}`,
     },
     body: JSON.stringify({
+      created_at: ['BETWEEN', from, to],
       add_related: 1,
       order_by: '-created_at',
       page,
