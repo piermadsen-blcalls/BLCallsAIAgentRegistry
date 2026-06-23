@@ -10,13 +10,14 @@
  *   SUPABASE_SERVICE_KEY - service role key (bypasses RLS)
  */
 
-const CANOE_API_URL     = process.env.CANOE_API_URL;
-const CANOE_API_KEY     = process.env.CANOE_API_KEY;
-const SUPABASE_URL      = process.env.SUPABASE_URL;
+const CANOE_API_URL        = process.env.CANOE_API_URL;
+const CANOE_API_KEY        = process.env.CANOE_API_KEY;
+const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const PAGE_SIZE    = 250;
 const UPSERT_BATCH = 100;
+
 
 // Default: yesterday midnight → today midnight UTC
 // Override by setting SYNC_FROM and SYNC_TO env vars (ISO strings)
@@ -38,10 +39,9 @@ async function fetchPage(page) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${CANOE_API_KEY}`,
+      'x-apikey': CANOE_API_KEY,
     },
     body: JSON.stringify({
-      created_at: ['BETWEEN', from, to],
       add_related: 1,
       order_by: '-created_at',
       page,
