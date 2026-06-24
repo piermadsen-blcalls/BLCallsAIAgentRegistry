@@ -2232,8 +2232,28 @@ async function compPost(path, body, prefer = 'return=minimal') {
     headers: { ...authHeaders(), 'Prefer': prefer },
     body: JSON.stringify(body),
   });
+  if (res.status === 401) { sessionStorage.clear(); checkAuth(); throw new Error('Session expired'); }
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
   return res.status === 204 ? null : res.json();
+}
+
+async function compPatch(path, body) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) { sessionStorage.clear(); checkAuth(); throw new Error('Session expired'); }
+  if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
+}
+
+async function compDelete(path) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (res.status === 401) { sessionStorage.clear(); checkAuth(); throw new Error('Session expired'); }
+  if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
 }
 
 // ── COMPLIANCE STATE ──────────────────────────────────────────
@@ -2748,12 +2768,8 @@ async function settingsAddManager() {
 async function settingsDeleteManager(id) {
   if (!confirm('Remove this manager? Their assignments will also be deleted.')) return;
   try {
-    await fetch(`${SB_URL}/rest/v1/account_manager_assignments?manager_id=eq.${id}`, {
-      method: 'DELETE', headers: authHeaders(),
-    });
-    await fetch(`${SB_URL}/rest/v1/account_managers?id=eq.${id}`, {
-      method: 'DELETE', headers: authHeaders(),
-    });
+    await compDelete(`account_manager_assignments?manager_id=eq.${id}`);
+    await compDelete(`account_managers?id=eq.${id}`);
     await settingsLoadManagers();
     await settingsLoadAssignments();
   } catch(e) { alert('Could not remove manager: ' + e.message); }
@@ -2860,17 +2876,9 @@ async function assignAccount(accountName, accountType, managerId, selectEl) {
   const existing   = compAssignments.find(a => a.account_name === accountName && a.account_type === accountType);
   try {
     if (!managerId) {
-      if (existing) {
-        await fetch(`${SB_URL}/rest/v1/account_manager_assignments?id=eq.${existing.id}`, {
-          method: 'DELETE', headers: authHeaders(),
-        });
-      }
+      if (existing) await compDelete(`account_manager_assignments?id=eq.${existing.id}`);
     } else if (existing) {
-      await fetch(`${SB_URL}/rest/v1/account_manager_assignments?id=eq.${existing.id}`, {
-        method: 'PATCH',
-        headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ manager_id: managerId }),
-      });
+      await compPatch(`account_manager_assignments?id=eq.${existing.id}`, { manager_id: managerId });
     } else {
       await compPost('account_manager_assignments', {
         manager_id:   managerId,
