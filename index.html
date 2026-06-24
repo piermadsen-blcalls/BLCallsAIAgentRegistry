@@ -359,6 +359,9 @@
   .comp-filter-toggle.active { background:var(--coral); color:white; border-color:var(--coral); }
   .comp-filter-reset { font-family:var(--sans); font-size:11px; color:var(--text-3); background:none; border:none; cursor:pointer; padding:4px 6px; }
   .comp-filter-reset:hover { color:var(--text); }
+  .comp-date-preset { font-family:var(--sans); font-size:11px; font-weight:500; color:var(--text-2); background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 10px; cursor:pointer; }
+  .comp-date-preset:hover { border-color:var(--brand-navy); color:var(--brand-navy); }
+  .comp-date-preset.active { background:var(--brand-navy); color:#fff; border-color:var(--brand-navy); }
 
   /* flag badges */
   .flag-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap; }
@@ -876,6 +879,19 @@
 
     <!-- CALL LOG -->
     <div id="comp-calllog" class="comp-pane active">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text-3);font-weight:500;text-transform:uppercase;letter-spacing:.04em">Date range</span>
+        <button class="comp-date-preset active" onclick="compSetDatePreset(7,this)">Last 7 days</button>
+        <button class="comp-date-preset" onclick="compSetDatePreset(30,this)">Last 30 days</button>
+        <button class="comp-date-preset" onclick="compSetDatePreset('month',this)">This month</button>
+        <button class="comp-date-preset" onclick="compSetDatePreset('custom',this)">Custom</button>
+        <div id="comp-custom-dates" style="display:none;gap:6px;align-items:center;display:none">
+          <input type="date" id="cf-date-from" class="comp-filter-input" style="width:140px" onchange="compLoadCalls()">
+          <span style="font-size:12px;color:var(--text-3)">to</span>
+          <input type="date" id="cf-date-to" class="comp-filter-input" style="width:140px" onchange="compLoadCalls()">
+        </div>
+        <span id="comp-call-count" style="font-size:11px;color:var(--text-3);margin-left:8px"></span>
+      </div>
       <div class="comp-filters">
         <input class="comp-filter-input" id="cf-publisher" placeholder="Publisher…" oninput="compApplyFilters()">
         <input class="comp-filter-input" id="cf-advertiser" placeholder="Advertiser…" oninput="compApplyFilters()">
@@ -2167,6 +2183,14 @@ let compDrawerFlags = [];
 // ── COMPLIANCE INIT ───────────────────────────────────────────
 
 async function compInit() {
+  // set default date range to last 7 days before loading calls
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6);
+  compDateFrom = start.toISOString().slice(0,10);
+  compDateTo   = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString().slice(0,19);
+
   await Promise.all([compLoadAssignments(), compLoadStats(), compLoadCalls(), compLoadTeam()]);
   compPopulateFilterDropdowns();
 }
@@ -2198,13 +2222,50 @@ async function compLoadStats() {
 
 // ── CALL LOG ──────────────────────────────────────────────────
 
+let compDateFrom = null;
+let compDateTo   = null;
+
+function compSetDatePreset(preset, btn) {
+  document.querySelectorAll('.comp-date-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const customEl = document.getElementById('comp-custom-dates');
+
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (preset === 'custom') {
+    customEl.style.display = 'flex';
+    const from = document.getElementById('cf-date-from').value;
+    const to   = document.getElementById('cf-date-to').value;
+    if (!from || !to) return;
+    compDateFrom = from;
+    compDateTo   = to + 'T23:59:59';
+  } else {
+    customEl.style.display = 'none';
+    if (preset === 'month') {
+      compDateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+    } else {
+      const start = new Date(today);
+      start.setDate(start.getDate() - (preset - 1));
+      compDateFrom = start.toISOString().slice(0,10);
+    }
+    compDateTo = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString().slice(0,19);
+  }
+  compLoadCalls();
+}
+
 async function compLoadCalls() {
+  const countEl = document.getElementById('comp-call-count');
+  if (countEl) countEl.textContent = 'Loading…';
   try {
-    const rows = await compFetch(
-      'canoe_calls?select=id,lead_id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,canoe_summary,flags,our_summary,transcription,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=2000'
-    );
+    let url = 'canoe_calls?select=id,lead_id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,canoe_summary,flags,our_summary,transcription,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=75000';
+    if (compDateFrom) url += `&created_at=gte.${compDateFrom}`;
+    if (compDateTo)   url += `&created_at=lte.${compDateTo}`;
+    const rows = await compFetch(url);
     compCalls = rows;
+    if (countEl) countEl.textContent = `${rows.length.toLocaleString()} calls loaded`;
     compApplyFilters();
+    compPopulateFilterDropdowns();
   } catch(e) {
     document.getElementById('comp-table-body').innerHTML = `<tr><td colspan="9" style="padding:20px;color:var(--coral)">Could not load calls: ${e.message}</td></tr>`;
   }
