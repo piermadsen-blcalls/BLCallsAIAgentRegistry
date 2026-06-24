@@ -521,6 +521,32 @@
   </div>
 </div>
 
+<!-- Set password overlay (invite / password reset) -->
+<div class="login-overlay hidden" id="setpassword-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#1A2E4A"/>
+        <path d="M8 8h8c2.2 0 4 1.8 4 4s-1.8 4-4 4H8V8z" fill="#00C896"/>
+        <path d="M8 16h9c2.5 0 4.5 2 4.5 4.5S19.5 25 17 25H8V16z" fill="white" opacity="0.9"/>
+      </svg>
+      <span class="login-logo-text">buyerlink<span>calls</span></span>
+    </div>
+    <div class="login-title" id="setpassword-title">Set your password</div>
+    <div class="login-sub" id="setpassword-sub">Choose a password to activate your account.</div>
+    <div class="login-field">
+      <label class="login-label" for="setpassword-input">New password</label>
+      <input class="login-input" type="password" id="setpassword-input" placeholder="At least 6 characters" autocomplete="new-password">
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="setpassword-confirm">Confirm password</label>
+      <input class="login-input" type="password" id="setpassword-confirm" placeholder="Repeat password" autocomplete="new-password">
+    </div>
+    <button class="login-btn" id="setpassword-btn" onclick="doSetPassword()">Set password &amp; sign in</button>
+    <div class="login-error" id="setpassword-error"></div>
+  </div>
+</div>
+
 <!-- CALL DRAWER -->
 <div class="comp-drawer-overlay" id="comp-drawer-overlay" onclick="closeCallDrawer()"></div>
 <div class="comp-drawer" id="comp-drawer">
@@ -1971,6 +1997,67 @@ function checkAuth() {
   }
   document.getElementById('login-overlay').classList.add('hidden');
   return true;
+}
+
+// check for invite / password-reset token in URL hash
+(function handleInviteToken() {
+  const hash   = window.location.hash.slice(1);
+  if (!hash) return;
+  const params = Object.fromEntries(new URLSearchParams(hash));
+  if (!params.access_token) return;
+  const type = params.type; // 'invite' or 'recovery'
+  if (type !== 'invite' && type !== 'recovery') return;
+
+  // stash the token so doSetPassword can use it
+  window._inviteToken   = params.access_token;
+  window._inviteRefresh = params.refresh_token;
+
+  // clean the token out of the URL
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+
+  if (type === 'recovery') {
+    document.getElementById('setpassword-title').textContent = 'Reset your password';
+    document.getElementById('setpassword-sub').textContent   = 'Enter a new password for your account.';
+  }
+
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('setpassword-overlay').classList.remove('hidden');
+  document.getElementById('setpassword-input').focus();
+})();
+
+document.getElementById('setpassword-confirm').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSetPassword();
+});
+
+async function doSetPassword() {
+  const pw1   = document.getElementById('setpassword-input').value;
+  const pw2   = document.getElementById('setpassword-confirm').value;
+  const errEl = document.getElementById('setpassword-error');
+  const btn   = document.getElementById('setpassword-btn');
+  errEl.textContent = '';
+  if (!pw1) { errEl.textContent = 'Enter a password.'; return; }
+  if (pw1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Authorization': `Bearer ${window._inviteToken}` },
+      body: JSON.stringify({ password: pw1 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error_description || 'Failed to set password');
+    // password set — store the session and enter the dashboard
+    sessionStorage.setItem('sb_access_token', window._inviteToken);
+    sessionStorage.setItem('sb_user_email', data.email || '');
+    authExpired = false;
+    window._inviteToken = null;
+    document.getElementById('setpassword-overlay').classList.add('hidden');
+    compInit();
+  } catch(e) {
+    errEl.textContent = e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Set password & sign in';
 }
 
 // check auth on load
