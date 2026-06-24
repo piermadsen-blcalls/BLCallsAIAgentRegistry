@@ -2486,15 +2486,14 @@ async function settingsLoadManagers() {
       el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
       return;
     }
+    const showAdmin = window.isAdmin;
     el.innerHTML = `<table class="settings-table">
-      <thead><tr><th>Name</th><th>Email</th><th style="text-align:center">Admin</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th style="text-align:center">Admin</th>' : ''}<th></th></tr></thead>
       <tbody>${rows.map(m => `
         <tr>
           <td style="font-weight:500">${esc(m.manager_name)}</td>
           <td style="color:var(--text-2)">${esc(m.manager_email || '—')}</td>
-          <td style="text-align:center">
-            <input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer">
-          </td>
+          ${showAdmin ? `<td style="text-align:center"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer"></td>` : ''}
           <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button></td>
         </tr>`).join('')}
       </tbody></table>`;
