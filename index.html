@@ -2779,7 +2779,13 @@ let accountsTab  = 'all';
 async function settingsLoadAccountsTable() {
   const el = document.getElementById('settings-accounts-table');
   try {
-    allAccounts = await compFetch('rpc/get_distinct_accounts');
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/get_distinct_accounts`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) throw new Error(`RPC error ${res.status}: ${await res.text()}`);
+    allAccounts = await res.json();
     settingsRenderAccountsTable();
   } catch(e) {
     el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
