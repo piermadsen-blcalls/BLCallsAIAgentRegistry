@@ -14,6 +14,9 @@ on:
       batch_size:
         description: 'Number of calls to process'
         default: '100'
+      prompt_id:
+        description: 'AI prompt UUID to use (leave blank for active prompt)'
+        default: ''
 
 jobs:
   process:
@@ -33,4 +36,5 @@ jobs:
           AI_MODEL:              ${{ github.event.inputs.ai_model || 'claude-sonnet-4-6' }}
           AI_MODE:               ${{ github.event.inputs.ai_mode || 'combined' }}
           BATCH_SIZE:            ${{ github.event.inputs.batch_size || '100' }}
+          PROMPT_ID:             ${{ github.event.inputs.prompt_id || '' }}
         run: node scripts/process.js

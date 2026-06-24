@@ -15,9 +15,10 @@
 const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
-const AI_MODEL             = process.env.AI_MODEL || 'claude-sonnet-4-6';
-const AI_MODE              = process.env.AI_MODE  || 'combined';
+const AI_MODEL             = process.env.AI_MODEL   || 'claude-sonnet-4-6';
+const AI_MODE              = process.env.AI_MODE    || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
+const PROMPT_ID            = process.env.PROMPT_ID  || null;
 
 // ── Outcome scoring table ─────────────────────────────────────
 const OUTCOME_SCORES = {
@@ -56,7 +57,6 @@ const VALID_FLAGS = [
   'facebook_marketplace',
   'angry_caller',
   'wrong_business',
-  'incentivized_caller',
   'geo_mismatch',
   'duplicate_caller',
 ];
@@ -143,6 +143,28 @@ Respond with valid JSON only:
   "flags": ["flag1", "flag2"],
   "flag_notes": { "flag_name": "brief reason" }
 }`;
+
+// ── Load prompt from Supabase ─────────────────────────────────
+async function loadPrompt() {
+  try {
+    const filter = PROMPT_ID
+      ? `id=eq.${PROMPT_ID}`
+      : `is_active=eq.true`;
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_prompts?${filter}&limit=1`,
+      { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    );
+    if (!res.ok) throw new Error(`Supabase error ${res.status}`);
+    const rows = await res.json();
+    if (!rows.length) throw new Error('No matching prompt found');
+    const p = rows[0];
+    console.log(`Using prompt: "${p.name}" (${p.id})`);
+    return p;
+  } catch (err) {
+    console.warn(`Could not load prompt from Supabase (${err.message}), falling back to hardcoded prompts`);
+    return null;
+  }
+}
 
 // ── Claude API call ───────────────────────────────────────────
 async function callClaude(system, userMessage) {
@@ -234,6 +256,15 @@ async function writeResult(id, result) {
 async function run() {
   console.log(`Starting AI processing — model: ${AI_MODEL}, mode: ${AI_MODE}`);
 
+  // Load prompt from Supabase (falls back to hardcoded if unavailable)
+  const promptRow = await loadPrompt();
+  const activePromptId = promptRow?.id || null;
+  const outcomePrompt    = promptRow?.outcome_prompt    || OUTCOME_SYSTEM;
+  const compliancePrompt = promptRow?.compliance_prompt || COMPLIANCE_SYSTEM;
+  const combinedPrompt   = promptRow
+    ? `You are a call quality and compliance analyst for a pay-per-call network. Analyze the transcript and return both an outcome classification and compliance flags.\n\n${outcomePrompt.replace('Respond with valid JSON only:', '').trim()}\n\n${compliancePrompt.replace('Respond with valid JSON only:', '').trim()}\n\nRespond with valid JSON only:\n{\n  "outcome": "<outcome>",\n  "summary": "<2-3 sentence summary>",\n  "outcome_note": "<required only if outcome is 'other', otherwise null>",\n  "flags": ["flag1", "flag2"],\n  "flag_notes": { "flag_name": "brief reason" },\n  "suspicious_call": false,\n  "suspicious_note": null\n}`
+    : COMBINED_SYSTEM;
+
   const calls = await fetchUnprocessed();
   console.log(`Found ${calls.length} unprocessed calls`);
 
@@ -242,7 +273,6 @@ async function run() {
     return;
   }
 
-  // Check for duplicate callers across this batch
   const duplicateIds = await flagDuplicateCallers(calls.map(c => c.id));
   console.log(`Duplicate caller IDs found: ${duplicateIds.size}`);
 
@@ -260,40 +290,40 @@ async function run() {
 
       const userMessage = `${context}\n\nTranscript:\n${call.transcription}`;
 
-      let outcome, summary, outcome_note, flags, flag_notes;
+      let outcome, summary, outcome_note, flags, flag_notes, suspicious_call, suspicious_note;
 
       if (AI_MODE === 'combined') {
-        const result = await callClaude(COMBINED_SYSTEM, userMessage);
-        outcome      = result.outcome;
-        summary      = result.summary;
-        outcome_note = result.outcome_note;
-        flags        = result.flags || [];
-        flag_notes   = result.flag_notes || {};
+        const result  = await callClaude(combinedPrompt, userMessage);
+        outcome       = result.outcome;
+        summary       = result.summary;
+        outcome_note  = result.outcome_note;
+        flags         = result.flags || [];
+        flag_notes    = result.flag_notes || {};
+        suspicious_call = result.suspicious_call || false;
+        suspicious_note = result.suspicious_note || null;
       } else {
-        // Separate passes
         const [outcomeResult, complianceResult] = await Promise.all([
-          callClaude(OUTCOME_SYSTEM, userMessage),
-          callClaude(COMPLIANCE_SYSTEM, userMessage),
+          callClaude(outcomePrompt, userMessage),
+          callClaude(compliancePrompt, userMessage),
         ]);
-        outcome      = outcomeResult.outcome;
-        summary      = outcomeResult.summary;
-        outcome_note = outcomeResult.outcome_note;
-        flags        = complianceResult.flags || [];
-        flag_notes   = complianceResult.flag_notes || {};
+        outcome       = outcomeResult.outcome;
+        summary       = outcomeResult.summary;
+        outcome_note  = outcomeResult.outcome_note;
+        flags         = complianceResult.flags || [];
+        flag_notes    = complianceResult.flag_notes || {};
+        suspicious_call = complianceResult.suspicious_call || false;
+        suspicious_note = complianceResult.suspicious_note || null;
       }
 
-      // Validate outcome
       if (!VALID_OUTCOMES.includes(outcome)) {
         console.warn(`  [${call.id}] Invalid outcome "${outcome}", falling back to "other"`);
         outcome = 'other';
       }
 
-      // Add duplicate_caller flag if detected
       if (duplicateIds.has(call.id) && !flags.includes('duplicate_caller')) {
         flags.push('duplicate_caller');
       }
 
-      // Filter to valid flags only
       flags = flags.filter(f => VALID_FLAGS.includes(f));
 
       const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
@@ -304,8 +334,10 @@ async function run() {
         publisher_score:  scores.pub,
         advertiser_score: scores.adv,
         flags,
+        suspicious_call,
         ai_model:         AI_MODEL,
         ai_processed_at:  new Date().toISOString(),
+        prompt_id:        activePromptId,
       });
 
       processed++;

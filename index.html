@@ -1028,6 +1028,64 @@
         <div id="settings-users-content"></div>
       </div>
 
+      <!-- AI Prompts (admin only) -->
+      <div class="settings-section" id="settings-prompts-section" style="display:none">
+        <div class="settings-section-header">
+          <div class="settings-section-title">AI Prompts</div>
+          <button class="settings-save-btn" onclick="promptsShowEditor(null)">+ New prompt</button>
+        </div>
+        <div id="settings-prompts-list"></div>
+
+        <!-- inline editor -->
+        <div id="settings-prompt-editor" style="display:none;margin-top:16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+          <input type="hidden" id="prompt-editor-id">
+          <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <label class="settings-label">Prompt name</label>
+              <input class="settings-input" id="prompt-editor-name" type="text" placeholder="e.g. v2 — stricter outbound detection" style="width:100%">
+            </div>
+            <div style="flex:2;min-width:200px">
+              <label class="settings-label">Description</label>
+              <input class="settings-input" id="prompt-editor-desc" type="text" placeholder="What's different about this version?" style="width:100%">
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label class="settings-label">Outcome prompt</label>
+            <textarea id="prompt-editor-outcome" style="width:100%;height:260px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+          </div>
+          <div style="margin-bottom:16px">
+            <label class="settings-label">Compliance prompt</label>
+            <textarea id="prompt-editor-compliance" style="width:100%;height:200px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <button class="settings-save-btn" onclick="promptsSave()">Save</button>
+            <button class="settings-delete-btn" onclick="promptsHideEditor()">Cancel</button>
+            <span id="prompt-editor-status" style="font-size:12px;color:var(--teal)"></span>
+          </div>
+        </div>
+
+        <!-- A/B test runner -->
+        <div style="margin-top:28px">
+          <div class="settings-section-title" style="font-size:13px;margin-bottom:12px">A/B Test Runner</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <label class="settings-label">Prompt to test</label>
+              <select class="settings-input" id="ab-prompt-select" style="min-width:200px"></select>
+            </div>
+            <div>
+              <label class="settings-label">Batch size</label>
+              <input class="settings-input" id="ab-batch-size" type="number" value="50" min="1" max="500" style="width:90px">
+            </div>
+            <div style="flex:1;min-width:220px">
+              <label class="settings-label">GitHub PAT (stored in session only)</label>
+              <input class="settings-input" id="ab-github-pat" type="password" placeholder="ghp_…">
+            </div>
+            <button class="settings-save-btn" onclick="promptsRunABTest()">Run test batch</button>
+            <span id="ab-status" style="font-size:12px;color:var(--teal)"></span>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -2561,12 +2619,16 @@ async function settingsInit() {
   await settingsLoadAccountsTable();
   if (window.isAdmin) {
     document.getElementById('settings-users-section').style.display = 'block';
+    document.getElementById('settings-prompts-section').style.display = 'block';
     const saved = sessionStorage.getItem('sb_service_key');
     if (saved) {
       settingsServiceKey = saved;
       document.getElementById('settings-service-key-banner').style.display = 'none';
       settingsLoadUsers();
     }
+    const savedPat = sessionStorage.getItem('gh_pat');
+    if (savedPat) document.getElementById('ab-github-pat').value = savedPat;
+    await promptsInit();
   }
 }
 
@@ -2851,6 +2913,156 @@ async function settingsDeleteUser(id, email) {
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed'); }
     settingsLoadUsers();
   } catch(e) { alert('Could not remove user: ' + e.message); }
+}
+
+// ── AI PROMPTS ────────────────────────────────────────────────
+
+let allPrompts = [];
+
+async function promptsInit() {
+  await promptsLoad();
+}
+
+async function promptsLoad() {
+  const el = document.getElementById('settings-prompts-list');
+  el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3)">Loading…</div>';
+  try {
+    const [prompts, counts] = await Promise.all([
+      compFetch('ai_prompts?select=*&order=created_at.asc'),
+      compFetch('canoe_calls?select=prompt_id&prompt_id=not.is.null'),
+    ]);
+    allPrompts = prompts || [];
+
+    // tally call counts per prompt
+    const countMap = {};
+    (counts || []).forEach(r => {
+      countMap[r.prompt_id] = (countMap[r.prompt_id] || 0) + 1;
+    });
+
+    promptsRender(allPrompts, countMap);
+    promptsRefreshABSelect(allPrompts);
+  } catch(e) {
+    el.innerHTML = `<div style="padding:12px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
+  }
+}
+
+function promptsRender(prompts, countMap) {
+  const el = document.getElementById('settings-prompts-list');
+  if (!prompts.length) {
+    el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3);font-style:italic">No prompts yet.</div>';
+    return;
+  }
+  el.innerHTML = `<table class="settings-table">
+    <thead><tr><th>Name</th><th>Description</th><th style="text-align:center">Active</th><th style="text-align:right">Calls</th><th></th></tr></thead>
+    <tbody>${prompts.map(p => `
+      <tr>
+        <td style="font-weight:500">${esc(p.name)}</td>
+        <td style="color:var(--text-2);font-size:12px">${esc(p.description || '—')}</td>
+        <td style="text-align:center">${p.is_active ? '<span style="font-size:11px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.04em">Active</span>' : `<button class="settings-save-btn" style="font-size:11px;padding:3px 10px" onclick="promptsSetActive('${p.id}')">Set active</button>`}</td>
+        <td style="text-align:right;color:var(--text-2)">${(countMap[p.id] || 0).toLocaleString()}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="settings-save-btn" style="font-size:11px;padding:3px 10px;margin-right:6px" onclick="promptsShowEditor('${p.id}')">Edit</button>
+          ${!p.is_active ? `<button class="settings-delete-btn" onclick="promptsDelete('${p.id}')">Delete</button>` : ''}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function promptsRefreshABSelect(prompts) {
+  const sel = document.getElementById('ab-prompt-select');
+  sel.innerHTML = prompts.map(p => `<option value="${p.id}">${esc(p.name)}${p.is_active ? ' (active)' : ''}</option>`).join('');
+}
+
+function promptsShowEditor(id) {
+  const p = id ? allPrompts.find(x => x.id === id) : null;
+  document.getElementById('prompt-editor-id').value         = p?.id || '';
+  document.getElementById('prompt-editor-name').value       = p?.name || '';
+  document.getElementById('prompt-editor-desc').value       = p?.description || '';
+  document.getElementById('prompt-editor-outcome').value    = p?.outcome_prompt || '';
+  document.getElementById('prompt-editor-compliance').value = p?.compliance_prompt || '';
+  document.getElementById('prompt-editor-status').textContent = '';
+  document.getElementById('settings-prompt-editor').style.display = 'block';
+  document.getElementById('prompt-editor-name').focus();
+  document.getElementById('settings-prompt-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function promptsHideEditor() {
+  document.getElementById('settings-prompt-editor').style.display = 'none';
+}
+
+async function promptsSave() {
+  const id             = document.getElementById('prompt-editor-id').value;
+  const name           = document.getElementById('prompt-editor-name').value.trim();
+  const description    = document.getElementById('prompt-editor-desc').value.trim();
+  const outcome_prompt    = document.getElementById('prompt-editor-outcome').value.trim();
+  const compliance_prompt = document.getElementById('prompt-editor-compliance').value.trim();
+  const statusEl       = document.getElementById('prompt-editor-status');
+
+  if (!name)           { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Name is required.'; return; }
+  if (!outcome_prompt) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Outcome prompt is required.'; return; }
+  if (!compliance_prompt) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Compliance prompt is required.'; return; }
+
+  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Saving…';
+  try {
+    if (id) {
+      await compPatch(`ai_prompts?id=eq.${id}`, { name, description, outcome_prompt, compliance_prompt });
+    } else {
+      await compPost('ai_prompts', { name, description, outcome_prompt, compliance_prompt, is_active: false });
+    }
+    statusEl.style.color = 'var(--teal)'; statusEl.textContent = '✓ Saved';
+    setTimeout(promptsHideEditor, 1200);
+    await promptsLoad();
+  } catch(e) {
+    statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
+  }
+}
+
+async function promptsSetActive(id) {
+  try {
+    // deactivate all, then activate the chosen one
+    await compPost('rpc/set_active_prompt', { prompt_id: id });
+    await promptsLoad();
+  } catch(e) {
+    // fallback: patch directly if RPC doesn't exist yet
+    try {
+      const current = allPrompts.find(p => p.is_active);
+      if (current) await compPatch(`ai_prompts?id=eq.${current.id}`, { is_active: false });
+      await compPatch(`ai_prompts?id=eq.${id}`, { is_active: true });
+      await promptsLoad();
+    } catch(e2) { alert('Could not set active prompt: ' + e2.message); }
+  }
+}
+
+async function promptsDelete(id) {
+  if (!confirm('Delete this prompt? This cannot be undone.')) return;
+  try {
+    await compDelete(`ai_prompts?id=eq.${id}`);
+    await promptsLoad();
+  } catch(e) { alert('Could not delete: ' + e.message); }
+}
+
+async function promptsRunABTest() {
+  const promptId  = document.getElementById('ab-prompt-select').value;
+  const batchSize = document.getElementById('ab-batch-size').value || '50';
+  const pat       = document.getElementById('ab-github-pat').value.trim();
+  const statusEl  = document.getElementById('ab-status');
+
+  if (!pat) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'GitHub PAT required.'; return; }
+  if (!promptId) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select a prompt.'; return; }
+
+  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Triggering…';
+  try {
+    const res = await fetch('https://api.github.com/repos/piermadsen-blcalls/BLCallsAIAgentRegistry/actions/workflows/process.yml/dispatches', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main', inputs: { prompt_id: promptId, batch_size: batchSize } }),
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub error ${res.status}`); }
+    sessionStorage.setItem('gh_pat', pat);
+    statusEl.style.color = 'var(--teal)'; statusEl.textContent = '✓ Workflow triggered — check GitHub Actions for progress';
+  } catch(e) {
+    statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
+  }
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────
