@@ -2497,11 +2497,14 @@ async function settingsLoadManagers() {
       return;
     }
     el.innerHTML = `<table class="settings-table">
-      <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Email</th><th style="text-align:center">Admin</th><th></th></tr></thead>
       <tbody>${rows.map(m => `
         <tr>
           <td style="font-weight:500">${esc(m.manager_name)}</td>
           <td style="color:var(--text-2)">${esc(m.manager_email || '—')}</td>
+          <td style="text-align:center">
+            <input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer">
+          </td>
           <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button></td>
         </tr>`).join('')}
       </tbody></table>`;
@@ -2533,6 +2536,15 @@ async function settingsAddManager() {
     settingsShowAddManager(false);
     await settingsLoadManagers();
   } catch(e) { alert('Could not add manager: ' + e.message); }
+}
+
+async function settingsSetAdmin(id, isAdmin) {
+  try {
+    await compPatch(`account_managers?id=eq.${id}`, { is_admin: isAdmin });
+    const m = compManagers.find(m => m.id === id);
+    if (m) m.is_admin = isAdmin;
+    window.isAdmin = compManagers.some(m => m.is_admin && m.manager_email === getAuthUser());
+  } catch(e) { alert('Could not update admin status: ' + e.message); await settingsLoadManagers(); }
 }
 
 async function settingsDeleteManager(id) {
