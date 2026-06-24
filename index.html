@@ -2003,7 +2003,8 @@ async function compPost(path, body, prefer = 'return=minimal') {
   });
   if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
-  return res.status === 204 ? null : res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 async function compPatch(path, body) {
