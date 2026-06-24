@@ -870,7 +870,6 @@
 
     <div class="comp-subtabs">
       <button class="comp-subtab active" onclick="switchCompTab('calllog',this)">Call Log</button>
-      <button class="comp-subtab" onclick="switchCompTab('accounts',this)">Publishers &amp; Advertisers</button>
       <button class="comp-subtab" onclick="switchCompTab('team',this)">Team</button>
       <button class="comp-subtab" onclick="switchCompTab('settings',this)">Settings</button>
     </div>
@@ -892,7 +891,6 @@
           <option value="facebook_marketplace">facebook_marketplace</option>
           <option value="angry_caller">angry_caller</option>
           <option value="wrong_business">wrong_business</option>
-          <option value="incentivized_caller">incentivized_caller</option>
           <option value="geo_mismatch">geo_mismatch</option>
           <option value="duplicate_caller">duplicate_caller</option>
         </select>
@@ -924,6 +922,7 @@
         </select>
         <button class="comp-filter-toggle" id="cf-flagged-only" onclick="toggleFlaggedOnly(this)">Flagged only</button>
         <button class="comp-filter-reset" onclick="compResetFilters()">Reset</button>
+        <button class="comp-filter-reset" onclick="compExportCSV()" style="margin-left:auto">Export CSV</button>
       </div>
       <div class="comp-table-wrap">
         <table class="comp-table">
@@ -955,21 +954,6 @@
     </div>
 
     <!-- PUBLISHERS & ADVERTISERS -->
-    <div id="comp-accounts" class="comp-pane">
-      <div class="comp-accounts-grid">
-        <div>
-          <div class="comp-accounts-col-title">Advertisers by flag count</div>
-          <div class="comp-rank-list" id="comp-adv-list"><div class="comp-loading">Loading…</div></div>
-        </div>
-        <div>
-          <div class="comp-accounts-col-title" id="comp-detail-title">Select an advertiser</div>
-          <div class="comp-detail-panel" id="comp-detail-panel">
-            <div class="comp-detail-empty">Click an advertiser to see which publishers are sending flagged calls.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- TEAM VIEW -->
     <div id="comp-team" class="comp-pane">
       <div class="comp-team-grid" id="comp-team-grid"><div class="comp-loading">Loading…</div></div>
@@ -2183,7 +2167,7 @@ let compDrawerFlags = [];
 // ── COMPLIANCE INIT ───────────────────────────────────────────
 
 async function compInit() {
-  await Promise.all([compLoadAssignments(), compLoadStats(), compLoadCalls(), compLoadAccounts(), compLoadTeam()]);
+  await Promise.all([compLoadAssignments(), compLoadStats(), compLoadCalls(), compLoadTeam()]);
   compPopulateFilterDropdowns();
 }
 
@@ -2276,6 +2260,41 @@ function compResetFilters() {
   document.getElementById('cf-outcome').value    = '';
   document.getElementById('cf-flagged-only').classList.remove('active');
   compApplyFilters();
+}
+
+function compExportCSV() {
+  if (!compFiltered.length) return;
+  const cols = [
+    { key: 'id',             label: 'Recording ID' },
+    { key: 'lead_id',        label: 'Lead ID' },
+    { key: 'created_at',     label: 'Date' },
+    { key: 'publisher_name', label: 'Publisher' },
+    { key: 'advertiser_name',label: 'Advertiser' },
+    { key: 'vertical_name',  label: 'Vertical' },
+    { key: 'duration',       label: 'Duration (s)' },
+    { key: 'our_outcome',    label: 'Our Outcome' },
+    { key: 'canoe_outcome',  label: 'Canoe Outcome' },
+    { key: 'flags',          label: 'Flags' },
+    { key: 'our_summary',    label: 'Summary' },
+  ];
+  const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const header = cols.map(c => escape(c.label)).join(',');
+  const rows = compFiltered.map(r =>
+    cols.map(c => {
+      const v = r[c.key];
+      if (c.key === 'flags') return escape((v || []).join('; '));
+      if (c.key === 'created_at') return escape(v ? new Date(v).toLocaleDateString('en-US') : '');
+      return escape(v);
+    }).join(',')
+  );
+  const csv  = [header, ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `compliance-calls-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 const POSITIVE_OUTCOMES = new Set(['sale','appointment','quoted_interested','quoted_undecided']);
@@ -2455,82 +2474,6 @@ async function saveCorrection() {
 
 // ── ACCOUNTS VIEW ─────────────────────────────────────────────
 
-async function compLoadAccounts() {
-  try {
-    const rows = await compFetch(
-      'canoe_calls?select=advertiser_id,advertiser_name,publisher_id,publisher_name,flags&ai_processed_at=not.is.null&limit=5000'
-    );
-
-    // group by advertiser
-    const advMap = {};
-    rows.forEach(r => {
-      if (!r.advertiser_id) return;
-      if (!advMap[r.advertiser_id]) advMap[r.advertiser_id] = { name: r.advertiser_name, total: 0, flagged: 0, publishers: {} };
-      advMap[r.advertiser_id].total++;
-      const flagged = (r.flags||[]).length > 0;
-      if (flagged) {
-        advMap[r.advertiser_id].flagged++;
-        if (!advMap[r.advertiser_id].publishers[r.publisher_id])
-          advMap[r.advertiser_id].publishers[r.publisher_id] = { name: r.publisher_name, flagged: 0, flags: {} };
-        advMap[r.advertiser_id].publishers[r.publisher_id].flagged++;
-        (r.flags||[]).forEach(f => {
-          advMap[r.advertiser_id].publishers[r.publisher_id].flags[f] = (advMap[r.advertiser_id].publishers[r.publisher_id].flags[f]||0) + 1;
-        });
-      }
-    });
-
-    const advList = Object.entries(advMap)
-      .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => b.flagged - a.flagged);
-
-    const listEl = document.getElementById('comp-adv-list');
-    if (!advList.length) { listEl.innerHTML = '<div class="comp-empty">No data yet.</div>'; return; }
-
-    listEl.innerHTML = '';
-    advList.forEach(adv => {
-      const el = document.createElement('div');
-      el.className = 'comp-rank-item';
-      el.innerHTML = `
-        <div>
-          <div class="comp-rank-name">${adv.name || adv.id}</div>
-          <div class="comp-rank-sub">${adv.total.toLocaleString()} calls</div>
-        </div>
-        <div class="comp-rank-count ${adv.flagged === 0 ? 'zero' : ''}">${adv.flagged} flagged</div>
-      `;
-      el.addEventListener('click', () => {
-        document.querySelectorAll('.comp-rank-item').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
-        compShowAdvDetail(adv);
-      });
-      listEl.appendChild(el);
-    });
-  } catch(e) { console.warn('compLoadAccounts:', e.message); }
-}
-
-function compShowAdvDetail(adv) {
-  document.getElementById('comp-detail-title').textContent = adv.name || adv.id;
-  const panel = document.getElementById('comp-detail-panel');
-
-  const pubs = Object.entries(adv.publishers)
-    .map(([id, v]) => ({ id, ...v }))
-    .sort((a, b) => b.flagged - a.flagged);
-
-  if (!pubs.length) { panel.innerHTML = '<div class="comp-detail-empty">No flagged calls from any publisher.</div>'; return; }
-
-  panel.innerHTML = pubs.map(p => {
-    const flagBreakdown = Object.entries(p.flags)
-      .sort((a,b) => b[1]-a[1])
-      .map(([f, n]) => `<span class="flag-badge flag-${f}">${f.replace(/_/g,' ')} ×${n}</span>`)
-      .join(' ');
-    return `
-      <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:500;margin-bottom:6px">${p.name || p.id}</div>
-        <div style="font-size:11px;color:var(--text-3);margin-bottom:6px">${p.flagged} flagged call${p.flagged!==1?'s':''}</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap">${flagBreakdown}</div>
-      </div>
-    `;
-  }).join('');
-}
 
 // ── TEAM VIEW ─────────────────────────────────────────────────
 
