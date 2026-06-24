@@ -546,6 +546,29 @@
 
   .comp-empty { text-align:center; padding:60px 20px; color:var(--text-3); font-size:13px; }
   .comp-loading { text-align:center; padding:60px 20px; color:var(--text-3); font-size:13px; }
+
+  /* settings pane */
+  .settings-section { margin-bottom:36px; }
+  .settings-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .settings-section-title { font-family:var(--serif); font-size:18px; font-weight:400; color:var(--text); }
+  .settings-add-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 14px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
+  .settings-add-btn:hover { opacity:0.88; }
+  .settings-add-form { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; padding:14px; background:var(--bg); border-radius:var(--radius-sm); border:1px solid var(--border); }
+  .settings-input { font-family:var(--sans); font-size:12px; padding:6px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; min-width:160px; }
+  .settings-select { font-family:var(--sans); font-size:12px; padding:6px 28px 6px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
+  .settings-save-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 14px; border-radius:var(--radius-sm); background:var(--teal); color:white; border:none; cursor:pointer; white-space:nowrap; }
+  .settings-cancel-btn { font-family:var(--sans); font-size:12px; padding:6px 14px; border-radius:var(--radius-sm); background:transparent; color:var(--text-2); border:1px solid var(--border-strong); cursor:pointer; }
+  .settings-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .settings-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .settings-table thead th { font-size:10px; font-weight:500; color:var(--text-3); text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); background:var(--bg); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; }
+  .settings-table tbody tr { border-bottom:1px solid var(--border); }
+  .settings-table tbody tr:last-child { border-bottom:none; }
+  .settings-table td { padding:9px 12px; vertical-align:middle; color:var(--text); }
+  .settings-delete-btn { font-family:var(--sans); font-size:11px; padding:3px 10px; border-radius:4px; background:transparent; color:var(--coral); border:1px solid var(--coral); cursor:pointer; }
+  .settings-delete-btn:hover { background:var(--coral-bg); }
+  .settings-key-banner { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px; background:var(--amber-bg); border-radius:var(--radius-sm); border:1px solid #E8C97A; margin-bottom:14px; font-size:12px; color:var(--amber); }
+  .settings-invite-row { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .settings-users-empty { font-size:13px; color:var(--text-3); font-style:italic; padding:20px 0; }
 </style>
 </head>
 <body>
@@ -918,6 +941,7 @@
       <button class="comp-subtab active" onclick="switchCompTab('calllog',this)">Call Log</button>
       <button class="comp-subtab" onclick="switchCompTab('accounts',this)">Publishers &amp; Advertisers</button>
       <button class="comp-subtab" onclick="switchCompTab('team',this)">Team</button>
+      <button class="comp-subtab" onclick="switchCompTab('settings',this)">Settings</button>
     </div>
 
     <!-- CALL LOG -->
@@ -974,6 +998,7 @@
         <table class="comp-table">
           <thead>
             <tr>
+              <th>Call ID</th>
               <th>Date</th>
               <th>Publisher</th>
               <th>Advertiser</th>
@@ -986,7 +1011,7 @@
             </tr>
           </thead>
           <tbody id="comp-table-body">
-            <tr><td colspan="9" class="comp-loading">Loading…</td></tr>
+            <tr><td colspan="10" class="comp-loading">Loading…</td></tr>
           </tbody>
         </table>
         <div class="comp-table-footer">
@@ -1015,6 +1040,65 @@
     <!-- TEAM VIEW -->
     <div id="comp-team" class="comp-pane">
       <div class="comp-team-grid" id="comp-team-grid"><div class="comp-loading">Loading…</div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="comp-settings" class="comp-pane">
+
+      <!-- Account Managers -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Account Managers</div>
+          <button class="settings-add-btn" onclick="settingsShowAddManager(true)">+ Add Manager</button>
+        </div>
+        <div id="settings-add-manager" class="settings-add-form" style="display:none">
+          <input class="settings-input" id="s-mgr-name" placeholder="Full name" style="flex:1">
+          <input class="settings-input" id="s-mgr-email" type="email" placeholder="Email" style="flex:1">
+          <button class="settings-save-btn" onclick="settingsAddManager()">Add</button>
+          <button class="settings-cancel-btn" onclick="settingsShowAddManager(false)">Cancel</button>
+        </div>
+        <div id="settings-managers-table" class="settings-table-wrap">
+          <div class="comp-loading">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Assignments -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Publisher &amp; Advertiser Assignments</div>
+          <button class="settings-add-btn" onclick="settingsShowAddAssignment(true)">+ Add Assignment</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">Account names must match exactly as they appear in Canoe.</div>
+        <div id="settings-add-assignment" class="settings-add-form" style="display:none">
+          <select class="settings-select" id="s-assign-manager" style="flex:1">
+            <option value="">Select manager</option>
+          </select>
+          <input class="settings-input" id="s-assign-account" placeholder="Account name (exact)" style="flex:2">
+          <select class="settings-select" id="s-assign-type">
+            <option value="publisher">Publisher</option>
+            <option value="advertiser">Advertiser</option>
+          </select>
+          <button class="settings-save-btn" onclick="settingsAddAssignment()">Add</button>
+          <button class="settings-cancel-btn" onclick="settingsShowAddAssignment(false)">Cancel</button>
+        </div>
+        <div id="settings-assignments-table" class="settings-table-wrap">
+          <div class="comp-loading">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Dashboard Users -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Dashboard Users</div>
+        </div>
+        <div id="settings-service-key-banner" class="settings-key-banner">
+          <span>Enter your Supabase service role key to manage logins (stored in session only).</span>
+          <input class="settings-input" id="s-service-key" type="password" placeholder="Service role key (sbp_…)" style="flex:1;min-width:220px">
+          <button class="settings-save-btn" onclick="settingsUnlockUsers()">Unlock</button>
+        </div>
+        <div id="settings-users-content"></div>
+      </div>
+
     </div>
   </div>
 
@@ -2155,15 +2239,17 @@ let compDrawerFlags = [];
 // ── COMPLIANCE INIT ───────────────────────────────────────────
 
 async function compInit() {
-  await Promise.all([compLoadStats(), compLoadCalls(), compLoadAccounts(), compLoadTeam()]);
+  await Promise.all([compLoadAssignments(), compLoadStats(), compLoadCalls(), compLoadAccounts(), compLoadTeam()]);
   compPopulateFilterDropdowns();
 }
 
+let settingsLoaded = false;
 function switchCompTab(id, btn) {
   document.querySelectorAll('.comp-subtab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.comp-pane').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('comp-' + id).classList.add('active');
+  if (id === 'settings' && !settingsLoaded) { settingsLoaded = true; settingsInit(); }
 }
 
 // ── STATS ─────────────────────────────────────────────────────
@@ -2187,7 +2273,7 @@ async function compLoadStats() {
 async function compLoadCalls() {
   try {
     const rows = await compFetch(
-      'canoe_calls?select=id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,flags,our_summary,transcription,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=2000'
+      'canoe_calls?select=id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,canoe_summary,flags,our_summary,transcription,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=2000'
     );
     compCalls = rows;
     compApplyFilters();
@@ -2198,13 +2284,14 @@ async function compLoadCalls() {
 
 function compPopulateFilterDropdowns() {
   const verticals = [...new Set(compCalls.map(r => r.vertical_name).filter(Boolean))].sort();
-  const managers  = [...new Set(compCalls.map(r => r.account_manager).filter(Boolean))].sort();
 
   const vSel = document.getElementById('cf-vertical');
+  while (vSel.options.length > 1) vSel.remove(1);
   verticals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; vSel.appendChild(o); });
 
   const mSel = document.getElementById('cf-manager');
-  managers.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; mSel.appendChild(o); });
+  while (mSel.options.length > 1) mSel.remove(1);
+  compManagers.forEach(m => { const o = document.createElement('option'); o.value = m.manager_name; o.textContent = m.manager_name; mSel.appendChild(o); });
 }
 
 function compApplyFilters() {
@@ -2220,7 +2307,7 @@ function compApplyFilters() {
     if (pub      && !(r.publisher_name||'').toLowerCase().includes(pub))   return false;
     if (adv      && !(r.advertiser_name||'').toLowerCase().includes(adv))  return false;
     if (vertical && r.vertical_name !== vertical)                           return false;
-    if (manager  && r.account_manager !== manager)                          return false;
+    if (manager  && resolveManager(r) !== manager)                           return false;
     if (flag     && !(r.flags||[]).includes(flag))                          return false;
     if (outcome  && r.our_outcome !== outcome)                              return false;
     if (flagOnly && (r.flags||[]).length === 0)                             return false;
@@ -2269,7 +2356,7 @@ function compRenderTable(append) {
   if (!append) tbody.innerHTML = '';
 
   if (total === 0 && !append) {
-    tbody.innerHTML = '<tr><td colspan="9" class="comp-empty">No calls match these filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="comp-empty">No calls match these filters.</td></tr>';
     document.getElementById('comp-table-count').textContent = '0 calls';
     document.getElementById('comp-load-more').disabled = true;
     return;
@@ -2280,8 +2367,10 @@ function compRenderTable(append) {
     const dur      = r.duration ? `${r.duration}s` : '—';
     const loc      = [r.city, r.state].filter(Boolean).join(', ') || '—';
     const reviewed = r.compliance_reviewed;
+    const shortId  = r.id ? r.id.slice(0, 10) : '—';
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td class="cr-mono" style="color:var(--text-3);font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.id || ''}">${shortId}</td>
       <td class="cr-mono">${date}</td>
       <td>${r.publisher_name || '<span class="muted">—</span>'}</td>
       <td>${r.advertiser_name || '<span class="muted">—</span>'}</td>
@@ -2322,15 +2411,23 @@ function openCallDrawer(call) {
   document.getElementById('drawer-meta-row').innerHTML = meta;
 
   document.getElementById('drawer-outcome-row').innerHTML =
-    outcomeBadge(call.our_outcome) +
-    (call.canoe_outcome ? `<span class="drawer-canoe-outcome">Canoe: ${call.canoe_outcome}</span>` : '');
+    (call.our_outcome ? outcomeBadge(call.our_outcome) + '<span style="font-size:11px;color:var(--text-3);margin-left:4px">our AI</span>' : '<span style="font-size:12px;color:var(--text-3)">Not yet processed</span>') +
+    (call.canoe_outcome ? `<span class="drawer-canoe-outcome" style="margin-left:12px">Canoe: ${call.canoe_outcome}</span>` : '');
 
   const flagsEl = document.getElementById('drawer-flags');
   flagsEl.innerHTML = compDrawerFlags.length
     ? `<div class="drawer-flags-row">${flagBadges(compDrawerFlags)}</div>`
     : '<div class="drawer-no-flags">No compliance flags</div>';
 
-  document.getElementById('drawer-summary').textContent   = call.our_summary || call.canoe_summary || 'No summary available.';
+  const summaryEl = document.getElementById('drawer-summary');
+  if (call.our_summary) {
+    summaryEl.innerHTML = `<div>${esc(call.our_summary)}</div>` +
+      (call.canoe_summary ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3)"><span style="font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Canoe:</span> ${esc(call.canoe_summary)}</div>` : '');
+  } else if (call.canoe_summary) {
+    summaryEl.innerHTML = `<div style="font-size:11px;color:var(--text-3)"><span style="font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Canoe:</span> ${esc(call.canoe_summary)}</div>`;
+  } else {
+    summaryEl.textContent = 'No summary available.';
+  }
   document.getElementById('drawer-transcript').textContent = call.transcription || 'No transcript available.';
 
   // reset correction form
@@ -2533,6 +2630,257 @@ async function compLoadTeam() {
       </div>
     `).join('');
   } catch(e) { console.warn('compLoadTeam:', e.message); }
+}
+
+// ── ASSIGNMENTS & MANAGER RESOLUTION ─────────────────────────
+
+let compManagers    = [];
+let compAssignments = [];
+
+async function compLoadAssignments() {
+  try {
+    const [managers, assignments] = await Promise.all([
+      compFetch('account_managers?select=*&order=manager_name.asc'),
+      compFetch('account_manager_assignments?select=*,account_managers(manager_name)&order=account_name.asc'),
+    ]);
+    compManagers    = managers || [];
+    compAssignments = (assignments || []).map(a => ({
+      id:           a.id,
+      manager_id:   a.manager_id,
+      manager_name: a.account_managers?.manager_name || 'Unknown',
+      account_name: a.account_name,
+      account_type: a.account_type,
+    }));
+  } catch(e) { console.warn('compLoadAssignments:', e.message); }
+}
+
+function resolveManager(call) {
+  if (call.account_manager) return call.account_manager;
+  const match = compAssignments.find(a =>
+    a.account_name === call.publisher_name ||
+    a.account_name === call.advertiser_name
+  );
+  return match ? match.manager_name : null;
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────
+
+async function settingsInit() {
+  await Promise.all([settingsLoadManagers(), settingsLoadAssignments()]);
+  const saved = sessionStorage.getItem('sb_service_key');
+  if (saved) {
+    settingsServiceKey = saved;
+    document.getElementById('settings-service-key-banner').style.display = 'none';
+    settingsLoadUsers();
+  }
+}
+
+// Managers ──────────────────────────────
+
+async function settingsLoadManagers() {
+  const el = document.getElementById('settings-managers-table');
+  try {
+    const rows = await compFetch('account_managers?select=*&order=manager_name.asc');
+    compManagers = rows || [];
+    settingsRefreshManagerSelect();
+    compPopulateFilterDropdowns();
+    if (!rows.length) {
+      el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
+      return;
+    }
+    el.innerHTML = `<table class="settings-table">
+      <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+      <tbody>${rows.map(m => `
+        <tr>
+          <td style="font-weight:500">${esc(m.manager_name)}</td>
+          <td style="color:var(--text-2)">${esc(m.manager_email || '—')}</td>
+          <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) {
+    el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
+  }
+}
+
+function settingsRefreshManagerSelect() {
+  const sel = document.getElementById('s-assign-manager');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select manager</option>' +
+    compManagers.map(m => `<option value="${m.id}">${esc(m.manager_name)}</option>`).join('');
+}
+
+function settingsShowAddManager(show) {
+  document.getElementById('settings-add-manager').style.display = show ? 'flex' : 'none';
+  if (show) document.getElementById('s-mgr-name').focus();
+}
+
+async function settingsAddManager() {
+  const name  = document.getElementById('s-mgr-name').value.trim();
+  const email = document.getElementById('s-mgr-email').value.trim();
+  if (!name) { document.getElementById('s-mgr-name').focus(); return; }
+  try {
+    await compPost('account_managers', { manager_name: name, manager_email: email || null });
+    document.getElementById('s-mgr-name').value  = '';
+    document.getElementById('s-mgr-email').value = '';
+    settingsShowAddManager(false);
+    await settingsLoadManagers();
+  } catch(e) { alert('Could not add manager: ' + e.message); }
+}
+
+async function settingsDeleteManager(id) {
+  if (!confirm('Remove this manager? Their assignments will also be deleted.')) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/account_manager_assignments?manager_id=eq.${id}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+    await fetch(`${SB_URL}/rest/v1/account_managers?id=eq.${id}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+    await settingsLoadManagers();
+    await settingsLoadAssignments();
+  } catch(e) { alert('Could not remove manager: ' + e.message); }
+}
+
+// Assignments ───────────────────────────
+
+async function settingsLoadAssignments() {
+  const el = document.getElementById('settings-assignments-table');
+  try {
+    const rows = await compFetch('account_manager_assignments?select=*,account_managers(manager_name)&order=account_name.asc');
+    compAssignments = (rows || []).map(a => ({
+      id:           a.id,
+      manager_id:   a.manager_id,
+      manager_name: a.account_managers?.manager_name || 'Unknown',
+      account_name: a.account_name,
+      account_type: a.account_type,
+    }));
+    if (!compAssignments.length) {
+      el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No assignments yet.</div>';
+      return;
+    }
+    el.innerHTML = `<table class="settings-table">
+      <thead><tr><th>Manager</th><th>Account</th><th>Type</th><th></th></tr></thead>
+      <tbody>${compAssignments.map(a => `
+        <tr>
+          <td style="font-weight:500">${esc(a.manager_name)}</td>
+          <td>${esc(a.account_name)}</td>
+          <td><span class="flag-badge" style="background:var(--blue-bg);color:var(--blue)">${esc(a.account_type)}</span></td>
+          <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteAssignment('${a.id}')">Remove</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) {
+    el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
+  }
+}
+
+function settingsShowAddAssignment(show) {
+  document.getElementById('settings-add-assignment').style.display = show ? 'flex' : 'none';
+  if (show) { settingsRefreshManagerSelect(); }
+}
+
+async function settingsAddAssignment() {
+  const managerId   = document.getElementById('s-assign-manager').value;
+  const accountName = document.getElementById('s-assign-account').value.trim();
+  const accountType = document.getElementById('s-assign-type').value;
+  if (!managerId || !accountName) return;
+  try {
+    await compPost('account_manager_assignments', { manager_id: managerId, account_name: accountName, account_type: accountType });
+    document.getElementById('s-assign-account').value = '';
+    settingsShowAddAssignment(false);
+    await settingsLoadAssignments();
+  } catch(e) { alert('Could not add assignment: ' + e.message); }
+}
+
+async function settingsDeleteAssignment(id) {
+  if (!confirm('Remove this assignment?')) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/account_manager_assignments?id=eq.${id}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+    await settingsLoadAssignments();
+  } catch(e) { alert('Could not remove assignment: ' + e.message); }
+}
+
+// Users ─────────────────────────────────
+
+let settingsServiceKey = null;
+
+function settingsUnlockUsers() {
+  const key = document.getElementById('s-service-key').value.trim();
+  if (!key) return;
+  settingsServiceKey = key;
+  sessionStorage.setItem('sb_service_key', key);
+  document.getElementById('settings-service-key-banner').style.display = 'none';
+  settingsLoadUsers();
+}
+
+async function settingsLoadUsers() {
+  const el = document.getElementById('settings-users-content');
+  el.innerHTML = '<div class="settings-users-empty">Loading…</div>';
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/admin/users?per_page=100`, {
+      headers: { 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
+    });
+    if (!res.ok) {
+      settingsServiceKey = null;
+      sessionStorage.removeItem('sb_service_key');
+      document.getElementById('settings-service-key-banner').style.display = 'flex';
+      el.innerHTML = '<div style="font-size:13px;color:var(--coral)">Invalid key or permission denied. Try again.</div>';
+      return;
+    }
+    const data  = await res.json();
+    const users = data.users || [];
+    el.innerHTML = `
+      <div class="settings-invite-row">
+        <input class="settings-input" id="s-invite-email" type="email" placeholder="Email to invite…" style="flex:1;min-width:200px">
+        <button class="settings-save-btn" onclick="settingsInviteUser()">Send invite</button>
+        <span id="s-invite-status" style="font-size:12px;color:var(--teal)"></span>
+      </div>
+      <div class="settings-table-wrap">
+        <table class="settings-table">
+          <thead><tr><th>Email</th><th>Created</th><th>Last sign-in</th></tr></thead>
+          <tbody>${users.map(u => `
+            <tr>
+              <td>${esc(u.email || '—')}</td>
+              <td style="color:var(--text-2)">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—'}</td>
+              <td style="color:var(--text-2)">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
+  }
+}
+
+async function settingsInviteUser() {
+  const email  = document.getElementById('s-invite-email').value.trim();
+  const status = document.getElementById('s-invite-status');
+  if (!email || !settingsServiceKey) return;
+  status.style.color = 'var(--teal)';
+  status.textContent = 'Sending…';
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed'); }
+    status.textContent = `✓ Invite sent to ${email}`;
+    document.getElementById('s-invite-email').value = '';
+    setTimeout(() => { status.textContent = ''; }, 4000);
+    settingsLoadUsers();
+  } catch(e) {
+    status.style.color = 'var(--coral)';
+    status.textContent = e.message;
+  }
+}
+
+// ── UTILITIES ─────────────────────────────────────────────────
+
+function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // init compliance if already authenticated (e.g. page refresh with active session)
