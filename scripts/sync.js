@@ -116,7 +116,6 @@ async function getLastSyncedAt() {
 }
 
 async function run() {
-  console.log(`Canoe API key present: ${!!CANOE_API_KEY}, length: ${(CANOE_API_KEY||'').length}`);
   const { from, to } = getSyncWindow();
   console.log(`Starting Canoe sync — window: ${from} → ${to}`);
 
