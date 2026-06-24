@@ -1015,11 +1015,12 @@
               <th>Location</th>
               <th>Outcome</th>
               <th>Flags</th>
+              <th>Transcript</th>
               <th>Reviewed</th>
             </tr>
           </thead>
           <tbody id="comp-table-body">
-            <tr><td colspan="11" class="comp-loading">Loading…</td></tr>
+            <tr><td colspan="12" class="comp-loading">Loading…</td></tr>
           </tbody>
         </table>
         <div class="comp-table-footer">
@@ -2364,7 +2365,7 @@ function compRenderTable(append) {
   if (!append) tbody.innerHTML = '';
 
   if (total === 0 && !append) {
-    tbody.innerHTML = '<tr><td colspan="11" class="comp-empty">No calls match these filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="comp-empty">No calls match these filters.</td></tr>';
     document.getElementById('comp-table-count').textContent = '0 calls';
     document.getElementById('comp-load-more').disabled = true;
     return;
@@ -2388,6 +2389,7 @@ function compRenderTable(append) {
       <td class="cr-mono">${loc}</td>
       <td>${outcomeBadge(r.our_outcome)}</td>
       <td>${flagBadges(r.flags)}</td>
+      <td style="max-width:220px">${r.transcription ? `<span style="font-size:11px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:220px" title="${r.transcription.slice(0,300).replace(/"/g,'&quot;')}">${r.transcription.slice(0,100)}…</span>` : '<span style="color:var(--border-strong);font-size:11px">—</span>'}</td>
       <td><span class="reviewed-dot ${reviewed ? 'yes' : 'no'}" title="${reviewed ? 'Reviewed' : 'Not reviewed'}"></span></td>
     `;
     tr.addEventListener('click', () => openCallDrawer(r));
