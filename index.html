@@ -1095,8 +1095,8 @@
         </div>
       </div>
 
-      <!-- Dashboard Users -->
-      <div class="settings-section">
+      <!-- Dashboard Users (admin only) -->
+      <div class="settings-section" id="settings-users-section" style="display:none">
         <div class="settings-section-header">
           <div class="settings-section-title">Dashboard Users</div>
         </div>
@@ -2653,10 +2653,11 @@ let compAssignments = [];
 async function compLoadAssignments() {
   try {
     const [managers, assignments] = await Promise.all([
-      compFetch('account_managers?select=*&order=manager_name.asc'),
+      compFetch('account_managers?select=id,manager_name,manager_email,is_admin,created_at&order=manager_name.asc'),
       compFetch('account_manager_assignments?select=*,account_managers(manager_name)&order=account_name.asc'),
     ]);
     compManagers    = managers || [];
+    window.isAdmin  = compManagers.some(m => m.is_admin && m.manager_email === getAuthUser());
     compAssignments = (assignments || []).map(a => ({
       id:           a.id,
       manager_id:   a.manager_id,
@@ -2680,11 +2681,14 @@ function resolveManager(call) {
 
 async function settingsInit() {
   await Promise.all([settingsLoadManagers(), settingsLoadAssignments()]);
-  const saved = sessionStorage.getItem('sb_service_key');
-  if (saved) {
-    settingsServiceKey = saved;
-    document.getElementById('settings-service-key-banner').style.display = 'none';
-    settingsLoadUsers();
+  if (window.isAdmin) {
+    document.getElementById('settings-users-section').style.display = 'block';
+    const saved = sessionStorage.getItem('sb_service_key');
+    if (saved) {
+      settingsServiceKey = saved;
+      document.getElementById('settings-service-key-banner').style.display = 'none';
+      settingsLoadUsers();
+    }
   }
 }
 
@@ -2693,7 +2697,7 @@ async function settingsInit() {
 async function settingsLoadManagers() {
   const el = document.getElementById('settings-managers-table');
   try {
-    const rows = await compFetch('account_managers?select=*&order=manager_name.asc');
+    const rows = await compFetch('account_managers?select=id,manager_name,manager_email,is_admin,created_at&order=manager_name.asc');
     compManagers = rows || [];
     settingsRefreshManagerSelect();
     compPopulateFilterDropdowns();
