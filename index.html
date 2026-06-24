@@ -994,11 +994,6 @@
         <div class="settings-section-header">
           <div class="settings-section-title">Dashboard Users</div>
         </div>
-        <div id="settings-service-key-banner" class="settings-key-banner">
-          <span>Enter your Supabase service role key to manage logins (stored in session only).</span>
-          <input class="settings-input" id="s-service-key" type="password" placeholder="Service role key (sbp_…)" style="flex:1;min-width:220px">
-          <button class="settings-save-btn" onclick="settingsUnlockUsers()">Unlock</button>
-        </div>
         <div id="settings-users-content"></div>
       </div>
 
@@ -2474,12 +2469,7 @@ async function settingsInit() {
   await settingsLoadAccountsTable();
   if (window.isAdmin) {
     document.getElementById('settings-users-section').style.display = 'block';
-    const saved = sessionStorage.getItem('sb_service_key');
-    if (saved) {
-      settingsServiceKey = saved;
-      document.getElementById('settings-service-key-banner').style.display = 'none';
-      settingsLoadUsers();
-    }
+    settingsLoadUsers();
   }
 }
 
@@ -2680,33 +2670,16 @@ async function assignAccount(accountName, accountType, managerId, selectEl) {
 
 // Users ─────────────────────────────────
 
-let settingsServiceKey = null;
-
-function settingsUnlockUsers() {
-  const key = document.getElementById('s-service-key').value.trim();
-  if (!key) return;
-  settingsServiceKey = key;
-  sessionStorage.setItem('sb_service_key', key);
-  document.getElementById('settings-service-key-banner').style.display = 'none';
-  settingsLoadUsers();
-}
+const ADMIN_FN = `${SB_URL}/functions/v1/admin-users`;
 
 async function settingsLoadUsers() {
   const el = document.getElementById('settings-users-content');
   el.innerHTML = '<div class="settings-users-empty">Loading…</div>';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/admin/users?per_page=100`, {
-      headers: { 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
-    });
-    if (!res.ok) {
-      settingsServiceKey = null;
-      sessionStorage.removeItem('sb_service_key');
-      document.getElementById('settings-service-key-banner').style.display = 'flex';
-      el.innerHTML = '<div style="font-size:13px;color:var(--coral)">Invalid key or permission denied. Try again.</div>';
-      return;
-    }
-    const data  = await res.json();
-    const users = data.users || [];
+    const res = await fetch(ADMIN_FN, { headers: authHeaders() });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || `Error ${res.status}`); }
+    const users = await res.json();
+    const myEmail = getAuthUser();
     el.innerHTML = `
       <div class="settings-invite-row">
         <input class="settings-input" id="s-invite-email" type="email" placeholder="Email to invite…" style="flex:1;min-width:200px">
@@ -2715,12 +2688,13 @@ async function settingsLoadUsers() {
       </div>
       <div class="settings-table-wrap">
         <table class="settings-table">
-          <thead><tr><th>Email</th><th>Created</th><th>Last sign-in</th></tr></thead>
+          <thead><tr><th>Email</th><th>Created</th><th>Last sign-in</th><th></th></tr></thead>
           <tbody>${users.map(u => `
             <tr>
               <td>${esc(u.email || '—')}</td>
               <td style="color:var(--text-2)">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—'}</td>
               <td style="color:var(--text-2)">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
+              <td style="text-align:right">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${u.id}','${esc(u.email)}')">Remove</button>` : '<span style="font-size:11px;color:var(--text-3)">you</span>'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -2733,16 +2707,16 @@ async function settingsLoadUsers() {
 async function settingsInviteUser() {
   const email  = document.getElementById('s-invite-email').value.trim();
   const status = document.getElementById('s-invite-status');
-  if (!email || !settingsServiceKey) return;
+  if (!email) return;
   status.style.color = 'var(--teal)';
   status.textContent = 'Sending…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/invite`, {
+    const res = await fetch(ADMIN_FN, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
+      headers: authHeaders(),
       body: JSON.stringify({ email }),
     });
-    if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed'); }
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed'); }
     status.textContent = `✓ Invite sent to ${email}`;
     document.getElementById('s-invite-email').value = '';
     setTimeout(() => { status.textContent = ''; }, 4000);
@@ -2751,6 +2725,15 @@ async function settingsInviteUser() {
     status.style.color = 'var(--coral)';
     status.textContent = e.message;
   }
+}
+
+async function settingsDeleteUser(id, email) {
+  if (!confirm(`Remove login access for ${email}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`${ADMIN_FN}/${id}`, { method: 'DELETE', headers: authHeaders() });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed'); }
+    settingsLoadUsers();
+  } catch(e) { alert('Could not remove user: ' + e.message); }
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────
