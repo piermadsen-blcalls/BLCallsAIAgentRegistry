@@ -576,6 +576,10 @@
   .settings-key-banner { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px; background:var(--amber-bg); border-radius:var(--radius-sm); border:1px solid #E8C97A; margin-bottom:14px; font-size:12px; color:var(--amber); }
   .settings-invite-row { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
   .settings-users-empty { font-size:13px; color:var(--text-3); font-style:italic; padding:20px 0; }
+  .s-acct-tab { font-family:var(--sans); font-size:11px; font-weight:500; padding:5px 12px; background:var(--surface); color:var(--text-2); border:none; cursor:pointer; border-right:1px solid var(--border-strong); }
+  .s-acct-tab:last-child { border-right:none; }
+  .s-acct-tab.active { background:var(--brand-navy); color:white; }
+  .s-acct-tab:hover:not(.active) { background:var(--bg); }
 </style>
 </head>
 <body>
@@ -1075,22 +1079,17 @@
       <div class="settings-section">
         <div class="settings-section-header">
           <div class="settings-section-title">Publisher &amp; Advertiser Assignments</div>
-          <button class="settings-add-btn" onclick="settingsShowAddAssignment(true)">+ Add Assignment</button>
         </div>
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">Account names must match exactly as they appear in Canoe.</div>
-        <div id="settings-add-assignment" class="settings-add-form" style="display:none">
-          <select class="settings-select" id="s-assign-manager" style="flex:1">
-            <option value="">Select manager</option>
-          </select>
-          <input class="settings-input" id="s-assign-account" placeholder="Account name (exact)" style="flex:2">
-          <select class="settings-select" id="s-assign-type">
-            <option value="publisher">Publisher</option>
-            <option value="advertiser">Advertiser</option>
-          </select>
-          <button class="settings-save-btn" onclick="settingsAddAssignment()">Add</button>
-          <button class="settings-cancel-btn" onclick="settingsShowAddAssignment(false)">Cancel</button>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+          <input class="settings-input" id="s-accounts-search" placeholder="Search accounts…" oninput="settingsFilterAccounts()" style="width:220px">
+          <div style="display:flex;border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden">
+            <button id="s-tab-all"        class="s-acct-tab active"  onclick="settingsSetAccountTab('all')">All</button>
+            <button id="s-tab-publisher"  class="s-acct-tab"         onclick="settingsSetAccountTab('publisher')">Publishers</button>
+            <button id="s-tab-advertiser" class="s-acct-tab"         onclick="settingsSetAccountTab('advertiser')">Advertisers</button>
+          </div>
+          <span style="font-size:11px;color:var(--text-3)" id="s-accounts-count"></span>
         </div>
-        <div id="settings-assignments-table" class="settings-table-wrap">
+        <div id="settings-accounts-table" class="settings-table-wrap">
           <div class="comp-loading">Loading…</div>
         </div>
       </div>
@@ -2681,6 +2680,7 @@ function resolveManager(call) {
 
 async function settingsInit() {
   await Promise.all([settingsLoadManagers(), settingsLoadAssignments()]);
+  await settingsLoadAccountsTable();
   if (window.isAdmin) {
     document.getElementById('settings-users-section').style.display = 'block';
     const saved = sessionStorage.getItem('sb_service_key');
@@ -2761,7 +2761,6 @@ async function settingsDeleteManager(id) {
 // Assignments ───────────────────────────
 
 async function settingsLoadAssignments() {
-  const el = document.getElementById('settings-assignments-table');
   try {
     const rows = await compFetch('account_manager_assignments?select=*,account_managers(manager_name)&order=account_name.asc');
     compAssignments = (rows || []).map(a => ({
@@ -2771,51 +2770,112 @@ async function settingsLoadAssignments() {
       account_name: a.account_name,
       account_type: a.account_type,
     }));
-    if (!compAssignments.length) {
-      el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No assignments yet.</div>';
-      return;
-    }
-    el.innerHTML = `<table class="settings-table">
-      <thead><tr><th>Manager</th><th>Account</th><th>Type</th><th></th></tr></thead>
-      <tbody>${compAssignments.map(a => `
-        <tr>
-          <td style="font-weight:500">${esc(a.manager_name)}</td>
-          <td>${esc(a.account_name)}</td>
-          <td><span class="flag-badge" style="background:var(--blue-bg);color:var(--blue)">${esc(a.account_type)}</span></td>
-          <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteAssignment('${a.id}')">Remove</button></td>
-        </tr>`).join('')}
-      </tbody></table>`;
+  } catch(e) { console.warn('settingsLoadAssignments:', e.message); }
+}
+
+let allAccounts  = [];
+let accountsTab  = 'all';
+
+async function settingsLoadAccountsTable() {
+  const el = document.getElementById('settings-accounts-table');
+  try {
+    allAccounts = await compFetch('rpc/get_distinct_accounts');
+    settingsRenderAccountsTable();
   } catch(e) {
     el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
   }
 }
 
-function settingsShowAddAssignment(show) {
-  document.getElementById('settings-add-assignment').style.display = show ? 'flex' : 'none';
-  if (show) { settingsRefreshManagerSelect(); }
+function settingsSetAccountTab(tab) {
+  accountsTab = tab;
+  document.querySelectorAll('.s-acct-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('s-tab-' + tab).classList.add('active');
+  settingsRenderAccountsTable();
 }
 
-async function settingsAddAssignment() {
-  const managerId   = document.getElementById('s-assign-manager').value;
-  const accountName = document.getElementById('s-assign-account').value.trim();
-  const accountType = document.getElementById('s-assign-type').value;
-  if (!managerId || !accountName) return;
-  try {
-    await compPost('account_manager_assignments', { manager_id: managerId, account_name: accountName, account_type: accountType });
-    document.getElementById('s-assign-account').value = '';
-    settingsShowAddAssignment(false);
-    await settingsLoadAssignments();
-  } catch(e) { alert('Could not add assignment: ' + e.message); }
+function settingsFilterAccounts() {
+  settingsRenderAccountsTable();
 }
 
-async function settingsDeleteAssignment(id) {
-  if (!confirm('Remove this assignment?')) return;
-  try {
-    await fetch(`${SB_URL}/rest/v1/account_manager_assignments?id=eq.${id}`, {
-      method: 'DELETE', headers: authHeaders(),
+function settingsRenderAccountsTable() {
+  const el     = document.getElementById('settings-accounts-table');
+  const search = (document.getElementById('s-accounts-search')?.value || '').toLowerCase();
+
+  let rows = allAccounts;
+  if (accountsTab !== 'all') rows = rows.filter(r => r.account_type === accountsTab);
+  if (search) rows = rows.filter(r => r.account_name.toLowerCase().includes(search));
+
+  const countEl = document.getElementById('s-accounts-count');
+  if (countEl) countEl.textContent = `${rows.length.toLocaleString()} account${rows.length !== 1 ? 's' : ''}`;
+
+  if (!rows.length) {
+    el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No accounts found.</div>';
+    return;
+  }
+
+  el.innerHTML = `<table class="settings-table">
+    <thead><tr><th>Account</th><th>Type</th><th>Calls</th><th style="min-width:180px">Assigned Manager</th></tr></thead>
+    <tbody>${rows.map(r => {
+      const assignment     = compAssignments.find(a => a.account_name === r.account_name && a.account_type === r.account_type);
+      const currentMgrId   = assignment?.manager_id || '';
+      const typeColor      = r.account_type === 'publisher'
+        ? 'background:var(--teal-bg);color:var(--teal)'
+        : 'background:var(--blue-bg);color:var(--blue)';
+      const opts = `<option value="">— Unassigned —</option>` +
+        compManagers.map(m => `<option value="${m.id}"${m.id === currentMgrId ? ' selected' : ''}>${esc(m.manager_name)}</option>`).join('');
+      return `<tr>
+        <td style="font-weight:500">${esc(r.account_name)}</td>
+        <td><span class="flag-badge" style="${typeColor}">${r.account_type}</span></td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--text-3)">${Number(r.call_count).toLocaleString()}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <select class="settings-select assign-mgr-select" style="min-width:160px"
+              data-account="${esc(r.account_name)}" data-type="${r.account_type}">
+              ${opts}
+            </select>
+            <span class="assign-saved-indicator" style="font-size:11px;color:var(--teal);display:none;width:12px">✓</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+
+  el.querySelectorAll('.assign-mgr-select').forEach(sel => {
+    sel.addEventListener('change', function() {
+      assignAccount(this.dataset.account, this.dataset.type, this.value, this);
     });
-    await settingsLoadAssignments();
-  } catch(e) { alert('Could not remove assignment: ' + e.message); }
+  });
+}
+
+async function assignAccount(accountName, accountType, managerId, selectEl) {
+  const savedEl    = selectEl.nextElementSibling;
+  const existing   = compAssignments.find(a => a.account_name === accountName && a.account_type === accountType);
+  try {
+    if (!managerId) {
+      if (existing) {
+        await fetch(`${SB_URL}/rest/v1/account_manager_assignments?id=eq.${existing.id}`, {
+          method: 'DELETE', headers: authHeaders(),
+        });
+      }
+    } else if (existing) {
+      await fetch(`${SB_URL}/rest/v1/account_manager_assignments?id=eq.${existing.id}`, {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ manager_id: managerId }),
+      });
+    } else {
+      await compPost('account_manager_assignments', {
+        manager_id:   managerId,
+        account_name: accountName,
+        account_type: accountType,
+      });
+    }
+    await compLoadAssignments();
+    if (savedEl) { savedEl.style.display = 'inline'; setTimeout(() => { savedEl.style.display = 'none'; }, 2000); }
+  } catch(e) {
+    alert('Could not save: ' + e.message);
+    selectEl.value = existing?.manager_id || '';
+  }
 }
 
 // Users ─────────────────────────────────
