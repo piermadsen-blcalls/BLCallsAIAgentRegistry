@@ -1083,7 +1083,8 @@
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
           <input class="settings-input" id="s-accounts-search" placeholder="Search accounts…" oninput="settingsFilterAccounts()" style="width:220px">
           <div style="display:flex;border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden">
-            <button id="s-tab-all"        class="s-acct-tab active"  onclick="settingsSetAccountTab('all')">All</button>
+            <button id="s-tab-unassigned" class="s-acct-tab active"  onclick="settingsSetAccountTab('unassigned')">Unassigned</button>
+            <button id="s-tab-all"        class="s-acct-tab"         onclick="settingsSetAccountTab('all')">All</button>
             <button id="s-tab-publisher"  class="s-acct-tab"         onclick="settingsSetAccountTab('publisher')">Publishers</button>
             <button id="s-tab-advertiser" class="s-acct-tab"         onclick="settingsSetAccountTab('advertiser')">Advertisers</button>
           </div>
@@ -2774,7 +2775,7 @@ async function settingsLoadAssignments() {
 }
 
 let allAccounts  = [];
-let accountsTab  = 'all';
+let accountsTab  = 'unassigned';
 
 async function settingsLoadAccountsTable() {
   const el = document.getElementById('settings-accounts-table');
@@ -2808,7 +2809,8 @@ function settingsRenderAccountsTable() {
   const search = (document.getElementById('s-accounts-search')?.value || '').toLowerCase();
 
   let rows = allAccounts;
-  if (accountsTab !== 'all') rows = rows.filter(r => r.account_type === accountsTab);
+  if (accountsTab === 'unassigned') rows = rows.filter(r => !compAssignments.find(a => a.account_name === r.account_name && a.account_type === r.account_type));
+  else if (accountsTab !== 'all') rows = rows.filter(r => r.account_type === accountsTab);
   if (search) rows = rows.filter(r => r.account_name.toLowerCase().includes(search));
 
   const countEl = document.getElementById('s-accounts-count');
