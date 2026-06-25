@@ -77,6 +77,12 @@ create policy "anon can read agent_calls_raw"
 create policy "auth users can read agent_calls_raw"
   on agent_calls_raw for select to authenticated using (true);
 
+create policy "auth users can insert agent_calls_raw"
+  on agent_calls_raw for insert to authenticated with check (true);
+
+create policy "auth users can update agent_calls_raw"
+  on agent_calls_raw for update to authenticated using (true) with check (true);
+
 -- ── agent_ivr_aliases ────────────────────────────────────────
 alter table agent_ivr_aliases enable row level security;
 

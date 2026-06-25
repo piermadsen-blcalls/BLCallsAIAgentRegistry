@@ -19,17 +19,19 @@ const PAGE_SIZE    = 250;
 const UPSERT_BATCH = 100;
 
 
-// Default: yesterday midnight → today midnight UTC
+// Default: 2 days ago midnight UTC → now
+// 2-day window ensures MDT evening calls (which cross the UTC date boundary) are never missed.
+// Upsert deduplication handles any overlap with previously synced records.
 // Override by setting SYNC_FROM and SYNC_TO env vars (ISO strings)
 function getSyncWindow() {
   if (process.env.SYNC_FROM && process.env.SYNC_TO) {
     return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO };
   }
-  const todayMidnight = new Date();
-  todayMidnight.setUTCHours(0, 0, 0, 0);
-  const yesterdayMidnight = new Date(todayMidnight);
-  yesterdayMidnight.setUTCDate(yesterdayMidnight.getUTCDate() - 1);
-  return { from: yesterdayMidnight.toISOString(), to: todayMidnight.toISOString() };
+  const now = new Date();
+  const twoDaysAgo = new Date(now);
+  twoDaysAgo.setUTCDate(twoDaysAgo.getUTCDate() - 2);
+  twoDaysAgo.setUTCHours(0, 0, 0, 0);
+  return { from: twoDaysAgo.toISOString(), to: now.toISOString() };
 }
 
 async function fetchPage(page) {
