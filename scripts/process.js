@@ -15,7 +15,7 @@
 const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
-const NVIDIA_API_KEY       = process.env.NVIDIA_API_KEY;
+const OPENROUTER_API_KEY   = process.env.OPENROUTER_API_KEY;
 const AI_MODEL             = process.env.AI_MODEL       || 'claude-sonnet-4-6';
 const AI_MODE              = process.env.AI_MODE        || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
@@ -256,11 +256,11 @@ async function callClaude(system, userMessage) {
 }
 
 async function callNvidia(system, userMessage) {
-  if (!NVIDIA_API_KEY) throw new Error('NVIDIA_API_KEY not set');
-  const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${NVIDIA_API_KEY}`,
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'Content-Type':  'application/json',
     },
     body: JSON.stringify({
