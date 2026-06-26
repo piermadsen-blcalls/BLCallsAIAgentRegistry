@@ -17,6 +17,12 @@ on:
       prompt_id:
         description: 'AI prompt UUID to use (leave blank for active prompt)'
         default: ''
+      test_mode:
+        description: 'Write results to model_test_results instead of canoe_calls'
+        default: 'false'
+      test_batch_id:
+        description: 'UUID of the model_tests row to write results into'
+        default: ''
 
 jobs:
   process:
@@ -33,8 +39,11 @@ jobs:
           SUPABASE_URL:          ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY:  ${{ secrets.SUPABASE_SERVICE_KEY }}
           ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
+          NVIDIA_API_KEY:        ${{ secrets.NVIDIA_API_KEY }}
           AI_MODEL:              ${{ github.event.inputs.ai_model || 'claude-sonnet-4-6' }}
           AI_MODE:               ${{ github.event.inputs.ai_mode || 'combined' }}
           BATCH_SIZE:            ${{ github.event.inputs.batch_size || '100' }}
           PROMPT_ID:             ${{ github.event.inputs.prompt_id || '' }}
+          TEST_MODE:             ${{ github.event.inputs.test_mode || 'false' }}
+          TEST_BATCH_ID:         ${{ github.event.inputs.test_batch_id || '' }}
         run: node scripts/process.js

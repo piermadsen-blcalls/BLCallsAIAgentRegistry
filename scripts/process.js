@@ -15,10 +15,21 @@
 const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
-const AI_MODEL             = process.env.AI_MODEL   || 'claude-sonnet-4-6';
-const AI_MODE              = process.env.AI_MODE    || 'combined';
+const NVIDIA_API_KEY       = process.env.NVIDIA_API_KEY;
+const AI_MODEL             = process.env.AI_MODEL       || 'claude-sonnet-4-6';
+const AI_MODE              = process.env.AI_MODE        || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
-const PROMPT_ID            = process.env.PROMPT_ID  || null;
+const PROMPT_ID            = process.env.PROMPT_ID      || null;
+const TEST_MODE            = process.env.TEST_MODE      === 'true';
+const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
+
+// Models served via NVIDIA build.nvidia.com OpenAI-compatible endpoint
+const NVIDIA_MODELS = new Set([
+  'nvidia/llama-3.3-70b-instruct',
+  'nvidia/nemotron-super-49b-v1',
+  'nvidia/nemotron-ultra-253b-v1',
+  'meta/llama-3.3-70b-instruct',
+]);
 
 // ── Outcome scoring table (Taxonomy v3) ──────────────────────
 // Fallback scores used when outcome_weights table is unavailable.
@@ -206,7 +217,14 @@ async function loadPrompt() {
   }
 }
 
-// ── Claude API call ───────────────────────────────────────────
+// ── LLM API call (routes to Claude or NVIDIA) ─────────────────
+async function callLLM(system, userMessage) {
+  if (NVIDIA_MODELS.has(AI_MODEL)) {
+    return callNvidia(system, userMessage);
+  }
+  return callClaude(system, userMessage);
+}
+
 async function callClaude(system, userMessage) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -226,13 +244,47 @@ async function callClaude(system, userMessage) {
   if (!res.ok) throw new Error(`Claude API error ${res.status}: ${await res.text()}`);
   const data = await res.json();
   const text = data.content[0].text.trim();
+  const usage = { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 };
 
   try {
-    return JSON.parse(text);
+    return { result: JSON.parse(text), usage };
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
+    if (match) return { result: JSON.parse(match[0]), usage };
     throw new Error(`Could not parse Claude response: ${text}`);
+  }
+}
+
+async function callNvidia(system, userMessage) {
+  if (!NVIDIA_API_KEY) throw new Error('NVIDIA_API_KEY not set');
+  const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${NVIDIA_API_KEY}`,
+      'Content-Type':  'application/json',
+    },
+    body: JSON.stringify({
+      model:       AI_MODEL,
+      max_tokens:  1024,
+      temperature: 0.1,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user',   content: userMessage },
+      ],
+    }),
+  });
+
+  if (!res.ok) throw new Error(`NVIDIA API error ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const text = (data.choices[0].message.content || '').trim();
+  const usage = { input: data.usage?.prompt_tokens || 0, output: data.usage?.completion_tokens || 0 };
+
+  try {
+    return { result: JSON.parse(text), usage };
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return { result: JSON.parse(match[0]), usage };
+    throw new Error(`Could not parse NVIDIA response: ${text}`);
   }
 }
 
@@ -292,9 +344,68 @@ async function writeResult(id, result) {
   if (!res.ok) throw new Error(`Supabase write error ${res.status}: ${await res.text()}`);
 }
 
+// ── Test-mode helpers ─────────────────────────────────────────
+async function fetchTestSample() {
+  // For accuracy tests: grab BATCH_SIZE calls that have transcripts,
+  // regardless of whether they've already been processed.
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/canoe_calls?transcription=not.is.null&transcription=neq.&select=id,transcription,zip,vertical_name,called_from,duration,created_at,canoe_outcome&order=created_at.desc&limit=${BATCH_SIZE}`,
+    {
+      headers: {
+        'apikey':        SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  if (!res.ok) throw new Error(`Supabase fetch error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function updateTestStatus(testId, status) {
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/model_tests?id=eq.${testId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'apikey':        SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify({ status }),
+    }
+  );
+}
+
+async function writeTestResult(testId, callId, outcome, flags, rawResponse, inputTokens, outputTokens) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/model_test_results`,
+    {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify({
+        test_id:       testId,
+        call_id:       callId,
+        model:         AI_MODEL,
+        our_outcome:   outcome,
+        flags:         flags,
+        raw_response:  rawResponse,
+        input_tokens:  inputTokens,
+        output_tokens: outputTokens,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`Supabase write error ${res.status}: ${await res.text()}`);
+}
+
 // ── Main ──────────────────────────────────────────────────────
 async function run() {
-  console.log(`Starting AI processing — model: ${AI_MODEL}, mode: ${AI_MODE}`);
+  console.log(`Starting AI processing — model: ${AI_MODEL}, mode: ${AI_MODE}, test: ${TEST_MODE}`);
 
   // Load prompt from Supabase (falls back to hardcoded if unavailable)
   const promptRow = await loadPrompt();
@@ -305,8 +416,15 @@ async function run() {
     ? `You are a call quality and compliance analyst for a pay-per-call network. Analyze the transcript and return both an outcome classification and compliance flags.\n\n${outcomePrompt.replace('Respond with valid JSON only:', '').trim()}\n\n${compliancePrompt.replace('Respond with valid JSON only:', '').trim()}\n\nRespond with valid JSON only:\n{\n  "outcome": "<outcome>",\n  "summary": "<2-3 sentence summary>",\n  "outcome_note": "<required only if outcome is 'other', otherwise null>",\n  "flags": ["flag1", "flag2"],\n  "flag_notes": { "flag_name": "brief reason" },\n  "suspicious_call": false,\n  "suspicious_note": null\n}`
     : COMBINED_SYSTEM;
 
-  const calls = await fetchUnprocessed();
-  console.log(`Found ${calls.length} unprocessed calls`);
+  if (TEST_MODE && !TEST_BATCH_ID) {
+    console.error('TEST_MODE=true requires TEST_BATCH_ID to be set');
+    process.exit(1);
+  }
+
+  if (TEST_MODE) await updateTestStatus(TEST_BATCH_ID, 'running');
+
+  const calls = TEST_MODE ? await fetchTestSample() : await fetchUnprocessed();
+  console.log(`Found ${calls.length} calls to process`);
 
   if (calls.length === 0) {
     console.log('Nothing to process.');
@@ -331,9 +449,10 @@ async function run() {
       const userMessage = `${context}\n\nTranscript:\n${call.transcription}`;
 
       let outcome, summary, outcome_note, flags, flag_notes, suspicious_call, suspicious_note;
+      let totalInputTokens = 0, totalOutputTokens = 0;
 
       if (AI_MODE === 'combined') {
-        const result  = await callClaude(combinedPrompt, userMessage);
+        const { result, usage } = await callLLM(combinedPrompt, userMessage);
         outcome       = result.outcome;
         summary       = result.summary;
         outcome_note  = result.outcome_note;
@@ -341,10 +460,12 @@ async function run() {
         flag_notes    = result.flag_notes || {};
         suspicious_call = result.suspicious_call || false;
         suspicious_note = result.suspicious_note || null;
+        totalInputTokens  = usage.input;
+        totalOutputTokens = usage.output;
       } else {
-        const [outcomeResult, complianceResult] = await Promise.all([
-          callClaude(outcomePrompt, userMessage),
-          callClaude(compliancePrompt, userMessage),
+        const [{ result: outcomeResult, usage: u1 }, { result: complianceResult, usage: u2 }] = await Promise.all([
+          callLLM(outcomePrompt, userMessage),
+          callLLM(compliancePrompt, userMessage),
         ]);
         outcome       = outcomeResult.outcome;
         summary       = outcomeResult.summary;
@@ -353,6 +474,8 @@ async function run() {
         flag_notes    = complianceResult.flag_notes || {};
         suspicious_call = complianceResult.suspicious_call || false;
         suspicious_note = complianceResult.suspicious_note || null;
+        totalInputTokens  = u1.input + u2.input;
+        totalOutputTokens = u1.output + u2.output;
       }
 
       if (!VALID_OUTCOMES.includes(outcome)) {
@@ -368,17 +491,21 @@ async function run() {
 
       const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
 
-      await writeResult(call.id, {
-        our_outcome:      outcome,
-        our_summary:      summary,
-        publisher_score:  scores.pub,
-        advertiser_score: scores.adv,
-        flags,
-        suspicious_call,
-        ai_model:         AI_MODEL,
-        ai_processed_at:  new Date().toISOString(),
-        prompt_id:        activePromptId,
-      });
+      if (TEST_MODE) {
+        await writeTestResult(TEST_BATCH_ID, call.id, outcome, flags, { outcome, summary, flags, suspicious_call }, totalInputTokens, totalOutputTokens);
+      } else {
+        await writeResult(call.id, {
+          our_outcome:      outcome,
+          our_summary:      summary,
+          publisher_score:  scores.pub,
+          advertiser_score: scores.adv,
+          flags,
+          suspicious_call,
+          ai_model:         AI_MODEL,
+          ai_processed_at:  new Date().toISOString(),
+          prompt_id:        activePromptId,
+        });
+      }
 
       processed++;
       if (processed % 10 === 0) console.log(`  Processed ${processed}/${calls.length}`);
@@ -390,6 +517,7 @@ async function run() {
   }
 
   console.log(`Done. Processed: ${processed}, Errors: ${errors}`);
+  if (TEST_MODE) await updateTestStatus(TEST_BATCH_ID, errors === 0 ? 'completed' : 'failed');
 }
 
 run().catch(err => {

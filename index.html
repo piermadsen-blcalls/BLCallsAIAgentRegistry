@@ -1041,6 +1041,50 @@
         </div>
       </div>
 
+      <!-- Model Calibration Run (admin only) -->
+      <div class="settings-section" id="settings-cost-section" style="display:none">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Model Calibration Run</div>
+        </div>
+        <p style="color:var(--text-2);font-size:13px;margin:0 0 20px">
+          Run a sample of calls through multiple models to get real token counts, actual per-call costs, and outcome accuracy — all from the same batch.
+          Results are stored separately and do not overwrite your processed calls.
+          <span id="calib-queue-note" style="color:var(--text-3)"></span>
+        </p>
+
+        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:24px">
+          <div>
+            <label class="settings-label">Models to run</label>
+            <div id="modeltest-checkboxes" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+          </div>
+          <div>
+            <label class="settings-label">Sample size</label>
+            <input class="settings-input" id="modeltest-sample-size" type="number" value="20" min="5" max="50" style="width:80px">
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px">5 – 50 calls</div>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <label class="settings-label">GitHub PAT (stored in session only)</label>
+            <input class="settings-input" id="modeltest-pat" type="password" placeholder="ghp_…">
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
+            <button class="settings-save-btn" onclick="modeltestRun()">Run calibration</button>
+            <span id="modeltest-run-status" style="font-size:12px;color:var(--teal)"></span>
+          </div>
+        </div>
+
+        <!-- Calibration history -->
+        <div id="modeltest-history"></div>
+
+        <!-- Results panel -->
+        <div id="modeltest-comparison" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div class="settings-section-title" style="font-size:13px" id="modeltest-comparison-title">Results</div>
+            <button onclick="modeltestCloseComparison()" style="font-family:var(--sans);font-size:11px;color:var(--text-3);background:none;border:none;cursor:pointer;padding:0">✕ close</button>
+          </div>
+          <div id="modeltest-comparison-table"></div>
+        </div>
+      </div>
+
       <!-- AI Prompts (admin only) -->
       <div class="settings-section" id="settings-prompts-section" style="display:none">
         <div class="settings-section-header">
@@ -2639,6 +2683,8 @@ async function settingsInit() {
     document.getElementById('settings-users-section').style.display = 'block';
     document.getElementById('settings-prompts-section').style.display = 'block';
     document.getElementById('settings-weights-section').style.display = 'block';
+    document.getElementById('settings-cost-section').style.display = 'block';
+    calibInit();
     const saved = sessionStorage.getItem('sb_service_key');
     if (saved) {
       settingsServiceKey = saved;
@@ -3089,6 +3135,195 @@ async function weightsExecute() {
   btn.style.opacity = '';
   btn.style.background = '';
   btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
+}
+
+// ── MODEL CALIBRATION RUN ─────────────────────────────────────
+
+const MODEL_CATALOG = [
+  { id: 'claude-opus-4-8',               label: 'Claude Opus 4.8',       provider: 'Anthropic', inPer1M: 5.00, outPer1M: 25.00 },
+  { id: 'claude-sonnet-4-6',             label: 'Claude Sonnet 4.6',     provider: 'Anthropic', inPer1M: 3.00, outPer1M: 15.00 },
+  { id: 'claude-haiku-4-5',              label: 'Claude Haiku 4.5',      provider: 'Anthropic', inPer1M: 1.00, outPer1M: 5.00  },
+  { id: 'nvidia/llama-3.3-70b-instruct', label: 'Llama 3.3 70B',         provider: 'NVIDIA',    inPer1M: 0.10, outPer1M: 0.32  },
+  { id: 'nvidia/nemotron-super-49b-v1',  label: 'Nemotron Super 120B',   provider: 'NVIDIA',    inPer1M: 0.09, outPer1M: 0.40  },
+  { id: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 550B',   provider: 'NVIDIA',    inPer1M: 0.41, outPer1M: 1.20  },
+];
+let calibQueueCount = 0;
+
+async function calibInit() {
+  // Load unprocessed queue count for extrapolation
+  try {
+    const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
+    const res = await fetch(
+      `${SB_URL}/rest/v1/canoe_calls?ai_processed_at=is.null&transcription=not.is.null&transcription=neq.&select=id`,
+      { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' } }
+    );
+    const range = res.headers.get('Content-Range') || '';
+    calibQueueCount = parseInt((range.split('/')[1] || '0'), 10) || 0;
+    const noteEl = document.getElementById('calib-queue-note');
+    if (noteEl) noteEl.textContent = ` Your unprocessed queue: ${calibQueueCount.toLocaleString()} calls.`;
+  } catch(e) { /* non-critical */ }
+
+  // Render model checkboxes
+  const wrap = document.getElementById('modeltest-checkboxes');
+  if (wrap) {
+    wrap.innerHTML = MODEL_CATALOG.map(m => {
+      const providerColor = m.provider === 'NVIDIA' ? 'var(--blue)' : 'var(--purple)';
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
+        <input type="checkbox" value="${m.id}" class="modeltest-checkbox" style="accent-color:var(--brand-navy);width:14px;height:14px">
+        <span style="min-width:180px">${m.label}</span>
+        <span style="font-size:11px;color:${providerColor};background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px">${m.provider}</span>
+        <span style="font-size:11px;color:var(--text-3);font-family:var(--mono)">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
+      </label>`;
+    }).join('');
+  }
+
+  const savedPat = sessionStorage.getItem('gh_pat');
+  if (savedPat) document.getElementById('modeltest-pat').value = savedPat;
+  modeltestLoadHistory();
+}
+
+async function modeltestLoadHistory() {
+  const wrap = document.getElementById('modeltest-history');
+  if (!wrap) return;
+  try {
+    const rows = await compFetch('model_tests?select=id,created_at,model,sample_size,status&order=created_at.desc&limit=20');
+    if (!rows || rows.length === 0) {
+      wrap.innerHTML = '<p style="color:var(--text-3);font-size:13px;margin:0">No tests run yet.</p>';
+      return;
+    }
+    wrap.innerHTML = `<div style="margin-top:4px">
+      <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Recent Tests</div>
+      ${rows.map(r => {
+        const statusColor = r.status === 'completed' ? 'var(--teal)' : r.status === 'failed' ? 'var(--coral)' : 'var(--amber)';
+        const date = new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <span style="font-size:13px;flex:1;min-width:160px;font-family:var(--mono)">${r.model}</span>
+          <span style="font-size:12px;color:var(--text-3)">${r.sample_size} calls</span>
+          <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${r.status}</span>
+          <span style="font-size:11px;color:var(--text-3)">${date}</span>
+          ${r.status === 'completed' ? `<button onclick="modeltestViewResults('${r.id}','${r.model}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">View results</button>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  } catch(e) {
+    wrap.innerHTML = `<p style="color:var(--coral);font-size:13px">${e.message}</p>`;
+  }
+}
+
+async function modeltestRun() {
+  const selected  = [...document.querySelectorAll('.modeltest-checkbox:checked')].map(cb => cb.value);
+  const sampleSize = parseInt(document.getElementById('modeltest-sample-size').value || '10', 10);
+  const pat       = document.getElementById('modeltest-pat').value.trim();
+  const statusEl  = document.getElementById('modeltest-run-status');
+
+  if (selected.length === 0) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select at least one model.'; return; }
+  if (!pat) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'GitHub PAT required.'; return; }
+  sessionStorage.setItem('gh_pat', pat);
+  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length} test(s)…`;
+
+  let launched = 0;
+  for (const modelId of selected) {
+    try {
+      const testRow = await sbFetch('model_tests', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: modelId, sample_size: sampleSize, status: 'pending' }),
+      });
+      const testId = Array.isArray(testRow) ? testRow[0].id : testRow.id;
+
+      const res = await fetch('https://api.github.com/repos/piermadsen-blcalls/BLCallsAIAgentRegistry/actions/workflows/process.yml/dispatches', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: 'main', inputs: { ai_model: modelId, batch_size: String(sampleSize), test_mode: 'true', test_batch_id: testId } }),
+      });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub ${res.status}`); }
+      launched++;
+    } catch(e) {
+      statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Error on ${modelId}: ${e.message}`; return;
+    }
+  }
+
+  statusEl.style.color = 'var(--teal)'; statusEl.textContent = `✓ ${launched} workflow(s) triggered — results appear below when complete`;
+  await modeltestLoadHistory();
+}
+
+async function modeltestViewResults(testId, model) {
+  const wrap      = document.getElementById('modeltest-comparison');
+  const titleEl   = document.getElementById('modeltest-comparison-title');
+  const tableWrap = document.getElementById('modeltest-comparison-table');
+  titleEl.textContent = `Results — ${model}`;
+  tableWrap.innerHTML = '<div style="color:var(--text-3);font-size:13px">Loading…</div>';
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  try {
+    const rows = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,our_outcome,flags,input_tokens,output_tokens&order=created_at.asc`);
+    if (!rows || rows.length === 0) {
+      tableWrap.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results yet — workflow may still be running.</p>';
+      return;
+    }
+
+    // Cost extrapolation from real token counts
+    const catalog   = MODEL_CATALOG.find(m => m.id === model);
+    const withUsage = rows.filter(r => r.input_tokens > 0);
+    let costCards   = '';
+    if (withUsage.length > 0 && catalog) {
+      const avgIn  = withUsage.reduce((s, r) => s + r.input_tokens,  0) / withUsage.length;
+      const avgOut = withUsage.reduce((s, r) => s + r.output_tokens, 0) / withUsage.length;
+      const costPerCall = (avgIn * catalog.inPer1M / 1e6) + (avgOut * catalog.outPer1M / 1e6);
+      const totalCost   = costPerCall * calibQueueCount;
+      const fmtCost     = v => v < 0.01 ? `$${v.toFixed(5)}` : v < 1 ? `$${v.toFixed(4)}` : `$${v.toFixed(2)}`;
+      costCards = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+        ${[
+          ['Avg input tokens',   Math.round(avgIn).toLocaleString()],
+          ['Avg output tokens',  Math.round(avgOut).toLocaleString()],
+          ['Real cost / call',   fmtCost(costPerCall)],
+          [`Extrapolated total<br><span style="font-size:10px;font-weight:400">${calibQueueCount.toLocaleString()} unprocessed calls</span>`, fmtCost(totalCost)],
+        ].map(([label, val]) => `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;min-width:140px">
+          <div style="font-family:var(--mono);font-size:16px;font-weight:500">${val}</div>
+          <div style="font-size:11px;color:var(--text-2);margin-top:4px;line-height:1.4">${label}</div>
+        </div>`).join('')}
+      </div>`;
+    }
+
+    // Outcome distribution
+    const counts = {};
+    for (const r of rows) { const k = r.our_outcome || '—'; counts[k] = (counts[k] || 0) + 1; }
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const distCards = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+      ${sorted.map(([outcome, count]) => `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;text-align:center">
+        <div style="font-family:var(--mono);font-size:15px;font-weight:500">${count}</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px">${outcome}</div>
+      </div>`).join('')}
+    </div>`;
+
+    tableWrap.innerHTML = `
+      ${costCards}
+      <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Outcome Distribution — ${rows.length} calls</div>
+      ${distCards}
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:6px 12px 6px 0;font-size:11px;font-weight:500;color:var(--text-2)">#</th>
+          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Call ID</th>
+          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Outcome</th>
+          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Flags</th>
+          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Tokens in/out</th>
+        </tr></thead>
+        <tbody>${rows.map((r, i) => `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:7px 12px 7px 0;color:var(--text-3)">${i+1}</td>
+          <td style="padding:7px 12px;font-family:var(--mono);font-size:11px">${r.call_id}</td>
+          <td style="padding:7px 12px">${r.our_outcome || '<span style="color:var(--text-3)">—</span>'}</td>
+          <td style="padding:7px 12px;color:var(--text-3);font-size:11px">${(r.flags||[]).join(', ') || '—'}</td>
+          <td style="padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--text-2)">${r.input_tokens ? `${r.input_tokens} / ${r.output_tokens}` : '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  } catch(e) {
+    tableWrap.innerHTML = `<p style="color:var(--coral);font-size:13px">${e.message}</p>`;
+  }
+}
+
+function modeltestCloseComparison() {
+  document.getElementById('modeltest-comparison').style.display = 'none';
 }
 
 // ── AI PROMPTS ────────────────────────────────────────────────
