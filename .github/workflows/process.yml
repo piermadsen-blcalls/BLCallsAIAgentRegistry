@@ -23,6 +23,9 @@ on:
       test_batch_id:
         description: 'UUID of the model_tests row to write results into'
         default: ''
+      batch_mode:
+        description: 'true to use Anthropic batch API (50% off, Claude models only)'
+        default: 'false'
 
 jobs:
   process:
@@ -46,4 +49,5 @@ jobs:
           PROMPT_ID:             ${{ github.event.inputs.prompt_id || '' }}
           TEST_MODE:             ${{ github.event.inputs.test_mode || 'false' }}
           TEST_BATCH_ID:         ${{ github.event.inputs.test_batch_id || '' }}
+          BATCH_MODE:            ${{ github.event.inputs.batch_mode || 'false' }}
         run: node scripts/process.js

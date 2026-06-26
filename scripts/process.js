@@ -10,6 +10,7 @@
  *   AI_MODEL              - e.g. claude-sonnet-4-6 (default)
  *   AI_MODE               - "combined" (default) or "separate"
  *   BATCH_SIZE            - number of calls to process per run (default 100)
+ *   BATCH_MODE            - "true" to use Anthropic batch API (50% off, Claude only, ~minutes turnaround)
  */
 
 const SUPABASE_URL         = process.env.SUPABASE_URL;
@@ -22,6 +23,7 @@ const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
 const PROMPT_ID            = process.env.PROMPT_ID      || null;
 const TEST_MODE            = process.env.TEST_MODE      === 'true';
 const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
+const BATCH_MODE           = process.env.BATCH_MODE     === 'true';
 
 // Models served via NVIDIA build.nvidia.com OpenAI-compatible endpoint
 const NVIDIA_MODELS = new Set([
@@ -403,6 +405,91 @@ async function writeTestResult(testId, callId, outcome, flags, rawResponse, inpu
   if (!res.ok) throw new Error(`Supabase write error ${res.status}: ${await res.text()}`);
 }
 
+// ── Anthropic batch API helpers ───────────────────────────────
+async function submitBatch(requests) {
+  const res = await fetch('https://api.anthropic.com/v1/messages/batches', {
+    method: 'POST',
+    headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ requests }),
+  });
+  if (!res.ok) throw new Error(`Batch submit error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function pollBatch(batchId) {
+  const deadline = Date.now() + 2 * 60 * 60 * 1000; // 2hr max (GitHub Actions limit)
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 60_000));
+    const res = await fetch(`https://api.anthropic.com/v1/messages/batches/${batchId}`, {
+      headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    });
+    if (!res.ok) throw new Error(`Batch poll error ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const counts = data.request_counts || {};
+    console.log(`  Batch ${batchId}: ${data.processing_status} — succeeded:${counts.succeeded||0} errored:${counts.errored||0} processing:${counts.processing||0}`);
+    if (data.processing_status === 'ended') return data;
+  }
+  throw new Error(`Batch timed out after 2 hours. Batch ID: ${batchId} — results still available via Anthropic console.`);
+}
+
+async function fetchBatchResults(batchId) {
+  const res = await fetch(`https://api.anthropic.com/v1/messages/batches/${batchId}/results`, {
+    headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+  });
+  if (!res.ok) throw new Error(`Batch results error ${res.status}: ${await res.text()}`);
+  return (await res.text()).trim().split('\n').map(l => JSON.parse(l));
+}
+
+async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
+  const requests = calls.map(call => {
+    const context = [
+      `Vertical: ${call.vertical_name || 'Unknown'}`,
+      `Duration: ${call.duration}s`,
+      `Transaction zip: ${call.zip || 'Unknown'}`,
+      `Canoe outcome: ${call.canoe_outcome || 'Unknown'}`,
+    ].join('\n');
+    return {
+      custom_id: call.id,
+      params: { model: AI_MODEL, max_tokens: 1024, system: systemPrompt, messages: [{ role: 'user', content: `${context}\n\nTranscript:\n${call.transcription}` }] },
+    };
+  });
+
+  const batch = await submitBatch(requests);
+  console.log(`Batch submitted: ${batch.id} — polling every 60s (max 2hr)`);
+
+  await pollBatch(batch.id);
+  const results = await fetchBatchResults(batch.id);
+
+  let processed = 0, errors = 0;
+  for (const item of results) {
+    if (item.result.type !== 'succeeded') { console.error(`  [${item.custom_id}] Batch error: ${item.result.error?.message}`); errors++; continue; }
+    try {
+      const data    = item.result.message;
+      const usage   = { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 };
+      const text    = data.content[0].text.trim();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
+      if (!parsed) { console.error(`  [${item.custom_id}] Could not parse response`); errors++; continue; }
+
+      let outcome = parsed.outcome;
+      if (!VALID_OUTCOMES.includes(outcome)) outcome = 'other';
+
+      let flags = (parsed.flags || []).filter(f => VALID_FLAGS.includes(f));
+      if (duplicateIds.has(item.custom_id) && !flags.includes('duplicate_caller')) flags.push('duplicate_caller');
+
+      const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
+      await writeResult(item.custom_id, {
+        our_outcome: outcome, our_summary: parsed.summary,
+        publisher_score: scores.pub, advertiser_score: scores.adv,
+        flags, suspicious_call: parsed.suspicious_call || false,
+        ai_model: AI_MODEL, ai_processed_at: new Date().toISOString(), prompt_id: activePromptId,
+      });
+      processed++;
+    } catch(e) { console.error(`  [${item.custom_id}] ${e.message}`); errors++; }
+  }
+  console.log(`Batch done. Processed: ${processed}, Errors: ${errors}`);
+}
+
 // ── Main ──────────────────────────────────────────────────────
 async function run() {
   console.log(`Starting AI processing — model: ${AI_MODEL}, mode: ${AI_MODE}, test: ${TEST_MODE}`);
@@ -433,6 +520,12 @@ async function run() {
 
   const duplicateIds = await flagDuplicateCallers(calls.map(c => c.id));
   console.log(`Duplicate caller IDs found: ${duplicateIds.size}`);
+
+  // Batch mode: Claude only (OpenRouter models don't support Anthropic batch API)
+  if (BATCH_MODE && !NVIDIA_MODELS.has(AI_MODEL) && !TEST_MODE) {
+    await runBatch(calls, combinedPrompt, duplicateIds, activePromptId);
+    return;
+  }
 
   let processed = 0;
   let errors = 0;
