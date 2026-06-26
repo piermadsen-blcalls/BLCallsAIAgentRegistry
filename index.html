@@ -1028,6 +1028,19 @@
         <div id="settings-users-content"></div>
       </div>
 
+      <!-- Outcome Weights (admin only) -->
+      <div class="settings-section" id="settings-weights-section" style="display:none">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Outcome Weights</div>
+        </div>
+        <p style="color:var(--text-2);font-size:13px;margin:0 0 16px">Edit pub and advertiser scores for each outcome. Changes are not applied until you click Execute.</p>
+        <div id="settings-weights-table"></div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="settings-save-btn" id="weights-execute-btn" onclick="weightsExecute()" disabled style="opacity:.5;cursor:default">Execute changes — loading call count…</button>
+          <span id="weights-execute-status" style="font-size:13px;color:var(--text-2)"></span>
+        </div>
+      </div>
+
       <!-- AI Prompts (admin only) -->
       <div class="settings-section" id="settings-prompts-section" style="display:none">
         <div class="settings-section-header">
@@ -2625,6 +2638,7 @@ async function settingsInit() {
   if (window.isAdmin) {
     document.getElementById('settings-users-section').style.display = 'block';
     document.getElementById('settings-prompts-section').style.display = 'block';
+    document.getElementById('settings-weights-section').style.display = 'block';
     const saved = sessionStorage.getItem('sb_service_key');
     if (saved) {
       settingsServiceKey = saved;
@@ -2634,6 +2648,7 @@ async function settingsInit() {
     const savedPat = sessionStorage.getItem('gh_pat');
     if (savedPat) document.getElementById('ab-github-pat').value = savedPat;
     await promptsInit();
+    await weightsInit();
   }
 }
 
@@ -2918,6 +2933,162 @@ async function settingsDeleteUser(id, email) {
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed'); }
     settingsLoadUsers();
   } catch(e) { alert('Could not remove user: ' + e.message); }
+}
+
+// ── OUTCOME WEIGHTS ───────────────────────────────────────────
+
+const WEIGHT_GROUPS = [
+  { label: 'Positive', outcomes: ['sale','appointment','quoted_interested','quoted_undecided'] },
+  { label: 'Neutral / Quoted', outcomes: ['quoted_too_expensive','quoted_not_interested','quoted_abandoned','not_interested','undecided','caller_callback','caller_hangup','audio_issue','referral','ivr_hangup'] },
+  { label: 'Publisher Defects', outcomes: ['publisher_wrong_category','misrouted','caller_confused','customer_service','soliciting'] },
+  { label: 'Advertiser Defects', outcomes: ['advertiser_service_mismatch','outside_geo','agent_not_available','voicemail','outside_hours','agent_callback'] },
+  { label: 'Shared Defects', outcomes: ['agent_confused'] },
+  { label: 'Technical / Excluded', outcomes: ['other','test'] },
+];
+
+let weightsData = {};         // outcome -> { pub_score, adv_score }
+let weightsProcessedCount = 0;
+
+async function weightsLoadCount() {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id&our_outcome=not.is.null`, {
+      headers: { ...authHeaders(), 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' }
+    });
+    const contentRange = res.headers.get('Content-Range');
+    if (contentRange) {
+      const match = contentRange.match(/\/(\d+)$/);
+      if (match) return parseInt(match[1], 10);
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function weightsInit() {
+  try {
+    const rows = await compFetch('outcome_weights?select=outcome,pub_score,adv_score');
+    weightsData = {};
+    rows.forEach(r => { weightsData[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
+  } catch(e) {
+    console.warn('Could not load outcome weights:', e.message);
+  }
+  const count = await weightsLoadCount();
+  weightsProcessedCount = count ?? 0;
+  weightsRender();
+  const btn = document.getElementById('weights-execute-btn');
+  if (btn) {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
+  }
+}
+
+function weightsRender() {
+  const el = document.getElementById('settings-weights-table');
+  if (!el) return;
+
+  const rows = WEIGHT_GROUPS.map(group => {
+    const groupRows = group.outcomes.map(outcome => {
+      const w = weightsData[outcome] || { pub_score: 0, adv_score: 0 };
+      return `<tr>
+        <td style="padding:6px 10px;font-size:13px;color:var(--text);font-family:var(--mono)">${outcome}</td>
+        <td style="padding:6px 8px;text-align:center">
+          <input type="number" class="settings-input" data-outcome="${esc(outcome)}" data-field="pub_score"
+            value="${w.pub_score}" style="width:64px;text-align:center;padding:4px 6px;font-size:13px"
+            onchange="weightsDirty()">
+        </td>
+        <td style="padding:6px 8px;text-align:center">
+          <input type="number" class="settings-input" data-outcome="${esc(outcome)}" data-field="adv_score"
+            value="${w.adv_score}" style="width:64px;text-align:center;padding:4px 6px;font-size:13px"
+            onchange="weightsDirty()">
+        </td>
+      </tr>`;
+    }).join('');
+    return `<tr style="background:var(--bg-2)">
+        <td colspan="3" style="padding:6px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2)">${esc(group.label)}</td>
+      </tr>${groupRows}`;
+  }).join('');
+
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <thead>
+      <tr style="background:var(--bg-2)">
+        <th style="padding:8px 10px;text-align:left;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border)">Outcome</th>
+        <th style="padding:8px 8px;text-align:center;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);width:90px">Pub Score</th>
+        <th style="padding:8px 8px;text-align:center;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);width:90px">Adv Score</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function weightsDirty() {
+  const btn = document.getElementById('weights-execute-btn');
+  const status = document.getElementById('weights-execute-status');
+  if (btn) {
+    btn.style.background = 'var(--coral)';
+    btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
+  }
+  if (status) status.textContent = 'Unsaved changes';
+}
+
+async function weightsExecute() {
+  const btn = document.getElementById('weights-execute-btn');
+  const status = document.getElementById('weights-execute-status');
+  btn.disabled = true;
+  btn.style.opacity = '.6';
+  status.textContent = 'Saving weights…';
+
+  // Collect current values from inputs
+  const updates = [];
+  document.querySelectorAll('#settings-weights-table input[data-outcome]').forEach(input => {
+    const outcome = input.dataset.outcome;
+    const field   = input.dataset.field;
+    if (!weightsData[outcome]) weightsData[outcome] = { pub_score: 0, adv_score: 0 };
+    weightsData[outcome][field] = parseInt(input.value, 10) || 0;
+  });
+
+  // Upsert all weights
+  const payload = Object.entries(weightsData).map(([outcome, w]) => ({
+    outcome,
+    pub_score: w.pub_score,
+    adv_score: w.adv_score,
+  }));
+
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/outcome_weights`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+    if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
+  } catch(e) {
+    status.textContent = 'Failed to save weights: ' + e.message;
+    btn.disabled = false; btn.style.opacity = '';
+    return;
+  }
+
+  status.textContent = 'Weights saved. Recalculating call scores…';
+
+  // Call the RPC to bulk-update all processed calls
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/recalculate_call_scores`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) throw new Error(`RPC error ${res.status}: ${await res.text()}`);
+    const updated = await res.json();
+    status.textContent = `✓ Done — ${Number(updated).toLocaleString()} calls updated.`;
+    weightsProcessedCount = Number(updated);
+  } catch(e) {
+    status.textContent = 'Weights saved but recalculation failed: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.style.opacity = '';
+  btn.style.background = '';
+  btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
 }
 
 // ── AI PROMPTS ────────────────────────────────────────────────

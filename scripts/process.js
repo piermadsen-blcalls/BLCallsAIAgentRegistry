@@ -20,34 +20,38 @@ const AI_MODE              = process.env.AI_MODE    || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
 const PROMPT_ID            = process.env.PROMPT_ID  || null;
 
-// ── Outcome scoring table ─────────────────────────────────────
+// ── Outcome scoring table (Taxonomy v3) ──────────────────────
+// Fallback scores used when outcome_weights table is unavailable.
+// Live weights are managed via the dashboard admin UI.
 const OUTCOME_SCORES = {
-  sale:                  { pub: 10, adv: 10 },
-  appointment:           { pub: 10, adv: 10 },
-  quoted_interested:     { pub: 3,  adv: 3  },
-  quoted_undecided:      { pub: 2,  adv: 2  },
-  quoted_too_expensive:  { pub: 0,  adv: 0  },
-  quoted_not_interested: { pub: -1, adv: 0  },
-  undecided:             { pub: 0,  adv: 0  },
-  not_interested:        { pub: 0,  adv: 0  },
-  caller_callback:       { pub: 0,  adv: 0  },
-  agent_callback:        { pub: 0,  adv: -2 },
-  caller_hangup:         { pub: 0,  adv: 0  },
-  ivr_hangup:            { pub: 0,  adv: 0  },
-  voicemail:             { pub: 0,  adv: -3 },
-  agent_not_available:   { pub: 0,  adv: -3 },
-  audio_issue:           { pub: 0,  adv: 0  },
-  outside_geo:           { pub: -1, adv: -3 },
-  wrong_category:        { pub: -3, adv: 0  },
-  misrouted:             { pub: -3, adv: 0  },
-  caller_confused:       { pub: -3, adv: 0  },
-  agent_confused:        { pub: -3, adv: -2 },
-  customer_service:      { pub: -2, adv: 0  },
-  soliciting:            { pub: -5, adv: 0  },
-  referral:              { pub: 0,  adv: 0  },
-  outside_hours:         { pub: 0,  adv: -3 },
-  test:                  { pub: 0,  adv: 0  },
-  other:                 { pub: 0,  adv: 0  },
+  sale:                        { pub: 10,  adv: 10  },
+  appointment:                 { pub: 10,  adv: 10  },
+  quoted_interested:           { pub: 3,   adv: 3   },
+  quoted_undecided:            { pub: 2,   adv: 2   },
+  quoted_too_expensive:        { pub: 0,   adv: 0   },
+  quoted_not_interested:       { pub: 0,   adv: 0   },
+  quoted_abandoned:            { pub: -1,  adv: 0   },
+  not_interested:              { pub: 0,   adv: 0   },
+  undecided:                   { pub: 0,   adv: 0   },
+  caller_callback:             { pub: 0,   adv: 0   },
+  caller_hangup:               { pub: 0,   adv: 0   },
+  audio_issue:                 { pub: 0,   adv: 0   },
+  referral:                    { pub: 0,   adv: 0   },
+  ivr_hangup:                  { pub: 0,   adv: 0   },
+  publisher_wrong_category:    { pub: -3,  adv: 0   },
+  misrouted:                   { pub: -3,  adv: 0   },
+  caller_confused:             { pub: -3,  adv: 0   },
+  customer_service:            { pub: -2,  adv: 0   },
+  soliciting:                  { pub: -5,  adv: 0   },
+  advertiser_service_mismatch: { pub: 0,   adv: -3  },
+  outside_geo:                 { pub: 0,   adv: -3  },
+  agent_not_available:         { pub: 0,   adv: -3  },
+  voicemail:                   { pub: 0,   adv: -3  },
+  outside_hours:               { pub: 0,   adv: -3  },
+  agent_callback:              { pub: 0,   adv: -2  },
+  agent_confused:              { pub: -3,  adv: -2  },
+  other:                       { pub: 0,   adv: 0   },
+  test:                        { pub: 0,   adv: 0   },
 };
 
 const VALID_OUTCOMES = Object.keys(OUTCOME_SCORES);
@@ -61,46 +65,78 @@ const VALID_FLAGS = [
   'duplicate_caller',
 ];
 
-// ── Prompts ───────────────────────────────────────────────────
+// ── Prompts (Taxonomy v3) ─────────────────────────────────────
 
-const OUTCOME_SYSTEM = `You are a call quality analyst for a pay-per-call network. Your job is to classify call outcomes from transcripts.
+const OUTCOME_SYSTEM = `You are a call quality analyst for a pay-per-call network. Classify the call outcome from the transcript.
 
-CLASSIFICATION RULES (follow in order):
-1. audio_issue, ivr_hangup, voicemail, agent_not_available take priority over caller_hangup.
-2. Within the quoted_/undecided/not_interested family: check if a specific price was stated. If yes, use the quoted_ version. If no price, use the plain version.
-3. caller_hangup is the fallback for unexplained disconnect only — not a default for short or unclear calls.
-4. other is last resort. Always include a one-line note if you use it.
+Each call receives exactly one outcome. Follow the priority order below — stop at the first step that applies.
+
+PRIORITY ORDER:
+1. is_test flag or caller confirms test call → test
+2. No agent connection (IVR only, caller dropped before live agent) → ivr_hangup
+3. Was a specific price or quote stated or actively being gathered?
+   YES →
+     - Sale confirmed (payment taken, booking with payment, date+time+payment) → sale
+     - Specific date AND time confirmed by both parties → appointment
+     - Caller expressed clear interest but no booking → quoted_interested
+     - Caller undecided, wants to think/compare → quoted_undecided
+     - Caller explicitly cited price as too high → quoted_too_expensive
+     - Caller explicitly declined for a non-price reason → quoted_not_interested
+     - Call ended abruptly with no explanation after price → quoted_abandoned
+   NO → continue
+4. Did the call fail due to publisher routing?
+   - Caller mentions a specific named business they tried to reach, OR carrier/recycled number → misrouted
+   - Caller's vertical need belongs in a different vertical that exists in the network → publisher_wrong_category
+   - Caller was confused by a misleading ad → caller_confused
+   - Caller references an existing account/order/invoice with this advertiser → customer_service
+   - Caller is a vendor trying to sell to the advertiser → soliciting
+5. Did the call fail due to advertiser capability?
+   - Correct vertical but this advertiser's service is too narrow → advertiser_service_mismatch
+   - Agent/advertiser confirmed they don't service caller's location → outside_geo
+   - No live agent answered (hold queue, system message) → agent_not_available
+   - Voicemail greeting played → voicemail
+   - Agent explicitly requested to call caller back → agent_callback
+   - Message/agent confirmed business is closed at time of call → outside_hours
+6. Did agent confusion cause the call to fail?
+   - Agent (not caller) caused failure by not understanding caller's need or their own service → agent_confused
+7. Genuine conversation but no outcome?
+   - Caller engaged, inconclusive end, no price → undecided
+   - Caller explicitly declined, no price → not_interested
+   - Agent referred caller to a specific alternative provider → referral
+   - Explicit callback commitment from either side → caller_callback
+8. Call ended with no explanation?
+   - Short call, no real conversation, unexplained disconnect → caller_hangup
+   - Audio failure confirmed (static, couldn't hear) → audio_issue
+9. Nothing above fits → other (you MUST include a one-line outcome_note)
 
 VALID OUTCOMES:
 ${VALID_OUTCOMES.join(', ')}
 
-OUTCOME DEFINITIONS:
-- sale: Caller completed a purchase, OR financial/payment information was actually exchanged, OR a specific pickup/delivery date and time was scheduled.
-- appointment: Caller and agent agreed on a specific date and time for a service technician or representative to meet the caller.
-- quoted_interested: Agent provided a specific price, caller expressed clear intent to move forward, but call ended before payment or confirmed schedule.
-- quoted_undecided: Agent provided a specific price, caller stated they need time to think or consult someone. Only use if price was given.
-- quoted_too_expensive: Agent provided a specific price, caller explicitly cited price as reason for not proceeding.
-- quoted_not_interested: Agent provided a specific price, caller declined for a reason other than price. Only use if price was given.
-- undecided: Caller needs time to think. Only use if NO specific price was given.
-- not_interested: Caller declined for a reason unrelated to cost. Only use if NO price was given.
-- caller_callback: Caller stated they would call back later.
-- agent_callback: Agent told caller someone would call them back.
-- caller_hangup: FALLBACK only — caller disconnected before any other outcome applies.
-- ivr_hangup: Caller stuck in automated menu, no input registered, disconnected without reaching live agent.
-- voicemail: Call answered by recorded greeting prompting caller to leave a message. Must have explicit transcript evidence.
-- agent_not_available: Caller on hold or in queue, call ends before live agent ever speaks, no voicemail heard.
-- audio_issue: Call could not proceed due to poor connection quality or language barrier.
-- outside_geo: Caller states their location AND agent explicitly states the business does not service that area. Both must be present.
-- wrong_category: Caller states what service they want AND agent explicitly states business does not offer it.
-- misrouted: Caller or agent explicitly states caller reached the wrong business.
-- caller_confused: Caller explicitly expresses confusion about why they were connected — asks "who is this?" or states they don't know why they're talking to this agent.
-- agent_confused: Agent explicitly states they don't understand why the caller is calling, cannot find caller's record, or asks caller to explain why they reached this business.
-- customer_service: Caller explicitly identifies as an existing customer contacting the business about an existing relationship.
-- soliciting: Caller is attempting to sell something to the business, not seeking to purchase.
-- referral: Agent, unable to help directly, referred caller to a different business or number.
-- outside_hours: Agent explicitly states the business is closed or outside business hours.
-- test: Call originated from internal QA or test infrastructure (determined from system metadata, not transcript).
-- other: Call doesn't fit any outcome above. Include a one-line note.
+KEY DEFINITIONS (apply literally from transcript evidence):
+- sale: Transaction completed — purchase agreed AND payment taken or booking confirmed with payment details, OR specific date+time scheduled with payment confirmed.
+- appointment: Specific date AND time confirmed by BOTH parties before call ends. Vague "next week" or "sometime" is NOT an appointment.
+- quoted_interested: Price stated + caller said yes/interested/send details — but no booking completed.
+- quoted_undecided: Price stated + caller said let me think/compare/discuss. Do NOT use if caller clearly declined.
+- quoted_too_expensive: Price stated + caller explicitly cited cost as the reason (too expensive, too high, double what I pay, can't afford).
+- quoted_not_interested: Price stated + caller explicitly declined for a reason OTHER than price.
+- quoted_abandoned: Price stated or being gathered + call ended abruptly with no reason from caller. Fraud signal.
+- not_interested: Caller declined with NO price given.
+- undecided: Genuine conversation, NO price given, call ended inconclusively.
+- caller_hangup: LAST RESORT for unexplained short disconnects only. No conversation, no price, no stated reason. Do NOT use as default.
+- publisher_wrong_category: Caller's need belongs in a different vertical AND that vertical exists in the network. Test: would the same call succeed in the correct vertical?
+- misrouted: Caller names a specific business they were trying to reach. OR call has no plausible connection to the vertical (carrier/recycled number).
+- caller_confused: Caller's stated need substantially differs from the vertical reached, and the confusion appears to come from the ad. Not just a quick clarifying question.
+- customer_service: Caller references an existing order, account, invoice, or prior service with THIS specific advertiser.
+- soliciting: Caller is trying to sell something TO the advertiser. Requires clear evidence — if unclear, use caller_confused.
+- advertiser_service_mismatch: Vertical is correct. This specific advertiser's offering is too narrow. A different advertiser in the same vertical could have helped.
+- outside_geo: Agent or advertiser explicitly confirmed they do NOT service caller's location. Caller volunteering their location alone is not enough.
+- agent_not_available: No live agent answered — hold queue message, "all agents busy," or system failed to connect. Do NOT use if voicemail played.
+- voicemail: Voicemail greeting played and caller could leave a message.
+- outside_hours: Automated message or agent confirmed business is closed or not taking calls at this time.
+- agent_callback: Agent (not caller) explicitly stated they or a specialist will call the caller back.
+- agent_confused: Agent caused the call to fail because they did not understand the caller's request OR their own company's services. Agent must be the source of confusion.
+- ivr_hangup: Caller was in IVR menu and disconnected before any agent connection.
+- other: Last resort only. Every use REQUIRES a one-line outcome_note.
 
 Respond with valid JSON only:
 {
@@ -109,31 +145,33 @@ Respond with valid JSON only:
   "outcome_note": "<required only if outcome is 'other', otherwise null>"
 }`;
 
-const COMPLIANCE_SYSTEM = `You are a compliance analyst for a pay-per-call network. Your job is to detect compliance issues in call transcripts.
+const COMPLIANCE_SYSTEM = `You are a compliance analyst for a pay-per-call network. Detect compliance issues in the call transcript.
 
 FLAG DEFINITIONS:
-- outbound_dial: Evidence that the caller was reached via an outbound dial rather than calling in voluntarily (e.g. caller says "you called me", "I got a call from this number").
+- outbound_dial: Caller indicates they did not place this call — someone called them first (e.g. "you called me", "I got a call from this number", "someone from your company called me").
 - facebook_marketplace: Any mention of Facebook, Facebook Marketplace, or a Facebook ad/listing as the reason for calling.
 - angry_caller: Caller is hostile, aggressive, or explicitly upset. Often coincides with outbound_dial.
-- wrong_business: Caller explicitly states they were trying to reach a different, specific business (e.g. "I was trying to call Terminix, not you").
-- incentivized_caller: Caller mentions being promised money, a gift card, a reward, or any other incentive for making the call.
-- geo_mismatch: The zip code or location stated by the caller during the call does not match the zip code passed in the transaction data (provided as context). Only flag if the caller explicitly states a zip code or city/state AND it clearly differs from the transaction zip.
+- wrong_business: Caller explicitly states they were trying to reach a different, specific named business (e.g. "I was trying to call Terminix, not you").
+- geo_mismatch: Caller explicitly states a zip code or city/state that clearly differs from the transaction zip provided in context. Both signals must be present — caller's stated location AND a clear mismatch with transaction zip.
+- duplicate_caller: Same caller number appears in a different vertical or from a different publisher within 48 hours (detected externally — do not flag from transcript alone).
+
+Also evaluate: suspicious_call — true if the caller does not appear to be a genuine lead (testing the system, probing without intent to buy, or other ulterior motive).
 
 Respond with valid JSON only:
 {
   "flags": ["flag1", "flag2"],
-  "flag_notes": {
-    "flag_name": "brief reason why this was flagged"
-  }
+  "flag_notes": { "flag_name": "brief reason why this was flagged" },
+  "suspicious_call": false,
+  "suspicious_note": null
 }
 
-If no flags apply, return: { "flags": [], "flag_notes": {} }`;
+If no flags apply, return: { "flags": [], "flag_notes": {}, "suspicious_call": false, "suspicious_note": null }`;
 
 const COMBINED_SYSTEM = `You are a call quality and compliance analyst for a pay-per-call network. Analyze the transcript and return both an outcome classification and compliance flags.
 
-${OUTCOME_SYSTEM.replace('Respond with valid JSON only:', '').trim()}
+${OUTCOME_SYSTEM.replace('Respond with valid JSON only:', '').replace(/\{[\s\S]*?\}$/, '').trim()}
 
-${COMPLIANCE_SYSTEM.replace('Respond with valid JSON only:', '').trim()}
+${COMPLIANCE_SYSTEM.replace('Respond with valid JSON only:', '').replace(/\{[\s\S]*?\}[\s\S]*$/, '').trim()}
 
 Respond with valid JSON only:
 {
@@ -141,7 +179,9 @@ Respond with valid JSON only:
   "summary": "<2-3 sentence summary>",
   "outcome_note": "<required only if outcome is 'other', otherwise null>",
   "flags": ["flag1", "flag2"],
-  "flag_notes": { "flag_name": "brief reason" }
+  "flag_notes": { "flag_name": "brief reason" },
+  "suspicious_call": false,
+  "suspicious_note": null
 }`;
 
 // ── Load prompt from Supabase ─────────────────────────────────
