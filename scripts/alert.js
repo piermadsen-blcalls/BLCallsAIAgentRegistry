@@ -133,88 +133,126 @@ async function main() {
 
     console.log(`\n${mgr.manager_name} (${lookback}d: ${startISO} → ${endISO})`);
 
-    // 3. Fetch all AI-processed calls for the date window, filter by account name in JS.
-    //    (PostgREST OR filter can't handle account names with spaces/commas/parens.)
+    // Prior period for comparison (revenue / volume anomalies)
+    const priorEndDate   = new Date(startDate); priorEndDate.setDate(priorEndDate.getDate() - 1);
+    const priorStartDate = new Date(priorEndDate); priorStartDate.setDate(priorStartDate.getDate() - (lookback - 1));
+    const priorStartISO  = toISO(priorStartDate);
+    const priorEndISO    = toISO(priorEndDate);
+
     const advSet = accounts.advertisers;
     const pubSet = accounts.publishers;
 
-    const PAGE = 1000;
-    let allCalls = [];
-    let offset = 0;
-    while (true) {
-      const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
-        `&ai_processed_at=not.is.null` +
-        `&created_at=gte.${startISO}T00:00:00` +
-        `&created_at=lte.${endISO}T23:59:59`;
-      const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
-      if (!batch || !batch.length) break;
-      // Keep only calls belonging to this manager's accounts
-      const relevant = batch.filter(c =>
-        advSet.has(c.advertiser_name) || pubSet.has(c.publisher_name)
-      );
-      allCalls = allCalls.concat(relevant);
-      if (batch.length < PAGE) break;
-      offset += PAGE;
+    // 3. Fetch current + prior period calls (all calls, no AI filter)
+    async function fetchPeriodCalls(fromISO, toISO) {
+      const PAGE = 1000;
+      let results = [], offset = 0;
+      while (true) {
+        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,duration,result,advertiser_payin,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
+          `&created_at=gte.${fromISO}T00:00:00` +
+          `&created_at=lte.${toISO}T23:59:59`;
+        const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
+        if (!batch || !batch.length) break;
+        results = results.concat(batch.filter(c => advSet.has(c.advertiser_name) || pubSet.has(c.publisher_name)));
+        if (batch.length < PAGE) break;
+        offset += PAGE;
+      }
+      return results;
     }
 
-    console.log(`  ${allCalls.length} AI-processed calls fetched`);
-    if (!allCalls.length) continue;
+    const [allCalls, priorCalls] = await Promise.all([
+      fetchPeriodCalls(startISO, endISO),
+      fetchPeriodCalls(priorStartISO, priorEndISO)
+    ]);
 
-    // 4. Categorise calls
-    const flaggedCalls = allCalls.filter(c => {
-      const cats = categoriseFlags(c.flags);
-      return cats.compliance || cats.dm || cats.conversion || scoreFlagged(c);
+    console.log(`  ${allCalls.length} calls (current) / ${priorCalls.length} calls (prior)`);
+    if (!allCalls.length && !priorCalls.length) continue;
+
+    // 4. Aggregate by account for both periods
+    function aggregateByAccount(calls) {
+      const map = {};
+      for (const c of calls) {
+        const isAdv = advSet.has(c.advertiser_name);
+        const name  = isAdv ? c.advertiser_name : c.publisher_name;
+        const type  = isAdv ? 'advertiser' : 'publisher';
+        if (!name) continue;
+        if (!map[name]) map[name] = { type, total: 0, connected: 0, revenue: 0, compliance: [], dm: [], aiFlags: [] };
+        const e = map[name];
+        e.total++;
+        const result = (c.result || '').toLowerCase();
+        if (result.includes('connect') || (c.duration || 0) > 0) e.connected++;
+        e.revenue += c.advertiser_payin || 0;
+        const cats = categoriseFlags(c.flags);
+        if (cats.compliance) e.compliance.push(c);
+        if (cats.dm)         e.dm.push(c);
+        if (cats.compliance || cats.dm || cats.conversion || scoreFlagged(c)) e.aiFlags.push(c);
+      }
+      return map;
+    }
+
+    const curr  = aggregateByAccount(allCalls);
+    const prior = aggregateByAccount(priorCalls);
+
+    // 5. Determine which accounts need alerting
+    const allAccountNames = new Set([...Object.keys(curr), ...Object.keys(prior)]);
+    const alertedAccounts = [];
+
+    for (const name of allAccountNames) {
+      const c = curr[name]  || { type: advSet.has(name) ? 'advertiser' : 'publisher', total: 0, connected: 0, revenue: 0, compliance: [], dm: [], aiFlags: [] };
+      const p = prior[name] || { type: c.type, total: 0, connected: 0, revenue: 0, compliance: [], dm: [], aiFlags: [] };
+
+      const reasons = [];
+
+      // Volume drop ≥ 30% vs prior (only flag drops, not spikes)
+      if (p.total >= 10 && c.total < p.total * 0.7) {
+        const pct = Math.round((1 - c.total / p.total) * 100);
+        reasons.push({ type: 'volume', label: `Volume down ${pct}%`, detail: `${c.total} calls vs ${p.total} prior` });
+      }
+
+      // Revenue drop ≥ 20% vs prior
+      if (p.revenue >= 100 && c.revenue < p.revenue * 0.8) {
+        const pct = Math.round((1 - c.revenue / p.revenue) * 100);
+        reasons.push({ type: 'revenue', label: `Revenue down ${pct}%`, detail: `$${Math.round(c.revenue)} vs $${Math.round(p.revenue)} prior` });
+      }
+
+      // Conversion rate drop ≥ 10pp vs prior (only when enough volume)
+      const currConv  = c.total > 0 ? c.connected / c.total : null;
+      const priorConv = p.total > 0 ? p.connected / p.total : null;
+      if (currConv !== null && priorConv !== null && p.total >= 10) {
+        const drop = (priorConv - currConv) * 100;
+        if (drop >= 10) {
+          reasons.push({ type: 'conversion', label: `Conversion down ${drop.toFixed(1)}pp`, detail: `${(currConv*100).toFixed(1)}% vs ${(priorConv*100).toFixed(1)}% prior` });
+        }
+      }
+
+      // AI compliance / DM flags (only if AI has run on any calls)
+      if (c.compliance.length > 0) reasons.push({ type: 'compliance', label: `${c.compliance.length} compliance flag${c.compliance.length !== 1 ? 's' : ''}`, detail: '' });
+      if (c.dm.length > 0)         reasons.push({ type: 'dm',         label: `${c.dm.length} DM / suspicious call${c.dm.length !== 1 ? 's' : ''}`, detail: '' });
+
+      if (reasons.length > 0) alertedAccounts.push({ name, type: c.type, curr: c, prior: p, reasons });
+    }
+
+    // Sort by severity: compliance/dm first, then revenue, then volume
+    const priority = { compliance: 0, dm: 1, revenue: 2, conversion: 3, volume: 4 };
+    alertedAccounts.sort((a, b) => {
+      const pa = Math.min(...a.reasons.map(r => priority[r.type] ?? 9));
+      const pb = Math.min(...b.reasons.map(r => priority[r.type] ?? 9));
+      return pa - pb;
     });
 
-    console.log(`  ${flaggedCalls.length} flagged calls`);
-    if (!flaggedCalls.length) {
-      console.log(`  No flags → no email sent.`);
+    if (!alertedAccounts.length) {
+      console.log(`  No anomalies detected → no email sent.`);
       continue;
     }
 
-    // Aggregate by account
-    const byAccount = {};  // account_name -> { type, total, flagged, complianceCalls, dmCalls, convCalls, scoreCalls }
-    for (const c of allCalls) {
-      // Which account does this call belong to for this manager?
-      const isAdvAcct = advList.includes(c.advertiser_name);
-      const isPubAcct = pubList.includes(c.publisher_name);
-      const accountName = isAdvAcct ? c.advertiser_name : c.publisher_name;
-      const accountType = isAdvAcct ? 'advertiser' : 'publisher';
-      if (!accountName) continue;
+    console.log(`  ${alertedAccounts.length} account${alertedAccounts.length !== 1 ? 's' : ''} need alerting:`);
+    alertedAccounts.forEach(a => console.log(`    ${a.name}: ${a.reasons.map(r => r.label).join(', ')}`));
 
-      if (!byAccount[accountName]) {
-        byAccount[accountName] = { type: accountType, total: 0, compliance: [], dm: [], conversion: [], score: [] };
-      }
-      const entry = byAccount[accountName];
-      entry.total++;
-
-      const cats = categoriseFlags(c.flags);
-      if (cats.compliance) entry.compliance.push(c);
-      if (cats.dm)         entry.dm.push(c);
-      if (cats.conversion) entry.conversion.push(c);
-      if (scoreFlagged(c)) entry.score.push(c);
-    }
-
-    // Only include accounts that actually have flags
-    const flaggedAccounts = Object.entries(byAccount)
-      .filter(([, v]) => v.compliance.length || v.dm.length || v.conversion.length || v.score.length)
-      .sort((a, b) => {
-        const totalA = a[1].compliance.length + a[1].dm.length + a[1].conversion.length + a[1].score.length;
-        const totalB = b[1].compliance.length + b[1].dm.length + b[1].conversion.length + b[1].score.length;
-        return totalB - totalA;
-      });
-
-    if (!flaggedAccounts.length) {
-      console.log(`  No accounts with flags → skip.`);
-      continue;
-    }
-
-    // 5. Build email
+    // 5. Build email + subject
     const periodLabel = dateRangeLabel(startISO, endISO);
-    const emailHtml   = buildAlertEmail(mgr, flaggedAccounts, allCalls.length, periodLabel);
-    const subject     = buildSubject(flaggedAccounts, periodLabel);
+    const subject     = buildSubject(alertedAccounts, periodLabel);
+    const emailHtml   = buildAlertEmail(mgr, alertedAccounts, allCalls.length, periodLabel);
 
-    // 6. Check alert log (has this manager been alerted in the last 24h for the same period?)
+    // 6. Check alert log — skip if already sent for this period
     const recentLog = await sb(
       `alert_log?manager_id=eq.${s.manager_id}&period_start=eq.${startISO}&select=id&limit=1`
     ).catch(() => null);
@@ -225,37 +263,34 @@ async function main() {
 
     // 7. Fire webhook
     const payload = {
-      // ASCND routing fields
-      to_email:   mgr.manager_email,
-      to_name:    mgr.manager_name,
-      manager:    mgr.manager_name,        // "it can have a manager field"
-      first_name: mgr.manager_name.split(' ')[0],
+      to_email:    mgr.manager_email,
+      to_name:     mgr.manager_name,
+      manager:     mgr.manager_name,
+      first_name:  mgr.manager_name.split(' ')[0],
       subject,
-
-      // Structured data for ASCND template use
       period_label: periodLabel,
       period_start: startISO,
       period_end:   endISO,
       total_calls:  allCalls.length,
-      flagged_count: flaggedCalls.length,
-      accounts: flaggedAccounts.map(([name, v]) => ({
-        name,
-        type:             v.type,
-        total_calls:      v.total,
-        compliance_count: v.compliance.length,
-        dm_count:         v.dm.length,
-        conversion_count: v.conversion.length,
-        score_count:      v.score.length
+      accounts: alertedAccounts.map(a => ({
+        name:    a.name,
+        type:    a.type,
+        reasons: a.reasons.map(r => ({ type: r.type, label: r.label, detail: r.detail })),
+        curr_calls:    a.curr.total,
+        prior_calls:   a.prior.total,
+        curr_revenue:  Math.round(a.curr.revenue * 100) / 100,
+        prior_revenue: Math.round(a.prior.revenue * 100) / 100,
+        compliance_count: a.curr.compliance.length,
+        dm_count:         a.curr.dm.length
       })),
-
-      // Full HTML body — ASCND can use this directly
       email_body_html: emailHtml
     };
 
     if (DRY_RUN) {
       console.log(`  DRY RUN — would POST to webhook:`);
-      console.log(`  to: ${payload.to_email} | subject: ${payload.subject}`);
-      console.log(`  accounts with flags: ${flaggedAccounts.map(([n]) => n).join(', ')}`);
+      console.log(`  to: ${payload.to_email}`);
+      console.log(`  subject: ${payload.subject}`);
+      alertedAccounts.forEach(a => console.log(`    • ${a.name}: ${a.reasons.map(r => r.label).join(', ')}`));
     } else {
       const res = await fetch(WEBHOOK_URL, {
         method: 'POST',
@@ -280,12 +315,11 @@ async function main() {
         period_start:  startISO,
         period_end:    endISO,
         total_calls:   allCalls.length,
-        flagged_count: flaggedCalls.length,
+        flagged_count: alertedAccounts.length,
         dry_run:       DRY_RUN
       })
     }).catch(e => console.warn('  Could not write alert_log:', e.message));
 
-    // Update last_sent_at in manager_alert_settings
     await sb(`manager_alert_settings?manager_id=eq.${s.manager_id}`, {
       method: 'PATCH',
       body: JSON.stringify({ last_sent_at: new Date().toISOString() })
@@ -298,50 +332,40 @@ async function main() {
 }
 
 // ── Email builder ─────────────────────────────────────────────────────────────
-function buildSubject(flaggedAccounts, periodLabel) {
-  const totalFlags = flaggedAccounts.reduce((s, [, v]) =>
-    s + v.compliance.length + v.dm.length + v.conversion.length + v.score.length, 0);
-  const accountCount = flaggedAccounts.length;
-  return `Compliance alert: ${totalFlags} flagged call${totalFlags !== 1 ? 's' : ''} across ${accountCount} account${accountCount !== 1 ? 's' : ''} — ${periodLabel}`;
+function buildSubject(alertedAccounts, periodLabel) {
+  const count = alertedAccounts.length;
+  return `Account alert: ${count} account${count !== 1 ? 's' : ''} need attention — ${periodLabel}`;
 }
 
-function buildAlertEmail(mgr, flaggedAccounts, totalCalls, periodLabel) {
+function buildAlertEmail(mgr, alertedAccounts, totalCalls, periodLabel) {
   const firstName = mgr.manager_name.split(' ')[0];
-  const totalFlags = flaggedAccounts.reduce((s, [, v]) =>
-    s + v.compliance.length + v.dm.length + v.conversion.length + v.score.length, 0);
-
-  const S = 'font-family:Arial,sans-serif;';
-  const navy = '#1A2E4A';
-  const mint = '#00C896';
-  const coral = '#993C1D';
-  const amber = '#854F0B';
-  const teal = '#0F6E56';
-  const muted = '#6B6760';
+  const S      = 'font-family:Arial,sans-serif;';
+  const navy   = '#1A2E4A';
+  const coral  = '#993C1D';
+  const amber  = '#854F0B';
+  const teal   = '#0F6E56';
+  const muted  = '#6B6760';
   const border = '#E0DDD6';
-  const bg = '#F7F5F0';
+  const bg     = '#F7F5F0';
 
-  function flagRow(icon, color, label, count, calls) {
-    if (!count) return '';
-    const callWord = count === 1 ? 'call' : 'calls';
-    return `<tr>
-      <td style="${S}padding:6px 12px 6px 0;font-size:13px;color:${muted};white-space:nowrap">${icon} ${label}</td>
-      <td style="${S}padding:6px 0;font-size:13px;font-weight:600;color:${color};text-align:right;white-space:nowrap">${count} ${callWord}</td>
-    </tr>`;
-  }
+  const iconMap = { compliance: '⚠', dm: '🔍', revenue: '↓', conversion: '↓', volume: '↓' };
+  const colorMap = { compliance: coral, dm: amber, revenue: coral, conversion: amber, volume: muted };
 
-  const accountCards = flaggedAccounts.map(([name, v]) => {
-    const typeLabel = v.type === 'advertiser' ? 'Advertiser' : 'Publisher';
-    const rows = [
-      flagRow('⚠', coral,  'Compliance flags', v.compliance.length),
-      flagRow('🔍', amber,  'DM / suspicious',  v.dm.length),
-      flagRow('↓',  teal,  'Conversion issues', v.conversion.length),
-      flagRow('📊', muted, 'Low quality scores',v.score.length)
-    ].filter(Boolean).join('');
+  const accountCards = alertedAccounts.map(a => {
+    const typeLabel = a.type === 'advertiser' ? 'Advertiser' : 'Publisher';
+    const rows = a.reasons.map(r => {
+      const icon  = iconMap[r.type]  || '•';
+      const color = colorMap[r.type] || muted;
+      return `<tr>
+        <td style="${S}padding:5px 12px 5px 0;font-size:13px;color:${muted}">${icon} ${r.label}</td>
+        <td style="${S}padding:5px 0;font-size:12px;color:${color};text-align:right">${r.detail}</td>
+      </tr>`;
+    }).join('');
 
     return `<div style="margin-bottom:12px;border:1px solid ${border};border-radius:6px;overflow:hidden">
       <div style="${S}background:#fff;padding:10px 14px;border-bottom:1px solid ${border};display:flex;align-items:baseline;justify-content:space-between">
-        <span style="${S}font-size:14px;font-weight:600;color:${navy}">${name}</span>
-        <span style="${S}font-size:10px;color:${muted};text-transform:uppercase;letter-spacing:0.4px">${typeLabel} · ${v.total} calls total</span>
+        <span style="${S}font-size:14px;font-weight:600;color:${navy}">${a.name}</span>
+        <span style="${S}font-size:10px;color:${muted};text-transform:uppercase;letter-spacing:0.4px">${typeLabel} · ${a.curr.total} calls</span>
       </div>
       <div style="background:${bg};padding:10px 14px">
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows}</table>
@@ -350,18 +374,14 @@ function buildAlertEmail(mgr, flaggedAccounts, totalCalls, periodLabel) {
   }).join('');
 
   return `<div style="${S}max-width:600px;margin:0 auto;color:#1A1816">
-    <h2 style="${S}font-size:22px;font-weight:400;margin:0 0 6px">${totalFlags} flagged call${totalFlags !== 1 ? 's' : ''} need your attention</h2>
+    <h2 style="${S}font-size:22px;font-weight:400;margin:0 0 6px">${alertedAccounts.length} account${alertedAccounts.length !== 1 ? 's' : ''} need your attention</h2>
     <p style="${S}font-size:13px;color:${muted};margin:0 0 20px;line-height:1.6">
-      Hi ${firstName}, here's your compliance summary for <strong>${periodLabel}</strong>.
-      ${totalFlags} of ${totalCalls} AI-processed calls across your accounts were flagged for review.
+      Hi ${firstName}, here's your account alert for <strong>${periodLabel}</strong> across ${totalCalls.toLocaleString()} calls.
     </p>
-
     <div style="margin-bottom:20px">${accountCards}</div>
-
     <p style="${S}font-size:12px;color:${muted};line-height:1.6;border-top:1px solid ${border};padding-top:14px;margin-top:14px">
-      These flags were detected automatically by the Buyerlink AI compliance agent.
-      Review flagged calls in the compliance dashboard before taking action.
-      Reply to this email or reach out to the team with any questions.
+      Generated automatically by the Buyerlink Calls AI Agent Registry.
+      Review your accounts in the dashboard or reply with any questions.
     </p>
   </div>`;
 }
