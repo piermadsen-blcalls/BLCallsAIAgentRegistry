@@ -147,7 +147,7 @@ async function main() {
       const PAGE = 1000;
       let results = [], offset = 0;
       while (true) {
-        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,duration,advertiser_payin,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
+        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,duration,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
           `&created_at=gte.${fromISO}T00:00:00` +
           `&created_at=lte.${toISO}T23:59:59`;
         const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
@@ -179,7 +179,7 @@ async function main() {
         const e = map[name];
         e.total++;
         if ((c.duration || 0) > 0) e.connected++;
-        e.revenue += c.advertiser_payin || 0;
+        // revenue column not in schema — omitted
         const cats = categoriseFlags(c.flags);
         if (cats.compliance) e.compliance.push(c);
         if (cats.dm)         e.dm.push(c);
