@@ -133,17 +133,10 @@ async function main() {
 
     console.log(`\n${mgr.manager_name} (${lookback}d: ${startISO} → ${endISO})`);
 
-    // 3. Fetch AI-processed calls for this manager's accounts
-    //    We query by advertiser OR publisher names via OR filter
-    const advList = [...accounts.advertisers];
-    const pubList = [...accounts.publishers];
-
-    // Build OR filter for Supabase (advertiser_name OR publisher_name)
-    const orParts = [
-      ...advList.map(n => `advertiser_name.eq.${n}`),
-      ...pubList.map(n => `publisher_name.eq.${n}`)
-    ];
-    if (!orParts.length) continue;
+    // 3. Fetch all AI-processed calls for the date window, filter by account name in JS.
+    //    (PostgREST OR filter can't handle account names with spaces/commas/parens.)
+    const advSet = accounts.advertisers;
+    const pubSet = accounts.publishers;
 
     const PAGE = 1000;
     let allCalls = [];
@@ -152,11 +145,14 @@ async function main() {
       const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
         `&ai_processed_at=not.is.null` +
         `&created_at=gte.${startISO}T00:00:00` +
-        `&created_at=lte.${endISO}T23:59:59` +
-        `&or=(${orParts.map(p => encodeURIComponent(p)).join(',')})`;
+        `&created_at=lte.${endISO}T23:59:59`;
       const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
       if (!batch || !batch.length) break;
-      allCalls = allCalls.concat(batch);
+      // Keep only calls belonging to this manager's accounts
+      const relevant = batch.filter(c =>
+        advSet.has(c.advertiser_name) || pubSet.has(c.publisher_name)
+      );
+      allCalls = allCalls.concat(relevant);
       if (batch.length < PAGE) break;
       offset += PAGE;
     }
