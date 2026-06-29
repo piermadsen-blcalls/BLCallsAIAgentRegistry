@@ -1,0 +1,32 @@
+name: Send Compliance Alerts
+
+on:
+  schedule:
+    - cron: '0 14 * * 1,3,5'  # Mon, Wed, Fri at 2pm UTC (~8am MT) — after process runs at 8am UTC
+  workflow_dispatch:
+    inputs:
+      manager_id:
+        description: 'Limit to one manager UUID (leave blank for all)'
+        default: ''
+      dry_run:
+        description: 'true to log without sending webhook'
+        default: 'false'
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Send alerts
+        env:
+          SUPABASE_URL:             ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY:     ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ASCND_ALERT_WEBHOOK_URL:  ${{ secrets.ASCND_ALERT_WEBHOOK_URL }}
+          ALERT_MANAGER_ID:         ${{ github.event.inputs.manager_id || '' }}
+          DRY_RUN:                  ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/alert.js
