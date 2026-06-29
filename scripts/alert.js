@@ -147,7 +147,7 @@ async function main() {
       const PAGE = 1000;
       let results = [], offset = 0;
       while (true) {
-        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,duration,result,advertiser_payin,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
+        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,duration,advertiser_payin,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
           `&created_at=gte.${fromISO}T00:00:00` +
           `&created_at=lte.${toISO}T23:59:59`;
         const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
@@ -178,8 +178,7 @@ async function main() {
         if (!map[name]) map[name] = { type, total: 0, connected: 0, revenue: 0, compliance: [], dm: [], aiFlags: [] };
         const e = map[name];
         e.total++;
-        const result = (c.result || '').toLowerCase();
-        if (result.includes('connect') || (c.duration || 0) > 0) e.connected++;
+        if ((c.duration || 0) > 0) e.connected++;
         e.revenue += c.advertiser_payin || 0;
         const cats = categoriseFlags(c.flags);
         if (cats.compliance) e.compliance.push(c);
