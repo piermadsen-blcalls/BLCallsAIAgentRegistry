@@ -47,8 +47,8 @@ const PATCH_MAX_PER_RUN       = parseInt(process.env.PATCH_MAX || '6000', 10);
 // ── Windows ───────────────────────────────────────────────────────────────────
 
 function getSyncWindow() {
-  if (process.env.SYNC_FROM && process.env.SYNC_TO) {
-    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO };
+  if (process.env.SYNC_FROM) {
+    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO || new Date().toISOString() };
   }
   const now = new Date();
   const twoDaysAgo = new Date(now);
