@@ -55,8 +55,14 @@ async function canoePost(path, body) {
     headers: { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${await res.text()}`);
-  return res.json();
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${text}`);
+  if (!text) throw new Error(`Canoe ${path} returned empty response (status ${res.status})`);
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Canoe ${path} returned invalid JSON (status ${res.status}): ${text.slice(0, 200)}`);
+  }
 }
 
 async function fetchPLTPage(page, from, to) {
