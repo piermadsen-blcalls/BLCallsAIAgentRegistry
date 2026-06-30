@@ -19,6 +19,19 @@
 
 const https = require('https');
 const zlib  = require('zlib');
+const fs    = require('fs');
+const path  = require('path');
+
+// Local dev convenience: load scripts/.env if present (gitignored).
+// In GitHub Actions this file doesn't exist and real secrets are used.
+(function loadDotEnv() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+})();
 
 const CANOE_API_URL        = process.env.CANOE_API_URL;
 const CANOE_API_KEY        = process.env.CANOE_API_KEY;
@@ -28,6 +41,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const PAGE_SIZE               = 100;
 const UPSERT_BATCH            = 100;
 const TRANSCRIPTION_LOOKBACK_DAYS = 3;
+const PATCH_MAX_PER_RUN       = 6000;  // cap transcription patches per run (bounded, resumes next run)
 
 // ── Windows ───────────────────────────────────────────────────────────────────
 
@@ -207,8 +221,12 @@ async function sbFetch(path, opts = {}) {
     body: opts.body,
   });
   if (!res.ok) throw new Error(`Supabase ${path} error ${res.status}: ${await res.text()}`);
-  if (opts.method === 'PATCH' || opts.prefer === 'return=minimal') return null;
-  return res.json();
+  // No body to parse for minimal responses (upserts/patches) or 204s.
+  if (res.status === 204) return null;
+  if (opts.prefer && opts.prefer.includes('return=minimal')) return null;
+  if (opts.method === 'PATCH') return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 async function upsertBatch(rows) {
@@ -237,8 +255,11 @@ async function syncCalls() {
       total += batch.length;
     }
 
-    console.log(`  Page ${page}/${pagination.pageCount} — ${data.length} rows, ${total} total`);
-    if (page >= pagination.pageCount) break;
+    const pageCount = pagination?.pageCount;
+    console.log(`  Page ${page}${pageCount ? '/' + pageCount : ''} — ${data.length} rows, ${total} total`);
+
+    // This endpoint may omit pagination; fall back to "short page = last page".
+    if (pageCount ? page >= pageCount : data.length < PAGE_SIZE) break;
     page++;
   }
 
@@ -252,52 +273,58 @@ async function patchTranscriptions() {
   const { from } = getTranscriptionWindow();
   console.log(`\nPass 2: transcription patch — looking back ${TRANSCRIPTION_LOOKBACK_DAYS} days`);
 
-  // Find rows that have a recording_id but no transcription yet
-  const pending = await sbFetch(
-    `canoe_calls?select=id,recording_id&recording_id=not.is.null&transcription=is.null&created_at=gte.${from}&limit=1000`
-  );
+  const FETCH = 1000;                 // rows pulled from Supabase per page
+  const MAX_PER_RUN = PATCH_MAX_PER_RUN;
+  let offset = 0, scanned = 0, patched = 0;
 
-  if (!pending || !pending.length) {
+  while (scanned < MAX_PER_RUN) {
+    // Rows with a recording but no transcription yet (newest first).
+    const pending = await sbFetch(
+      `canoe_calls?select=id,recording_id&recording_id=not.is.null&transcription=is.null` +
+      `&created_at=gte.${from}&order=created_at.desc&offset=${offset}&limit=${FETCH}`
+    );
+    if (!pending || !pending.length) break;
+    scanned += pending.length;
+
+    // Fetch the matching recordings in batches of 100
+    for (let i = 0; i < pending.length; i += 100) {
+      const slice = pending.slice(i, i + 100);
+      const { data: recordings } = await fetchRecordingsByIds(slice.map(r => r.recording_id));
+      if (!recordings || !recordings.length) continue;
+
+      const recMap = {};
+      for (const rec of recordings) recMap[rec.id] = rec;
+
+      for (const row of slice) {
+        const rec = recMap[row.recording_id];
+        if (!rec) continue;
+        // Nothing useful to write yet — leave row pending, recheck next run.
+        if (!rec.transcription && !rec.outcome && !rec.summary && !rec.duration) continue;
+
+        await sbFetch(`canoe_calls?id=eq.${row.id}`, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: JSON.stringify({
+            transcription:  rec.transcription  || null,
+            canoe_outcome:  rec.outcome        || null,
+            canoe_summary:  rec.summary        || null,
+            duration:       rec.duration       || null,
+            recording_type: rec.recording_type || null,
+          }),
+        });
+        patched++;
+      }
+    }
+
+    if (pending.length < FETCH) break;
+    offset += FETCH;
+  }
+
+  if (!scanned) {
     console.log('  No pending transcriptions.');
     return;
   }
-
-  console.log(`  ${pending.length} rows need transcription patch.`);
-
-  const recordingIds = pending.map(r => r.recording_id);
-
-  // Fetch recordings in batches of 100
-  let patched = 0;
-  for (let i = 0; i < recordingIds.length; i += 100) {
-    const ids = recordingIds.slice(i, i + 100);
-    const { data: recordings } = await fetchRecordingsByIds(ids);
-    if (!recordings || !recordings.length) continue;
-
-    // Build a map from recording_id → recording data
-    const recMap = {};
-    for (const rec of recordings) recMap[rec.id] = rec;
-
-    // Patch each canoe_calls row that now has transcription data
-    for (const row of pending.slice(i, i + 100)) {
-      const rec = recMap[row.recording_id];
-      if (!rec) continue;
-      // Only patch if transcription arrived or recording metadata is useful
-      if (!rec.transcription && !rec.outcome && !rec.summary && !rec.duration) continue;
-
-      await sbFetch(`canoe_calls?id=eq.${row.id}`, {
-        method: 'PATCH',
-        prefer: 'return=minimal',
-        body: JSON.stringify({
-          transcription:  rec.transcription  || null,
-          canoe_outcome:  rec.outcome        || null,
-          canoe_summary:  rec.summary        || null,
-          duration:       rec.duration       || null,
-          recording_type: rec.recording_type || null,
-        }),
-      });
-      patched++;
-    }
-  }
+  console.log(`  Scanned ${scanned} pending rows.`);
 
   console.log(`Pass 2 complete. ${patched} rows patched with transcription data.`);
 }
