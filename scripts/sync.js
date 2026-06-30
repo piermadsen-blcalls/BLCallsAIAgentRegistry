@@ -22,7 +22,7 @@ const CANOE_API_KEY        = process.env.CANOE_API_KEY;
 const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-const PAGE_SIZE               = 250;
+const PAGE_SIZE               = 100;
 const UPSERT_BATCH            = 100;
 const TRANSCRIPTION_LOOKBACK_DAYS = 3;
 
@@ -68,10 +68,12 @@ async function canoePost(path, body) {
   } catch (e) {
     throw new Error(`Canoe response read failed (status ${res.status}): ${e.message}`);
   }
-  console.log(`  ← body (first 300): ${text.slice(0, 300)}`);
-  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${text}`);
-  if (!text) throw new Error(`Canoe ${path} returned empty response`);
-  return JSON.parse(text);
+  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${text.slice(0, 300)}`);
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Canoe ${path} JSON parse failed — body length ${text.length}, first 300: ${text.slice(0, 300)}`);
+  }
 }
 
 async function fetchPLTPage(page, from, to) {
