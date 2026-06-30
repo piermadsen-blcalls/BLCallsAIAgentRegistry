@@ -49,30 +49,25 @@ function getTranscriptionWindow() {
 
 // ── Canoe API ─────────────────────────────────────────────────────────────────
 
-async function canoePost(path, body) {
-  console.log(`  → POST ${CANOE_API_URL}/${path}`, JSON.stringify(body));
-  let res;
-  try {
-    res = await fetch(`${CANOE_API_URL}/${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY },
-      body: JSON.stringify(body),
-    });
-  } catch (e) {
-    throw new Error(`Canoe fetch failed: ${e.message}`);
-  }
-  console.log(`  ← status ${res.status}`);
-  let text;
-  try {
-    text = await res.text();
-  } catch (e) {
-    throw new Error(`Canoe response read failed (status ${res.status}): ${e.message}`);
-  }
-  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${text.slice(0, 300)}`);
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error(`Canoe ${path} JSON parse failed — body length ${text.length}, first 300: ${text.slice(0, 300)}`);
+async function canoePost(path, body, retries = 4) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${CANOE_API_URL}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '(unreadable)');
+        throw new Error(`Canoe ${path} error ${res.status}: ${text.slice(0, 300)}`);
+      }
+      return await res.json();
+    } catch (e) {
+      if (attempt === retries) throw e;
+      const wait = attempt * 2000;
+      console.warn(`  Attempt ${attempt} failed: ${e.message} — retrying in ${wait}ms`);
+      await new Promise(r => setTimeout(r, wait));
+    }
   }
 }
 
@@ -93,6 +88,7 @@ async function fetchPLTPage(page, from, to) {
     created_at: ['BETWEEN', [from, to]],
     page,
     limit: PAGE_SIZE,
+    stream: 0,
   });
 }
 
