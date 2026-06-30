@@ -100,7 +100,6 @@ function mapPLT(r) {
     zip:                       r.zip,
     city:                      r.city,
     state:                     r.state,
-    country:                   r.country,
     line_type:                 r.line_type,
     keypresses:                r.keypresses,
     ivr_duration:              r.ivr_duration,
