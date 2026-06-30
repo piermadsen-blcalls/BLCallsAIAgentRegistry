@@ -50,19 +50,28 @@ function getTranscriptionWindow() {
 // ── Canoe API ─────────────────────────────────────────────────────────────────
 
 async function canoePost(path, body) {
-  const res = await fetch(`${CANOE_API_URL}/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY },
-    body: JSON.stringify(body),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${text}`);
-  if (!text) throw new Error(`Canoe ${path} returned empty response (status ${res.status})`);
+  console.log(`  → POST ${CANOE_API_URL}/${path}`, JSON.stringify(body));
+  let res;
   try {
-    return JSON.parse(text);
+    res = await fetch(`${CANOE_API_URL}/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY },
+      body: JSON.stringify(body),
+    });
   } catch (e) {
-    throw new Error(`Canoe ${path} returned invalid JSON (status ${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(`Canoe fetch failed: ${e.message}`);
   }
+  console.log(`  ← status ${res.status}`);
+  let text;
+  try {
+    text = await res.text();
+  } catch (e) {
+    throw new Error(`Canoe response read failed (status ${res.status}): ${e.message}`);
+  }
+  console.log(`  ← body (first 300): ${text.slice(0, 300)}`);
+  if (!res.ok) throw new Error(`Canoe ${path} error ${res.status}: ${text}`);
+  if (!text) throw new Error(`Canoe ${path} returned empty response`);
+  return JSON.parse(text);
 }
 
 async function fetchPLTPage(page, from, to) {
