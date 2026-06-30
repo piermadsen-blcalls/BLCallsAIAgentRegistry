@@ -76,8 +76,19 @@ async function canoePost(path, body) {
   }
 }
 
+const PLT_SELECT = [
+  'id','lead_id','publisher_id','publisher_name','promo_number_id','promo_number_name',
+  'ivr_id','ivr_name','api_campaign_id','api_campaign_name','vertical_id','vertical_name',
+  'advertiser_id','advertiser_name','campaign_id','campaign_name',
+  'called_from','called_to','zip','city','state','line_type','keypresses',
+  'ivr_duration','connect_duration','result',
+  'advertiser_payin','advertiser_bid','publisher_payout','publisher_bid',
+  'recording_id','is_test','created_at'
+].join(',');
+
 async function fetchPLTPage(page, from, to) {
   return canoePost('phone-lead-transactions/phone-lead-transactions/get', {
+    select: PLT_SELECT,
     order_by: '-created_at',
     created_at: ['BETWEEN', [from, to]],
     page,
