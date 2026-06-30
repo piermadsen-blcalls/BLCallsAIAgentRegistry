@@ -11,6 +11,9 @@ on:
       sync_to:
         description: 'End of window (ISO). Leave blank for today midnight.'
         default: ''
+      patch_max:
+        description: 'Max transcription patches per run (raise for backfill, e.g. 200000).'
+        default: ''
 
 jobs:
   sync:
@@ -30,4 +33,5 @@ jobs:
           SUPABASE_SERVICE_KEY:  ${{ secrets.SUPABASE_SERVICE_KEY }}
           SYNC_FROM:             ${{ github.event.inputs.sync_from }}
           SYNC_TO:               ${{ github.event.inputs.sync_to }}
+          PATCH_MAX:             ${{ github.event.inputs.patch_max }}
         run: node scripts/sync.js

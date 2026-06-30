@@ -41,7 +41,8 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const PAGE_SIZE               = 100;
 const UPSERT_BATCH            = 100;
 const TRANSCRIPTION_LOOKBACK_DAYS = 3;
-const PATCH_MAX_PER_RUN       = 6000;  // cap transcription patches per run (bounded, resumes next run)
+// Cap transcription scans per run (bounded, resumes next run). Override for backfill via PATCH_MAX.
+const PATCH_MAX_PER_RUN       = parseInt(process.env.PATCH_MAX || '6000', 10);
 
 // ── Windows ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,11 @@ function getSyncWindow() {
 }
 
 function getTranscriptionWindow() {
+  // During a backfill (SYNC_FROM set), patch transcriptions across the whole
+  // synced window — not just the default 3-day lookback.
+  if (process.env.SYNC_FROM) {
+    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO || new Date().toISOString() };
+  }
   const now = new Date();
   const lookback = new Date(now);
   lookback.setUTCDate(lookback.getUTCDate() - TRANSCRIPTION_LOOKBACK_DAYS);
@@ -271,11 +277,11 @@ async function syncCalls() {
 
 async function patchTranscriptions() {
   const { from } = getTranscriptionWindow();
-  console.log(`\nPass 2: transcription patch — looking back ${TRANSCRIPTION_LOOKBACK_DAYS} days`);
+  console.log(`\nPass 2: transcription patch — from ${from}`);
 
   const FETCH = 1000;                 // rows pulled from Supabase per page
   const MAX_PER_RUN = PATCH_MAX_PER_RUN;
-  let offset = 0, scanned = 0, patched = 0;
+  let offset = 0, scanned = 0, patched = 0, failedBatches = 0;
 
   while (scanned < MAX_PER_RUN) {
     // Rows with a recording but no transcription yet (newest first).
@@ -289,7 +295,15 @@ async function patchTranscriptions() {
     // Fetch the matching recordings in batches of 100
     for (let i = 0; i < pending.length; i += 100) {
       const slice = pending.slice(i, i + 100);
-      const { data: recordings } = await fetchRecordingsByIds(slice.map(r => r.recording_id));
+      let recordings;
+      try {
+        ({ data: recordings } = await fetchRecordingsByIds(slice.map(r => r.recording_id)));
+      } catch (e) {
+        // Persistent failure on this batch — log, skip, leave rows pending for next run.
+        failedBatches++;
+        console.warn(`  Skipping batch (offset ${offset}+${i}): ${e.message}`);
+        continue;
+      }
       if (!recordings || !recordings.length) continue;
 
       const recMap = {};
@@ -325,6 +339,7 @@ async function patchTranscriptions() {
     return;
   }
   console.log(`  Scanned ${scanned} pending rows.`);
+  if (failedBatches) console.warn(`  ${failedBatches} batch(es) failed and were skipped — will retry next run.`);
 
   console.log(`Pass 2 complete. ${patched} rows patched with transcription data.`);
 }
