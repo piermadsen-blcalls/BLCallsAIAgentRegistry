@@ -17,6 +17,9 @@
  *   SYNC_TO              - ISO string override for window end
  */
 
+const https = require('https');
+const zlib  = require('zlib');
+
 const CANOE_API_URL        = process.env.CANOE_API_URL;
 const CANOE_API_KEY        = process.env.CANOE_API_KEY;
 const SUPABASE_URL         = process.env.SUPABASE_URL;
@@ -49,23 +52,71 @@ function getTranscriptionWindow() {
 
 // ── Canoe API ─────────────────────────────────────────────────────────────────
 
+// Raw https POST that buffers the full response before parsing.
+// Avoids undici/fetch's flaky handling of this gateway's chunked responses
+// (which surfaced as "Unexpected end of JSON input" / HTTP/2 framing errors).
+function httpsPostRaw(urlStr, bodyStr, headers) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlStr);
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        port:     url.port || 443,
+        path:     url.pathname + url.search,
+        method:   'POST',
+        headers: {
+          ...headers,
+          'Content-Length':  Buffer.byteLength(bodyStr),
+          'Accept':          'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        // HTTP/1.1 only (https module never negotiates HTTP/2)
+        timeout: 120000,
+      },
+      (res) => {
+        const chunks = [];
+        let stream = res;
+        const enc = (res.headers['content-encoding'] || '').toLowerCase();
+        if (enc === 'gzip')        stream = res.pipe(zlib.createGunzip());
+        else if (enc === 'deflate') stream = res.pipe(zlib.createInflate());
+
+        stream.on('data', (c) => chunks.push(c));
+        stream.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          resolve({ status: res.statusCode, text });
+        });
+        stream.on('error', reject);
+        res.on('aborted', () => reject(new Error('response aborted by server')));
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('request timed out')));
+    req.write(bodyStr);
+    req.end();
+  });
+}
+
 async function canoePost(path, body, retries = 4) {
+  const url     = `${CANOE_API_URL}/${path}`;
+  const bodyStr = JSON.stringify(body);
+  const headers = { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY };
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(`${CANOE_API_URL}/${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '(unreadable)');
-        throw new Error(`Canoe ${path} error ${res.status}: ${text.slice(0, 300)}`);
+      const { status, text } = await httpsPostRaw(url, bodyStr, headers);
+      if (status < 200 || status >= 300) {
+        throw new Error(`Canoe ${path} HTTP ${status}: ${text.slice(0, 300)}`);
       }
-      return await res.json();
+      if (!text) throw new Error(`Canoe ${path} returned empty body (HTTP ${status})`);
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Canoe ${path} bad JSON (len ${text.length}): ${text.slice(0, 200)}`);
+      }
     } catch (e) {
       if (attempt === retries) throw e;
       const wait = attempt * 2000;
-      console.warn(`  Attempt ${attempt} failed: ${e.message} — retrying in ${wait}ms`);
+      console.warn(`  Attempt ${attempt}/${retries} failed: ${e.message} — retrying in ${wait}ms`);
       await new Promise(r => setTimeout(r, wait));
     }
   }
