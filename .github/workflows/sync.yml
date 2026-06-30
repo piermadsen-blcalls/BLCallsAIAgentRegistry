@@ -14,6 +14,9 @@ on:
       patch_max:
         description: 'Max transcription patches per run (raise for backfill, e.g. 200000).'
         default: ''
+      skip_pass1:
+        description: 'Set to any value to skip Pass 1 (calls) and only patch transcriptions.'
+        default: ''
 
 jobs:
   sync:
@@ -34,4 +37,5 @@ jobs:
           SYNC_FROM:             ${{ github.event.inputs.sync_from }}
           SYNC_TO:               ${{ github.event.inputs.sync_to }}
           PATCH_MAX:             ${{ github.event.inputs.patch_max }}
+          SKIP_PASS1:            ${{ github.event.inputs.skip_pass1 }}
         run: node scripts/sync.js

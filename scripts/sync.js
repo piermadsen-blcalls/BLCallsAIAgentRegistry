@@ -281,16 +281,19 @@ async function patchTranscriptions() {
 
   const FETCH = 1000;                 // rows pulled from Supabase per page
   const MAX_PER_RUN = PATCH_MAX_PER_RUN;
-  let offset = 0, scanned = 0, patched = 0, failedBatches = 0;
+  // Keyset (cursor) pagination on created_at — stays fast at any depth, unlike
+  // OFFSET which re-scans from 0 every page and blows the statement timeout.
+  let cursor = null, scanned = 0, patched = 0, failedBatches = 0;
 
   while (scanned < MAX_PER_RUN) {
     // Rows with a recording but no transcription yet (newest first).
-    const pending = await sbFetch(
-      `canoe_calls?select=id,recording_id&recording_id=not.is.null&transcription=is.null` +
-      `&created_at=gte.${from}&order=created_at.desc&offset=${offset}&limit=${FETCH}`
-    );
+    let q = `canoe_calls?select=id,recording_id,created_at&recording_id=not.is.null&transcription=is.null` +
+            `&created_at=gte.${from}&order=created_at.desc&limit=${FETCH}`;
+    if (cursor) q += `&created_at=lt.${encodeURIComponent(cursor)}`;
+    const pending = await sbFetch(q);
     if (!pending || !pending.length) break;
     scanned += pending.length;
+    cursor = pending[pending.length - 1].created_at;
 
     // Fetch the matching recordings in batches of 100
     for (let i = 0; i < pending.length; i += 100) {
@@ -301,7 +304,7 @@ async function patchTranscriptions() {
       } catch (e) {
         // Persistent failure on this batch — log, skip, leave rows pending for next run.
         failedBatches++;
-        console.warn(`  Skipping batch (offset ${offset}+${i}): ${e.message}`);
+        console.warn(`  Skipping batch near ${cursor}: ${e.message}`);
         continue;
       }
       if (!recordings || !recordings.length) continue;
@@ -331,7 +334,6 @@ async function patchTranscriptions() {
     }
 
     if (pending.length < FETCH) break;
-    offset += FETCH;
   }
 
   if (!scanned) {
@@ -347,7 +349,8 @@ async function patchTranscriptions() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function run() {
-  await syncCalls();
+  if (process.env.SKIP_PASS1) console.log('SKIP_PASS1 set — skipping phone-lead-transactions sync.');
+  else await syncCalls();
   await patchTranscriptions();
   console.log('\nSync complete.');
 }
