@@ -1228,9 +1228,9 @@ function aliasesForAgent(canonicalIvrName) { return Object.entries(aliasMap).fil
 // ─── DISTINCT VERTICALS (from raw call data) ──────────────────────────────────
 async function loadVerticals() {
   try {
-    const rows = await sbFetch('agent_calls_raw?select=vertical&vertical=not.is.null');
+    const rows = await sbFetch('canoe_calls?select=vertical_name&vertical_name=not.is.null&is_test=eq.false');
     const set = new Set();
-    if (rows) rows.forEach(r => { const v = (r.vertical||'').trim(); if (v) set.add(v); });
+    if (rows) rows.forEach(r => { const v = (r.vertical_name||'').trim(); if (v) set.add(v); });
     VERTICALS = [...set].sort((a,b)=>a.localeCompare(b));
   } catch(e) { console.warn('verticals:', e.message); VERTICALS = []; }
 }
@@ -1484,10 +1484,12 @@ async function insFetchPeriod(startISO, endISO) {
   const pubs={},advs={},agents={};
   const PAGE=1000;let offset=0;
   const verticalQuery = insVerticalFilter.length > 0
-    ? `&or=(${insVerticalFilter.map(v=>`vertical.eq.${encodeURIComponent(v)}`).join(',')})`
+    ? `&or=(${insVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`
     : '';
+  // created_at is a timestamp; make the end bound inclusive of the whole end day
+  const endExclusive = new Date(new Date(endISO+'T00:00:00Z').getTime() + 86400000).toISOString().slice(0,10);
   while(true){
-    const batch=await sbFetch(`agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical&call_date=gte.${startISO}&call_date=lte.${endISO}${verticalQuery}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
+    const batch=await sbFetch(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical_name&created_at=gte.${startISO}&created_at=lt.${endExclusive}&is_test=eq.false${verticalQuery}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
     if(!batch||!batch.length)break;
     for(const c of batch){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
     function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw++;if(s)r.sent++;if(p)r.paid++;r.rev+=rev;r.margin+=margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw++;if(p)r.byAgent[ag].paid++;r.byAgent[ag].rev+=rev;}
