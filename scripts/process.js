@@ -35,6 +35,8 @@ const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
 const PROMPT_ID            = process.env.PROMPT_ID      || null;
 const TEST_MODE            = process.env.TEST_MODE      === 'true';
 const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
+// Fixed call-id list for test runs — ensures every model scores the SAME calls.
+const TEST_CALL_IDS        = (process.env.TEST_CALL_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const BATCH_MODE           = process.env.BATCH_MODE     === 'true';
 
 // ── Outcome scoring table (Taxonomy v3) ──────────────────────
@@ -354,10 +356,13 @@ async function writeResult(id, result) {
 
 // ── Test-mode helpers ─────────────────────────────────────────
 async function fetchTestSample() {
-  // For accuracy tests: grab BATCH_SIZE calls that have transcripts,
-  // regardless of whether they've already been processed.
+  const select = 'select=id,transcription,zip,vertical_name,called_from,duration,created_at,canoe_outcome';
+  // If a fixed id list is provided, score exactly those calls (same set for every model).
+  const filter = TEST_CALL_IDS.length
+    ? `id=in.(${TEST_CALL_IDS.join(',')})`
+    : `transcription=not.is.null&transcription=neq.&order=created_at.desc&limit=${BATCH_SIZE}`;
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/canoe_calls?transcription=not.is.null&transcription=neq.&select=id,transcription,zip,vertical_name,called_from,duration,created_at,canoe_outcome&order=created_at.desc&limit=${BATCH_SIZE}`,
+    `${SUPABASE_URL}/rest/v1/canoe_calls?${select}&${filter}`,
     {
       headers: {
         'apikey':        SUPABASE_SERVICE_KEY,
