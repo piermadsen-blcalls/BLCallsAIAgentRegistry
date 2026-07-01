@@ -32,6 +32,7 @@ const OPENROUTER_API_KEY   = process.env.OPENROUTER_API_KEY;
 const AI_MODEL             = process.env.AI_MODEL       || 'anthropic/claude-sonnet-4-6';
 const AI_MODE              = process.env.AI_MODE        || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
+const MAX_TOKENS           = parseInt(process.env.MAX_TOKENS || '1024', 10);
 const PROMPT_ID            = process.env.PROMPT_ID      || null;
 const TEST_MODE            = process.env.TEST_MODE      === 'true';
 const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
@@ -80,9 +81,22 @@ const VALID_FLAGS = [
   'facebook_marketplace',
   'angry_caller',
   'wrong_business',
-  'geo_mismatch',
   'duplicate_caller',
 ];
+// geo_mismatch is NOT model-decided anymore — it's injected by code by comparing
+// the caller's spoken zip (extracted by the model as stated_zip) to the Canoe zip.
+
+// Normalize a zip to its first 5 digits for comparison ("10307-1234" -> "10307").
+function first5Zip(z) {
+  const d = String(z || '').replace(/\D/g, '');
+  return d.length >= 5 ? d.slice(0, 5) : '';
+}
+// Decide geo_mismatch deterministically. Requires BOTH a Canoe zip and a spoken
+// zip; fires only when they differ. No Canoe zip -> never fires.
+function isGeoMismatch(canoeZip, statedZip) {
+  const a = first5Zip(canoeZip), b = first5Zip(statedZip);
+  return !!a && !!b && a !== b;
+}
 
 // ── Prompts (Taxonomy v3) ─────────────────────────────────────
 
@@ -171,20 +185,22 @@ FLAG DEFINITIONS:
 - facebook_marketplace: Any mention of Facebook, Facebook Marketplace, or a Facebook ad/listing as the reason for calling.
 - angry_caller: Caller is hostile, aggressive, or explicitly upset. Often coincides with outbound_dial.
 - wrong_business: Caller explicitly states they were trying to reach a different, specific named business (e.g. "I was trying to call Terminix, not you").
-- geo_mismatch: Caller explicitly states a zip code or city/state that clearly differs from the transaction zip provided in context. Both signals must be present — caller's stated location AND a clear mismatch with transaction zip.
 - duplicate_caller: Same caller number appears in a different vertical or from a different publisher within 48 hours (detected externally — do not flag from transcript alone).
 
 Also evaluate: suspicious_call — true if the caller does not appear to be a genuine lead (testing the system, probing without intent to buy, or other ulterior motive).
+
+ZIP EXTRACTION (not a flag): If the caller explicitly says their ZIP code aloud, return it normalized to 5 digits in stated_zip. Only a ZIP the caller actually speaks — do NOT infer one from a city, state, or area code. If no ZIP is spoken, stated_zip is null.
 
 Respond with valid JSON only:
 {
   "flags": ["flag1", "flag2"],
   "flag_notes": { "flag_name": "brief reason why this was flagged" },
   "suspicious_call": false,
-  "suspicious_note": null
+  "suspicious_note": null,
+  "stated_zip": "12345" or null
 }
 
-If no flags apply, return: { "flags": [], "flag_notes": {}, "suspicious_call": false, "suspicious_note": null }`;
+If no flags apply, return: { "flags": [], "flag_notes": {}, "suspicious_call": false, "suspicious_note": null, "stated_zip": null }`;
 
 const COMBINED_SYSTEM = `You are a call quality and compliance analyst for a pay-per-call network. Analyze the transcript and return both an outcome classification and compliance flags.
 
@@ -200,7 +216,8 @@ Respond with valid JSON only:
   "flags": ["flag1", "flag2"],
   "flag_notes": { "flag_name": "brief reason" },
   "suspicious_call": false,
-  "suspicious_note": null
+  "suspicious_note": null,
+  "stated_zip": "12345" or null
 }`;
 
 // ── Load prompt from Supabase ─────────────────────────────────
@@ -243,7 +260,7 @@ async function callClaude(system, userMessage) {
     },
     body: JSON.stringify({
       model:      AI_MODEL,
-      max_tokens: 1024,
+      max_tokens: MAX_TOKENS,
       system,
       messages: [{ role: 'user', content: userMessage }],
     }),
@@ -274,7 +291,7 @@ async function callOpenRouter(system, userMessage) {
     },
     body: JSON.stringify({
       model:       AI_MODEL,
-      max_tokens:  1024,
+      max_tokens:  MAX_TOKENS,
       temperature: 0.1,
       messages: [
         { role: 'system', content: system },
@@ -452,6 +469,7 @@ async function fetchBatchResults(batchId) {
 }
 
 async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
+  const zipById = Object.fromEntries(calls.map(c => [c.id, c.zip]));
   const requests = calls.map(call => {
     const context = [
       `Vertical: ${call.vertical_name || 'Unknown'}`,
@@ -461,7 +479,7 @@ async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
     ].join('\n');
     return {
       custom_id: call.id,
-      params: { model: AI_MODEL, max_tokens: 1024, system: systemPrompt, messages: [{ role: 'user', content: `${context}\n\nTranscript:\n${call.transcription}` }] },
+      params: { model: AI_MODEL, max_tokens: MAX_TOKENS, system: systemPrompt, messages: [{ role: 'user', content: `${context}\n\nTranscript:\n${call.transcription}` }] },
     };
   });
 
@@ -487,6 +505,7 @@ async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
 
       let flags = (parsed.flags || []).filter(f => VALID_FLAGS.includes(f));
       if (duplicateIds.has(item.custom_id) && !flags.includes('duplicate_caller')) flags.push('duplicate_caller');
+      if (isGeoMismatch(zipById[item.custom_id], parsed.stated_zip) && !flags.includes('geo_mismatch')) flags.push('geo_mismatch');
 
       const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
       await writeResult(item.custom_id, {
@@ -511,7 +530,7 @@ async function run() {
   const outcomePrompt    = promptRow?.outcome_prompt    || OUTCOME_SYSTEM;
   const compliancePrompt = promptRow?.compliance_prompt || COMPLIANCE_SYSTEM;
   const combinedPrompt   = promptRow
-    ? `You are a call quality and compliance analyst for a pay-per-call network. Analyze the transcript and return both an outcome classification and compliance flags.\n\n${outcomePrompt.replace('Respond with valid JSON only:', '').trim()}\n\n${compliancePrompt.replace('Respond with valid JSON only:', '').trim()}\n\nRespond with valid JSON only:\n{\n  "outcome": "<outcome>",\n  "summary": "<2-3 sentence summary>",\n  "outcome_note": "<required only if outcome is 'other', otherwise null>",\n  "flags": ["flag1", "flag2"],\n  "flag_notes": { "flag_name": "brief reason" },\n  "suspicious_call": false,\n  "suspicious_note": null\n}`
+    ? `You are a call quality and compliance analyst for a pay-per-call network. Analyze the transcript and return both an outcome classification and compliance flags.\n\n${outcomePrompt.replace('Respond with valid JSON only:', '').trim()}\n\n${compliancePrompt.replace('Respond with valid JSON only:', '').trim()}\n\nRespond with valid JSON only:\n{\n  "outcome": "<outcome>",\n  "summary": "<2-3 sentence summary>",\n  "outcome_note": "<required only if outcome is 'other', otherwise null>",\n  "flags": ["flag1", "flag2"],\n  "flag_notes": { "flag_name": "brief reason" },\n  "suspicious_call": false,\n  "suspicious_note": null,\n  "stated_zip": "12345" or null\n}`
     : COMBINED_SYSTEM;
 
   if (TEST_MODE && !TEST_BATCH_ID) {
@@ -553,7 +572,7 @@ async function run() {
 
       const userMessage = `${context}\n\nTranscript:\n${call.transcription}`;
 
-      let outcome, summary, outcome_note, flags, flag_notes, suspicious_call, suspicious_note;
+      let outcome, summary, outcome_note, flags, flag_notes, suspicious_call, suspicious_note, stated_zip;
       let totalInputTokens = 0, totalOutputTokens = 0;
 
       if (AI_MODE === 'combined') {
@@ -565,6 +584,7 @@ async function run() {
         flag_notes    = result.flag_notes || {};
         suspicious_call = result.suspicious_call || false;
         suspicious_note = result.suspicious_note || null;
+        stated_zip    = result.stated_zip || null;
         totalInputTokens  = usage.input;
         totalOutputTokens = usage.output;
       } else {
@@ -579,6 +599,7 @@ async function run() {
         flag_notes    = complianceResult.flag_notes || {};
         suspicious_call = complianceResult.suspicious_call || false;
         suspicious_note = complianceResult.suspicious_note || null;
+        stated_zip    = complianceResult.stated_zip || null;
         totalInputTokens  = u1.input + u2.input;
         totalOutputTokens = u1.output + u2.output;
       }
@@ -594,10 +615,15 @@ async function run() {
 
       flags = flags.filter(f => VALID_FLAGS.includes(f));
 
+      // geo_mismatch is code-decided: caller's spoken zip vs the Canoe zip.
+      if (isGeoMismatch(call.zip, stated_zip) && !flags.includes('geo_mismatch')) {
+        flags.push('geo_mismatch');
+      }
+
       const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
 
       if (TEST_MODE) {
-        await writeTestResult(TEST_BATCH_ID, call.id, outcome, flags, { outcome, summary, flags, suspicious_call }, totalInputTokens, totalOutputTokens);
+        await writeTestResult(TEST_BATCH_ID, call.id, outcome, flags, { outcome, summary, flags, suspicious_call, stated_zip }, totalInputTokens, totalOutputTokens);
       } else {
         await writeResult(call.id, {
           our_outcome:      outcome,
