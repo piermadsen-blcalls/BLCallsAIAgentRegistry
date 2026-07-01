@@ -1,5 +1,17 @@
 // alert.js — Fire compliance + performance alerts to account managers via ASCND webhook
-// Reads from canoe_calls (AI-processed), groups by manager's assigned accounts, emails via webhook.
+// Reads from canoe_calls, groups by manager's assigned accounts, emails via webhook.
+
+// Local dev convenience: load scripts/.env if present (gitignored).
+// In GitHub Actions this file doesn't exist and real secrets are used.
+(function loadDotEnv() {
+  const fs = require('fs'), path = require('path');
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+})();
 
 const SUPABASE_URL     = process.env.SUPABASE_URL;
 const SUPABASE_KEY     = process.env.SUPABASE_SERVICE_KEY;
@@ -147,9 +159,10 @@ async function main() {
       const PAGE = 1000;
       let results = [], offset = 0;
       while (true) {
-        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,duration,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
+        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,connect_duration,result,advertiser_payin,our_outcome,flags,publisher_score,advertiser_score,vertical_name` +
           `&created_at=gte.${fromISO}T00:00:00` +
-          `&created_at=lte.${toISO}T23:59:59`;
+          `&created_at=lte.${toISO}T23:59:59` +
+          `&is_test=eq.false`;
         const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
         if (!batch || !batch.length) break;
         results = results.concat(batch.filter(c => advSet.has(c.advertiser_name) || pubSet.has(c.publisher_name)));
@@ -178,8 +191,8 @@ async function main() {
         if (!map[name]) map[name] = { type, total: 0, connected: 0, revenue: 0, compliance: [], dm: [], aiFlags: [] };
         const e = map[name];
         e.total++;
-        if ((c.duration || 0) > 0) e.connected++;
-        // revenue column not in schema — omitted
+        if ((c.connect_duration || 0) > 0 || (c.result || '').toLowerCase().includes('connect')) e.connected++;
+        e.revenue += c.advertiser_payin || 0;
         const cats = categoriseFlags(c.flags);
         if (cats.compliance) e.compliance.push(c);
         if (cats.dm)         e.dm.push(c);
