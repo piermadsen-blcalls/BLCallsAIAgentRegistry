@@ -205,6 +205,7 @@ function mapPLT(r) {
     publisher_payout:          r.publisher_payout,
     publisher_bid:             r.publisher_bid,
     recording_id:              r.recording_id || null,
+    recording_url:             r.recording_url || null,
     recording_type:            null,
     is_test:                   !!r.is_test,
     created_at:                r.created_at,
@@ -346,12 +347,41 @@ async function patchTranscriptions() {
   console.log(`Pass 2 complete. ${patched} rows patched with transcription data.`);
 }
 
+// ── Pass 3: pair ASCND data (hl_call_data) onto canoe_calls ───────────────────
+
+async function pairAscndData() {
+  // Enrich the whole synced window during a backfill; otherwise a rolling 35d.
+  let lookbackDays = 35;
+  if (process.env.SYNC_FROM) {
+    const days = Math.ceil((Date.now() - new Date(process.env.SYNC_FROM).getTime()) / 86400000);
+    lookbackDays = Math.max(days + 1, 1);
+  }
+  console.log(`\nPass 3: pairing ASCND data (hl_call_data) — lookback ${lookbackDays}d`);
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/sync_hl_to_canoe_calls`, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type':  'application/json',
+    },
+    body: JSON.stringify({ lookback_days: lookbackDays }),
+  });
+  if (!res.ok) {
+    console.warn(`  Pass 3 skipped — RPC error ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    return;
+  }
+  const count = await res.json();
+  console.log(`Pass 3 complete. Enriched ${Number(count).toLocaleString()} calls with ASCND data.`);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function run() {
   if (process.env.SKIP_PASS1) console.log('SKIP_PASS1 set — skipping phone-lead-transactions sync.');
   else await syncCalls();
   await patchTranscriptions();
+  await pairAscndData();
   console.log('\nSync complete.');
 }
 
