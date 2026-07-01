@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       ai_model:
-        description: 'Claude model to use'
-        default: 'claude-sonnet-4-6'
+        description: 'Model id. Namespaced (e.g. anthropic/claude-sonnet-4-6) routes via OpenRouter; bare id uses Anthropic.'
+        default: 'anthropic/claude-sonnet-4-6'
       ai_mode:
         description: 'combined or separate'
         default: 'combined'
@@ -43,7 +43,7 @@ jobs:
           SUPABASE_SERVICE_KEY:  ${{ secrets.SUPABASE_SERVICE_KEY }}
           ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
           OPENROUTER_API_KEY:    ${{ secrets.OPENROUTER_API_KEY }}
-          AI_MODEL:              ${{ github.event.inputs.ai_model || 'claude-sonnet-4-6' }}
+          AI_MODEL:              ${{ github.event.inputs.ai_model || 'anthropic/claude-sonnet-4-6' }}
           AI_MODE:               ${{ github.event.inputs.ai_mode || 'combined' }}
           BATCH_SIZE:            ${{ github.event.inputs.batch_size || '100' }}
           PROMPT_ID:             ${{ github.event.inputs.prompt_id || '' }}

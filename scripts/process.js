@@ -6,32 +6,36 @@
  * Required env vars:
  *   SUPABASE_URL          - e.g. https://xxxx.supabase.co
  *   SUPABASE_SERVICE_KEY  - service role key
- *   ANTHROPIC_API_KEY     - Claude API key
- *   AI_MODEL              - e.g. claude-sonnet-4-6 (default)
+ *   OPENROUTER_API_KEY    - OpenRouter key (used when AI_MODEL is namespaced, e.g. "anthropic/...")
+ *   ANTHROPIC_API_KEY     - Anthropic key (only used for bare ids like "claude-sonnet-4-6")
+ *   AI_MODEL              - default "anthropic/claude-sonnet-4-6" (routed via OpenRouter)
  *   AI_MODE               - "combined" (default) or "separate"
  *   BATCH_SIZE            - number of calls to process per run (default 100)
- *   BATCH_MODE            - "true" to use Anthropic batch API (50% off, Claude only, ~minutes turnaround)
+ *   BATCH_MODE            - "true" for Anthropic batch API (bare Claude ids only; ignored for OpenRouter)
  */
+
+// Local dev convenience: load scripts/.env if present (gitignored).
+(function loadDotEnv() {
+  const fs = require('fs'), path = require('path');
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+})();
 
 const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
 const OPENROUTER_API_KEY   = process.env.OPENROUTER_API_KEY;
-const AI_MODEL             = process.env.AI_MODEL       || 'claude-sonnet-4-6';
+const AI_MODEL             = process.env.AI_MODEL       || 'anthropic/claude-sonnet-4-6';
 const AI_MODE              = process.env.AI_MODE        || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
 const PROMPT_ID            = process.env.PROMPT_ID      || null;
 const TEST_MODE            = process.env.TEST_MODE      === 'true';
 const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
 const BATCH_MODE           = process.env.BATCH_MODE     === 'true';
-
-// Models served via NVIDIA build.nvidia.com OpenAI-compatible endpoint
-const NVIDIA_MODELS = new Set([
-  'nvidia/llama-3.3-70b-instruct',
-  'nvidia/nemotron-super-49b-v1',
-  'nvidia/nemotron-ultra-253b-v1',
-  'meta/llama-3.3-70b-instruct',
-]);
 
 // ── Outcome scoring table (Taxonomy v3) ──────────────────────
 // Fallback scores used when outcome_weights table is unavailable.
@@ -219,11 +223,11 @@ async function loadPrompt() {
   }
 }
 
-// ── LLM API call (routes to Claude or NVIDIA) ─────────────────
+// ── LLM API call ──────────────────────────────────────────────
+// Namespaced model ids ("anthropic/...", "openai/...", "google/...") route
+// through OpenRouter. Bare ids ("claude-sonnet-4-6") hit the Anthropic API.
 async function callLLM(system, userMessage) {
-  if (NVIDIA_MODELS.has(AI_MODEL)) {
-    return callNvidia(system, userMessage);
-  }
+  if (AI_MODEL.includes('/')) return callOpenRouter(system, userMessage);
   return callClaude(system, userMessage);
 }
 
@@ -257,13 +261,14 @@ async function callClaude(system, userMessage) {
   }
 }
 
-async function callNvidia(system, userMessage) {
+async function callOpenRouter(system, userMessage) {
   if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'Content-Type':  'application/json',
+      'X-Title':       'BLCalls Compliance',
     },
     body: JSON.stringify({
       model:       AI_MODEL,
@@ -276,8 +281,9 @@ async function callNvidia(system, userMessage) {
     }),
   });
 
-  if (!res.ok) throw new Error(`NVIDIA API error ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`OpenRouter API error ${res.status}: ${await res.text()}`);
   const data = await res.json();
+  if (!data.choices || !data.choices.length) throw new Error(`OpenRouter returned no choices: ${JSON.stringify(data).slice(0, 300)}`);
   const text = (data.choices[0].message.content || '').trim();
   const usage = { input: data.usage?.prompt_tokens || 0, output: data.usage?.completion_tokens || 0 };
 
@@ -286,7 +292,7 @@ async function callNvidia(system, userMessage) {
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return { result: JSON.parse(match[0]), usage };
-    throw new Error(`Could not parse NVIDIA response: ${text}`);
+    throw new Error(`Could not parse OpenRouter response: ${text}`);
   }
 }
 
@@ -521,8 +527,9 @@ async function run() {
   const duplicateIds = await flagDuplicateCallers(calls.map(c => c.id));
   console.log(`Duplicate caller IDs found: ${duplicateIds.size}`);
 
-  // Batch mode: Claude only (OpenRouter models don't support Anthropic batch API)
-  if (BATCH_MODE && !NVIDIA_MODELS.has(AI_MODEL) && !TEST_MODE) {
+  // Batch mode: Anthropic batch API only (bare Claude ids). OpenRouter models
+  // (namespaced ids) don't support it — fall through to sequential processing.
+  if (BATCH_MODE && !AI_MODEL.includes('/') && !TEST_MODE) {
     await runBatch(calls, combinedPrompt, duplicateIds, activePromptId);
     return;
   }
