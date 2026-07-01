@@ -5,15 +5,18 @@
 --
 -- Match key: normalized phone (last 10 digits) + call time within ±7s,
 -- nearest match wins. Scoped to ASCND AI-agent calls only (ivr_name
--- like 'ascnd%'), since only those have ASCND data — this keeps the
--- scan small and avoids pointlessly re-checking non-AI calls.
+-- like 'ascnd%'), since only those have ASCND data.
 --
--- lookback_days bounds how far back to enrich (default 35, enough for the
--- 30-day window). Pass a large number for a full backfill.
+-- Takes a BOUNDED [from_ts, to_ts) window so the caller can process the
+-- history in non-overlapping chunks — keeps each call under the statement
+-- timeout and avoids the double-counting/re-scan a cumulative lookback caused.
 -- Run in Supabase SQL Editor.
 -- ============================================================
 
-create or replace function sync_hl_to_canoe_calls(lookback_days int default 35)
+-- Drop the earlier cumulative-lookback version.
+drop function if exists sync_hl_to_canoe_calls(int);
+
+create or replace function sync_hl_to_canoe_calls(from_ts timestamptz, to_ts timestamptz)
 returns int
 language plpgsql
 security definer
@@ -21,15 +24,14 @@ set search_path = public
 as $$
 declare
   updated int := 0;
-  cutoff  timestamptz := now() - make_interval(days => lookback_days);
 begin
   with matched as (
     select
-      c.id                     as call_id,
-      h.disposition            as disposition,
+      c.id                      as call_id,
+      h.disposition             as disposition,
       h.disposition_description as disposition_description,
-      h.recording_url          as ascnd_recording_url,
-      h.transcript             as ascnd_transcript
+      h.recording_url           as ascnd_recording_url,
+      h.transcript              as ascnd_transcript
     from canoe_calls c
     cross join lateral (
       select h.*
@@ -40,7 +42,8 @@ begin
       order by abs(extract(epoch from (c.created_at - h.call_timestamp))) asc
       limit 1
     ) h
-    where c.created_at >= cutoff
+    where c.created_at >= from_ts
+      and c.created_at <  to_ts
       and c.disposition is null
       and c.ivr_name ilike 'ascnd%'
       and right(regexp_replace(coalesce(c.called_from,''), '[^0-9]', '', 'g'), 10) <> ''
@@ -58,4 +61,4 @@ begin
 end;
 $$;
 
-grant execute on function sync_hl_to_canoe_calls(int) to anon, authenticated, service_role;
+grant execute on function sync_hl_to_canoe_calls(timestamptz, timestamptz) to anon, authenticated, service_role;

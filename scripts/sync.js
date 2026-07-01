@@ -350,29 +350,38 @@ async function patchTranscriptions() {
 // ── Pass 3: pair ASCND data (hl_call_data) onto canoe_calls ───────────────────
 
 async function pairAscndData() {
-  // Enrich the whole synced window during a backfill; otherwise a rolling 35d.
-  let lookbackDays = 35;
-  if (process.env.SYNC_FROM) {
-    const days = Math.ceil((Date.now() - new Date(process.env.SYNC_FROM).getTime()) / 86400000);
-    lookbackDays = Math.max(days + 1, 1);
-  }
-  console.log(`\nPass 3: pairing ASCND data (hl_call_data) — lookback ${lookbackDays}d`);
+  // Bounded window: full sync window during a backfill, else a rolling 4 days
+  // (enough to catch late-arriving ASCND data without rescanning old history).
+  const to   = process.env.SYNC_TO ? new Date(process.env.SYNC_TO) : new Date();
+  const from = process.env.SYNC_FROM
+    ? new Date(process.env.SYNC_FROM)
+    : new Date(to.getTime() - 4 * 86400000);
+  console.log(`\nPass 3: pairing ASCND data — ${from.toISOString()} → ${to.toISOString()}`);
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/sync_hl_to_canoe_calls`, {
-    method: 'POST',
-    headers: {
-      'apikey':        SUPABASE_SERVICE_KEY,
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({ lookback_days: lookbackDays }),
-  });
-  if (!res.ok) {
-    console.warn(`  Pass 3 skipped — RPC error ${res.status}: ${(await res.text()).slice(0, 200)}`);
-    return;
+  const CHUNK_MS = 2 * 86400000;   // 2-day chunks keep each RPC call under the timeout
+  let total = 0, chunks = 0, failed = 0;
+
+  for (let s = from.getTime(); s < to.getTime(); s += CHUNK_MS) {
+    const e = Math.min(s + CHUNK_MS, to.getTime());
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/sync_hl_to_canoe_calls`, {
+        method: 'POST',
+        headers: {
+          'apikey':        SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ from_ts: new Date(s).toISOString(), to_ts: new Date(e).toISOString() }),
+      });
+      if (res.ok) { total += Number(await res.json()); chunks++; }
+      else { failed++; console.warn(`  chunk error ${res.status}: ${(await res.text()).slice(0, 150)}`); }
+    } catch (err) {
+      failed++; console.warn(`  chunk failed: ${err.message}`);
+    }
   }
-  const count = await res.json();
-  console.log(`Pass 3 complete. Enriched ${Number(count).toLocaleString()} calls with ASCND data.`);
+
+  if (failed) console.warn(`  ${failed} chunk(s) failed — will retry next run.`);
+  console.log(`Pass 3 complete. Enriched ${total.toLocaleString()} calls across ${chunks} chunk(s).`);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
