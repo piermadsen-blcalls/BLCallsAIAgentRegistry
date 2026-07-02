@@ -1047,6 +1047,8 @@
 
       <!-- Model Calibration Run (admin only) -->
       <div class="settings-section" id="settings-cost-section" style="display:none">
+        <!-- Run controls: admin only -->
+        <div id="calib-run-controls" style="display:none">
         <div class="settings-section-header">
           <div class="settings-section-title">Model Calibration Run</div>
         </div>
@@ -1075,8 +1077,9 @@
             <span id="modeltest-run-status" style="font-size:12px;color:var(--teal)"></span>
           </div>
         </div>
+        </div><!-- /calib-run-controls (admin only) -->
 
-        <!-- Calibration history -->
+        <!-- Recent tests + review — visible to everyone -->
         <div id="modeltest-history"></div>
 
         <!-- Results panel -->
@@ -3173,36 +3176,43 @@ const MODEL_CATALOG = [
 let calibQueueCount = 0;
 
 async function calibInit() {
-  // Load unprocessed queue count for extrapolation
-  try {
-    const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
-    const res = await fetch(
-      `${SB_URL}/rest/v1/canoe_calls?ai_processed_at=is.null&transcription=not.is.null&transcription=neq.&select=id`,
-      { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' } }
-    );
-    const range = res.headers.get('Content-Range') || '';
-    calibQueueCount = parseInt((range.split('/')[1] || '0'), 10) || 0;
-    const noteEl = document.getElementById('calib-queue-note');
-    if (noteEl) noteEl.textContent = ` Your unprocessed queue: ${calibQueueCount.toLocaleString()} calls.`;
-  } catch(e) { /* non-critical */ }
+  // Resolve admin status if not known yet (sets window.isAdmin).
+  if (window.isAdmin === undefined) { try { await compLoadAssignments(); } catch(e) {} }
+  // Run controls (launching calibration) are admin-only; Recent Tests + review are for everyone.
+  const runControls = document.getElementById('calib-run-controls');
+  if (runControls) runControls.style.display = window.isAdmin ? 'block' : 'none';
 
-  // Render model checkboxes
-  const wrap = document.getElementById('modeltest-checkboxes');
-  if (wrap) {
-    wrap.innerHTML = MODEL_CATALOG.map(m => {
-      const providerColor = m.provider === 'NVIDIA' ? 'var(--blue)' : 'var(--purple)';
-      return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
-        <input type="checkbox" value="${m.id}" class="modeltest-checkbox" style="accent-color:var(--brand-navy);width:14px;height:14px">
-        <span style="min-width:180px">${m.label}</span>
-        <span style="font-size:11px;color:${providerColor};background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px">${m.provider}</span>
-        <span style="font-size:11px;color:var(--text-3);font-family:var(--mono)">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
-      </label>`;
-    }).join('');
+  if (window.isAdmin) {
+    // Unprocessed queue count for cost extrapolation
+    try {
+      const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
+      const res = await fetch(
+        `${SB_URL}/rest/v1/canoe_calls?ai_processed_at=is.null&transcription=not.is.null&transcription=neq.&select=id`,
+        { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' } }
+      );
+      const range = res.headers.get('Content-Range') || '';
+      calibQueueCount = parseInt((range.split('/')[1] || '0'), 10) || 0;
+      const noteEl = document.getElementById('calib-queue-note');
+      if (noteEl) noteEl.textContent = ` Your unprocessed queue: ${calibQueueCount.toLocaleString()} calls.`;
+    } catch(e) { /* non-critical */ }
+
+    const wrap = document.getElementById('modeltest-checkboxes');
+    if (wrap) {
+      wrap.innerHTML = MODEL_CATALOG.map(m => {
+        const providerColor = m.provider === 'NVIDIA' ? 'var(--blue)' : 'var(--purple)';
+        return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
+          <input type="checkbox" value="${m.id}" class="modeltest-checkbox" style="accent-color:var(--brand-navy);width:14px;height:14px">
+          <span style="min-width:180px">${m.label}</span>
+          <span style="font-size:11px;color:${providerColor};background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px">${m.provider}</span>
+          <span style="font-size:11px;color:var(--text-3);font-family:var(--mono)">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
+        </label>`;
+      }).join('');
+    }
+    const savedPat = sessionStorage.getItem('gh_pat');
+    if (savedPat) document.getElementById('modeltest-pat').value = savedPat;
   }
 
-  const savedPat = sessionStorage.getItem('gh_pat');
-  if (savedPat) document.getElementById('modeltest-pat').value = savedPat;
-  modeltestLoadHistory();
+  modeltestLoadHistory();  // Recent Tests + review — everyone
 }
 
 async function modeltestLoadHistory() {
