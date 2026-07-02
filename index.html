@@ -673,7 +673,11 @@
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('reporting',this)">Call Reporting</button>
 <button class="nav-tab" onclick="switchTab('compliance',this)">Compliance</button>
+    <button class="nav-tab" onclick="switchTab('llm-training',this)">LLM training</button>
   </div>
+
+  <!-- LLM TRAINING TAB (model calibration section is relocated here on first open) -->
+  <div id="tab-llm-training" class="tab-pane"></div>
 
   <!-- AGENTS TAB -->
   <div id="tab-agents" class="tab-pane active">
@@ -1222,6 +1226,13 @@ function switchTab(id, el) {
   el.classList.add('active');
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'reporting') crAutoLoad();
+  if (id === 'llm-training') {
+    // Relocate the calibration/review section out of Settings into this tab (once).
+    const sec = document.getElementById('settings-cost-section');
+    const pane = document.getElementById('tab-llm-training');
+    if (sec && sec.parentElement !== pane) { sec.style.display = 'block'; pane.appendChild(sec); }
+    calibInit();
+  }
 }
 
 // ─── ALIAS TABLE ──────────────────────────────────────────────────────────────
@@ -3213,8 +3224,7 @@ async function modeltestLoadHistory() {
           <span style="font-size:12px;color:var(--text-3)">${r.sample_size} calls</span>
           <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${r.status}</span>
           <span style="font-size:11px;color:var(--text-3)">${date}</span>
-          ${r.status === 'completed' ? `<button onclick="modeltestViewResults('${r.id}','${r.model}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">View results</button>
-          <button onclick="reviewOpen('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">Review</button>` : ''}
+          ${r.status === 'completed' ? `<button onclick="modeltestViewResults('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">View &amp; review</button>` : ''}
         </div>`;
       }).join('')}
     </div>`;
@@ -3260,79 +3270,122 @@ async function modeltestRun() {
   await modeltestLoadHistory();
 }
 
-async function modeltestViewResults(testId, model) {
-  const wrap      = document.getElementById('modeltest-comparison');
-  const titleEl   = document.getElementById('modeltest-comparison-title');
+const MT_PRICES = {
+  'anthropic/claude-opus-4.8':[5,25], 'anthropic/claude-sonnet-5':[2,10], 'anthropic/claude-haiku-4.5':[1,5],
+  'openai/gpt-4.1-mini':[0.4,1.6], 'openai/gpt-5-nano':[0.05,0.4], 'meta-llama/llama-3.3-70b-instruct':[0.1,0.32],
+  'google/gemini-2.5-flash':[0.3,2.5], 'google/gemini-3.5-flash':[1.5,9], 'nvidia/nemotron-3-super-120b-a12b':[0.08,0.4],
+};
+let mtState = null;
+const mtShort = m => m.split('/').pop();
+
+async function modeltestViewResults(testId) {
+  const wrap = document.getElementById('modeltest-comparison');
+  document.getElementById('modeltest-comparison-title').textContent = 'Results & review';
   const tableWrap = document.getElementById('modeltest-comparison-table');
-  titleEl.textContent = `Results — ${model}`;
   tableWrap.innerHTML = '<div style="color:var(--text-3);font-size:13px">Loading…</div>';
   wrap.style.display = 'block';
   wrap.scrollIntoView({ behavior:'smooth', block:'nearest' });
-
   try {
-    const rows = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,our_outcome,flags,input_tokens,output_tokens&order=created_at.asc`);
-    if (!rows || rows.length === 0) {
-      tableWrap.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results yet — workflow may still be running.</p>';
-      return;
+    const rows = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags,input_tokens,output_tokens`);
+    if (!rows || !rows.length) { tableWrap.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results yet.</p>'; return; }
+    const byCall = {}, models = new Set();
+    for (const r of rows) { models.add(r.model); (byCall[r.call_id] = byCall[r.call_id] || {})[r.model] = { outcome:r.our_outcome, flags:r.flags||[], in:r.input_tokens||0, out:r.output_tokens||0 }; }
+    const callIds = Object.keys(byCall), info = {}, existing = {};
+    for (let i = 0; i < callIds.length; i += 50) {
+      const sub = callIds.slice(i, i + 50);
+      (await compFetch(`canoe_calls?id=in.(${sub.join(',')})&select=id,transcription,recording_url,ascnd_recording_url`)).forEach(c => info[c.id] = c);
+      (await compFetch(`training_examples?call_id=in.(${sub.join(',')})&select=call_id,correct_outcome,correct_flags,reason`)).forEach(t => existing[t.call_id] = t);
     }
+    mtState = { testId, models: [...models].sort(), calls: callIds.map(id => ({
+      id, tx: info[id]?.transcription || '', rec: info[id]?.recording_url || '', ascndRec: info[id]?.ascnd_recording_url || '', byModel: byCall[id],
+      truthOutcome: existing[id]?.correct_outcome || '', truthFlags: existing[id]?.correct_flags || null,
+      reason: existing[id]?.reason || '', truthModel: null,
+    })) };
+    mtRender();
+  } catch(e) { tableWrap.innerHTML = `<p style="color:var(--coral);font-size:13px">${e.message}</p>`; }
+}
 
-    // Cost extrapolation from real token counts
-    const catalog   = MODEL_CATALOG.find(m => m.id === model);
-    const withUsage = rows.filter(r => r.input_tokens > 0);
-    let costCards   = '';
-    if (withUsage.length > 0 && catalog) {
-      const avgIn  = withUsage.reduce((s, r) => s + r.input_tokens,  0) / withUsage.length;
-      const avgOut = withUsage.reduce((s, r) => s + r.output_tokens, 0) / withUsage.length;
-      const costPerCall = (avgIn * catalog.inPer1M / 1e6) + (avgOut * catalog.outPer1M / 1e6);
-      const totalCost   = costPerCall * calibQueueCount;
-      const fmtCost     = v => v < 0.01 ? `$${v.toFixed(5)}` : v < 1 ? `$${v.toFixed(4)}` : `$${v.toFixed(2)}`;
-      costCards = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
-        ${[
-          ['Avg input tokens',   Math.round(avgIn).toLocaleString()],
-          ['Avg output tokens',  Math.round(avgOut).toLocaleString()],
-          ['Real cost / call',   fmtCost(costPerCall)],
-          [`Extrapolated total<br><span style="font-size:10px;font-weight:400">${calibQueueCount.toLocaleString()} unprocessed calls</span>`, fmtCost(totalCost)],
-        ].map(([label, val]) => `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;min-width:140px">
-          <div style="font-family:var(--mono);font-size:16px;font-weight:500">${val}</div>
-          <div style="font-size:11px;color:var(--text-2);margin-top:4px;line-height:1.4">${label}</div>
-        </div>`).join('')}
-      </div>`;
-    }
-
-    // Outcome distribution
-    const counts = {};
-    for (const r of rows) { const k = r.our_outcome || '—'; counts[k] = (counts[k] || 0) + 1; }
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    const distCards = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-      ${sorted.map(([outcome, count]) => `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;text-align:center">
-        <div style="font-family:var(--mono);font-size:15px;font-weight:500">${count}</div>
-        <div style="font-size:11px;color:var(--text-2);margin-top:2px">${outcome}</div>
-      </div>`).join('')}
+function mtRender() {
+  const s = mtState, tw = document.getElementById('modeltest-comparison-table');
+  const labeled = s.calls.filter(c => c.truthOutcome);
+  const summary = s.models.map(m => {
+    let tin=0, tout=0, n=0, correct=0;
+    for (const c of s.calls) { const d = c.byModel[m]; if (!d) continue; n++; tin += d.in; tout += d.out; }
+    for (const c of labeled) { const d = c.byModel[m]; if (d && d.outcome === c.truthOutcome) correct++; }
+    const [pi,po] = MT_PRICES[m] || [0,0];
+    const cpc = n ? ((tin/n*pi/1e6) + (tout/n*po/1e6)) : 0;
+    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;min-width:130px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);margin-bottom:2px">${esc(mtShort(m))}</div>
+      <div style="font-size:13px;font-weight:600">${labeled.length ? Math.round(correct/labeled.length*100)+'% acc' : '—'}</div>
+      <div style="font-size:11px;color:var(--text-2)">$${(cpc*1000).toFixed(2)}/1k · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
     </div>`;
+  }).join('');
+  const oHdr = s.models.map(m => `<th style="padding:6px 8px;font-size:11px;font-weight:500;color:var(--text-2)">${esc(mtShort(m))}</th>`).join('');
+  const cell = (c, i, m, kind) => {
+    const d = c.byModel[m];
+    const val = kind === 'outcome' ? (d?.outcome || '—') : ((d?.flags||[]).join(', ') || '—');
+    const ticked = c.truthModel === m + ':' + kind;
+    const truthSet = kind === 'outcome' ? !!c.truthOutcome : !!c.truthFlags;
+    let mark = '';
+    if (truthSet && d) {
+      const ok = kind === 'outcome' ? d.outcome === c.truthOutcome
+                                    : JSON.stringify([...(d.flags||[])].sort()) === JSON.stringify([...(c.truthFlags||[])].sort());
+      mark = ok ? '<span style="color:var(--teal)">✓</span>' : '<span style="color:var(--coral)">✗</span>';
+    }
+    return `<td style="padding:6px 8px;font-size:12px;vertical-align:top">
+      <label style="display:flex;gap:4px;align-items:flex-start;cursor:pointer">
+        <input type="checkbox" ${ticked?'checked':''} onclick="mtPick(${i},'${m}','${kind}')" style="margin-top:2px">
+        <span>${esc(val)} ${mark}</span>
+      </label></td>`;
+  };
+  const table = (kind, manualCol) => `<div style="overflow-x:auto;margin-bottom:20px"><table style="width:100%;border-collapse:collapse">
+    <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text-2)">Call</th>${oHdr}<th style="padding:6px 8px;font-size:11px;color:var(--text-2)">${manualCol}</th>${kind==='outcome'?'<th style="padding:6px 8px;font-size:11px;color:var(--text-2)">Why</th>':''}</tr></thead>
+    <tbody>${s.calls.map((c,i) => {
+      const manual = kind === 'outcome'
+        ? `<select onchange="mtManualOutcome(${i},this.value)" style="font-size:11px;max-width:150px">${['<option value="">— manual —</option>'].concat(REVIEW_OUTCOMES.map(o=>`<option ${o===c.truthOutcome&&!c.truthModel?'selected':''}>${o}</option>`)).join('')}</select>`
+        : `<div style="display:flex;gap:3px;flex-wrap:wrap;max-width:200px">${REVIEW_FLAGS.map(f=>`<button onclick="mtManualFlag(${i},'${f}')" style="font-size:10px;padding:1px 5px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${(c.truthFlags||[]).includes(f)?'var(--brand-navy)':'var(--surface)'};color:${(c.truthFlags||[]).includes(f)?'#fff':'var(--text)'}">${f}</button>`).join('')}</div>`;
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">${esc(c.id.slice(0,8))}…</td>
+        ${s.models.map(m=>cell(c,i,m,kind)).join('')}
+        <td style="padding:6px 8px">${manual}</td>
+        ${kind==='outcome'?`<td style="padding:6px 8px"><input value="${esc(c.reason)}" onchange="mtReason(${i},this.value)" placeholder="why wrong?" style="font-size:11px;width:130px"></td>`:''}
+      </tr>
+      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${s.models.length+ (kind==='outcome'?3:2)}" style="padding:6px 10px"><div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
+        <div style="margin-bottom:6px;font-size:12px">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">▶ call recording</a>`:'<span style="color:var(--text-3)">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">▶ AI-agent recording</a>`:''}</div>
+        <div style="white-space:pre-wrap">${esc(c.tx||'(no transcript)')}</div>
+      </div></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  tw.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${summary}</div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">${s.calls.length} calls · ${labeled.length} labeled — tick the model that got it right (or set manual). Click a Call id to read the transcript.</div>
+    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Outcomes</div>
+    ${table('outcome','Correct (manual)')}
+    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Flags</div>
+    ${table('flags','Correct flags')}`;
+}
 
-    tableWrap.innerHTML = `
-      ${costCards}
-      <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Outcome Distribution — ${rows.length} calls</div>
-      ${distCards}
-      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="border-bottom:1px solid var(--border)">
-          <th style="text-align:left;padding:6px 12px 6px 0;font-size:11px;font-weight:500;color:var(--text-2)">#</th>
-          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Call ID</th>
-          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Outcome</th>
-          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Flags</th>
-          <th style="text-align:left;padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-2)">Tokens in/out</th>
-        </tr></thead>
-        <tbody>${rows.map((r, i) => `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:7px 12px 7px 0;color:var(--text-3)">${i+1}</td>
-          <td style="padding:7px 12px;font-family:var(--mono);font-size:11px">${r.call_id}</td>
-          <td style="padding:7px 12px">${r.our_outcome || '<span style="color:var(--text-3)">—</span>'}</td>
-          <td style="padding:7px 12px;color:var(--text-3);font-size:11px">${(r.flags||[]).join(', ') || '—'}</td>
-          <td style="padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--text-2)">${r.input_tokens ? `${r.input_tokens} / ${r.output_tokens}` : '—'}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
-  } catch(e) {
-    tableWrap.innerHTML = `<p style="color:var(--coral);font-size:13px">${e.message}</p>`;
-  }
+function mtToggleTx(i) { for (const k of ['outcome','flags']) { const el = document.getElementById(`mt-tx-${k}-${i}`); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; } }
+function mtPick(i, m, kind) {
+  const c = mtState.calls[i], d = c.byModel[m];
+  const key = m + ':' + kind;
+  if (c.truthModel === key) { c.truthModel = null; if (kind==='outcome') c.truthOutcome=''; else c.truthFlags=null; }
+  else { c.truthModel = key; if (kind==='outcome') c.truthOutcome = d?.outcome || ''; else c.truthFlags = [...(d?.flags||[])]; }
+  mtSaveCall(i); mtRender();
+}
+function mtManualOutcome(i, v) { const c = mtState.calls[i]; c.truthOutcome = v; if (v) c.truthModel = null; mtSaveCall(i); mtRender(); }
+function mtManualFlag(i, f) { const c = mtState.calls[i]; c.truthFlags = c.truthFlags || []; const j = c.truthFlags.indexOf(f); if (j>=0) c.truthFlags.splice(j,1); else c.truthFlags.push(f); c.truthModel = null; mtSaveCall(i); mtRender(); }
+function mtReason(i, v) { mtState.calls[i].reason = v; mtSaveCall(i); }
+
+async function mtSaveCall(i) {
+  const s = mtState, c = s.calls[i];
+  if (!c.truthOutcome) return;  // correct_outcome is NOT NULL — an outcome must be set first
+  try {
+    await compPost('training_examples?on_conflict=call_id', {
+      call_id: c.id, source: 'model_test:' + s.testId, transcript: c.tx || null,
+      correct_outcome: c.truthOutcome || null, correct_flags: c.truthFlags || [],
+      reason: c.reason || null, reviewed_by: getAuthUser() || null, reviewed_at: new Date().toISOString(),
+    }, 'resolution=merge-duplicates,return=minimal');
+  } catch(e) { console.warn('label save failed', e.message); }
 }
 
 function modeltestCloseComparison() {
