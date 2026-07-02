@@ -282,23 +282,34 @@ async function callClaude(system, userMessage) {
 
 async function callOpenRouter(system, userMessage) {
   if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type':  'application/json',
-      'X-Title':       'BLCalls Compliance',
-    },
-    body: JSON.stringify({
-      model:       AI_MODEL,
-      max_tokens:  MAX_TOKENS,
-      temperature: 0.1,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user',   content: userMessage },
-      ],
-    }),
-  });
+  let res, lastErr;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type':  'application/json',
+          'X-Title':       'BLCalls Compliance',
+        },
+        body: JSON.stringify({
+          model:       AI_MODEL,
+          max_tokens:  MAX_TOKENS,
+          temperature: 0.1,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user',   content: userMessage },
+          ],
+        }),
+      });
+      if (res.status === 429 || res.status >= 500) throw new Error(`transient ${res.status}`);
+      break;  // got a usable (2xx/4xx) response
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 4) throw new Error(`OpenRouter fetch failed after 4 attempts: ${e.message}`);
+      await new Promise(r => setTimeout(r, attempt * 1500));
+    }
+  }
 
   if (!res.ok) throw new Error(`OpenRouter API error ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -321,22 +332,26 @@ async function flagDuplicateCallers(callIds) {
   // vertical or from a different publisher within 48 hours
   const idsParam = callIds.map(id => `"${id}"`).join(',');
 
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/rpc/find_duplicate_callers`,
-    {
-      method: 'POST',
-      headers: {
-        'apikey':        SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({ call_ids: callIds }),
-    }
-  );
-
-  if (!res.ok) return new Set();
-  const rows = await res.json();
-  return new Set((rows || []).map(r => r.id));
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/find_duplicate_callers`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey':        SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ call_ids: callIds }),
+      }
+    );
+    if (!res.ok) return new Set();
+    const rows = await res.json();
+    return new Set((rows || []).map(r => r.id));
+  } catch (e) {
+    console.warn('Duplicate detection skipped (non-fatal):', e.message);
+    return new Set();
+  }
 }
 
 // ── Supabase helpers ──────────────────────────────────────────
