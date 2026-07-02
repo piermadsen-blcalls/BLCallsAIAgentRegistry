@@ -1083,6 +1083,16 @@
           </div>
           <div id="modeltest-comparison-table"></div>
         </div>
+
+        <!-- Review / training panel -->
+        <div id="modeltest-review" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+            <div class="settings-section-title" style="font-size:13px" id="review-title">Review calls</div>
+            <span id="review-progress" style="font-size:12px;color:var(--text-3)"></span>
+            <button onclick="reviewClose()" style="font-family:var(--sans);font-size:11px;color:var(--text-3);background:none;border:none;cursor:pointer;padding:0;margin-left:auto">✕ close</button>
+          </div>
+          <div id="review-body"></div>
+        </div>
       </div>
 
       <!-- AI Prompts (admin only) -->
@@ -3203,7 +3213,8 @@ async function modeltestLoadHistory() {
           <span style="font-size:12px;color:var(--text-3)">${r.sample_size} calls</span>
           <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${r.status}</span>
           <span style="font-size:11px;color:var(--text-3)">${date}</span>
-          ${r.status === 'completed' ? `<button onclick="modeltestViewResults('${r.id}','${r.model}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">View results</button>` : ''}
+          ${r.status === 'completed' ? `<button onclick="modeltestViewResults('${r.id}','${r.model}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">View results</button>
+          <button onclick="reviewOpen('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">Review</button>` : ''}
         </div>`;
       }).join('')}
     </div>`;
@@ -3326,6 +3337,111 @@ async function modeltestViewResults(testId, model) {
 
 function modeltestCloseComparison() {
   document.getElementById('modeltest-comparison').style.display = 'none';
+}
+
+// ── CALL REVIEW / TRAINING LABELS ─────────────────────────────
+const REVIEW_OUTCOMES = ['sale','appointment','quoted_interested','quoted_undecided','quoted_too_expensive','quoted_not_interested','undecided','not_interested','caller_callback','agent_callback','caller_hangup','ivr_hangup','voicemail','agent_not_available','audio_issue','outside_geo','wrong_category','misrouted','caller_confused','agent_confused','customer_service','soliciting','referral','outside_hours','other'];
+const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','incentivized_caller'];
+let reviewState = null;
+
+async function reviewOpen(testId) {
+  document.getElementById('modeltest-comparison').style.display = 'none';
+  const panel = document.getElementById('modeltest-review');
+  const body  = document.getElementById('review-body');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  body.innerHTML = '<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>';
+  try {
+    const results = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags&order=call_id.asc`);
+    if (!results || !results.length) { body.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results to review.</p>'; return; }
+    const byCall = {};
+    for (const r of results) (byCall[r.call_id] = byCall[r.call_id] || []).push(r);
+    const callIds = Object.keys(byCall);
+    const calls = {}, existing = {};
+    for (let i = 0; i < callIds.length; i += 50) {
+      const sub = callIds.slice(i, i + 50);
+      (await compFetch(`canoe_calls?id=in.(${sub.join(',')})&select=id,transcription,vertical_name,zip,duration,canoe_outcome`)).forEach(c => calls[c.id] = c);
+      (await compFetch(`training_examples?call_id=in.(${sub.join(',')})&select=call_id,correct_outcome,correct_flags,reason`)).forEach(t => existing[t.call_id] = t);
+    }
+    reviewState = { testId, idx: 0, calls: callIds.map(id => ({ call_id: id, models: byCall[id], call: calls[id] || {}, existing: existing[id] || null })) };
+    const firstUn = reviewState.calls.findIndex(c => !c.existing);
+    reviewState.idx = firstUn >= 0 ? firstUn : 0;
+    reviewRender();
+  } catch(e) { body.innerHTML = `<p style="color:var(--coral);font-size:13px">${e.message}</p>`; }
+}
+
+function reviewRender() {
+  const s = reviewState; if (!s) return;
+  const c = s.calls[s.idx];
+  document.getElementById('review-progress').textContent = `call ${s.idx+1} of ${s.calls.length} · ${s.calls.filter(x=>x.existing).length} labeled`;
+  const truthOutcome = c._draftOutcome !== undefined ? c._draftOutcome : (c.existing?.correct_outcome || '');
+  if (!c._draftFlags) c._draftFlags = [...(c.existing?.correct_flags || [])];
+  const modelCards = c.models.map(m => {
+    const short = m.model.split('/').pop();
+    const badge = truthOutcome ? (m.our_outcome === truthOutcome ? '<span style="color:var(--teal)">✓</span>' : '<span style="color:var(--coral)">✗</span>') : '';
+    return `<div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;min-width:150px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-bottom:2px">${esc(short)}</div>
+      <div style="font-weight:600">${esc(m.our_outcome||'—')} ${badge}</div>
+      <div style="color:var(--text-3);font-size:11px">${esc((m.flags||[]).join(', ')||'no flags')}</div>
+    </div>`;
+  }).join('');
+  const outcomeOpts = ['<option value="">— pick correct outcome —</option>'].concat(REVIEW_OUTCOMES.map(o => `<option value="${o}" ${o===truthOutcome?'selected':''}>${o}</option>`)).join('');
+  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${f}</button>`).join(' ');
+  const ctx = c.call;
+  const reasonVal = c._draftReason !== undefined ? c._draftReason : (c.existing?.reason || '');
+  document.getElementById('review-body').innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-bottom:10px">
+      <span>vertical: <strong>${esc(ctx.vertical_name||'—')}</strong></span>
+      <span>zip: <strong>${esc(ctx.zip||'—')}</strong></span>
+      <span>duration: <strong>${ctx.duration||0}s</strong></span>
+      <span>canoe: <strong>${esc(ctx.canoe_outcome||'—')}</strong></span>
+      ${c.existing ? '<span style="color:var(--teal)">● already labeled</span>' : ''}
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:220px;overflow:auto;font-size:12px;line-height:1.5;white-space:pre-wrap;margin-bottom:12px">${esc(ctx.transcription||'(no transcript)')}</div>
+    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">What each model said</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${modelCards}</div>
+    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Correct answer</div>
+    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select" style="min-width:230px;margin-bottom:10px">${outcomeOpts}</select>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${flagBtns}</div>
+    <textarea id="review-reason" placeholder="Why was the AI wrong? (optional)" class="correction-textarea" style="width:100%;min-height:52px;margin-bottom:10px">${esc(reasonVal)}</textarea>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="reviewNav(-1)" ${s.idx===0?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">‹ Prev</button>
+      <button onclick="reviewSave()" style="font-size:12px;padding:5px 14px;border:none;border-radius:var(--radius-sm);background:var(--brand-navy);color:#fff;cursor:pointer">Save &amp; next</button>
+      <button onclick="reviewNav(1)" ${s.idx>=s.calls.length-1?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">Skip ›</button>
+      <span id="review-save-status" style="font-size:12px"></span>
+    </div>`;
+}
+
+function reviewCaptureReason() { const el = document.getElementById('review-reason'); if (el) reviewState.calls[reviewState.idx]._draftReason = el.value; }
+function reviewSetOutcome(v) { reviewCaptureReason(); reviewState.calls[reviewState.idx]._draftOutcome = v; reviewRender(); }
+function reviewToggleFlag(f) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const i = c._draftFlags.indexOf(f); if (i>=0) c._draftFlags.splice(i,1); else c._draftFlags.push(f); reviewRender(); }
+function reviewNav(d) { reviewCaptureReason(); const s = reviewState; const n = s.idx + d; if (n<0 || n>=s.calls.length) return; s.idx = n; reviewRender(); }
+function reviewClose() { document.getElementById('modeltest-review').style.display = 'none'; reviewState = null; }
+
+async function reviewSave() {
+  const s = reviewState, c = s.calls[s.idx];
+  const outcome = document.getElementById('review-outcome').value;
+  const reason  = document.getElementById('review-reason').value.trim();
+  const status  = document.getElementById('review-save-status');
+  if (!outcome) { status.textContent = 'Pick the correct outcome first'; status.style.color = 'var(--coral)'; return; }
+  try {
+    await compPost('training_examples?on_conflict=call_id', {
+      call_id: c.call_id,
+      source: 'model_test:' + s.testId,
+      transcript: c.call.transcription || null,
+      context: { vertical_name: c.call.vertical_name, zip: c.call.zip, duration: c.call.duration, canoe_outcome: c.call.canoe_outcome },
+      correct_outcome: outcome,
+      correct_flags: c._draftFlags || [],
+      reason: reason || null,
+      reviewed_by: getAuthUser() || null,
+      reviewed_at: new Date().toISOString(),
+    }, 'resolution=merge-duplicates,return=minimal');
+    c.existing = { correct_outcome: outcome, correct_flags: c._draftFlags || [], reason };
+    let n = s.idx + 1;
+    while (n < s.calls.length && s.calls[n].existing) n++;
+    s.idx = n < s.calls.length ? n : s.idx;
+    reviewRender();
+  } catch(e) { status.textContent = 'Save failed: ' + e.message; status.style.color = 'var(--coral)'; }
 }
 
 // ── AI PROMPTS ────────────────────────────────────────────────
