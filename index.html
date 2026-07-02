@@ -2342,7 +2342,9 @@ async function compLoadCalls() {
   const countEl = document.getElementById('comp-call-count');
   if (countEl) countEl.textContent = 'Loading…';
   try {
-    let url = 'canoe_calls?select=id,lead_id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,canoe_summary,flags,our_summary,transcription,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=75000';
+    // transcription is fetched lazily per call in openCallDrawer — pulling it for
+    // every row (now ~146k rows) blew the statement timeout. Metadata only here.
+    let url = 'canoe_calls?select=id,lead_id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,canoe_summary,flags,our_summary,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=10000';
     if (compDateFrom) url += `&created_at=gte.${compDateFrom}`;
     if (compDateTo)   url += `&created_at=lte.${compDateTo}`;
     const rows = await compFetch(url);
@@ -2540,7 +2542,15 @@ function openCallDrawer(call) {
   } else {
     summaryEl.textContent = 'No summary available.';
   }
-  document.getElementById('drawer-transcript').textContent = call.transcription || 'No transcript available.';
+  const txEl = document.getElementById('drawer-transcript');
+  if (call.transcription !== undefined) {
+    txEl.textContent = call.transcription || 'No transcript available.';
+  } else {
+    txEl.textContent = 'Loading transcript…';
+    compFetch(`canoe_calls?id=eq.${encodeURIComponent(call.id)}&select=transcription`)
+      .then(r => { txEl.textContent = (r && r[0] && r[0].transcription) || 'No transcript available.'; })
+      .catch(() => { txEl.textContent = 'Could not load transcript.'; });
+  }
 
   // reset correction form
   document.getElementById('correction-outcome').value = '';
@@ -3348,30 +3358,40 @@ function mtRender() {
         <span>${esc(val)} ${mark}</span>
       </label></td>`;
   };
-  const table = (kind, manualCol) => `<div style="overflow-x:auto;margin-bottom:20px"><table style="width:100%;border-collapse:collapse">
-    <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text-2)">Call</th>${oHdr}<th style="padding:6px 8px;font-size:11px;color:var(--text-2)">${manualCol}</th>${kind==='outcome'?'<th style="padding:6px 8px;font-size:11px;color:var(--text-2)">Why</th>':''}</tr></thead>
+  const table = (kind) => {
+    const colspan = s.models.length + 1;
+    return `<div style="overflow-x:auto;margin-bottom:8px"><table style="width:100%;border-collapse:collapse">
+    <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text-2)">Call</th>${oHdr}</tr></thead>
     <tbody>${s.calls.map((c,i) => {
-      const manual = kind === 'outcome'
-        ? `<select onchange="mtManualOutcome(${i},this.value)" style="font-size:11px;max-width:150px">${['<option value="">— manual —</option>'].concat(REVIEW_OUTCOMES.map(o=>`<option ${o===c.truthOutcome&&!c.truthModel?'selected':''}>${o}</option>`)).join('')}</select>`
-        : `<div style="display:flex;gap:3px;flex-wrap:wrap;max-width:200px">${REVIEW_FLAGS.map(f=>`<button onclick="mtManualFlag(${i},'${f}')" style="font-size:10px;padding:1px 5px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${(c.truthFlags||[]).includes(f)?'var(--brand-navy)':'var(--surface)'};color:${(c.truthFlags||[]).includes(f)?'#fff':'var(--text)'}">${f}</button>`).join('')}</div>`;
-      return `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:6px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">${esc(c.id.slice(0,8))}…</td>
+      const labelRow = kind === 'outcome'
+        ? `<tr><td colspan="${colspan}" style="padding:0 8px 10px 8px;background:var(--bg);border-bottom:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11px">
+             <span style="color:var(--text-3)">if none right:</span>
+             <select onchange="mtManualOutcome(${i},this.value)" style="font-size:11px">${['<option value="">— manual —</option>'].concat(REVIEW_OUTCOMES.map(o=>`<option ${o===c.truthOutcome&&!c.truthModel?'selected':''}>${o}</option>`)).join('')}</select>
+             <span style="color:var(--text-3);margin-left:6px;font-weight:600">Why wrong:</span>
+             <input value="${esc(c.reason)}" onchange="mtReason(${i},this.value)" placeholder="reason (saved to training data)" style="font-size:11px;width:min(520px,55%);min-width:240px">
+           </div></td></tr>`
+        : `<tr><td colspan="${colspan}" style="padding:0 8px 10px 8px;background:var(--bg);border-bottom:1px solid var(--border)"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
+             <span style="color:var(--text-3)">correct flags:</span>
+             ${REVIEW_FLAGS.map(f=>`<button onclick="mtManualFlag(${i},'${f}')" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${(c.truthFlags||[]).includes(f)?'var(--brand-navy)':'var(--surface)'};color:${(c.truthFlags||[]).includes(f)?'#fff':'var(--text)'}">${f}</button>`).join('')}
+           </div></td></tr>`;
+      return `<tr>
+        <td style="padding:6px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">▸ ${esc(c.id.slice(0,8))}…</td>
         ${s.models.map(m=>cell(c,i,m,kind)).join('')}
-        <td style="padding:6px 8px">${manual}</td>
-        ${kind==='outcome'?`<td style="padding:6px 8px"><input value="${esc(c.reason)}" onchange="mtReason(${i},this.value)" placeholder="why wrong?" style="font-size:11px;width:130px"></td>`:''}
       </tr>
-      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${s.models.length+ (kind==='outcome'?3:2)}" style="padding:6px 10px"><div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
+      ${labelRow}
+      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" style="padding:6px 10px"><div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
         <div style="margin-bottom:6px;font-size:12px">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">▶ call recording</a>`:'<span style="color:var(--text-3)">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">▶ AI-agent recording</a>`:''}</div>
         <div style="white-space:pre-wrap">${esc(c.tx||'(no transcript)')}</div>
       </div></td></tr>`;
     }).join('')}</tbody></table></div>`;
+  };
   tw.innerHTML = `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${summary}</div>
     <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">${s.calls.length} calls · ${labeled.length} labeled — tick the model that got it right (or set manual). Click a Call id to read the transcript.</div>
     <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Outcomes</div>
-    ${table('outcome','Correct (manual)')}
+    ${table('outcome')}
     <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Flags</div>
-    ${table('flags','Correct flags')}`;
+    ${table('flags')}`;
 }
 
 function mtToggleTx(i) { for (const k of ['outcome','flags']) { const el = document.getElementById(`mt-tx-${k}-${i}`); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; } }
