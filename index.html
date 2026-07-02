@@ -1086,7 +1086,8 @@
         <div id="modeltest-comparison" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
             <div class="settings-section-title" style="font-size:13px" id="modeltest-comparison-title">Results</div>
-            <button onclick="modeltestCloseComparison()" style="font-family:var(--sans);font-size:11px;color:var(--text-3);background:none;border:none;cursor:pointer;padding:0">✕ close</button>
+            <span id="mt-save-status" style="font-size:12px"></span>
+            <button onclick="modeltestCloseComparison()" style="font-family:var(--sans);font-size:11px;color:var(--text-3);background:none;border:none;cursor:pointer;padding:0;margin-left:auto">✕ close</button>
           </div>
           <div id="modeltest-comparison-table"></div>
         </div>
@@ -3311,13 +3312,17 @@ async function modeltestViewResults(testId) {
     const byCall = {}, models = new Set();
     for (const r of rows) { models.add(r.model); (byCall[r.call_id] = byCall[r.call_id] || {})[r.model] = { outcome:r.our_outcome, flags:r.flags||[], in:r.input_tokens||0, out:r.output_tokens||0 }; }
     const callIds = Object.keys(byCall), info = {}, existing = {};
+    // Metadata only up front — transcripts are large and lazy-loaded on expand.
     for (let i = 0; i < callIds.length; i += 50) {
       const sub = callIds.slice(i, i + 50);
-      (await compFetch(`canoe_calls?id=in.(${sub.join(',')})&select=id,transcription,recording_url,ascnd_recording_url`)).forEach(c => info[c.id] = c);
-      (await compFetch(`training_examples?call_id=in.(${sub.join(',')})&select=call_id,correct_outcome,correct_flags,reason`)).forEach(t => existing[t.call_id] = t);
+      const [rc, ex] = await Promise.all([
+        compFetch(`canoe_calls?id=in.(${sub.join(',')})&select=id,recording_url,ascnd_recording_url`),
+        compFetch(`training_examples?call_id=in.(${sub.join(',')})&select=call_id,correct_outcome,correct_flags,reason`),
+      ]);
+      rc.forEach(c => info[c.id] = c); ex.forEach(t => existing[t.call_id] = t);
     }
     mtState = { testId, models: [...models].sort(), calls: callIds.map(id => ({
-      id, tx: info[id]?.transcription || '', rec: info[id]?.recording_url || '', ascndRec: info[id]?.ascnd_recording_url || '', byModel: byCall[id],
+      id, tx: undefined, rec: info[id]?.recording_url || '', ascndRec: info[id]?.ascnd_recording_url || '', byModel: byCall[id],
       truthOutcome: existing[id]?.correct_outcome || '', truthFlags: existing[id]?.correct_flags || null,
       reason: existing[id]?.reason || '', truthModel: null,
     })) };
@@ -3381,7 +3386,7 @@ function mtRender() {
       ${labelRow}
       <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" style="padding:6px 10px"><div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
         <div style="margin-bottom:6px;font-size:12px">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">▶ call recording</a>`:'<span style="color:var(--text-3)">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">▶ AI-agent recording</a>`:''}</div>
-        <div style="white-space:pre-wrap">${esc(c.tx||'(no transcript)')}</div>
+        <div id="mt-txt-${kind}-${i}" style="white-space:pre-wrap">${c.tx===undefined?'Loading transcript…':esc(c.tx||'(no transcript)')}</div>
       </div></td></tr>`;
     }).join('')}</tbody></table></div>`;
   };
@@ -3394,7 +3399,17 @@ function mtRender() {
     ${table('flags')}`;
 }
 
-function mtToggleTx(i) { for (const k of ['outcome','flags']) { const el = document.getElementById(`mt-tx-${k}-${i}`); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; } }
+function mtToggleTx(i) {
+  const c = mtState.calls[i];
+  let shown = false;
+  for (const k of ['outcome','flags']) { const el = document.getElementById(`mt-tx-${k}-${i}`); if (el) { el.style.display = el.style.display === 'none' ? '' : 'none'; if (el.style.display !== 'none') shown = true; } }
+  if (shown && c.tx === undefined) {
+    c.tx = null; // in-flight
+    compFetch(`canoe_calls?id=eq.${encodeURIComponent(c.id)}&select=transcription`)
+      .then(r => { c.tx = (r && r[0] && r[0].transcription) || ''; for (const k of ['outcome','flags']) { const b = document.getElementById(`mt-txt-${k}-${i}`); if (b) b.textContent = c.tx || '(no transcript)'; } })
+      .catch(() => { for (const k of ['outcome','flags']) { const b = document.getElementById(`mt-txt-${k}-${i}`); if (b) b.textContent = '(could not load transcript)'; } });
+  }
+}
 function mtPick(i, m, kind) {
   const c = mtState.calls[i], d = c.byModel[m];
   const key = m + ':' + kind;
@@ -3409,13 +3424,20 @@ function mtReason(i, v) { mtState.calls[i].reason = v; mtSaveCall(i); }
 async function mtSaveCall(i) {
   const s = mtState, c = s.calls[i];
   if (!c.truthOutcome) return;  // correct_outcome is NOT NULL — an outcome must be set first
+  const st = document.getElementById('mt-save-status');
+  if (st) { st.textContent = 'Saving…'; st.style.color = 'var(--text-3)'; }
   try {
+    // Snapshot the transcript into the training row (survives call deletion). Fetch if not loaded.
+    if (c.tx === undefined || c.tx === null) {
+      try { const r = await compFetch(`canoe_calls?id=eq.${encodeURIComponent(c.id)}&select=transcription`); c.tx = (r && r[0] && r[0].transcription) || ''; } catch { c.tx = ''; }
+    }
     await compPost('training_examples?on_conflict=call_id', {
       call_id: c.id, source: 'model_test:' + s.testId, transcript: c.tx || null,
       correct_outcome: c.truthOutcome || null, correct_flags: c.truthFlags || [],
       reason: c.reason || null, reviewed_by: getAuthUser() || null, reviewed_at: new Date().toISOString(),
     }, 'resolution=merge-duplicates,return=minimal');
-  } catch(e) { console.warn('label save failed', e.message); }
+    if (st) { st.textContent = '✓ Saved ' + new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); st.style.color = 'var(--teal)'; }
+  } catch(e) { if (st) { st.textContent = 'Save failed: ' + e.message; st.style.color = 'var(--coral)'; } console.warn('label save failed', e.message); }
 }
 
 function modeltestCloseComparison() {
