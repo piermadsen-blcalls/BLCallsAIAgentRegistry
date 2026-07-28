@@ -3240,6 +3240,7 @@ async function calibInit() {
   modeltestLoadHistory();  // Recent Tests + review — everyone
 }
 
+let mtHistoryTimer = null;
 async function modeltestLoadHistory() {
   const wrap = document.getElementById('modeltest-history');
   if (!wrap) return;
@@ -3249,20 +3250,46 @@ async function modeltestLoadHistory() {
       wrap.innerHTML = '<p style="color:var(--text-3);font-size:13px;margin:0">No tests run yet.</p>';
       return;
     }
+
+    // Completion % for in-flight tests: result rows written / (sample_size × # models).
+    // process.js writes one model_test_results row per successfully processed call.
+    const liveIds = rows.filter(r => r.status === 'running' || r.status === 'pending').map(r => r.id);
+    const counts = {};
+    if (liveIds.length) {
+      (await compFetch(`model_test_results?test_id=in.(${liveIds.join(',')})&select=test_id`) || [])
+        .forEach(x => { counts[x.test_id] = (counts[x.test_id] || 0) + 1; });
+    }
+    const pctOf = r => {
+      const models = Math.max(1, String(r.model || '').split('·').length);
+      const total = (r.sample_size || 0) * models;
+      return total ? Math.min(100, Math.round((counts[r.id] || 0) / total * 100)) : null;
+    };
+
     wrap.innerHTML = `<div style="margin-top:4px">
       <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Recent Tests</div>
       ${rows.map(r => {
         const statusColor = r.status === 'completed' ? 'var(--teal)' : r.status === 'failed' ? 'var(--coral)' : 'var(--amber)';
         const date = new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const live = r.status === 'running' || r.status === 'pending';
+        const pct = live ? pctOf(r) : null;
+        const statusLabel = (pct !== null) ? `${r.status} · ${pct}%` : r.status;
+        const bar = (pct !== null)
+          ? `<span style="display:inline-block;width:70px;height:5px;border-radius:3px;background:var(--bg);border:1px solid var(--border);overflow:hidden;vertical-align:middle" title="${counts[r.id]||0} of ${(r.sample_size||0)*Math.max(1,String(r.model||'').split('·').length)} calls"><span style="display:block;height:100%;width:${pct}%;background:var(--brand-mint)"></span></span>`
+          : '';
         return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <span style="font-size:13px;flex:1;min-width:160px;font-family:var(--mono)">${r.model}</span>
           <span style="font-size:12px;color:var(--text-3)">${r.sample_size} calls</span>
-          <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${r.status}</span>
+          ${bar}
+          <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${statusLabel}</span>
           <span style="font-size:11px;color:var(--text-3)">${date}</span>
           ${r.status === 'completed' ? `<button onclick="modeltestViewResults('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">View &amp; review</button>` : ''}
         </div>`;
       }).join('')}
     </div>`;
+
+    // Auto-refresh while any test is in flight so the % ticks up live.
+    if (mtHistoryTimer) { clearTimeout(mtHistoryTimer); mtHistoryTimer = null; }
+    if (liveIds.length) mtHistoryTimer = setTimeout(modeltestLoadHistory, 15000);
   } catch(e) {
     wrap.innerHTML = `<p style="color:var(--coral);font-size:13px">${e.message}</p>`;
   }
