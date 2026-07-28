@@ -3319,20 +3319,28 @@ async function modeltestRun() {
     if (!callIds.length) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'No eligible calls to sample.'; return; }
   }
   const effectiveSize = callIds.length || sampleSize;
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length} test(s) over ${effectiveSize} calls…`;
+  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length}-model test over ${effectiveSize} calls…`;
 
+  // One model_tests row for the whole run. Every model writes its results under
+  // this single test_id, so the comparison view shows them side by side.
+  let testId;
+  try {
+    const testRow = await sbFetch('model_tests', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: selected.map(mtShort).join(' · '), sample_size: effectiveSize, status: 'pending' }),
+    });
+    testId = Array.isArray(testRow) ? testRow[0].id : testRow.id;
+  } catch(e) {
+    statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Could not create test: ${e.message}`; return;
+  }
+
+  const callIdsCsv = callIds.length ? callIds.join(',') : '';
   let launched = 0;
   for (const modelId of selected) {
     try {
-      const testRow = await sbFetch('model_tests', {
-        method: 'POST',
-        headers: { 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: modelId, sample_size: effectiveSize, status: 'pending' }),
-      });
-      const testId = Array.isArray(testRow) ? testRow[0].id : testRow.id;
-
       const inputs = { ai_model: modelId, batch_size: String(effectiveSize), test_mode: 'true', test_batch_id: testId };
-      if (callIds.length) inputs.test_call_ids = callIds.join(',');
+      if (callIdsCsv) inputs.test_call_ids = callIdsCsv;
       const res = await fetch('https://api.github.com/repos/piermadsen-blcalls/BLCallsAIAgentRegistry/actions/workflows/process.yml/dispatches', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
@@ -3345,7 +3353,7 @@ async function modeltestRun() {
     }
   }
 
-  statusEl.style.color = 'var(--teal)'; statusEl.textContent = `✓ ${launched} workflow(s) triggered — results appear below when complete`;
+  statusEl.style.color = 'var(--teal)'; statusEl.textContent = `✓ ${launched} model(s) dispatched into one test — results appear below when complete`;
   await modeltestLoadHistory();
 }
 
