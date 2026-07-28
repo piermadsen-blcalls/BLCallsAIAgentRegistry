@@ -592,6 +592,7 @@
               <option value="quoted_undecided">quoted_undecided</option>
               <option value="quoted_too_expensive">quoted_too_expensive</option>
               <option value="quoted_not_interested">quoted_not_interested</option>
+              <option value="quoted_abandoned">quoted_abandoned</option>
               <option value="undecided">undecided</option>
               <option value="not_interested">not_interested</option>
               <option value="caller_callback">caller_callback</option>
@@ -602,7 +603,8 @@
               <option value="agent_not_available">agent_not_available</option>
               <option value="audio_issue">audio_issue</option>
               <option value="outside_geo">outside_geo</option>
-              <option value="wrong_category">wrong_category</option>
+              <option value="advertiser_service_mismatch">advertiser_service_mismatch</option>
+              <option value="publisher_wrong_category">publisher_wrong_category</option>
               <option value="misrouted">misrouted</option>
               <option value="caller_confused">caller_confused</option>
               <option value="agent_confused">agent_confused</option>
@@ -621,7 +623,6 @@
             <button class="correction-flag-btn" data-flag="facebook_marketplace">facebook_marketplace</button>
             <button class="correction-flag-btn" data-flag="angry_caller">angry_caller</button>
             <button class="correction-flag-btn" data-flag="wrong_business">wrong_business</button>
-            <button class="correction-flag-btn" data-flag="incentivized_caller">incentivized_caller</button>
             <button class="correction-flag-btn" data-flag="geo_mismatch">geo_mismatch</button>
             <button class="correction-flag-btn" data-flag="duplicate_caller">duplicate_caller</button>
           </div>
@@ -922,15 +923,19 @@
           <option value="quoted_undecided">quoted_undecided</option>
           <option value="quoted_too_expensive">quoted_too_expensive</option>
           <option value="quoted_not_interested">quoted_not_interested</option>
+          <option value="quoted_abandoned">quoted_abandoned</option>
           <option value="undecided">undecided</option>
           <option value="not_interested">not_interested</option>
+          <option value="caller_callback">caller_callback</option>
+          <option value="agent_callback">agent_callback</option>
           <option value="caller_hangup">caller_hangup</option>
           <option value="ivr_hangup">ivr_hangup</option>
           <option value="voicemail">voicemail</option>
           <option value="agent_not_available">agent_not_available</option>
           <option value="audio_issue">audio_issue</option>
           <option value="outside_geo">outside_geo</option>
-          <option value="wrong_category">wrong_category</option>
+          <option value="advertiser_service_mismatch">advertiser_service_mismatch</option>
+          <option value="publisher_wrong_category">publisher_wrong_category</option>
           <option value="misrouted">misrouted</option>
           <option value="caller_confused">caller_confused</option>
           <option value="agent_confused">agent_confused</option>
@@ -1065,8 +1070,16 @@
           </div>
           <div>
             <label class="settings-label">Sample size</label>
-            <input class="settings-input" id="modeltest-sample-size" type="number" value="20" min="5" max="50" style="width:80px">
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">5 – 50 calls</div>
+            <input class="settings-input" id="modeltest-sample-size" type="number" value="100" min="5" max="200" style="width:80px">
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px">total calls</div>
+          </div>
+          <div>
+            <label class="settings-label">Sampling</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:8px;cursor:pointer">
+              <input type="checkbox" id="modeltest-stratify" checked style="accent-color:var(--brand-navy);width:14px;height:14px">
+              stratify by call length
+            </label>
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px">even short/med/long, pinned for all models</div>
           </div>
           <div style="flex:1;min-width:220px">
             <label class="settings-label">GitHub PAT (stored in session only)</label>
@@ -2446,7 +2459,7 @@ function compExportCSV() {
 }
 
 const POSITIVE_OUTCOMES = new Set(['sale','appointment','quoted_interested','quoted_undecided']);
-const NEGATIVE_OUTCOMES = new Set(['outside_geo','wrong_category','misrouted','caller_confused','agent_confused','soliciting','outside_hours','voicemail','agent_not_available']);
+const NEGATIVE_OUTCOMES = new Set(['outside_geo','advertiser_service_mismatch','publisher_wrong_category','misrouted','caller_confused','agent_confused','soliciting','outside_hours','voicemail','agent_not_available']);
 
 function outcomeBadge(outcome) {
   if (!outcome) return '<span class="outcome-badge">—</span>';
@@ -3177,9 +3190,10 @@ async function weightsExecute() {
 // ── MODEL CALIBRATION RUN ─────────────────────────────────────
 
 const MODEL_CATALOG = [
-  { id: 'claude-opus-4-8',               label: 'Claude Opus 4.8',       provider: 'Anthropic', inPer1M: 5.00, outPer1M: 25.00 },
-  { id: 'claude-sonnet-4-6',             label: 'Claude Sonnet 4.6',     provider: 'Anthropic', inPer1M: 3.00, outPer1M: 15.00 },
-  { id: 'claude-haiku-4-5',              label: 'Claude Haiku 4.5',      provider: 'Anthropic', inPer1M: 1.00, outPer1M: 5.00  },
+  { id: 'anthropic/claude-opus-4.8',     label: 'Claude Opus 4.8',       provider: 'Anthropic', inPer1M: 5.00, outPer1M: 25.00 },
+  { id: 'anthropic/claude-sonnet-4.6',   label: 'Claude Sonnet 4.6',     provider: 'Anthropic', inPer1M: 3.00, outPer1M: 15.00 },
+  { id: 'anthropic/claude-haiku-4.5',    label: 'Claude Haiku 4.5',      provider: 'Anthropic', inPer1M: 1.00, outPer1M: 5.00  },
+  { id: 'google/gemini-3.5-flash',       label: 'Gemini 3.5 Flash',      provider: 'Google',    inPer1M: 1.50, outPer1M: 9.00  },
   { id: 'nvidia/llama-3.3-70b-instruct', label: 'Llama 3.3 70B',         provider: 'NVIDIA',    inPer1M: 0.10, outPer1M: 0.32  },
   { id: 'nvidia/nemotron-super-49b-v1',  label: 'Nemotron Super 120B',   provider: 'NVIDIA',    inPer1M: 0.09, outPer1M: 0.40  },
   { id: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 550B',   provider: 'NVIDIA',    inPer1M: 0.41, outPer1M: 1.20  },
@@ -3254,16 +3268,58 @@ async function modeltestLoadHistory() {
   }
 }
 
+// Pick `total` recent transcribed calls spread evenly across duration tertiles
+// (short / medium / long). Returns a fixed list of ids so every model in the
+// run scores the identical set.
+async function modeltestSampleByLength(total) {
+  const pool = await compFetch('canoe_calls?transcription=not.is.null&transcription=neq.&duration=not.is.null&select=id,duration,created_at&order=created_at.desc&limit=600');
+  const calls = (pool || []).filter(c => Number(c.duration) > 0);
+  if (calls.length <= total) return calls.map(c => c.id);
+
+  const byDur = [...calls].sort((a, b) => a.duration - b.duration);
+  const t1 = byDur[Math.floor(byDur.length / 3)].duration;
+  const t2 = byDur[Math.floor((byDur.length * 2) / 3)].duration;
+  const bands = [
+    calls.filter(c => c.duration < t1),                       // short
+    calls.filter(c => c.duration >= t1 && c.duration < t2),   // medium
+    calls.filter(c => c.duration >= t2),                      // long
+  ];
+
+  const per  = Math.floor(total / 3);
+  const want = [per, per, total - per * 2];                   // e.g. 33 / 33 / 34
+  const picked = [];
+  const chosen = new Set();
+  // `calls` is created_at desc, so slicing keeps the most-recent within each band.
+  bands.forEach((band, i) => band.slice(0, want[i]).forEach(c => { picked.push(c); chosen.add(c.id); }));
+  // Top up from the remaining recent calls if a band ran short.
+  for (const c of calls) { if (picked.length >= total) break; if (!chosen.has(c.id)) { picked.push(c); chosen.add(c.id); } }
+  return picked.slice(0, total).map(c => c.id);
+}
+
 async function modeltestRun() {
   const selected  = [...document.querySelectorAll('.modeltest-checkbox:checked')].map(cb => cb.value);
   const sampleSize = parseInt(document.getElementById('modeltest-sample-size').value || '10', 10);
+  const stratify   = document.getElementById('modeltest-stratify').checked;
   const pat       = document.getElementById('modeltest-pat').value.trim();
   const statusEl  = document.getElementById('modeltest-run-status');
 
   if (selected.length === 0) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select at least one model.'; return; }
   if (!pat) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'GitHub PAT required.'; return; }
   sessionStorage.setItem('gh_pat', pat);
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length} test(s)…`;
+
+  // Pin one call set up front so every model scores the identical calls.
+  let callIds = [];
+  if (stratify) {
+    statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Building length-stratified sample…';
+    try {
+      callIds = await modeltestSampleByLength(sampleSize);
+    } catch(e) {
+      statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Sampling failed: ${e.message}`; return;
+    }
+    if (!callIds.length) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'No eligible calls to sample.'; return; }
+  }
+  const effectiveSize = callIds.length || sampleSize;
+  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length} test(s) over ${effectiveSize} calls…`;
 
   let launched = 0;
   for (const modelId of selected) {
@@ -3271,14 +3327,16 @@ async function modeltestRun() {
       const testRow = await sbFetch('model_tests', {
         method: 'POST',
         headers: { 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: modelId, sample_size: sampleSize, status: 'pending' }),
+        body: JSON.stringify({ model: modelId, sample_size: effectiveSize, status: 'pending' }),
       });
       const testId = Array.isArray(testRow) ? testRow[0].id : testRow.id;
 
+      const inputs = { ai_model: modelId, batch_size: String(effectiveSize), test_mode: 'true', test_batch_id: testId };
+      if (callIds.length) inputs.test_call_ids = callIds.join(',');
       const res = await fetch('https://api.github.com/repos/piermadsen-blcalls/BLCallsAIAgentRegistry/actions/workflows/process.yml/dispatches', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ref: 'main', inputs: { ai_model: modelId, batch_size: String(sampleSize), test_mode: 'true', test_batch_id: testId } }),
+        body: JSON.stringify({ ref: 'main', inputs }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub ${res.status}`); }
       launched++;
@@ -3292,7 +3350,7 @@ async function modeltestRun() {
 }
 
 const MT_PRICES = {
-  'anthropic/claude-opus-4.8':[5,25], 'anthropic/claude-sonnet-5':[2,10], 'anthropic/claude-haiku-4.5':[1,5],
+  'anthropic/claude-opus-4.8':[5,25], 'anthropic/claude-sonnet-4.6':[3,15], 'anthropic/claude-haiku-4.5':[1,5],
   'openai/gpt-4.1-mini':[0.4,1.6], 'openai/gpt-5-nano':[0.05,0.4], 'meta-llama/llama-3.3-70b-instruct':[0.1,0.32],
   'google/gemini-2.5-flash':[0.3,2.5], 'google/gemini-3.5-flash':[1.5,9], 'nvidia/nemotron-3-super-120b-a12b':[0.08,0.4],
 };
@@ -3445,8 +3503,8 @@ function modeltestCloseComparison() {
 }
 
 // ── CALL REVIEW / TRAINING LABELS ─────────────────────────────
-const REVIEW_OUTCOMES = ['sale','appointment','quoted_interested','quoted_undecided','quoted_too_expensive','quoted_not_interested','undecided','not_interested','caller_callback','agent_callback','caller_hangup','ivr_hangup','voicemail','agent_not_available','audio_issue','outside_geo','wrong_category','misrouted','caller_confused','agent_confused','customer_service','soliciting','referral','outside_hours','other'];
-const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','incentivized_caller'];
+const REVIEW_OUTCOMES = ['sale','appointment','quoted_interested','quoted_undecided','quoted_too_expensive','quoted_not_interested','quoted_abandoned','undecided','not_interested','caller_callback','agent_callback','caller_hangup','ivr_hangup','voicemail','agent_not_available','audio_issue','outside_geo','advertiser_service_mismatch','publisher_wrong_category','misrouted','caller_confused','agent_confused','customer_service','soliciting','referral','outside_hours','other'];
+const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
 let reviewState = null;
 
 async function reviewOpen(testId) {
