@@ -3558,7 +3558,7 @@ async function reviewOpen(testId) {
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
   body.innerHTML = '<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>';
   try {
-    const results = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags&order=call_id.asc`);
+    const results = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags,raw_response&order=call_id.asc`);
     if (!results || !results.length) { body.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results to review.</p>'; return; }
     const byCall = {};
     for (const r of results) (byCall[r.call_id] = byCall[r.call_id] || []).push(r);
@@ -3581,22 +3581,29 @@ function reviewRender() {
   const c = s.calls[s.idx];
   document.getElementById('review-progress').textContent = `call ${s.idx+1} of ${s.calls.length} · ${s.calls.filter(x=>x.existing).length} labeled`;
   const truthOutcome = c._draftOutcome !== undefined ? c._draftOutcome : (c.existing?.correct_outcome || '');
-  if (!c._draftFlags) c._draftFlags = [...(c.existing?.correct_flags || [])];
-  const modelCards = c.models.map(m => {
+  if (!c._draftFlags) { c._draftFlags = [...(c.existing?.correct_flags || [])]; c._flagsSet = !!c.existing; }
+  const modelCards = c.models.map((m, mi) => {
     const short = m.model.split('/').pop();
-    const badge = truthOutcome ? (m.our_outcome === truthOutcome ? '<span style="color:var(--teal)">✓</span>' : '<span style="color:var(--coral)">✗</span>') : '';
-    return `<div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;min-width:150px">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-bottom:2px">${esc(short)}</div>
-      <div style="font-weight:600">${esc(m.our_outcome||'—')} ${badge}</div>
-      <div style="color:var(--text-3);font-size:11px">${esc((m.flags||[]).join(', ')||'no flags')}</div>
+    const flags = m.flags || [];
+    const flText = flags.length ? flags.join(', ') : 'none';
+    const summary = (m.raw_response && m.raw_response.summary) || '';
+    const ocOn = truthOutcome && m.our_outcome === truthOutcome;
+    const flOn = c._flagsSet && rvSameFlags(flags, c._draftFlags);
+    const btn = (on, click) => `onclick="${click}" title="click again to undo" style="flex-shrink:0;font-size:11px;font-weight:500;padding:5px 11px;border-radius:var(--radius-sm);border:1px solid ${on?'var(--teal)':'var(--brand-navy)'};background:${on?'var(--teal)':'var(--surface)'};color:${on?'#fff':'var(--brand-navy)'};cursor:pointer;white-space:nowrap"`;
+    const kv = (label, val) => `<div style="flex:1;min-width:0"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3)">${label}</div><div style="font-family:var(--mono);font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${val}</div></div>`;
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 11px;min-width:0;background:var(--surface);display:flex;flex-direction:column;gap:8px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(short)}</div>
+      <div style="display:flex;align-items:center;gap:8px">${kv('Outcome', esc(m.our_outcome||'—'))}<button ${btn(ocOn, `reviewPickOutcome('${m.our_outcome||''}')`)}>${ocOn?'✓ correct':'correct'}</button></div>
+      <div style="display:flex;align-items:center;gap:8px">${kv('Compliance flags', esc(flText))}<button ${btn(flOn, `reviewPickFlags(${mi})`)}>${flOn?'✓ correct':'correct'}</button></div>
+      ${summary ? `<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--brand-navy)">summary</summary><div style="font-size:11.5px;color:var(--text-2);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">${esc(summary)}</div></details>` : ''}
     </div>`;
   }).join('');
   const outcomeOpts = ['<option value="">— pick correct outcome —</option>'].concat(REVIEW_OUTCOMES.map(o => `<option value="${o}" ${o===truthOutcome?'selected':''}>${o}</option>`)).join('');
-  const noFlagsSel = c._draftFlags.length === 0;
-  const flagBtns = `<button onclick="reviewClearFlags()" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border-strong);cursor:pointer;background:${noFlagsSel?'var(--teal)':'var(--surface)'};color:${noFlagsSel?'#fff':'var(--text)'}">✓ no flags</button> `
-    + REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${f}</button>`).join(' ');
+  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:4px 10px;border-radius:100px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${f}</button>`).join(' ');
   const ctx = c.call;
   const reasonVal = c._draftReason !== undefined ? c._draftReason : (c.existing?.reason || '');
+  const roFlags = c._draftFlags.length ? c._draftFlags.join(', ') : 'none';
+  const hd = (color, text) => `<div style="font-family:var(--serif);font-size:19px;color:var(--brand-navy);display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:${color}"></span>${text}</div>`;
   document.getElementById('review-body').innerHTML = `
     <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-bottom:10px">
       <span>vertical: <strong>${esc(ctx.vertical_name||'—')}</strong></span>
@@ -3605,13 +3612,19 @@ function reviewRender() {
       <span>canoe: <strong>${esc(ctx.canoe_outcome||'—')}</strong></span>
       ${c.existing ? '<span style="color:var(--teal)">● already labeled</span>' : ''}
     </div>
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:220px;overflow:auto;font-size:12px;line-height:1.5;white-space:pre-wrap;margin-bottom:12px">${esc(ctx.transcription||'(no transcript)')}</div>
-    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">What each model said</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${modelCards}</div>
-    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Correct answer</div>
-    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select" style="min-width:230px;margin-bottom:10px">${outcomeOpts}</select>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${flagBtns}</div>
-    <textarea id="review-reason" placeholder="Why was the AI wrong? (optional)" class="correction-textarea" style="width:100%;min-height:52px;margin-bottom:10px">${esc(reasonVal)}</textarea>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:200px;overflow:auto;font-size:12px;line-height:1.5;white-space:pre-wrap;margin-bottom:14px">${esc(ctx.transcription||'(no transcript)')}</div>
+    <div style="font-size:11px;font-weight:500;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">What each model said</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:16px">${modelCards}</div>
+    ${hd('var(--brand-navy)', 'Correct outcome')}
+    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select" style="min-width:250px;margin-top:8px">${outcomeOpts}</select>
+    <div style="margin:22px 0 8px;padding-top:16px;border-top:1px solid var(--border)">${hd('var(--brand-mint)', 'Correct compliance flags')}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${flagBtns}</div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:12px">Leave all off = no flags. Only turn on the ones that apply.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:9px 13px;margin-bottom:12px;font-size:13px">
+      <span><span style="color:var(--text-3);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.06em;margin-right:6px">Saving</span><span style="font-family:var(--mono);color:var(--brand-navy);font-weight:500">${esc(truthOutcome||'—')}</span></span>
+      <span><span style="color:var(--text-3);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.06em;margin-right:6px">Flags</span><span style="font-family:var(--mono);color:var(--brand-navy);font-weight:500">${esc(roFlags)}</span></span>
+    </div>
+    <textarea id="review-reason" placeholder="Explain why your selected outcome / flags are correct (optional)" class="correction-textarea" style="width:100%;min-height:50px;margin-bottom:10px">${esc(reasonVal)}</textarea>
     <div style="display:flex;gap:8px;align-items:center">
       <button onclick="reviewNav(-1)" ${s.idx===0?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">‹ Prev</button>
       <button onclick="reviewSave()" style="font-size:12px;padding:5px 14px;border:none;border-radius:var(--radius-sm);background:var(--brand-navy);color:#fff;cursor:pointer">Save &amp; next</button>
@@ -3621,9 +3634,11 @@ function reviewRender() {
 }
 
 function reviewCaptureReason() { const el = document.getElementById('review-reason'); if (el) reviewState.calls[reviewState.idx]._draftReason = el.value; }
+function rvSameFlags(a, b) { return [...(a||[])].sort().join(',') === [...(b||[])].sort().join(','); }
 function reviewSetOutcome(v) { reviewCaptureReason(); reviewState.calls[reviewState.idx]._draftOutcome = v; reviewRender(); }
-function reviewToggleFlag(f) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const i = c._draftFlags.indexOf(f); if (i>=0) c._draftFlags.splice(i,1); else c._draftFlags.push(f); reviewRender(); }
-function reviewClearFlags() { reviewCaptureReason(); reviewState.calls[reviewState.idx]._draftFlags = []; reviewRender(); }
+function reviewPickOutcome(v) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const cur = c._draftOutcome !== undefined ? c._draftOutcome : (c.existing?.correct_outcome || ''); c._draftOutcome = (cur === v) ? '' : v; reviewRender(); }
+function reviewPickFlags(mi) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const f = (c.models[mi] && c.models[mi].flags) || []; if (c._flagsSet && rvSameFlags(f, c._draftFlags)) { c._draftFlags = []; c._flagsSet = false; } else { c._draftFlags = [...f]; c._flagsSet = true; } reviewRender(); }
+function reviewToggleFlag(f) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const i = c._draftFlags.indexOf(f); if (i>=0) c._draftFlags.splice(i,1); else c._draftFlags.push(f); c._flagsSet = true; reviewRender(); }
 function reviewNav(d) { reviewCaptureReason(); const s = reviewState; const n = s.idx + d; if (n<0 || n>=s.calls.length) return; s.idx = n; reviewRender(); }
 function reviewClose() { document.getElementById('modeltest-review').style.display = 'none'; reviewState = null; }
 
