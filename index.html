@@ -3596,7 +3596,7 @@ function reviewRender() {
       <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(short)}</div>
       <div style="display:flex;align-items:center;gap:8px">${kv('Outcome', esc(m.our_outcome||'—'))}<button ${btn(ocOn, `reviewPickOutcome('${m.our_outcome||''}')`)}>${ocOn?'✓ correct':'correct'}</button></div>
       <div style="display:flex;align-items:center;gap:8px">${kv('Compliance flags', esc(flText))}<button ${btn(flOn, `reviewPickFlags(${mi})`)}>${flOn?'✓ correct':'correct'}</button></div>
-      ${summary ? `<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--brand-navy)">summary</summary><div style="font-size:11.5px;color:var(--text-2);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">${esc(summary)}</div></details>` : ''}
+      <div style="margin-top:2px"><span onclick="reviewToggleSummaries()" style="cursor:pointer;font-size:11px;color:var(--brand-navy);user-select:none">${s.showSummaries?'▾':'▸'} summary</span>${s.showSummaries ? `<div style="font-size:11.5px;color:var(--text-2);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">${summary ? esc(summary) : '<span style="color:var(--text-3)">(no summary)</span>'}</div>` : ''}</div>
     </div>`;
   }).join('');
   const outcomeOpts = ['<option value="">— pick correct outcome —</option>'].concat(REVIEW_OUTCOMES.map(o => `<option value="${o}" ${o===truthOutcome?'selected':''}>${o}</option>`)).join('');
@@ -3640,6 +3640,7 @@ function reviewSetOutcome(v) { reviewCaptureReason(); reviewState.calls[reviewSt
 function reviewPickOutcome(v) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const cur = c._draftOutcome !== undefined ? c._draftOutcome : (c.existing?.correct_outcome || ''); c._draftOutcome = (cur === v) ? '' : v; reviewRender(); }
 function reviewPickFlags(mi) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const f = (c.models[mi] && c.models[mi].flags) || []; if (c._flagsSet && rvSameFlags(f, c._draftFlags)) { c._draftFlags = []; c._flagsSet = false; } else { c._draftFlags = [...f]; c._flagsSet = true; } reviewRender(); }
 function reviewToggleFlag(f) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const i = c._draftFlags.indexOf(f); if (i>=0) c._draftFlags.splice(i,1); else c._draftFlags.push(f); c._flagsSet = true; reviewRender(); }
+function reviewToggleSummaries() { reviewCaptureReason(); reviewState.showSummaries = !reviewState.showSummaries; reviewRender(); }
 function reviewNav(d) { reviewCaptureReason(); const s = reviewState; const n = s.idx + d; if (n<0 || n>=s.calls.length) return; s.idx = n; reviewRender(); }
 function reviewClose() { document.getElementById('modeltest-review').style.display = 'none'; reviewState = null; }
 
