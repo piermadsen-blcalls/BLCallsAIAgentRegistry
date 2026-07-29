@@ -3395,7 +3395,8 @@ const mtShort = m => m.split('/').pop();
 
 async function modeltestViewResults(testId) {
   const wrap = document.getElementById('modeltest-comparison');
-  document.getElementById('modeltest-comparison-title').textContent = 'Results & review';
+  document.getElementById('modeltest-review').style.display = 'none';
+  document.getElementById('modeltest-comparison-title').textContent = 'Model comparison — grid';
   const tableWrap = document.getElementById('modeltest-comparison-table');
   tableWrap.innerHTML = '<div style="color:var(--text-3);font-size:13px">Loading…</div>';
   wrap.style.display = 'block';
