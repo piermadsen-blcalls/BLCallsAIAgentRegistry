@@ -3283,7 +3283,7 @@ async function modeltestLoadHistory() {
           ${bar}
           <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${statusLabel}</span>
           <span style="font-size:11px;color:var(--text-3)">${date}</span>
-          ${r.status === 'completed' ? `<button onclick="reviewOpen('${r.id}')" style="font-family:var(--sans);font-size:12px;color:#fff;background:var(--brand-navy);border:1px solid var(--brand-navy);border-radius:var(--radius-sm);padding:3px 12px;cursor:pointer;font-weight:500">Review calls</button><button onclick="modeltestViewResults('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">Compare grid</button>` : ''}
+          ${(r.status === 'completed' || r.status === 'failed') ? `<button onclick="reviewOpen('${r.id}')" style="font-family:var(--sans);font-size:12px;color:#fff;background:var(--brand-navy);border:1px solid var(--brand-navy);border-radius:var(--radius-sm);padding:3px 12px;cursor:pointer;font-weight:500">Review calls</button><button onclick="modeltestViewResults('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">Compare grid</button>` : ''}
         </div>`;
       }).join('')}
     </div>`;
