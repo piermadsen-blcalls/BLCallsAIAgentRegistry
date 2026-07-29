@@ -311,6 +311,9 @@ async function callOpenRouter(system, userMessage) {
           model:       AI_MODEL,
           max_tokens:  MAX_TOKENS,
           temperature: 0.1,
+          // Force a clean JSON object — no markdown fences or preamble prose.
+          // (Our prompt already instructs "valid JSON only", which json_object mode requires.)
+          response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: system },
             { role: 'user',   content: userMessage },
