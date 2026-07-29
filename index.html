@@ -3444,7 +3444,6 @@ function mtRender() {
   const cell = (c, i, m, kind) => {
     const d = c.byModel[m];
     const val = kind === 'outcome' ? (d?.outcome || '—') : ((d?.flags||[]).join(', ') || '—');
-    const ticked = c.truthModel === m + ':' + kind;
     const truthSet = kind === 'outcome' ? !!c.truthOutcome : !!c.truthFlags;
     let mark = '';
     if (truthSet && d) {
@@ -3452,34 +3451,20 @@ function mtRender() {
                                     : JSON.stringify([...(d.flags||[])].sort()) === JSON.stringify([...(c.truthFlags||[])].sort());
       mark = ok ? '<span style="color:var(--teal)">✓</span>' : '<span style="color:var(--coral)">✗</span>';
     }
-    return `<td style="padding:6px 8px;font-size:12px;vertical-align:top">
-      <label style="display:flex;gap:4px;align-items:flex-start;cursor:pointer">
-        <input type="checkbox" ${ticked?'checked':''} onclick="mtPick(${i},'${m}','${kind}')" style="margin-top:2px">
-        <span>${esc(val)} ${mark}</span>
-      </label></td>`;
+    return `<td style="padding:6px 8px;font-size:12px;vertical-align:top">${esc(val)} ${mark}</td>`;
   };
   const table = (kind) => {
     const colspan = s.models.length + 1;
     return `<div style="overflow-x:auto;margin-bottom:8px"><table style="width:100%;border-collapse:collapse">
     <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text-2)">Call</th>${oHdr}</tr></thead>
     <tbody>${s.calls.map((c,i) => {
-      const labelRow = kind === 'outcome'
-        ? `<tr><td colspan="${colspan}" style="padding:0 8px 10px 8px;background:var(--bg);border-bottom:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11px">
-             <span style="color:var(--text-3)">if none right:</span>
-             <select onchange="mtManualOutcome(${i},this.value)" style="font-size:11px">${['<option value="">— manual —</option>'].concat(REVIEW_OUTCOMES.map(o=>`<option ${o===c.truthOutcome&&!c.truthModel?'selected':''}>${o}</option>`)).join('')}</select>
-             <span style="color:var(--text-3);margin-left:6px;font-weight:600">Why wrong:</span>
-             <input value="${esc(c.reason)}" onchange="mtReason(${i},this.value)" placeholder="reason (saved to training data)" style="font-size:11px;width:min(520px,55%);min-width:240px">
-           </div></td></tr>`
-        : `<tr><td colspan="${colspan}" style="padding:0 8px 10px 8px;background:var(--bg);border-bottom:1px solid var(--border)"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
-             <span style="color:var(--text-3)">correct flags:</span>
-             <button onclick="mtNoFlags(${i})" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${Array.isArray(c.truthFlags)&&c.truthFlags.length===0?'var(--teal)':'var(--surface)'};color:${Array.isArray(c.truthFlags)&&c.truthFlags.length===0?'#fff':'var(--text)'}">no flags</button>
-             ${REVIEW_FLAGS.map(f=>`<button onclick="mtManualFlag(${i},'${f}')" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${(c.truthFlags||[]).includes(f)?'var(--brand-navy)':'var(--surface)'};color:${(c.truthFlags||[]).includes(f)?'#fff':'var(--text)'}">${f}</button>`).join('')}
-           </div></td></tr>`;
-      return `<tr>
-        <td style="padding:6px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">▸ ${esc(c.id.slice(0,8))}…</td>
+      const disagree = kind === 'outcome'
+        ? new Set(s.models.map(m => c.byModel[m]?.outcome).filter(v => v != null)).size > 1
+        : new Set(s.models.map(m => c.byModel[m] ? JSON.stringify([...(c.byModel[m].flags||[])].sort()) : null).filter(v => v != null)).size > 1;
+      return `<tr${disagree ? ' style="background:var(--amber-bg)"' : ''}>
+        <td style="padding:6px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">▸ ${esc(c.id.slice(0,8))}…${disagree ? " <span title='models disagree'>⚠</span>" : ''}</td>
         ${s.models.map(m=>cell(c,i,m,kind)).join('')}
       </tr>
-      ${labelRow}
       <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" style="padding:6px 10px"><div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
         <div style="margin-bottom:6px;font-size:12px">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">▶ call recording</a>`:'<span style="color:var(--text-3)">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">▶ AI-agent recording</a>`:''}</div>
         <div id="mt-txt-${kind}-${i}" style="white-space:pre-wrap">${c.tx===undefined?'Loading transcript…':esc(c.tx||'(no transcript)')}</div>
@@ -3488,15 +3473,15 @@ function mtRender() {
   };
   tw.innerHTML = `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${summary}</div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">${s.calls.length} calls · ${labeled.length} labeled — tick the model that got it right (or set manual). Click a Call id to read the transcript.</div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">${s.calls.length} calls · ${labeled.length} labeled. Read-only scoreboard — accuracy is measured against calls labeled in <strong>Review calls</strong>. <span style="background:var(--amber-bg);padding:0 4px;border-radius:3px">⚠</span> = models disagree. Click a Call id to read the transcript.</div>
     <div style="display:flex;align-items:baseline;gap:10px;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--brand-navy)">
-      <span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--serif);font-size:22px;color:var(--brand-navy);line-height:1"><span style="width:9px;height:9px;border-radius:50%;background:var(--brand-navy)"></span>Outcomes</span>
-      <span style="font-size:12px;color:var(--text-3)">tick the model with the correct disposition</span>
+      <span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--serif);font-size:22px;color:var(--brand-navy);line-height:1.2"><span style="width:9px;height:9px;border-radius:50%;background:var(--brand-navy)"></span>Outcomes</span>
+      <span style="font-size:12px;color:var(--text-3)">each model's answer · ✓/✗ vs the labeled correct outcome</span>
     </div>
     ${table('outcome')}
     <div style="display:flex;align-items:baseline;gap:10px;margin:28px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--brand-mint)">
-      <span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--serif);font-size:22px;color:var(--brand-navy);line-height:1"><span style="width:9px;height:9px;border-radius:50%;background:var(--brand-mint)"></span>Compliance flags</span>
-      <span style="font-size:12px;color:var(--text-3)">tick the model with the correct flags</span>
+      <span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--serif);font-size:22px;color:var(--brand-navy);line-height:1.2"><span style="width:9px;height:9px;border-radius:50%;background:var(--brand-mint)"></span>Compliance flags</span>
+      <span style="font-size:12px;color:var(--text-3)">each model's flags · ✓/✗ vs the labeled correct flags</span>
     </div>
     ${table('flags')}`;
 }
@@ -3512,36 +3497,8 @@ function mtToggleTx(i) {
       .catch(() => { for (const k of ['outcome','flags']) { const b = document.getElementById(`mt-txt-${k}-${i}`); if (b) b.textContent = '(could not load transcript)'; } });
   }
 }
-function mtPick(i, m, kind) {
-  const c = mtState.calls[i], d = c.byModel[m];
-  const key = m + ':' + kind;
-  if (c.truthModel === key) { c.truthModel = null; if (kind==='outcome') c.truthOutcome=''; else c.truthFlags=null; }
-  else { c.truthModel = key; if (kind==='outcome') c.truthOutcome = d?.outcome || ''; else c.truthFlags = [...(d?.flags||[])]; }
-  mtSaveCall(i); mtRender();
-}
-function mtManualOutcome(i, v) { const c = mtState.calls[i]; c.truthOutcome = v; if (v) c.truthModel = null; mtSaveCall(i); mtRender(); }
-function mtManualFlag(i, f) { const c = mtState.calls[i]; c.truthFlags = c.truthFlags || []; const j = c.truthFlags.indexOf(f); if (j>=0) c.truthFlags.splice(j,1); else c.truthFlags.push(f); c.truthModel = null; mtSaveCall(i); mtRender(); }
-function mtNoFlags(i) { const c = mtState.calls[i]; c.truthFlags = []; c.truthModel = null; mtSaveCall(i); mtRender(); }
-function mtReason(i, v) { mtState.calls[i].reason = v; mtSaveCall(i); }
-
-async function mtSaveCall(i) {
-  const s = mtState, c = s.calls[i];
-  if (!c.truthOutcome) return;  // correct_outcome is NOT NULL — an outcome must be set first
-  const st = document.getElementById('mt-save-status');
-  if (st) { st.textContent = 'Saving…'; st.style.color = 'var(--text-3)'; }
-  try {
-    // Snapshot the transcript into the training row (survives call deletion). Fetch if not loaded.
-    if (c.tx === undefined || c.tx === null) {
-      try { const r = await compFetch(`canoe_calls?id=eq.${encodeURIComponent(c.id)}&select=transcription`); c.tx = (r && r[0] && r[0].transcription) || ''; } catch { c.tx = ''; }
-    }
-    await compPost('training_examples?on_conflict=call_id', {
-      call_id: c.id, source: 'model_test:' + s.testId, transcript: c.tx || null,
-      correct_outcome: c.truthOutcome || null, correct_flags: c.truthFlags || [],
-      reason: c.reason || null, reviewed_by: getAuthUser() || null, reviewed_at: new Date().toISOString(),
-    }, 'resolution=merge-duplicates,return=minimal');
-    if (st) { st.textContent = '✓ Saved ' + new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); st.style.color = 'var(--teal)'; }
-  } catch(e) { if (st) { st.textContent = 'Save failed: ' + e.message; st.style.color = 'var(--coral)'; } console.warn('label save failed', e.message); }
-}
+// Compare grid is a read-only scoreboard — all labeling now happens in the
+// Review calls panel (reviewOpen), which writes training_examples.
 
 function modeltestCloseComparison() {
   document.getElementById('modeltest-comparison').style.display = 'none';
