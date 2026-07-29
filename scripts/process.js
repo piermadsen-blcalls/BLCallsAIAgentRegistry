@@ -32,7 +32,7 @@ const OPENROUTER_API_KEY   = process.env.OPENROUTER_API_KEY;
 const AI_MODEL             = process.env.AI_MODEL       || 'anthropic/claude-sonnet-4-6';
 const AI_MODE              = process.env.AI_MODE        || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
-const MAX_TOKENS           = parseInt(process.env.MAX_TOKENS || '1024', 10);
+const MAX_TOKENS           = parseInt(process.env.MAX_TOKENS || '4096', 10);
 const PROMPT_ID            = process.env.PROMPT_ID      || null;
 const TEST_MODE            = process.env.TEST_MODE      === 'true';
 const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
@@ -242,6 +242,28 @@ async function loadPrompt() {
   }
 }
 
+// Parse a model's JSON reply defensively. Handles: pure JSON, ```json fenced
+// blocks, and JSON followed by trailing prose (extracts the first balanced
+// {...} object). Throws only if no valid object can be recovered.
+function parseModelJson(text) {
+  let t = (text || '').trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  try { return JSON.parse(t); } catch {}
+  const start = t.indexOf('{');
+  if (start >= 0) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < t.length; i++) {
+      const ch = t[i];
+      if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; }
+      else if (ch === '"') inStr = true;
+      else if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) { try { return JSON.parse(t.slice(start, i + 1)); } catch { break; } } }
+    }
+  }
+  throw new Error(`Could not parse response: ${t.slice(0, 200)}`);
+}
+
 // ── LLM API call ──────────────────────────────────────────────
 // Namespaced model ids ("anthropic/...", "openai/...", "google/...") route
 // through OpenRouter. Bare ids ("claude-sonnet-4-6") hit the Anthropic API.
@@ -270,14 +292,7 @@ async function callClaude(system, userMessage) {
   const data = await res.json();
   const text = data.content[0].text.trim();
   const usage = { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 };
-
-  try {
-    return { result: JSON.parse(text), usage };
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) return { result: JSON.parse(match[0]), usage };
-    throw new Error(`Could not parse Claude response: ${text}`);
-  }
+  return { result: parseModelJson(text), usage };
 }
 
 async function callOpenRouter(system, userMessage) {
@@ -316,14 +331,7 @@ async function callOpenRouter(system, userMessage) {
   if (!data.choices || !data.choices.length) throw new Error(`OpenRouter returned no choices: ${JSON.stringify(data).slice(0, 300)}`);
   const text = (data.choices[0].message.content || '').trim();
   const usage = { input: data.usage?.prompt_tokens || 0, output: data.usage?.completion_tokens || 0 };
-
-  try {
-    return { result: JSON.parse(text), usage };
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) return { result: JSON.parse(match[0]), usage };
-    throw new Error(`Could not parse OpenRouter response: ${text}`);
-  }
+  return { result: parseModelJson(text), usage };
 }
 
 // ── Duplicate caller detection ────────────────────────────────
@@ -512,7 +520,7 @@ async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
       const usage   = { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 };
       const text    = data.content[0].text.trim();
       let parsed;
-      try { parsed = JSON.parse(text); } catch { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
+      try { parsed = parseModelJson(text); } catch { parsed = null; }
       if (!parsed) { console.error(`  [${item.custom_id}] Could not parse response`); errors++; continue; }
 
       let outcome = parsed.outcome;
