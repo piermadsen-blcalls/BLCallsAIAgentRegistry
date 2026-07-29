@@ -3470,6 +3470,7 @@ function mtRender() {
            </div></td></tr>`
         : `<tr><td colspan="${colspan}" style="padding:0 8px 10px 8px;background:var(--bg);border-bottom:1px solid var(--border)"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
              <span style="color:var(--text-3)">correct flags:</span>
+             <button onclick="mtNoFlags(${i})" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${Array.isArray(c.truthFlags)&&c.truthFlags.length===0?'var(--teal)':'var(--surface)'};color:${Array.isArray(c.truthFlags)&&c.truthFlags.length===0?'#fff':'var(--text)'}">no flags</button>
              ${REVIEW_FLAGS.map(f=>`<button onclick="mtManualFlag(${i},'${f}')" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--border-strong);cursor:pointer;background:${(c.truthFlags||[]).includes(f)?'var(--brand-navy)':'var(--surface)'};color:${(c.truthFlags||[]).includes(f)?'#fff':'var(--text)'}">${f}</button>`).join('')}
            </div></td></tr>`;
       return `<tr>
@@ -3518,6 +3519,7 @@ function mtPick(i, m, kind) {
 }
 function mtManualOutcome(i, v) { const c = mtState.calls[i]; c.truthOutcome = v; if (v) c.truthModel = null; mtSaveCall(i); mtRender(); }
 function mtManualFlag(i, f) { const c = mtState.calls[i]; c.truthFlags = c.truthFlags || []; const j = c.truthFlags.indexOf(f); if (j>=0) c.truthFlags.splice(j,1); else c.truthFlags.push(f); c.truthModel = null; mtSaveCall(i); mtRender(); }
+function mtNoFlags(i) { const c = mtState.calls[i]; c.truthFlags = []; c.truthModel = null; mtSaveCall(i); mtRender(); }
 function mtReason(i, v) { mtState.calls[i].reason = v; mtSaveCall(i); }
 
 async function mtSaveCall(i) {
@@ -3590,7 +3592,9 @@ function reviewRender() {
     </div>`;
   }).join('');
   const outcomeOpts = ['<option value="">— pick correct outcome —</option>'].concat(REVIEW_OUTCOMES.map(o => `<option value="${o}" ${o===truthOutcome?'selected':''}>${o}</option>`)).join('');
-  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${f}</button>`).join(' ');
+  const noFlagsSel = c._draftFlags.length === 0;
+  const flagBtns = `<button onclick="reviewClearFlags()" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border-strong);cursor:pointer;background:${noFlagsSel?'var(--teal)':'var(--surface)'};color:${noFlagsSel?'#fff':'var(--text)'}">✓ no flags</button> `
+    + REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${f}</button>`).join(' ');
   const ctx = c.call;
   const reasonVal = c._draftReason !== undefined ? c._draftReason : (c.existing?.reason || '');
   document.getElementById('review-body').innerHTML = `
@@ -3619,6 +3623,7 @@ function reviewRender() {
 function reviewCaptureReason() { const el = document.getElementById('review-reason'); if (el) reviewState.calls[reviewState.idx]._draftReason = el.value; }
 function reviewSetOutcome(v) { reviewCaptureReason(); reviewState.calls[reviewState.idx]._draftOutcome = v; reviewRender(); }
 function reviewToggleFlag(f) { reviewCaptureReason(); const c = reviewState.calls[reviewState.idx]; const i = c._draftFlags.indexOf(f); if (i>=0) c._draftFlags.splice(i,1); else c._draftFlags.push(f); reviewRender(); }
+function reviewClearFlags() { reviewCaptureReason(); reviewState.calls[reviewState.idx]._draftFlags = []; reviewRender(); }
 function reviewNav(d) { reviewCaptureReason(); const s = reviewState; const n = s.idx + d; if (n<0 || n>=s.calls.length) return; s.idx = n; reviewRender(); }
 function reviewClose() { document.getElementById('modeltest-review').style.display = 'none'; reviewState = null; }
 
