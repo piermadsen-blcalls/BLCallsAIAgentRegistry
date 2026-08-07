@@ -862,7 +862,7 @@
     </div>
   </div>
 
-  <!-- SCORES TAB (publisher/advertiser × vertical: Canoe vs Ours) -->
+  <!-- SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) -->
   <div id="tab-scores" class="tab-pane">
     <style>
       #tab-scores .scores-seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -1288,7 +1288,7 @@ function switchTab(id, el) {
   }
 }
 
-// ─── SCORES TAB (publisher/advertiser × vertical: Canoe vs Ours) ───────────────
+// ─── SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) ───────────────
 // Both scores are computed at read-time from outcome_weights over the "comparable
 // set" (calls that have BOTH canoe_outcome and our_outcome), so they compare
 // same-calls-to-same-calls. Master = trailing 90d; Window = the Agents date range.
@@ -1402,7 +1402,7 @@ function scoresRenderTable() {
   const rows = scoresSortRows();
   const entLabel = scoresEntity === 'advertiser' ? 'Advertiser' : 'Publisher';
   if (!rows.length) {
-    out.innerHTML = `<div class="ins-loading">No comparable calls in this window yet — needs both a Canoe and an AI outcome on the same call. Fills in as enrichment runs.</div>`;
+    out.innerHTML = `<div class="ins-loading">No comparable calls in this window yet — needs both a Canoe and a Registry outcome on the same call. Fills in as enrichment runs.</div>`;
     return;
   }
   const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
@@ -1420,8 +1420,8 @@ function scoresRenderTable() {
   out.innerHTML = `<table class="canoe-table scores-table">
     <thead><tr>
       ${th('entity', entLabel, 'text-align:left')}${th('vertical', 'Vertical', 'text-align:left')}
-      ${th('canoe', 'Canoe', 'text-align:right', 'Weighted score from Canoe outcomes')}${th('ours', 'Ours', 'text-align:right', 'Weighted score from our AI outcomes')}
-      ${th('gap', 'Gap', 'text-align:right', 'Ours minus Canoe')}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and an AI outcome) the score is based on')}
+      ${th('canoe', 'Canoe', 'text-align:right', 'Weighted score from Canoe outcomes')}${th('ours', 'Registry', 'text-align:right', 'Weighted score from Registry AI outcomes')}
+      ${th('gap', 'Gap', 'text-align:right', 'Registry minus Canoe')}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -1450,8 +1450,8 @@ function scoresRenderDetail(r) {
   }).sort((a, b) => b.gap - a.gap);
   const top = ranked.find(x => x.cN !== x.oN);
   const headline = top
-    ? `Gap driven by <strong>${esc(top.o)}</strong> (weight ${top.w}): Canoe labels it on ${top.cN} call(s), Ours on ${top.oN}.`
-    : `Canoe and Ours agree on the outcome mix here.`;
+    ? `Gap driven by <strong>${esc(top.o)}</strong> (weight ${top.w}): Canoe labels it on ${top.cN} call(s), Registry on ${top.oN}.`
+    : `Canoe and Registry agree on the outcome mix here.`;
   const rowsHtml = ranked.map(x => {
     const excl = scoresExcluded.has(x.o);
     return `<tr style="${excl ? 'opacity:.4' : ''}">
@@ -1465,11 +1465,11 @@ function scoresRenderDetail(r) {
     <div class="scores-detail-headline">${headline}</div>
     <div class="scores-whatif-scores">
       <span>Canoe <strong style="font-family:var(--mono)">${scoresFmt(cScore)}</strong></span>
-      <span>Ours <strong style="font-family:var(--mono)">${scoresFmt(oScore)}</strong></span>
+      <span>Registry <strong style="font-family:var(--mono)">${scoresFmt(oScore)}</strong></span>
       ${scoresExcluded.size ? `<span style="color:var(--text-3);font-size:12px">recomputed with ${scoresExcluded.size} outcome(s) removed</span>` : ''}
     </div>
     <table class="canoe-table" style="margin-top:8px">
-      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Ours n</th></tr></thead>
+      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Registry n</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
     <button class="run-btn" style="margin-top:10px" onclick="event.stopPropagation();scoresViewCalls('${esc(r.entity)}','${esc(r.vertical)}')">View these calls →</button>
