@@ -38,3 +38,30 @@
   hyphenated; OpenRouter uses dotted slugs - verify prod process runs resolve.
 - Next: run 3-model / 100-call outcome comparison; Vicky hand-checks + approves the model.
 - External sources (Granola/Jira) not pulled this session.
+
+## Week of Aug 3, 2026
+
+### 2026-08-07 (Pier)
+- Grill/scoping session that turned into a build. Winning model confirmed as
+  `google/gemini-3.5-flash` (via OpenRouter).
+- Shipped the Publisher/Advertiser **Scores** tab (MK-153): (publisher|advertiser)
+  × vertical, two scores from the *same* comparable set (calls that have both
+  `canoe_outcome` and `our_outcome`) — Canoe vs Ours — computed read-time from
+  `outcome_weights`. Master (trailing 90d) + selected-window toggle; sortable
+  ranked table; WHY drill-down with a what-if (deselect an outcome → both scores
+  recompute) and a "view these calls" hand-off.
+- Migration `017_scoring_vectors.sql`: `outcome_score_vectors` RPC (per
+  entity×vertical outcome-count vectors over the comparable set) + `wrong_category`
+  weight (pub -3) for Canoe's pre-v3 label. Also reconciled the CLI migration
+  history (001-016 were all applied by hand, so remote history was empty → marked
+  applied) so `supabase db push` works cleanly from here; pushed 017.
+- Wrote `SCORING_AND_DIGEST_SPEC.md` — full decision log + build order.
+- Parked: enrichment go-live / backfill. Full backfill of ~84.4k transcript calls
+  ≈ $910 on gemini-3.5-flash vs the ~$100 OpenRouter balance; waiting on a new card
+  / direct-Google or Gemini Batch API. So Ours-score + the compliance digest are
+  live but sparse until enrichment scales (building for the steady state).
+- Next: make the call-review table URL-filterable (deep-link target) → `alert.js`
+  digest rework (real flag taxonomy, AM→account→flags, since-last-digest window
+  +7d bootstrap, bidirectional perf drops/surges, fix the broken score filter,
+  per-account deep links) → `alert.yml` cron to Mon + Thu.
+- External sources (Granola/Jira) not pulled (Granola MCP disconnected).

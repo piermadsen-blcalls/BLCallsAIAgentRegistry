@@ -674,6 +674,7 @@
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('reporting',this)">Call Reporting</button>
 <button class="nav-tab" onclick="switchTab('compliance',this)">Compliance</button>
+    <button class="nav-tab" onclick="switchTab('scores',this)">Scores</button>
     <button class="nav-tab" onclick="switchTab('llm-training',this)">LLM training</button>
   </div>
 
@@ -859,6 +860,39 @@
     <div id="cr-output">
       <div class="ins-loading">Select a date range and click <strong>Load calls</strong>.</div>
     </div>
+  </div>
+
+  <!-- SCORES TAB (publisher/advertiser × vertical: Canoe vs Ours) -->
+  <div id="tab-scores" class="tab-pane">
+    <style>
+      #tab-scores .scores-seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+      #tab-scores .scores-seg-btn{padding:6px 12px;font-size:13px;background:var(--bg);color:var(--text-2);border:none;cursor:pointer;font-family:var(--sans)}
+      #tab-scores .scores-seg-btn.active{background:var(--brand-mint,#00C896);color:#fff}
+      #tab-scores .scores-row{cursor:pointer}
+      #tab-scores .scores-row:hover>td{background:var(--bg-2)}
+      #tab-scores .scores-row.open>td{background:var(--bg-2);font-weight:600}
+      #tab-scores .scores-detail{padding:12px 4px}
+      #tab-scores .scores-detail-headline{font-size:13px;margin-bottom:8px}
+      #tab-scores .scores-whatif-scores{display:flex;gap:18px;align-items:center;font-size:13px}
+      #tab-scores .scores-th{white-space:nowrap}
+    </style>
+    <div class="cr-toolbar">
+      <div class="cr-toolbar-left" style="align-items:center;gap:14px">
+        <div class="scores-seg" data-seg="entity">
+          <button class="scores-seg-btn active" data-val="publisher" onclick="scoresSetEntity('publisher')">Publishers</button>
+          <button class="scores-seg-btn" data-val="advertiser" onclick="scoresSetEntity('advertiser')">Advertisers</button>
+        </div>
+        <div class="scores-seg" data-seg="window">
+          <button class="scores-seg-btn active" data-val="master" onclick="scoresSetWindow('master')">Master (90d)</button>
+          <button class="scores-seg-btn" data-val="window" onclick="scoresSetWindow('window')">Selected window</button>
+        </div>
+        <span id="scores-window-note" style="font-size:12px;color:var(--text-3);font-family:var(--mono)"></span>
+      </div>
+      <div class="cr-toolbar-right">
+        <button class="run-btn" onclick="scoresLoad()">Refresh</button>
+      </div>
+    </div>
+    <div id="scores-output"><div class="ins-loading">Loading…</div></div>
   </div>
 
   <!-- COMPLIANCE TAB -->
@@ -1244,6 +1278,7 @@ function switchTab(id, el) {
   el.classList.add('active');
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'reporting') crAutoLoad();
+  if (id === 'scores') scoresInit();
   if (id === 'llm-training') {
     // Relocate the calibration/review section out of Settings into this tab (once).
     const sec = document.getElementById('settings-cost-section');
@@ -1251,6 +1286,209 @@ function switchTab(id, el) {
     if (sec && sec.parentElement !== pane) { sec.style.display = 'block'; pane.appendChild(sec); }
     calibInit();
   }
+}
+
+// ─── SCORES TAB (publisher/advertiser × vertical: Canoe vs Ours) ───────────────
+// Both scores are computed at read-time from outcome_weights over the "comparable
+// set" (calls that have BOTH canoe_outcome and our_outcome), so they compare
+// same-calls-to-same-calls. Master = trailing 90d; Window = the Agents date range.
+let scoresWeights = null;          // { outcome: {pub_score, adv_score} }
+let scoresEntity  = 'publisher';   // 'publisher' | 'advertiser'
+let scoresWindow  = 'master';      // 'master' (90d) | 'window' (activeRange)
+let scoresRows    = [];            // computed pairing rows for current view
+let scoresSort    = { key: 'gap', dir: -1 };
+let scoresOpenKey = null;          // pairing expanded in the WHY panel
+let scoresExcluded = new Set();    // outcomes deselected in the what-if
+
+async function scoresInit() {
+  if (!scoresWeights) {
+    try {
+      const rows = await sbFetch('outcome_weights?select=outcome,pub_score,adv_score');
+      scoresWeights = {};
+      (rows || []).forEach(r => { scoresWeights[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
+    } catch(e) { scoresWeights = {}; console.warn('scores weights:', e.message); }
+  }
+  scoresSetEntity(scoresEntity);
+}
+
+function scoresSetEntity(type) {
+  scoresEntity = type;
+  document.querySelectorAll('#tab-scores .scores-seg[data-seg="entity"] .scores-seg-btn')
+    .forEach(b => b.classList.toggle('active', b.dataset.val === type));
+  scoresLoad();
+}
+function scoresSetWindow(mode) {
+  scoresWindow = mode;
+  document.querySelectorAll('#tab-scores .scores-seg[data-seg="window"] .scores-seg-btn')
+    .forEach(b => b.classList.toggle('active', b.dataset.val === mode));
+  scoresLoad();
+}
+
+function scoresWindowRange() {
+  if (scoresWindow === 'window' && activeRange.start && activeRange.end) {
+    const to = new Date(activeRange.end); to.setDate(to.getDate() + 1); // include the end day
+    return { from: activeRange.start.toISOString(), to: to.toISOString(), label: activeRange.label };
+  }
+  const now = new Date();
+  const from = new Date(now); from.setDate(from.getDate() - 90);
+  return { from: from.toISOString(), to: now.toISOString(), label: 'trailing 90 days' };
+}
+
+async function scoresLoad() {
+  const out = document.getElementById('scores-output');
+  if (out) out.innerHTML = `<div class="ins-loading">Loading scores…</div>`;
+  scoresOpenKey = null; scoresExcluded.clear();
+  const { from, to, label } = scoresWindowRange();
+  const note = document.getElementById('scores-window-note');
+  if (note) note.textContent = (scoresWindow === 'master' ? 'Master · ' : 'Window · ') + label;
+  let vectors;
+  try {
+    vectors = await sbFetch('rpc/outcome_score_vectors', {
+      method: 'POST',
+      body: JSON.stringify({ from_ts: from, to_ts: to, entity_type: scoresEntity })
+    });
+  } catch(e) {
+    if (out) out.innerHTML = `<div class="ins-loading">Could not load scores: ${esc(e.message)}</div>`;
+    return;
+  }
+  scoresRows = scoresComputeRows(vectors || []);
+  scoresRenderTable();
+}
+
+// Aggregate long-format vectors → per-pairing rows with both scores.
+function scoresComputeRows(vectors) {
+  const wField = scoresEntity === 'advertiser' ? 'adv_score' : 'pub_score';
+  const byKey = {};
+  for (const v of vectors) {
+    const key = v.entity_name + '' + v.vertical;
+    if (!byKey[key]) byKey[key] = { entity: v.entity_name, vertical: v.vertical, canoe: {}, ours: {} };
+    byKey[key][v.source === 'canoe' ? 'canoe' : 'ours'][v.outcome] = Number(v.n);
+  }
+  const weightOf = o => (scoresWeights[o]?.[wField] ?? 0);
+  const scoreOf = vec => {
+    let num = 0, den = 0;
+    for (const [o, n] of Object.entries(vec)) { num += n * weightOf(o); den += n; }
+    return { score: den ? num / den : null, n: den };
+  };
+  return Object.entries(byKey).map(([key, p]) => {
+    const c = scoreOf(p.canoe), o = scoreOf(p.ours);
+    return {
+      key, entity: p.entity, vertical: p.vertical, canoe: p.canoe, ours: p.ours,
+      canoeScore: c.score, oursScore: o.score, n: Math.max(c.n, o.n),
+      gap: (o.score != null && c.score != null) ? (o.score - c.score) : null
+    };
+  });
+}
+
+function scoresSortRows() {
+  const { key, dir } = scoresSort;
+  const val = r => key === 'entity'   ? r.entity.toLowerCase()
+                 : key === 'vertical' ? r.vertical.toLowerCase()
+                 : key === 'canoe'    ? (r.canoeScore ?? -999)
+                 : key === 'ours'     ? (r.oursScore ?? -999)
+                 : key === 'n'        ? r.n
+                 : (r.gap == null ? -Infinity : Math.abs(r.gap)); // 'gap' sorts by magnitude
+  return [...scoresRows].sort((a, b) => { const x = val(a), y = val(b); return x < y ? -dir : x > y ? dir : 0; });
+}
+function scoresSetSort(key) {
+  if (scoresSort.key === key) scoresSort.dir *= -1; else scoresSort = { key, dir: -1 };
+  scoresRenderTable();
+}
+function scoresFmt(s) { return s == null ? '<span class="cr-null">—</span>' : (s >= 0 ? '+' : '') + s.toFixed(1); }
+
+function scoresRenderTable() {
+  const out = document.getElementById('scores-output');
+  if (!out) return;
+  const rows = scoresSortRows();
+  const entLabel = scoresEntity === 'advertiser' ? 'Advertiser' : 'Publisher';
+  if (!rows.length) {
+    out.innerHTML = `<div class="ins-loading">No comparable calls in this window yet — needs both a Canoe and an AI outcome on the same call. Fills in as enrichment runs.</div>`;
+    return;
+  }
+  const th = (key, label, extra = '') => `<th class="scores-th" style="cursor:pointer;${extra}" onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
+  const body = rows.map(r => `
+    <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" onclick="scoresToggleDetail('${esc(r.key)}')">
+      <td>${esc(r.entity)}</td>
+      <td style="color:var(--text-2)">${esc(r.vertical)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${scoresFmt(r.canoeScore)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${scoresFmt(r.oursScore)}</td>
+      <td style="text-align:right;font-family:var(--mono);color:${r.gap == null ? 'var(--text-3)' : Math.abs(r.gap) >= 2 ? 'var(--coral)' : 'var(--text)'}">${r.gap == null ? '—' : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1)}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${r.n.toLocaleString()}</td>
+    </tr>
+    ${scoresOpenKey === r.key ? `<tr class="scores-detail-row"><td colspan="6">${scoresRenderDetail(r)}</td></tr>` : ''}
+  `).join('');
+  out.innerHTML = `<table class="canoe-table scores-table">
+    <thead><tr>
+      ${th('entity', entLabel)}${th('vertical', 'Vertical')}
+      ${th('canoe', 'Canoe', 'text-align:right')}${th('ours', 'Ours', 'text-align:right')}
+      ${th('gap', 'Gap', 'text-align:right')}${th('n', 'n', 'text-align:right')}
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+function scoresToggleDetail(key) {
+  scoresOpenKey = scoresOpenKey === key ? null : key;
+  scoresExcluded.clear();
+  scoresRenderTable();
+}
+
+// WHY drill-down + what-if for one pairing.
+function scoresRenderDetail(r) {
+  const wField = scoresEntity === 'advertiser' ? 'adv_score' : 'pub_score';
+  const weightOf = o => (scoresWeights[o]?.[wField] ?? 0);
+  const outcomes = [...new Set([...Object.keys(r.canoe), ...Object.keys(r.ours)])];
+  const recompute = vec => {
+    let num = 0, den = 0;
+    for (const [o, n] of Object.entries(vec)) { if (scoresExcluded.has(o)) continue; num += n * weightOf(o); den += n; }
+    return den ? num / den : null;
+  };
+  const cScore = recompute(r.canoe), oScore = recompute(r.ours);
+  const ranked = outcomes.map(o => {
+    const cN = r.canoe[o] || 0, oN = r.ours[o] || 0, w = weightOf(o);
+    return { o, w, cN, oN, gap: Math.abs((oN - cN) * w) };
+  }).sort((a, b) => b.gap - a.gap);
+  const top = ranked.find(x => x.cN !== x.oN);
+  const headline = top
+    ? `Gap driven by <strong>${esc(top.o)}</strong> (weight ${top.w}): Canoe labels it on ${top.cN} call(s), Ours on ${top.oN}.`
+    : `Canoe and Ours agree on the outcome mix here.`;
+  const rowsHtml = ranked.map(x => {
+    const excl = scoresExcluded.has(x.o);
+    return `<tr style="${excl ? 'opacity:.4' : ''}">
+      <td><label style="cursor:pointer;display:flex;gap:6px;align-items:center"><input type="checkbox" ${excl ? '' : 'checked'} onclick="event.stopPropagation();scoresToggleOutcome('${esc(r.key)}','${esc(x.o)}')"><span style="font-family:var(--mono)">${esc(x.o)}</span></label></td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${x.w}</td>
+      <td style="text-align:right;font-family:var(--mono)">${x.cN || ''}</td>
+      <td style="text-align:right;font-family:var(--mono)">${x.oN || ''}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="scores-detail">
+    <div class="scores-detail-headline">${headline}</div>
+    <div class="scores-whatif-scores">
+      <span>Canoe <strong style="font-family:var(--mono)">${scoresFmt(cScore)}</strong></span>
+      <span>Ours <strong style="font-family:var(--mono)">${scoresFmt(oScore)}</strong></span>
+      ${scoresExcluded.size ? `<span style="color:var(--text-3);font-size:12px">recomputed with ${scoresExcluded.size} outcome(s) removed</span>` : ''}
+    </div>
+    <table class="canoe-table" style="margin-top:8px">
+      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Ours n</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <button class="run-btn" style="margin-top:10px" onclick="event.stopPropagation();scoresViewCalls('${esc(r.entity)}','${esc(r.vertical)}')">View these calls →</button>
+  </div>`;
+}
+
+function scoresToggleOutcome(key, outcome) {
+  if (scoresOpenKey !== key) return;
+  if (scoresExcluded.has(outcome)) scoresExcluded.delete(outcome); else scoresExcluded.add(outcome);
+  scoresRenderTable();
+}
+
+// Hand off to Call Reporting filtered to this pairing. The flag/disagreement
+// filter is added when the call-review table moves onto canoe_calls (step 3).
+function scoresViewCalls(entity, vertical) {
+  const tabBtn = [...document.querySelectorAll('.nav-tab')].find(b => /Call Reporting/.test(b.textContent));
+  if (tabBtn) switchTab('reporting', tabBtn);
+  const target = scoresEntity === 'advertiser' ? document.getElementById('cr-adv-filter') : document.getElementById('cr-pub-filter');
+  if (target) target.value = entity;
 }
 
 // ─── ALIAS TABLE ──────────────────────────────────────────────────────────────
