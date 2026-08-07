@@ -1405,7 +1405,7 @@ function scoresRenderTable() {
     out.innerHTML = `<div class="ins-loading">No comparable calls in this window yet — needs both a Canoe and an AI outcome on the same call. Fills in as enrichment runs.</div>`;
     return;
   }
-  const th = (key, label, extra = '') => `<th class="scores-th" style="cursor:pointer;${extra}" onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
+  const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
   const body = rows.map(r => `
     <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" onclick="scoresToggleDetail('${esc(r.key)}')">
       <td>${esc(r.entity)}</td>
@@ -1419,9 +1419,9 @@ function scoresRenderTable() {
   `).join('');
   out.innerHTML = `<table class="canoe-table scores-table">
     <thead><tr>
-      ${th('entity', entLabel)}${th('vertical', 'Vertical')}
-      ${th('canoe', 'Canoe', 'text-align:right')}${th('ours', 'Ours', 'text-align:right')}
-      ${th('gap', 'Gap', 'text-align:right')}${th('n', 'n', 'text-align:right')}
+      ${th('entity', entLabel, 'text-align:left')}${th('vertical', 'Vertical', 'text-align:left')}
+      ${th('canoe', 'Canoe', 'text-align:right', 'Weighted score from Canoe outcomes')}${th('ours', 'Ours', 'text-align:right', 'Weighted score from our AI outcomes')}
+      ${th('gap', 'Gap', 'text-align:right', 'Ours minus Canoe')}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and an AI outcome) the score is based on')}
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
