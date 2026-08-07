@@ -75,7 +75,7 @@ function callFlags(c) {
 function deepLink(account, type, fromDate, toISO) {
   if (!DASHBOARD_URL) return '';
   const q = new URLSearchParams({ view: 'compliance', account, type, from: fromDate, to: toISO, flagged: '1' });
-  return `${DASHBOARD_URL}/#${q.toString()}`;
+  return `${DASHBOARD_URL}/?${q.toString()}`;  // query string, not #fragment — email clients strip fragments
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────

@@ -2541,7 +2541,9 @@ async function compInit() {
 //   #view=compliance&account=Instar&type=publisher&from=2026-08-04&to=2026-08-07T23:59:59&flagged=1
 // On a normal load (no such params) this is a no-op, so there's zero regression.
 function maybeApplyComplianceDeepLink() {
-  const p = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+  // Prefer the query string (survives email link rewrites); fall back to the hash.
+  const qs = location.search.length > 1 ? location.search.slice(1) : location.hash.slice(1);
+  const p = Object.fromEntries(new URLSearchParams(qs));
   if (p.view !== 'compliance') return;
   const navBtn = [...document.querySelectorAll('.nav-tab')].find(b => /Compliance/.test(b.textContent));
   if (navBtn) switchTab('compliance', navBtn);
