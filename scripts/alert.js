@@ -23,6 +23,8 @@ const MANAGER_ID     = process.env.ALERT_MANAGER_ID || '';     // limit to one m
 const MANAGER_NAME   = process.env.ALERT_MANAGER_NAME || '';    // limit to one manager by name (testing)
 const OVERRIDE_EMAIL = process.env.ALERT_OVERRIDE_EMAIL || '';  // send ALL output here instead of the manager (preview)
 const WINDOW_DAYS    = parseInt(process.env.ALERT_WINDOW_DAYS || '', 10); // force window to last N days (testing)
+const WINDOW_FROM    = process.env.ALERT_WINDOW_FROM || '';    // explicit window start, ISO/date (testing)
+const WINDOW_TO      = process.env.ALERT_WINDOW_TO   || '';    // explicit window end, ISO/date (testing)
 const DASHBOARD_URL  = (process.env.DASHBOARD_URL || '').replace(/\/$/, ''); // base URL for deep links
 
 // ── Compliance flag taxonomy (must match scripts/process.js + the active ai_prompts row) ──
@@ -116,9 +118,9 @@ async function main() {
     const advSet = accounts.advertisers, pubSet = accounts.publishers;
 
     // Window = since the last digest for this manager; first-ever send bootstraps to last 7 days.
-    const to   = new Date();
-    const from = WINDOW_DAYS > 0
-      ? new Date(to.getTime() - WINDOW_DAYS * 86400000)
+    const to   = WINDOW_TO ? new Date(WINDOW_TO) : new Date();
+    const from = WINDOW_FROM ? new Date(WINDOW_FROM)
+      : WINDOW_DAYS > 0 ? new Date(to.getTime() - WINDOW_DAYS * 86400000)
       : (s.last_sent_at ? new Date(s.last_sent_at) : new Date(to.getTime() - BOOTSTRAP_DAYS * 86400000));
     if (from >= to) { console.log(`${mgr.manager_name}: last digest is newer than now, skipping.`); continue; }
     const fromDate = toDate(from), toDate_ = toDate(to);

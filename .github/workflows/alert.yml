@@ -17,6 +17,12 @@ on:
       window_days:
         description: 'Force the window to the last N days (blank = since last digest)'
         default: ''
+      window_from:
+        description: 'Explicit window start (ISO/date), overrides window_days (testing)'
+        default: ''
+      window_to:
+        description: 'Explicit window end (ISO/date) (testing)'
+        default: ''
       dry_run:
         description: 'true to log without sending webhook'
         default: 'false'
@@ -40,6 +46,8 @@ jobs:
           ALERT_MANAGER_NAME:       ${{ github.event.inputs.manager_name || '' }}
           ALERT_OVERRIDE_EMAIL:     ${{ github.event.inputs.override_email || '' }}
           ALERT_WINDOW_DAYS:        ${{ github.event.inputs.window_days || '' }}
+          ALERT_WINDOW_FROM:        ${{ github.event.inputs.window_from || '' }}
+          ALERT_WINDOW_TO:          ${{ github.event.inputs.window_to || '' }}
           DRY_RUN:                  ${{ github.event.inputs.dry_run || 'false' }}
           DASHBOARD_URL:            ${{ vars.DASHBOARD_URL }}
         run: node scripts/alert.js
