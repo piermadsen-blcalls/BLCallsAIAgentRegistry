@@ -37,12 +37,7 @@ const FLAG_LABELS = {
 };
 const AI_FLAGS = ['outbound_dial', 'facebook_marketplace', 'angry_caller', 'wrong_business', 'duplicate_caller', 'geo_mismatch'];
 
-// Bidirectional performance thresholds (drops AND surges), vs the equal-length prior window.
-const VOL_THRESHOLD  = 0.30;  // ±30% call volume
-const REV_THRESHOLD  = 0.20;  // ±20% revenue
-const CONV_THRESHOLD = 10;    // ±10 percentage points connect rate
-const MIN_PRIOR_CALLS = 10;   // don't flag perf on tiny prior samples
-const BOOTSTRAP_DAYS  = 7;    // first-ever digest window when there's no last_sent_at
+const BOOTSTRAP_DAYS = 7;  // first-ever digest window when there's no last_sent_at
 
 // ── Supabase helper ──────────────────────────────────────────────────────────
 async function sb(path, options = {}) {
@@ -126,18 +121,13 @@ async function main() {
       ? new Date(to.getTime() - WINDOW_DAYS * 86400000)
       : (s.last_sent_at ? new Date(s.last_sent_at) : new Date(to.getTime() - BOOTSTRAP_DAYS * 86400000));
     if (from >= to) { console.log(`${mgr.manager_name}: last digest is newer than now, skipping.`); continue; }
-    // Equal-length prior window for the perf comparison.
-    const durMs     = to.getTime() - from.getTime();
-    const priorFrom = new Date(from.getTime() - durMs);
-    const priorTo   = from;
     const fromDate = toDate(from), toDate_ = toDate(to);
-
     console.log(`\n${mgr.manager_name} (${fromDate} → ${toDate_})`);
 
     async function fetchWindow(fromTs, toTs) {
       const PAGE = 1000; let results = [], offset = 0;
       while (true) {
-        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,connect_duration,result,advertiser_payin,flags,suspicious_call,vertical_name` +
+        const q = `canoe_calls?select=id,publisher_name,advertiser_name,flags,suspicious_call` +
           `&created_at=gte.${fromTs.toISOString()}&created_at=lte.${toTs.toISOString()}&is_test=eq.false`;
         const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
         if (!batch || !batch.length) break;
@@ -148,64 +138,33 @@ async function main() {
       return results;
     }
 
-    const [currCalls, priorCalls] = await Promise.all([fetchWindow(from, to), fetchWindow(priorFrom, priorTo)]);
-    console.log(`  ${currCalls.length} calls (current) / ${priorCalls.length} calls (prior)`);
-    if (!currCalls.length && !priorCalls.length) continue;
+    const currCalls = await fetchWindow(from, to);
+    console.log(`  ${currCalls.length} calls in window`);
+    if (!currCalls.length) continue;
 
-    function aggregate(calls) {
-      const map = {};
-      for (const c of calls) {
-        const isAdv = advSet.has(c.advertiser_name);
-        const name  = isAdv ? c.advertiser_name : c.publisher_name;
-        const type  = isAdv ? 'advertiser' : 'publisher';
-        if (!name) continue;
-        if (!map[name]) map[name] = { type, total: 0, connected: 0, revenue: 0, flagCounts: {}, flaggedCalls: 0 };
-        const e = map[name];
-        e.total++;
-        if ((c.connect_duration || 0) > 0 || (c.result || '').toLowerCase().includes('connect')) e.connected++;
-        e.revenue += c.advertiser_payin || 0;
-        const fl = callFlags(c);
-        if (fl.length) e.flaggedCalls++;
-        for (const f of fl) e.flagCounts[f] = (e.flagCounts[f] || 0) + 1;
-      }
-      return map;
+    // Tally compliance flags per account (compliance-only — unflagged calls are ignored).
+    const curr = {};
+    for (const c of currCalls) {
+      const isAdv = advSet.has(c.advertiser_name);
+      const name  = isAdv ? c.advertiser_name : c.publisher_name;
+      if (!name) continue;
+      const fl = callFlags(c);
+      if (!fl.length) continue;
+      if (!curr[name]) curr[name] = { type: isAdv ? 'advertiser' : 'publisher', flagCounts: {}, flaggedCalls: 0 };
+      curr[name].flaggedCalls++;
+      for (const f of fl) curr[name].flagCounts[f] = (curr[name].flagCounts[f] || 0) + 1;
     }
 
-    const curr = aggregate(currCalls), prior = aggregate(priorCalls);
     const alerted = [];
-
-    for (const name of new Set([...Object.keys(curr), ...Object.keys(prior)])) {
-      const c = curr[name]  || { type: advSet.has(name) ? 'advertiser' : 'publisher', total: 0, connected: 0, revenue: 0, flagCounts: {}, flaggedCalls: 0 };
-      const p = prior[name] || { total: 0, connected: 0, revenue: 0 };
+    for (const [name, c] of Object.entries(curr)) {
       const reasons = [];
-
-      // Every compliance flag the account's calls got this period (all flags, no tiers).
       for (const f of [...AI_FLAGS, 'suspicious_call']) {
         const n = c.flagCounts[f];
-        if (n) reasons.push({ kind: 'flag', label: `${n} × ${FLAG_LABELS[f]}` });
+        if (n) reasons.push({ label: `${n} × ${FLAG_LABELS[f]}` });
       }
-
-      // Bidirectional performance moves vs the equal-length prior window.
-      if (p.total >= MIN_PRIOR_CALLS) {
-        const dv = (c.total - p.total) / p.total;
-        if (Math.abs(dv) >= VOL_THRESHOLD)
-          reasons.push({ kind: 'perf', label: `Volume ${dv > 0 ? 'up' : 'down'} ${Math.round(Math.abs(dv) * 100)}%`, detail: `${c.total} vs ${p.total} prior` });
-        const cc = c.total ? c.connected / c.total : 0, pc = p.total ? p.connected / p.total : 0;
-        const dpp = (cc - pc) * 100;
-        if (Math.abs(dpp) >= CONV_THRESHOLD)
-          reasons.push({ kind: 'perf', label: `Conversion ${dpp > 0 ? 'up' : 'down'} ${Math.abs(dpp).toFixed(1)}pp`, detail: `${(cc*100).toFixed(1)}% vs ${(pc*100).toFixed(1)}% prior` });
-      }
-      if (p.revenue >= 100) {
-        const dr = (c.revenue - p.revenue) / p.revenue;
-        if (Math.abs(dr) >= REV_THRESHOLD)
-          reasons.push({ kind: 'perf', label: `Revenue ${dr > 0 ? 'up' : 'down'} ${Math.round(Math.abs(dr) * 100)}%`, detail: `$${Math.round(c.revenue)} vs $${Math.round(p.revenue)} prior` });
-      }
-
-      if (reasons.length) alerted.push({ name, type: c.type, curr: c, reasons });
+      alerted.push({ name, type: c.type, curr: c, reasons });
     }
-
-    // Accounts with compliance flags first, then perf-only.
-    alerted.sort((a, b) => (b.curr.flaggedCalls > 0) - (a.curr.flaggedCalls > 0) || b.curr.flaggedCalls - a.curr.flaggedCalls);
+    alerted.sort((a, b) => b.curr.flaggedCalls - a.curr.flaggedCalls);
 
     if (!alerted.length) { console.log('  Nothing to report → no email.'); continue; }
     console.log(`  ${alerted.length} account(s):`);
@@ -230,7 +189,7 @@ async function main() {
       to_email: recipient, to_name: mgr.manager_name, first_name: mgr.manager_name.split(' ')[0],
       subject, period_label: periodLabel, period_start: fromDate, period_end: toDate_,
       accounts: alerted.map(a => ({
-        name: a.name, type: a.type, calls: a.curr.total, flagged_calls: a.curr.flaggedCalls,
+        name: a.name, type: a.type, flagged_calls: a.curr.flaggedCalls,
         flags: a.curr.flagCounts,
         reasons: a.reasons.map(r => r.label),
         link: deepLink(a.name, a.type, fromDate, toISOFull),
@@ -276,21 +235,17 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
 
   const cards = alerted.map(a => {
     const typeLabel = a.type === 'advertiser' ? 'Advertiser' : 'Publisher';
-    const rows = a.reasons.map(r => {
-      const isFlag = r.kind === 'flag';
-      return `<tr>
-        <td style="${S}padding:5px 12px 5px 0;font-size:13px;color:${isFlag ? coral : muted}">${isFlag ? '⚑' : '↕'} ${r.label}</td>
-        <td style="${S}padding:5px 0;font-size:12px;color:${muted};text-align:right">${r.detail || ''}</td>
-      </tr>`;
-    }).join('');
-    const link = a.reasons.some(r => r.kind === 'flag') ? deepLink(a.name, a.type, fromDate, toISOFull) : '';
+    const rows = a.reasons.map(r =>
+      `<tr><td style="${S}padding:5px 0;font-size:13px;color:${coral}">⚑ ${r.label}</td></tr>`
+    ).join('');
+    const link = deepLink(a.name, a.type, fromDate, toISOFull);
     const linkHtml = link
       ? `<div style="padding:8px 14px;border-top:1px solid ${border}"><a href="${link}" style="${S}font-size:12px;color:${mint};text-decoration:none;font-weight:600">View flagged calls →</a></div>`
       : '';
     return `<div style="margin-bottom:12px;border:1px solid ${border};border-radius:6px;overflow:hidden">
       <div style="${S}background:#fff;padding:10px 14px;border-bottom:1px solid ${border}">
         <span style="${S}font-size:14px;font-weight:600;color:${navy}">${a.name}</span>
-        <span style="${S}font-size:10px;color:${muted};text-transform:uppercase;letter-spacing:0.4px;float:right;margin-top:3px">${typeLabel} · ${a.curr.total} calls · ${a.curr.flaggedCalls} flagged</span>
+        <span style="${S}font-size:10px;color:${muted};text-transform:uppercase;letter-spacing:0.4px;float:right;margin-top:3px">${typeLabel} · ${a.curr.flaggedCalls} flagged call${a.curr.flaggedCalls !== 1 ? 's' : ''}</span>
       </div>
       <div style="background:${bg};padding:10px 14px"><table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows}</table></div>
       ${linkHtml}
@@ -299,7 +254,7 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
 
   return `<div style="${S}max-width:600px;margin:0 auto;color:#1A1816">
     <h2 style="${S}font-size:22px;font-weight:400;margin:0 0 6px">Compliance digest — ${alerted.length} account${alerted.length !== 1 ? 's' : ''}</h2>
-    <p style="${S}font-size:13px;color:${muted};margin:0 0 20px;line-height:1.6">Hi ${firstName}, here are the compliance flags and performance moves on your accounts for <strong>${periodLabel}</strong>.</p>
+    <p style="${S}font-size:13px;color:${muted};margin:0 0 20px;line-height:1.6">Hi ${firstName}, here are the compliance flags on your accounts for <strong>${periodLabel}</strong>.</p>
     <div style="margin-bottom:20px">${cards}</div>
     <p style="${S}font-size:12px;color:${muted};line-height:1.6;border-top:1px solid ${border};padding-top:14px;margin-top:14px">Generated automatically by the Buyerlink Calls AI Agent Registry.</p>
   </div>`;
