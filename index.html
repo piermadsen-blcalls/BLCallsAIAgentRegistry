@@ -1272,20 +1272,43 @@ async function sbFetch(path, options={}) {
 }
 
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+// ── ROUTER ────────────────────────────────────────────────────
+// Each tab (and Compliance sub-tab) gets its own URL via ?tab=…&sub=…, so pages are
+// linkable/bookmarkable and back/forward works. Pushing is suppressed while we apply
+// a route read FROM the URL (boot / popstate) so we don't fight the history stack.
+let _suppressRoute = false;
+function navBtnFor(id)  { return [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes(`switchTab('${id}'`)); }
+function compBtnFor(id) { return [...document.querySelectorAll('.comp-subtab')].find(b => (b.getAttribute('onclick') || '').includes(`switchCompTab('${id}'`)); }
+
 function switchTab(id, el) {
+  el = el || navBtnFor(id);
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  const pane = document.getElementById('tab-' + id);
+  if (pane) pane.classList.add('active');
   if (id === 'reporting') crAutoLoad();
   if (id === 'scores') scoresInit();
   if (id === 'llm-training') {
     // Relocate the calibration/review section out of Settings into this tab (once).
     const sec = document.getElementById('settings-cost-section');
-    const pane = document.getElementById('tab-llm-training');
-    if (sec && sec.parentElement !== pane) { sec.style.display = 'block'; pane.appendChild(sec); }
+    const p = document.getElementById('tab-llm-training');
+    if (sec && sec.parentElement !== p) { sec.style.display = 'block'; p.appendChild(sec); }
     calibInit();
   }
+  if (!_suppressRoute) history.pushState({ tab: id }, '', '?tab=' + id);
+}
+
+function applyRoute() {
+  const params = new URLSearchParams(location.search);
+  const tab = params.get('tab') || 'agents';
+  _suppressRoute = true;
+  switchTab(tab);
+  if (tab === 'compliance') {
+    switchCompTab(params.get('sub') || 'calllog');
+    applyComplianceFilters(params);
+  }
+  _suppressRoute = false;
 }
 
 // ─── SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) ───────────────
@@ -1485,14 +1508,14 @@ function scoresToggleOutcome(key, outcome) {
 // Hand off to the Compliance tab (canoe_calls, with flags + both outcomes),
 // filtered to this account over the master 90d window.
 function scoresViewCalls(entity, vertical) {
-  const navBtn = [...document.querySelectorAll('.nav-tab')].find(b => /Compliance/.test(b.textContent));
-  if (navBtn) switchTab('compliance', navBtn);
-  const el = document.getElementById(scoresEntity === 'advertiser' ? 'cf-advertiser' : 'cf-publisher');
-  if (el) el.value = entity;
   const now = new Date(), from = new Date(now); from.setDate(from.getDate() - 90);
-  compDateFrom = from.toISOString().slice(0, 10);
-  compDateTo   = now.toISOString().slice(0, 19);
-  compLoadCalls();
+  const q = new URLSearchParams({
+    tab: 'compliance', sub: 'calllog',
+    account: entity, type: scoresEntity === 'advertiser' ? 'advertiser' : 'publisher',
+    from: from.toISOString().slice(0, 10), to: now.toISOString().slice(0, 19),
+  });
+  history.pushState({ tab: 'compliance' }, '', '?' + q.toString());
+  applyRoute();
 }
 
 // ─── ALIAS TABLE ──────────────────────────────────────────────────────────────
@@ -2417,7 +2440,8 @@ async function doLogin() {
     authExpired = false;
     document.getElementById('login-overlay').classList.add('hidden');
     startTokenRefreshTimer();
-    compInit();
+    await compInit();
+    applyRoute();
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -2492,7 +2516,8 @@ async function doSetPassword() {
     window._inviteToken = null; window._inviteRefresh = null;
     document.getElementById('setpassword-overlay').classList.add('hidden');
     startTokenRefreshTimer();
-    compInit();
+    await compInit();
+    applyRoute();
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -2501,9 +2526,10 @@ async function doSetPassword() {
 
 // check auth on load — refresh the session if possible so users sign in once, not every visit
 (async () => {
-  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); compInit(); }
+  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); await compInit(); applyRoute(); }
   else { clearAuth(); checkAuth(); }
 })();
+window.addEventListener('popstate', applyRoute);
 
 // ── COMPLIANCE HELPERS ────────────────────────────────────────
 
@@ -2577,40 +2603,37 @@ async function compInit() {
 
   await Promise.all([compLoadAssignments(), compLoadStats(), compLoadCalls(), compLoadTeam()]);
   compPopulateFilterDropdowns();
-  maybeApplyComplianceDeepLink();
 }
 
-// Deep-link consumer: the twice-weekly digest emails link here, e.g.
-//   #view=compliance&account=Instar&type=publisher&from=2026-08-04&to=2026-08-07T23:59:59&flagged=1
-// On a normal load (no such params) this is a no-op, so there's zero regression.
-function maybeApplyComplianceDeepLink() {
-  // Prefer the query string (survives email link rewrites); fall back to the hash.
-  const qs = location.search.length > 1 ? location.search.slice(1) : location.hash.slice(1);
-  const p = Object.fromEntries(new URLSearchParams(qs));
-  if (p.view !== 'compliance') return;
-  const navBtn = [...document.querySelectorAll('.nav-tab')].find(b => /Compliance/.test(b.textContent));
-  if (navBtn) switchTab('compliance', navBtn);
-  if (p.from) compDateFrom = p.from;
-  if (p.to)   compDateTo   = p.to;
-  if (p.account) {
-    const id = p.type === 'advertiser' ? 'cf-advertiser' : 'cf-publisher';
-    const el = document.getElementById(id);
-    if (el) el.value = p.account;
+// Apply the Compliance filters carried in a deep link (from the digest email), e.g.
+//   ?tab=compliance&sub=calllog&account=Instar&type=publisher&from=…&to=…&flagged=1
+// Called by the router; a no-op when none of those params are present.
+function applyComplianceFilters(params) {
+  const account = params.get('account'), from = params.get('from'), to = params.get('to');
+  if (!account && params.get('flagged') !== '1' && !from) return;
+  if (from) compDateFrom = from;
+  if (to)   compDateTo   = to;
+  if (account) {
+    const el = document.getElementById(params.get('type') === 'advertiser' ? 'cf-advertiser' : 'cf-publisher');
+    if (el) el.value = account;
   }
-  if (p.flagged === '1') {
+  if (params.get('flagged') === '1') {
     const el = document.getElementById('cf-flagged-only');
     if (el && !el.classList.contains('active')) el.classList.add('active');
   }
-  compLoadCalls(); // re-loads with the deep-linked dates; compApplyFilters() picks up the inputs
+  compLoadCalls(); // reloads with the deep-linked window; compApplyFilters() reads the inputs
 }
 
 let settingsLoaded = false;
 function switchCompTab(id, btn) {
+  btn = btn || compBtnFor(id);
   document.querySelectorAll('.comp-subtab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.comp-pane').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('comp-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  const pane = document.getElementById('comp-' + id);
+  if (pane) pane.classList.add('active');
   if (id === 'settings' && !settingsLoaded) { settingsLoaded = true; settingsInit(); }
+  if (!_suppressRoute) history.pushState({ tab: 'compliance', sub: id }, '', '?tab=compliance&sub=' + id);
 }
 
 // ── STATS ─────────────────────────────────────────────────────
