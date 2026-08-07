@@ -19,8 +19,11 @@ const SUPABASE_URL  = process.env.SUPABASE_URL;
 const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_KEY;
 const WEBHOOK_URL   = process.env.ASCND_ALERT_WEBHOOK_URL;
 const DRY_RUN       = process.env.DRY_RUN === 'true';      // skip webhook POSTs
-const MANAGER_ID    = process.env.ALERT_MANAGER_ID || '';  // limit to one manager (testing)
-const DASHBOARD_URL = (process.env.DASHBOARD_URL || '').replace(/\/$/, ''); // base URL for deep links
+const MANAGER_ID     = process.env.ALERT_MANAGER_ID || '';     // limit to one manager by id (testing)
+const MANAGER_NAME   = process.env.ALERT_MANAGER_NAME || '';    // limit to one manager by name (testing)
+const OVERRIDE_EMAIL = process.env.ALERT_OVERRIDE_EMAIL || '';  // send ALL output here instead of the manager (preview)
+const WINDOW_DAYS    = parseInt(process.env.ALERT_WINDOW_DAYS || '', 10); // force window to last N days (testing)
+const DASHBOARD_URL  = (process.env.DASHBOARD_URL || '').replace(/\/$/, ''); // base URL for deep links
 
 // ── Compliance flag taxonomy (must match scripts/process.js + the active ai_prompts row) ──
 const FLAG_LABELS = {
@@ -102,7 +105,9 @@ async function main() {
     (a.account_type === 'advertiser' ? mgrAccounts[a.manager_id].advertisers : mgrAccounts[a.manager_id].publishers).add(a.account_name);
   });
 
-  const settings = MANAGER_ID ? alertRows.filter(s => s.manager_id === MANAGER_ID) : alertRows;
+  let settings = alertRows;
+  if (MANAGER_ID) settings = settings.filter(s => s.manager_id === MANAGER_ID);
+  else if (MANAGER_NAME) settings = settings.filter(s => (mgrMap[s.manager_id]?.manager_name || '').toLowerCase() === MANAGER_NAME.toLowerCase());
   let sentCount = 0;
 
   for (const s of settings) {
@@ -117,7 +122,9 @@ async function main() {
 
     // Window = since the last digest for this manager; first-ever send bootstraps to last 7 days.
     const to   = new Date();
-    const from = s.last_sent_at ? new Date(s.last_sent_at) : new Date(to.getTime() - BOOTSTRAP_DAYS * 86400000);
+    const from = WINDOW_DAYS > 0
+      ? new Date(to.getTime() - WINDOW_DAYS * 86400000)
+      : (s.last_sent_at ? new Date(s.last_sent_at) : new Date(to.getTime() - BOOTSTRAP_DAYS * 86400000));
     if (from >= to) { console.log(`${mgr.manager_name}: last digest is newer than now, skipping.`); continue; }
     // Equal-length prior window for the perf comparison.
     const durMs     = to.getTime() - from.getTime();
@@ -204,17 +211,23 @@ async function main() {
     console.log(`  ${alerted.length} account(s):`);
     alerted.forEach(a => console.log(`    ${a.name}: ${a.reasons.map(r => r.label).join(', ')}`));
 
-    // Skip if we already logged a digest starting at this from-date for this manager.
-    const dup = await sb(`alert_log?manager_id=eq.${s.manager_id}&period_start=eq.${fromDate}&select=id&limit=1`).catch(() => null);
-    if (dup && dup.length) { console.log('  Already sent for this period → skip.'); continue; }
+    const recipient = OVERRIDE_EMAIL || mgr.manager_email;
+    if (!recipient) { console.log(`  ${mgr.manager_name}: no email on file → skip.`); continue; }
+
+    // Dedup on (manager, period) — skipped for override-email previews so you can re-send.
+    if (!OVERRIDE_EMAIL) {
+      const dup = await sb(`alert_log?manager_id=eq.${s.manager_id}&period_start=eq.${fromDate}&select=id&limit=1`).catch(() => null);
+      if (dup && dup.length) { console.log('  Already sent for this period → skip.'); continue; }
+    }
 
     const periodLabel = dateRangeLabel(fromDate, toDate_);
     const toISOFull   = to.toISOString().slice(0, 19);
-    const subject     = `Compliance digest: ${alerted.length} account${alerted.length !== 1 ? 's' : ''} flagged — ${periodLabel}`;
+    const subject     = `Compliance digest: ${alerted.length} account${alerted.length !== 1 ? 's' : ''} flagged — ${periodLabel}`
+      + (OVERRIDE_EMAIL ? ` [preview: ${mgr.manager_name}]` : '');
     const emailHtml   = buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull);
 
     const payload = {
-      to_email: mgr.manager_email, to_name: mgr.manager_name, first_name: mgr.manager_name.split(' ')[0],
+      to_email: recipient, to_name: mgr.manager_name, first_name: mgr.manager_name.split(' ')[0],
       subject, period_label: periodLabel, period_start: fromDate, period_end: toDate_,
       accounts: alerted.map(a => ({
         name: a.name, type: a.type, calls: a.curr.total, flagged_calls: a.curr.flaggedCalls,
@@ -230,21 +243,24 @@ async function main() {
     } else {
       const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { console.error(`  Webhook failed ${res.status}: ${await res.text()}`); continue; }
-      console.log(`  ✓ Sent to ${mgr.manager_email}`);
+      console.log(`  ✓ Sent to ${payload.to_email}${OVERRIDE_EMAIL ? ` (preview of ${mgr.manager_name})` : ''}`);
     }
 
-    await sb('alert_log', {
-      method: 'POST', prefer: 'return=minimal',
-      body: JSON.stringify({
-        manager_id: s.manager_id, manager_email: mgr.manager_email,
-        period_start: fromDate, period_end: toDate_,
-        total_calls: currCalls.length, flagged_count: alerted.length, dry_run: DRY_RUN
-      })
-    }).catch(e => console.warn('  Could not write alert_log:', e.message));
+    // Don't record state (alert_log / last_sent_at) for override-email previews.
+    if (!OVERRIDE_EMAIL) {
+      await sb('alert_log', {
+        method: 'POST', prefer: 'return=minimal',
+        body: JSON.stringify({
+          manager_id: s.manager_id, manager_email: mgr.manager_email,
+          period_start: fromDate, period_end: toDate_,
+          total_calls: currCalls.length, flagged_count: alerted.length, dry_run: DRY_RUN
+        })
+      }).catch(e => console.warn('  Could not write alert_log:', e.message));
 
-    if (!DRY_RUN) await sb(`manager_alert_settings?manager_id=eq.${s.manager_id}`, {
-      method: 'PATCH', body: JSON.stringify({ last_sent_at: to.toISOString() })
-    }).catch(e => console.warn('  Could not update last_sent_at:', e.message));
+      if (!DRY_RUN) await sb(`manager_alert_settings?manager_id=eq.${s.manager_id}`, {
+        method: 'PATCH', body: JSON.stringify({ last_sent_at: to.toISOString() })
+      }).catch(e => console.warn('  Could not update last_sent_at:', e.message));
+    }
 
     sentCount++;
   }

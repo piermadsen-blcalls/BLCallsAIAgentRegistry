@@ -8,6 +8,15 @@ on:
       manager_id:
         description: 'Limit to one manager UUID (leave blank for all)'
         default: ''
+      manager_name:
+        description: 'Limit to one manager by name, e.g. "Matt Fu" (leave blank for all)'
+        default: ''
+      override_email:
+        description: 'Send ALL output to this address instead of the managers (preview/testing)'
+        default: ''
+      window_days:
+        description: 'Force the window to the last N days (blank = since last digest)'
+        default: ''
       dry_run:
         description: 'true to log without sending webhook'
         default: 'false'
@@ -28,6 +37,9 @@ jobs:
           SUPABASE_SERVICE_KEY:     ${{ secrets.SUPABASE_SERVICE_KEY }}
           ASCND_ALERT_WEBHOOK_URL:  ${{ secrets.ASCND_ALERT_WEBHOOK_URL }}
           ALERT_MANAGER_ID:         ${{ github.event.inputs.manager_id || '' }}
+          ALERT_MANAGER_NAME:       ${{ github.event.inputs.manager_name || '' }}
+          ALERT_OVERRIDE_EMAIL:     ${{ github.event.inputs.override_email || '' }}
+          ALERT_WINDOW_DAYS:        ${{ github.event.inputs.window_days || '' }}
           DRY_RUN:                  ${{ github.event.inputs.dry_run || 'false' }}
           DASHBOARD_URL:            ${{ vars.DASHBOARD_URL }}
         run: node scripts/alert.js
