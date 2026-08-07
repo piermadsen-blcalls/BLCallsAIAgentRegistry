@@ -2354,8 +2354,48 @@ bootDashboard();
 
 // ── AUTH ──────────────────────────────────────────────────────
 
-function getAuthToken() { return sessionStorage.getItem('sb_access_token'); }
-function getAuthUser()  { return sessionStorage.getItem('sb_user_email'); }
+function getAuthToken() { return localStorage.getItem('sb_access_token'); }
+function getAuthUser()  { return localStorage.getItem('sb_user_email'); }
+
+// Persistent auth: store the session in localStorage (survives tabs + restarts) and
+// auto-renew with the refresh token, so users sign in once — not on every visit/link.
+const AUTH_KEYS = ['sb_access_token', 'sb_refresh_token', 'sb_user_email', 'sb_expires_at'];
+function saveSession(data, emailFallback) {
+  if (data.access_token)  localStorage.setItem('sb_access_token', data.access_token);
+  if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
+  localStorage.setItem('sb_user_email', data.user?.email || data.email || emailFallback || '');
+  if (data.expires_in)    localStorage.setItem('sb_expires_at', String(Date.now() + data.expires_in * 1000));
+}
+function clearAuth() { AUTH_KEYS.forEach(k => localStorage.removeItem(k)); }
+async function refreshSession() {
+  const rt = localStorage.getItem('sb_refresh_token');
+  if (!rt) return false;
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST', headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: rt }),
+    });
+    if (!res.ok) { clearAuth(); return false; }
+    saveSession(await res.json());
+    return true;
+  } catch { return false; }
+}
+async function ensureAuth() {
+  const token = localStorage.getItem('sb_access_token');
+  const exp   = parseInt(localStorage.getItem('sb_expires_at') || '0', 10);
+  if (token && exp && Date.now() < exp - 60000) return true;          // still valid
+  if (localStorage.getItem('sb_refresh_token')) return await refreshSession();
+  return !!token;                                                     // legacy token, no expiry recorded
+}
+let _refreshTimer = null;
+function startTokenRefreshTimer() {
+  if (_refreshTimer) return;
+  _refreshTimer = setInterval(() => { if (localStorage.getItem('sb_refresh_token')) refreshSession(); }, 45 * 60 * 1000);
+}
+async function onAuthError() {
+  if (await refreshSession()) { authExpired = false; return; }        // token was just stale — renewed
+  clearAuth(); checkAuth();                                           // truly expired — show login
+}
 
 async function doLogin() {
   const email    = document.getElementById('login-email').value.trim();
@@ -2373,10 +2413,10 @@ async function doLogin() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || 'Sign-in failed');
-    sessionStorage.setItem('sb_access_token', data.access_token);
-    sessionStorage.setItem('sb_user_email', data.user?.email || email);
+    saveSession(data, email);
     authExpired = false;
     document.getElementById('login-overlay').classList.add('hidden');
+    startTokenRefreshTimer();
     compInit();
   } catch(e) {
     errEl.textContent = e.message;
@@ -2447,11 +2487,11 @@ async function doSetPassword() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || data.error_description || 'Failed to set password');
     // password set — store the session and enter the dashboard
-    sessionStorage.setItem('sb_access_token', window._inviteToken);
-    sessionStorage.setItem('sb_user_email', data.email || '');
+    saveSession({ access_token: window._inviteToken, refresh_token: window._inviteRefresh, email: data.email });
     authExpired = false;
-    window._inviteToken = null;
+    window._inviteToken = null; window._inviteRefresh = null;
     document.getElementById('setpassword-overlay').classList.add('hidden');
+    startTokenRefreshTimer();
     compInit();
   } catch(e) {
     errEl.textContent = e.message;
@@ -2459,8 +2499,11 @@ async function doSetPassword() {
   btn.disabled = false; btn.textContent = 'Set password & sign in';
 }
 
-// check auth on load
-checkAuth();
+// check auth on load — refresh the session if possible so users sign in once, not every visit
+(async () => {
+  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); compInit(); }
+  else { clearAuth(); checkAuth(); }
+})();
 
 // ── COMPLIANCE HELPERS ────────────────────────────────────────
 
@@ -2476,7 +2519,7 @@ let authExpired = false;
 
 async function compFetch(path) {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: authHeaders() });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
   if (!res.ok) throw new Error(`Supabase error ${res.status}`);
   return res.json();
 }
@@ -2487,7 +2530,7 @@ async function compPost(path, body, prefer = 'return=minimal') {
     headers: { ...authHeaders(), 'Prefer': prefer },
     body: JSON.stringify(body),
   });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
   const text = await res.text();
   return text ? JSON.parse(text) : null;
@@ -2499,7 +2542,7 @@ async function compPatch(path, body) {
     headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
     body: JSON.stringify(body),
   });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
 }
 
@@ -2508,7 +2551,7 @@ async function compDelete(path) {
     method: 'DELETE',
     headers: authHeaders(),
   });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
 }
 
@@ -3199,7 +3242,7 @@ async function assignAccount(accountName, accountType, managerId, selectEl) {
         headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify({ manager_id: managerId, account_name: accountName, account_type: accountType }),
       });
-      if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+      if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
       if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
     }
     await compLoadAssignments();
@@ -3424,7 +3467,7 @@ async function weightsExecute() {
       headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify(payload),
     });
-    if (res.status === 401) { if (!authExpired) { authExpired = true; sessionStorage.clear(); checkAuth(); } throw new Error('Session expired'); }
+    if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
     if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
   } catch(e) {
     status.textContent = 'Failed to save weights: ' + e.message;
@@ -4064,7 +4107,7 @@ function esc(str) {
 }
 
 // init compliance if already authenticated (e.g. page refresh with active session)
-if (getAuthToken()) compInit();
+// (the auth boot above calls compInit() once the session is confirmed/refreshed)
 </script>
 </body>
 </html>
