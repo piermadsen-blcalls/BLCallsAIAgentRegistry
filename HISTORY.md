@@ -60,8 +60,17 @@
   ≈ $910 on gemini-3.5-flash vs the ~$100 OpenRouter balance; waiting on a new card
   / direct-Google or Gemini Batch API. So Ours-score + the compliance digest are
   live but sparse until enrichment scales (building for the steady state).
-- Next: make the call-review table URL-filterable (deep-link target) → `alert.js`
-  digest rework (real flag taxonomy, AM→account→flags, since-last-digest window
-  +7d bootstrap, bidirectional perf drops/surges, fix the broken score filter,
-  per-account deep links) → `alert.yml` cron to Mon + Thu.
+- Shipped the compliance digest + deep-links (same session): the Compliance tab
+  now reads URL params (`#view=compliance&account&type&from&to&flagged`) as the
+  deep-link target — avoids migrating Call Reporting, which is still on
+  `agent_calls_raw` with no flags. `alert.js` rewritten: all AI compliance flags,
+  grouped AM→account→flags; window is since-last-digest (+7d bootstrap on first
+  send); perf now bidirectional (±30% vol, ±20% rev, ±10pp conv); dropped the
+  broken `<40` score filter; per-account deep links via `DASHBOARD_URL` (set as a
+  repo variable = the Netlify URL). `alert.yml` cron `1,3,5` → `1,4` (Mon + Thu).
+  Migrations `017` (scoring RPC + `wrong_category` weight) and `018` (partial
+  index) applied via CLI; migration history reconciled (001-016 marked applied).
+  Dry-run of the digest runs clean (skips managers w/ no assignments; 0 sent).
+- Next: enrichment go-live (parked on OpenRouter budget / new card). Cleanup:
+  duplicate `crBuildQuery` in `index.html` (~lines 2009/2028).
 - External sources (Granola/Jira) not pulled (Granola MCP disconnected).
