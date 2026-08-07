@@ -2,7 +2,7 @@ name: Send Compliance Alerts
 
 on:
   schedule:
-    - cron: '0 14 * * 1,3,5'  # Mon, Wed, Fri at 2pm UTC (~8am MT) — after process runs at 8am UTC
+    - cron: '0 14 * * 1,4'  # Mon + Thu at 2pm UTC (~8am MT) — after process runs at 8am UTC
   workflow_dispatch:
     inputs:
       manager_id:
@@ -29,4 +29,5 @@ jobs:
           ASCND_ALERT_WEBHOOK_URL:  ${{ secrets.ASCND_ALERT_WEBHOOK_URL }}
           ALERT_MANAGER_ID:         ${{ github.event.inputs.manager_id || '' }}
           DRY_RUN:                  ${{ github.event.inputs.dry_run || 'false' }}
+          DASHBOARD_URL:            ${{ vars.DASHBOARD_URL }}
         run: node scripts/alert.js
