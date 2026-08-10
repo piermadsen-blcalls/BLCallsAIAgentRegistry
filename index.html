@@ -2034,9 +2034,9 @@ function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();
 
 // Build query
 function crBuildQuery(offset) {
-  let q = `agent_calls_raw?select=id,created_at,vertical,ivr_name,publisher_name,advertiser_name,phone,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
-  q += `&call_date=gte.${crDrpPickStart}&call_date=lte.${crDrpPickEnd}`;
-  if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical.eq.${encodeURIComponent(v)}`).join(',')})`;
+  let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
+  q += `&created_at=gte.${crDrpPickStart}T00:00:00&created_at=lte.${crDrpPickEnd}T23:59:59&is_test=not.is.true`;
+  if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
   const rec = document.getElementById('cr-rec-filter').value;
@@ -2047,15 +2047,16 @@ function crBuildQuery(offset) {
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
-  q += `&order=${crSortCol}.${sortDir}`;
+  const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
+  q += `&order=${sortCol}.${sortDir}`;
   return q;
 }
 
 // Build query
 function crBuildQuery(offset) {
-  let q = `agent_calls_raw?select=id,created_at,vertical,ivr_name,publisher_name,advertiser_name,phone,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
-  q += `&call_date=gte.${crDrpPickStart}&call_date=lte.${crDrpPickEnd}`;
-  if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical.eq.${encodeURIComponent(v)}`).join(',')})`;
+  let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
+  q += `&created_at=gte.${crDrpPickStart}T00:00:00&created_at=lte.${crDrpPickEnd}T23:59:59&is_test=not.is.true`;
+  if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
   const rec = document.getElementById('cr-rec-filter').value;
@@ -2066,7 +2067,8 @@ function crBuildQuery(offset) {
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
-  q += `&order=${crSortCol}.${sortDir}`;
+  const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
+  q += `&order=${sortCol}.${sortDir}`;
   return q;
 }
 
