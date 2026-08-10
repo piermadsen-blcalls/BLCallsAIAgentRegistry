@@ -2118,7 +2118,7 @@ async function crLoad(append=false) {
   if (!append) document.getElementById('cr-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>`;
   try {
     const res = await fetch(`${SB_URL}/rest/v1/${crBuildQuery(crOffset)}`, {
-      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}`, 'Content-Type':'application/json', 'Prefer':'count=exact', 'Range-Unit':'items', 'Range':`${crOffset}-${crOffset+crPageSize-1}` }
+      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${getAuthToken() || SB_KEY}`, 'Content-Type':'application/json', 'Prefer':'count=exact', 'Range-Unit':'items', 'Range':`${crOffset}-${crOffset+crPageSize-1}` }
     });
     if (!res.ok) { const err = await res.text(); throw new Error(`Supabase ${res.status}: ${err}`); }
     const cr = res.headers.get('content-range');
