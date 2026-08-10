@@ -96,16 +96,19 @@ Continued from the 8/7 Scores work; large session. What moved:
   enabled per manager.
 - **Agents tab, top stats, and Call Reporting now read `canoe_calls`** (the daily
   auto-synced table), not the manual-upload `agent_calls_raw`.
-- **Load-time fix** (~10s → ~1-2s): migration `020` adds `agent_rollup` +
-  `get_distinct_ivrs` RPCs (server-side aggregation) so the Agents tab makes one
-  small call instead of paginating tens of thousands of rows; compliance's ~15k
-  rows now load lazily on tab open, not on boot.
+- **Load-time fix** (~10s+/timeout → ~1-2s): Agents tab loads per-agent totals via
+  the `agent_metrics` RPC on boot (GROUP BY ivr_name — a few dozen rows) and
+  lazy-loads each agent's publisher/advertiser breakdown via `agent_breakdown`
+  only when its drawer opens; compliance's ~15k rows also load lazily on tab open.
+  Unregistered-agent check → `get_distinct_ivrs` RPC. (Earlier passes used a
+  heavier `agent_rollup` that still timed out — 022 split it into totals + lazy
+  breakdown, 023 added a `(ivr_name, created_at)` index so the drawer seeks one
+  agent instead of scanning the window.)
 - **Removed the manual CSV-upload UI** (markup stored in `legacy/manual-upload.html`;
   JS left defined). New-agent auto-detection paused with it (offered to restore as
   a light banner). Kept "sync ASCND data".
-- Migrations `017`–`021` applied via the Supabase CLI; reconciled the CLI migration
-  history (001–016 had been applied by hand). `021` fixed an `agent_rollup` timeout
-  (covering index + materialized CTE) after the first perf pass still seq-scanned.
+- Migrations `017`–`023` applied via the Supabase CLI; reconciled the CLI migration
+  history (001–016 had been applied by hand).
 - Parked: enrichment go-live / backfill (OpenRouter budget / new card).
 - More still to do (session ongoing).
 - External sources (Granola/Jira) not pulled this session.
