@@ -1435,10 +1435,21 @@ function scoresRenderTable() {
   </table>`;
 }
 
-function scoresToggleDetail(key) {
+async function scoresToggleDetail(key) {
   scoresOpenKey = scoresOpenKey === key ? null : key;
   scoresExcluded.clear();
   scoresRenderTable();
+  if (scoresOpenKey) {
+    const r = scoresRows.find(x => x.key === key);
+    if (r && r._dis === undefined) { r._dis = null; await scoresLoadDisagreements(r); if (scoresOpenKey === key) scoresRenderTable(); }
+  }
+}
+// Lazily fetch the individual calls where Canoe and Registry disagree for this pairing.
+async function scoresLoadDisagreements(r) {
+  const { from, to } = scoresWindowRange();
+  try {
+    r._dis = await sbFetch('rpc/pairing_disagreements', { method: 'POST', body: JSON.stringify({ entity_type: scoresEntity, entity_name: r.entity, vertical: r.vertical, from_ts: from, to_ts: to }) }) || [];
+  } catch (e) { r._dis = []; console.warn('disagreements:', e.message); }
 }
 
 // WHY drill-down + what-if for one pairing.
@@ -1469,6 +1480,13 @@ function scoresRenderDetail(r) {
       <td style="text-align:right;font-family:var(--mono)">${x.oN || ''}</td>
     </tr>`;
   }).join('');
+  const fmtD = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const dis = r._dis, disCount = Array.isArray(dis) ? dis.length : null;
+  const disHtml = dis == null
+    ? '<div class="canoe-none" style="padding:8px 0">Loading calls…</div>'
+    : dis.length === 0
+      ? '<div class="canoe-none" style="padding:8px 0">No individual disagreements in this window.</div>'
+      : `<table class="canoe-table"><thead><tr><th>Date</th><th>Canoe said</th><th>Registry said</th><th></th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3)">${fmtD(c.created_at)}</td><td style="font-family:var(--mono)">${esc(c.canoe_outcome)}</td><td style="font-family:var(--mono)">${esc(c.our_outcome)}</td><td style="text-align:right">${c.recording_url ? `<a class="cr-link" href="${esc(c.recording_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : ''}</td></tr>`).join('')}</tbody></table>`;
   return `<div class="scores-detail">
     <div class="scores-detail-headline">${headline}</div>
     <div class="scores-whatif-scores">
@@ -1480,7 +1498,8 @@ function scoresRenderDetail(r) {
       <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Registry n</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
-    <button class="run-btn" style="margin-top:10px" onclick="event.stopPropagation();scoresViewCalls('${esc(r.entity)}','${esc(r.vertical)}')">View these calls →</button>
+    <div class="scores-detail-headline" style="margin-top:16px">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}</div>
+    ${disHtml}
   </div>`;
 }
 
