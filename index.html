@@ -3208,7 +3208,7 @@ function settingsRenderAccountsTable() {
   }
 
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Account</th><th>Type</th><th>Calls</th><th style="min-width:180px">Assigned Manager</th></tr></thead>
+    <thead><tr><th>Account</th><th>Type</th><th style="min-width:180px">Assigned Manager</th></tr></thead>
     <tbody>${rows.map(r => {
       const assignment     = compAssignments.find(a => a.account_name === r.account_name && a.account_type === r.account_type);
       const currentMgrId   = assignment?.manager_id || '';
@@ -3220,7 +3220,6 @@ function settingsRenderAccountsTable() {
       return `<tr>
         <td style="font-weight:500">${esc(r.account_name)}</td>
         <td><span class="flag-badge" style="${typeColor}">${r.account_type}</span></td>
-        <td style="font-family:var(--mono);font-size:11px;color:var(--text-3)">${Number(r.call_count).toLocaleString()}</td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <select class="settings-select assign-mgr-select" style="min-width:160px"
