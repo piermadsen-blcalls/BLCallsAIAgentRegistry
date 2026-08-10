@@ -2073,7 +2073,7 @@ function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();
 // Build query
 function crBuildQuery(offset) {
   let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
-  q += `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59&is_test=eq.false`;
+  q += `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
@@ -2093,7 +2093,7 @@ function crBuildQuery(offset) {
 // Build query
 function crBuildQuery(offset) {
   let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
-  q += `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59&is_test=eq.false`;
+  q += `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
