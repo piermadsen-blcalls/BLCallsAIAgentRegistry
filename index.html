@@ -1289,6 +1289,7 @@ function switchTab(id, el) {
   if (pane) pane.classList.add('active');
   if (id === 'reporting') crAutoLoad();
   if (id === 'scores') scoresInit();
+  if (id === 'compliance') ensureCompliance();
   if (id === 'llm-training') {
     // Relocate the calibration/review section out of Settings into this tab (once).
     const sec = document.getElementById('settings-cost-section');
@@ -1299,17 +1300,23 @@ function switchTab(id, el) {
   if (!_suppressRoute) history.pushState({ tab: id }, '', '?tab=' + id);
 }
 
-function applyRoute() {
+async function applyRoute() {
   const params = new URLSearchParams(location.search);
   const tab = params.get('tab') || 'agents';
   _suppressRoute = true;
   switchTab(tab);
   if (tab === 'compliance') {
+    await ensureCompliance();
     switchCompTab(params.get('sub') || 'calllog');
     applyComplianceFilters(params);
   }
   _suppressRoute = false;
 }
+
+// Compliance data (15k+ rows) is heavy — load it lazily the first time the tab is
+// opened, not on every boot. Dedupes via a shared promise so the router can await it.
+let _compliancePromise = null;
+function ensureCompliance() { if (!_compliancePromise) _compliancePromise = compInit(); return _compliancePromise; }
 
 // ─── SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) ───────────────
 // Both scores are computed at read-time from outcome_weights over the "comparable
@@ -1628,22 +1635,30 @@ async function refreshMetrics(){
   if(!activeRange.start||!activeRange.end||!AGENTS.length)return;
   metricsLoading = true;
   try {
-    const startISO=toISO(activeRange.start),endISO=toISO(activeRange.end);
-    AGENTS.forEach(a=>{a.raw_calls=0;a.sent_calls=0;a.paid_calls=0;a.revenue=0;a.margin=0;a.conversion=0;a.pubBreakdown=[];a.advBreakdown=[];});
+    const fromTs=activeRange.start.toISOString();
+    const endEx=new Date(activeRange.end);endEx.setDate(endEx.getDate()+1);const toTs=endEx.toISOString();
+    AGENTS.forEach(a=>{a.raw_calls=0;a.sent_calls=0;a.paid_calls=0;a.revenue=0;a.margin=0;a.conversion=0;a.pubBreakdown=[];a.advBreakdown=[];a._payout=0;});
     const ivrToAgent={};
     AGENTS.forEach(a=>{ivrToAgent[a.ivrName]=a;aliasesForAgent(a.ivrName).forEach(alias=>{ivrToAgent[alias]=a;});});
-    const callsByAgent=new Map();
-    AGENTS.forEach(a=>callsByAgent.set(a,[]));
+    const pubAcc=new Map(),advAcc=new Map();
+    AGENTS.forEach(a=>{pubAcc.set(a,{});advAcc.set(a,{});});
     try{
+      // Aggregated server-side (migration 020) — one small call, not tens of thousands of rows.
       const PAGE=1000;let offset=0;
       while(true){
-        const batch=await sbFetch(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&created_at=gte.${startISO}T00:00:00&created_at=lte.${endISO}T23:59:59&is_test=not.is.true`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
+        const batch=await sbFetch('rpc/agent_rollup',{method:'POST',headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`},body:JSON.stringify({from_ts:fromTs,to_ts:toTs})});
         if(!batch||!batch.length)break;
-        for(const r of batch){const canonical=resolveIvrName(r.ivr_name);const agent=ivrToAgent[canonical];if(agent)callsByAgent.get(agent).push(r);}
+        for(const r of batch){
+          const agent=ivrToAgent[resolveIvrName(r.ivr_name)];if(!agent)continue;
+          const acc=(r.side==='publisher'?pubAcc:advAcc).get(agent);
+          const row=acc[r.counterparty]||(acc[r.counterparty]={name:r.counterparty,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0});
+          row.raw_calls+=Number(r.raw);row.sent_calls+=Number(r.sent);row.paid_calls+=Number(r.paid);row.revenue+=Number(r.revenue);
+          if(r.side==='publisher'){agent.raw_calls+=Number(r.raw);agent.sent_calls+=Number(r.sent);agent.paid_calls+=Number(r.paid);agent.revenue+=Number(r.revenue);agent._payout+=Number(r.payout);}
+        }
         if(batch.length<PAGE)break;
         offset+=PAGE;
       }
-      AGENTS.forEach(a=>aggregateForAgent(a,callsByAgent.get(a)));
+      AGENTS.forEach(a=>{a.margin=(a.revenue||0)-(a._payout||0);a.conversion=a.raw_calls>0?a.paid_calls/a.raw_calls:0;a.pubBreakdown=Object.values(pubAcc.get(a)).sort((x,y)=>y.raw_calls-x.raw_calls);a.advBreakdown=Object.values(advAcc.get(a)).sort((x,y)=>y.revenue-x.revenue);});
       const latest=await sbFetch('canoe_calls?select=created_at&order=created_at.desc&limit=1&is_test=not.is.true');
       if(latest&&latest.length){const d=new Date(latest[0].created_at);document.getElementById('freshness-label').textContent='Data current through '+fmtDate(d);}
       else document.getElementById('freshness-label').textContent='No data yet';
@@ -2337,15 +2352,8 @@ async function checkForUnregisteredAgents() {
   try {
     const seen = new Set();
     const since = new Date(); since.setDate(since.getDate() - 60);
-    const sinceISO = toISO(since);
-    const PAGE = 1000; let offset = 0;
-    while (true) {
-      const batch = await sbFetch(`canoe_calls?select=ivr_name&ivr_name=not.is.null&created_at=gte.${sinceISO}T00:00:00&is_test=not.is.true`, { headers: { "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` } });
-      if (!batch || !batch.length) break;
-      batch.forEach(r => { if (r.ivr_name) seen.add(r.ivr_name.trim()); });
-      if (batch.length < PAGE) break;
-      offset += PAGE;
-    }
+    const rows = await sbFetch('rpc/get_distinct_ivrs', { method: 'POST', body: JSON.stringify({ since_ts: since.toISOString() }) });
+    (rows || []).forEach(r => { if (r.ivr_name) seen.add(r.ivr_name.trim()); });
     const knownIvrs = new Set(AGENTS.map(a => a.ivrName));
     const unregistered = [...seen].filter(name => {
       const canonical = resolveIvrName(name);
@@ -2442,8 +2450,8 @@ async function doLogin() {
     authExpired = false;
     document.getElementById('login-overlay').classList.add('hidden');
     startTokenRefreshTimer();
-    await compInit();
-    applyRoute();
+    await applyRoute();
+    refreshMetrics();
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -2518,8 +2526,8 @@ async function doSetPassword() {
     window._inviteToken = null; window._inviteRefresh = null;
     document.getElementById('setpassword-overlay').classList.add('hidden');
     startTokenRefreshTimer();
-    await compInit();
-    applyRoute();
+    await applyRoute();
+    refreshMetrics();
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -2528,7 +2536,7 @@ async function doSetPassword() {
 
 // check auth on load — refresh the session if possible so users sign in once, not every visit
 (async () => {
-  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); await compInit(); applyRoute(); }
+  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); await applyRoute(); }
   else { clearAuth(); checkAuth(); }
 })();
 window.addEventListener('popstate', applyRoute);
