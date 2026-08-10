@@ -1637,16 +1637,16 @@ async function refreshMetrics(){
     try{
       const PAGE=1000;let offset=0;
       while(true){
-        const batch=await sbFetch(`agent_calls_raw?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&call_date=gte.${startISO}&call_date=lte.${endISO}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
+        const batch=await sbFetch(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result&created_at=gte.${startISO}T00:00:00&created_at=lte.${endISO}T23:59:59&is_test=not.is.true`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
         if(!batch||!batch.length)break;
         for(const r of batch){const canonical=resolveIvrName(r.ivr_name);const agent=ivrToAgent[canonical];if(agent)callsByAgent.get(agent).push(r);}
         if(batch.length<PAGE)break;
         offset+=PAGE;
       }
       AGENTS.forEach(a=>aggregateForAgent(a,callsByAgent.get(a)));
-      const latest=await sbFetch('agent_calls_raw?select=call_date&order=call_date.desc&limit=1');
-      if(latest&&latest.length){const d=new Date(latest[0].call_date+'T00:00:00');document.getElementById('freshness-label').textContent='Data current through '+fmtDate(d);}
-      else document.getElementById('freshness-label').textContent='No data uploaded yet';
+      const latest=await sbFetch('canoe_calls?select=created_at&order=created_at.desc&limit=1&is_test=not.is.true');
+      if(latest&&latest.length){const d=new Date(latest[0].created_at);document.getElementById('freshness-label').textContent='Data current through '+fmtDate(d);}
+      else document.getElementById('freshness-label').textContent='No data yet';
     } catch(e){
       console.warn('Metric load failed:',e.message);
       document.getElementById('freshness-label').textContent='Could not load data: '+e.message;
@@ -2338,7 +2338,7 @@ async function checkForUnregisteredAgents() {
     const sinceISO = toISO(since);
     const PAGE = 1000; let offset = 0;
     while (true) {
-      const batch = await sbFetch(`agent_calls_raw?select=ivr_name&ivr_name=not.is.null&call_date=gte.${sinceISO}`, { headers: { "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` } });
+      const batch = await sbFetch(`canoe_calls?select=ivr_name&ivr_name=not.is.null&created_at=gte.${sinceISO}T00:00:00&is_test=not.is.true`, { headers: { "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` } });
       if (!batch || !batch.length) break;
       batch.forEach(r => { if (r.ivr_name) seen.add(r.ivr_name.trim()); });
       if (batch.length < PAGE) break;
