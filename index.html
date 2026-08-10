@@ -1486,7 +1486,7 @@ function scoresRenderDetail(r) {
     ? '<div class="canoe-none" style="padding:8px 0">Loading calls…</div>'
     : dis.length === 0
       ? '<div class="canoe-none" style="padding:8px 0">No individual disagreements in this window.</div>'
-      : `<table class="canoe-table"><thead><tr><th>Date</th><th>Canoe said</th><th>Registry said</th><th></th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3)">${fmtD(c.created_at)}</td><td style="font-family:var(--mono)">${esc(c.canoe_outcome)}</td><td style="font-family:var(--mono)">${esc(c.our_outcome)}</td><td style="text-align:right">${c.recording_url ? `<a class="cr-link" href="${esc(c.recording_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : ''}</td></tr>`).join('')}</tbody></table>`;
+      : `<table class="canoe-table"><thead><tr><th>Date</th><th>Publisher</th><th>Advertiser</th><th style="text-align:right">Dur</th><th>Disposition</th><th>Canoe</th><th>Registry</th><th></th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3);white-space:nowrap">${fmtD(c.created_at)}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'—')}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'—')}</td><td style="text-align:right;font-family:var(--mono)">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'—')}</td><td style="font-family:var(--mono)">${esc(c.canoe_outcome)}</td><td style="font-family:var(--mono)">${esc(c.our_outcome)}</td><td style="text-align:right">${c.recording_url ? `<a class="cr-link" href="${esc(c.recording_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : ''}</td></tr>`).join('')}</tbody></table>`;
   return `<div class="scores-detail">
     <div class="scores-detail-headline">${headline}</div>
     <div class="scores-whatif-scores">
@@ -2052,7 +2052,7 @@ function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();
 // Build query
 function crBuildQuery(offset) {
   let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
-  q += `&created_at=gte.${crDrpPickStart}T00:00:00&created_at=lte.${crDrpPickEnd}T23:59:59&is_test=not.is.true`;
+  q += `&created_at=gte.${new Date(crDrpPickStart+'T00:00:00').toISOString()}&created_at=lte.${new Date(crDrpPickEnd+'T23:59:59.999').toISOString()}&is_test=not.is.true`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
@@ -2072,7 +2072,7 @@ function crBuildQuery(offset) {
 // Build query
 function crBuildQuery(offset) {
   let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
-  q += `&created_at=gte.${crDrpPickStart}T00:00:00&created_at=lte.${crDrpPickEnd}T23:59:59&is_test=not.is.true`;
+  q += `&created_at=gte.${new Date(crDrpPickStart+'T00:00:00').toISOString()}&created_at=lte.${new Date(crDrpPickEnd+'T23:59:59.999').toISOString()}&is_test=not.is.true`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
   if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
