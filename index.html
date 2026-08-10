@@ -1557,7 +1557,7 @@ function aliasesForAgent(canonicalIvrName) { return Object.entries(aliasMap).fil
 // ─── DISTINCT VERTICALS (from raw call data) ──────────────────────────────────
 async function loadVerticals() {
   try {
-    const rows = await sbFetch('canoe_calls?select=vertical_name&vertical_name=not.is.null&is_test=eq.false');
+    const rows = await sbFetch('rpc/get_distinct_verticals', { method: 'POST', body: '{}' });
     const set = new Set();
     if (rows) rows.forEach(r => { const v = (r.vertical_name||'').trim(); if (v) set.add(v); });
     VERTICALS = [...set].sort((a,b)=>a.localeCompare(b));
