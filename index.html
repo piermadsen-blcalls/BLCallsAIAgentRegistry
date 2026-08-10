@@ -1217,33 +1217,11 @@
     <div class="footer-right">
       <span id="sync-status" style="font-size:11px;color:var(--text-3)"></span>
       <button class="update-link" onclick="syncHlData(this)">sync ASCND data</button>
-      <button class="update-link" onclick="toggleUpdatePanel()">update data</button>
     </div>
   </div>
 
-  <div class="update-panel" id="update-panel">
-    <h3>Update agent data</h3>
-    <p>Run the query below in BigQuery, save the results as <strong>CSV (local file)</strong>, then upload it here.</p>
-    <div style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-        <div>
-          <div style="font-size:12px;font-weight:500;color:var(--text);">BigQuery query</div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Dates auto-populate to the last 5 full days.</div>
-        </div>
-        <button onclick="copySQL(this)" style="font-family:var(--sans);font-size:12px;font-weight:500;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:5px 14px;cursor:pointer;white-space:nowrap;">Copy query</button>
-      </div>
-      <pre id="bq-sql" style="font-family:var(--mono);font-size:11.5px;color:var(--text);background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;white-space:pre;line-height:1.7;"></pre>
-    </div>
-    <div class="file-drop" id="file-drop" onclick="document.getElementById('file-input').click()">
-      <div class="file-drop-text"><strong>Click to upload</strong> or drag a CSV file here</div>
-      <div class="file-drop-sub">Save BigQuery results → CSV (local file)</div>
-      <input type="file" class="file-input-hidden" id="file-input" accept=".csv,text/csv">
-    </div>
-    <div class="file-status" id="file-status"></div>
-    <div class="progress-wrap" id="progress-wrap" style="display:none;"><div class="progress-bar" id="progress-bar"></div></div>
-    <div class="update-results" id="update-results"></div>
-    <div id="new-agent-intakes"></div>
-  </div>
+  <!-- Manual CSV-upload panel removed from the UI — data now auto-syncs into canoe_calls
+       via scripts/sync.js. Markup preserved in legacy/manual-upload.html for restoration. -->
 </div>
 
 <script>
@@ -2370,8 +2348,6 @@ async function checkForUnregisteredAgents() {
 }
 
 async function bootDashboard() {
-  document.getElementById('bq-sql').textContent = buildBQSQL();
-  setupFileUpload();
   agentDrpInit();
   await Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
   loadVerticals();
@@ -2381,7 +2357,6 @@ async function bootDashboard() {
   recomputeStats();
   applyFilters();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
-  await checkForUnregisteredAgents();
 }
 bootDashboard();
 
