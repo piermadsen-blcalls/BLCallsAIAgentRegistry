@@ -330,6 +330,12 @@
   .login-input { width:100%; font-family:var(--sans); font-size:13px; padding:9px 12px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); outline:none; transition:border-color 0.15s; }
   .login-input:focus { border-color:var(--brand-navy); background:var(--surface); }
   .login-btn { width:100%; font-family:var(--sans); font-size:13px; font-weight:500; padding:10px; background:var(--brand-navy); color:white; border:none; border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:opacity 0.15s; }
+  .acct-btn { display:flex; align-items:center; gap:7px; font-family:var(--sans); font-size:12px; font-weight:500; color:var(--text-2); background:var(--surface); border:1px solid var(--border-strong); border-radius:100px; padding:6px 14px; cursor:pointer; transition:color 0.15s; }
+  .acct-btn:hover { color:var(--text); }
+  .acct-dropdown { position:absolute; right:0; top:calc(100% + 6px); background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(26,46,74,0.12); min-width:180px; padding:6px; display:none; z-index:50; }
+  .acct-dropdown.open { display:block; }
+  .acct-dropdown button { display:block; width:100%; text-align:left; font-family:var(--sans); font-size:13px; color:var(--text); background:none; border:none; padding:9px 10px; border-radius:var(--radius-sm); cursor:pointer; }
+  .acct-dropdown button:hover { background:var(--gray-bg); }
   .login-btn:hover { opacity:0.88; }
   .login-btn:disabled { opacity:0.4; cursor:not-allowed; }
   .login-error { font-size:12px; color:var(--coral); margin-top:12px; min-height:18px; }
@@ -551,6 +557,26 @@
   </div>
 </div>
 
+<!-- Change password (logged-in user, self-service) -->
+<div class="login-overlay hidden" id="changepw-overlay">
+  <div class="login-card">
+    <div class="login-title">Change your password</div>
+    <div class="login-sub">Set a new password for <span id="changepw-email" style="color:var(--text)"></span>.</div>
+    <div class="login-field">
+      <label class="login-label" for="changepw-input">New password</label>
+      <input class="login-input" type="password" id="changepw-input" placeholder="At least 6 characters" autocomplete="new-password">
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="changepw-confirm">Confirm password</label>
+      <input class="login-input" type="password" id="changepw-confirm" placeholder="Repeat password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doChangePassword()">
+    </div>
+    <button class="login-btn" id="changepw-btn" onclick="doChangePassword()">Update password</button>
+    <button class="login-btn" onclick="closeChangePw()" style="background:var(--surface);color:var(--text-2);border:1px solid var(--border-strong);margin-top:8px">Cancel</button>
+    <div class="login-error" id="changepw-error"></div>
+    <div id="changepw-success" style="display:none;color:var(--teal);font-size:13px;margin-top:10px;text-align:center">Password updated.</div>
+  </div>
+</div>
+
 <!-- CALL DRAWER -->
 <div class="comp-drawer-overlay" id="comp-drawer-overlay" onclick="closeCallDrawer()"></div>
 <div class="comp-drawer" id="comp-drawer">
@@ -654,6 +680,16 @@
     </div>
     <div class="logo-divider"></div>
     <span class="logo-product">AI Agent Registry</span>
+    <div class="acct-menu" id="acct-menu" style="margin-left:auto;position:relative">
+      <button class="acct-btn" onclick="toggleAcctMenu(event)">
+        <span id="acct-email">Account</span>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <div class="acct-dropdown" id="acct-dropdown">
+        <button onclick="openChangePw()">Change password</button>
+        <button onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
   </div>
 
   <header class="site-header">
@@ -871,6 +907,7 @@
           </button>
           <div class="ins-vertical-popover" id="cr-colpicker-popover"></div>
         </div>
+        <button class="run-btn" id="cr-export-btn" onclick="crExportAll()" style="background:var(--surface);color:var(--brand-navy);border:1px solid var(--border-strong)">Export CSV</button>
         <button class="run-btn" id="cr-run-btn" onclick="crLoad()">Load calls</button>
       </div>
     </div>
@@ -2084,12 +2121,12 @@ async function crExportAll() {
     if (!all.length) { alert('No rows to export.'); return; }
     const agentMap = {};
     AGENTS.forEach(a => { agentMap[a.ivrName] = a; aliasesForAgent(a.ivrName).forEach(alias => agentMap[alias] = a); });
-    const cols = ['id','created_at','vertical','agent','ivr_name','publisher_name','advertiser_name','phone','ivr_duration','disposition','disposition_description','recording_url','advertiser_payin'];
+    const cols = ['id','created_at','vertical','agent','ivr_name','publisher_name','advertiser_name','phone','ivr_duration','disposition','disposition_description','advertiser_payin','our_outcome','canoe_outcome','flags','compliance_reviewed','recording_url'];
     const esc = v => { if (v === null || v === undefined) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
     const lines = [cols.join(',')];
     for (const r of all) {
       const agent = agentMap[r.ivr_name];
-      const row = { ...r, agent: agent ? agent.name : (r.ivr_name || ''), vertical: r.vertical || (agent ? agent.vertical : '') || '' };
+      const row = { ...r, agent: agent ? agent.name : (r.ivr_name || ''), vertical: r.vertical || (agent ? agent.vertical : '') || '', flags: (r.flags || []).join('; ') };
       lines.push(cols.map(c => esc(row[c])).join(','));
     }
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
@@ -2101,7 +2138,7 @@ async function crExportAll() {
   } catch(e) {
     alert('Export failed: ' + e.message);
   }
-  if (btn) { btn.disabled = false; btn.textContent = 'Export all rows'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Export CSV'; }
 }
 
 function crRender() {
@@ -2184,7 +2221,6 @@ function crRender() {
     ? `Showing ${rows.length.toLocaleString()} of ${crRows.length.toLocaleString()} loaded (${totalLabel} total match filters)`
     : `Showing ${rows.length.toLocaleString()} of ${totalLabel} rows`;
   const loadMoreBtn = (!search && crHasMore) ? `<button class="cr-load-more" onclick="crLoad(true)">Load more</button>` : '';
-  const exportBtn = `<button class="cr-load-more" style="background:var(--surface);color:var(--brand-navy);border:1px solid var(--border-strong)" onclick="crExportAll()" id="cr-export-btn">Export all rows</button>`;
 
   document.getElementById('cr-output').innerHTML = `
     <div class="cr-table-wrap">
@@ -2194,7 +2230,7 @@ function crRender() {
           <tbody>${tbody}</tbody>
         </table>
       </div>
-      <div class="cr-footer"><span>${footerText}</span><span style="display:flex;gap:8px;align-items:center">${loadMoreBtn}${exportBtn}</span></div>
+      <div class="cr-footer"><span>${footerText}</span><span style="display:flex;gap:8px;align-items:center">${loadMoreBtn}</span></div>
     </div>`;
 }
 
@@ -2442,6 +2478,7 @@ async function doLogin() {
     saveSession(data, email);
     authExpired = false;
     document.getElementById('login-overlay').classList.add('hidden');
+    const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
     await applyRoute();
     refreshMetrics();
@@ -2462,8 +2499,52 @@ function checkAuth() {
     return false;
   }
   document.getElementById('login-overlay').classList.add('hidden');
+  const em = document.getElementById('acct-email');
+  if (em) em.textContent = getAuthUser() || 'Account';
   return true;
 }
+
+// ── Account menu: change password (self-service) + sign out ────
+function toggleAcctMenu(e) { e.stopPropagation(); document.getElementById('acct-dropdown').classList.toggle('open'); }
+document.addEventListener('click', () => document.getElementById('acct-dropdown')?.classList.remove('open'));
+
+function openChangePw() {
+  document.getElementById('acct-dropdown')?.classList.remove('open');
+  document.getElementById('changepw-email').textContent = getAuthUser() || '';
+  document.getElementById('changepw-input').value = '';
+  document.getElementById('changepw-confirm').value = '';
+  document.getElementById('changepw-error').textContent = '';
+  document.getElementById('changepw-success').style.display = 'none';
+  document.getElementById('changepw-overlay').classList.remove('hidden');
+  document.getElementById('changepw-input').focus();
+}
+function closeChangePw() { document.getElementById('changepw-overlay').classList.add('hidden'); }
+
+async function doChangePassword() {
+  const pw1 = document.getElementById('changepw-input').value;
+  const pw2 = document.getElementById('changepw-confirm').value;
+  const errEl = document.getElementById('changepw-error');
+  const btn = document.getElementById('changepw-btn');
+  errEl.textContent = '';
+  if (!pw1) { errEl.textContent = 'Enter a password.'; return; }
+  if (pw1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
+  btn.disabled = true; btn.textContent = 'Updating…';
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      body: JSON.stringify({ password: pw1 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error_description || 'Failed to update password');
+    document.getElementById('changepw-success').style.display = 'block';
+    setTimeout(closeChangePw, 1400);
+  } catch(e) { errEl.textContent = e.message; }
+  btn.disabled = false; btn.textContent = 'Update password';
+}
+
+function doLogout() { clearAuth(); location.href = location.pathname; }
 
 // check for invite / password-reset token in URL hash
 (function handleInviteToken() {
@@ -2518,6 +2599,7 @@ async function doSetPassword() {
     authExpired = false;
     window._inviteToken = null; window._inviteRefresh = null;
     document.getElementById('setpassword-overlay').classList.add('hidden');
+    const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
     await applyRoute();
     refreshMetrics();

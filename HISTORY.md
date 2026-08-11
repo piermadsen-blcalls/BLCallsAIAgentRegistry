@@ -139,6 +139,14 @@ Continued from the 8/7 Scores work; large session. What moved:
   header alignment (earlier in the session).
 - Left the old compliance call-log JS (~10 now-unused functions) as dead code — flagged
   for a follow-up cleanup. Verify the two jsonb flag filters against prod.
+- Chose the merge shape ("everything folded in") via a Lavish visual mockup comparison
+  of three options rendered in the dashboard's own design system.
+- **CSV export on the Calls tab** (toolbar button): exports every row matching the
+  active filters, now including the Outcome (Registry + Canoe), Flags, and Reviewed
+  columns alongside the operational fields.
+- **Self-service password change**: header account menu (email → Change password /
+  Sign out). Change password updates via Supabase auth (`PUT /auth/v1/user`) using the
+  user's own session — no admin/service key — mirroring the invite/recovery flow.
 - External sources (Granola/Jira) not pulled this session.
 - Reconciled state: day-to-day registry ownership handed to **James Teasdale** (Aug 3); Pier retains complex/strategic pieces. Winning dispo model = `google/gemini-3.5-flash`. Compliance flags stay separate from scoring; 2-day digest cadence.
 - New adjacent workstream noted: **Ring Partner caller-ID / buyer-acceptance strategy** (with David) — "intercept and re-ping" to capture caller ID and re-ping higher-value buyers (BCI pre-ping vs caller-ID-requiring network buyers).
