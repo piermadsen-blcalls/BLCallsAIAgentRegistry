@@ -112,3 +112,10 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Parked: enrichment go-live / backfill (OpenRouter budget / new card).
 - More still to do (session ongoing).
 - External sources (Granola/Jira) not pulled this session.
+
+### 2026-08-10 (Pier) — context reconciliation
+- Compiled a `context.md` for this folder from a cross-project pull (Granola last 3 weeks + Outlook + Exec Reporting board). No app/code changes beyond adding that file.
+- Reconciled state: day-to-day registry ownership handed to **James Teasdale** (Aug 3); Pier retains complex/strategic pieces. Winning dispo model = `google/gemini-3.5-flash`. Compliance flags stay separate from scoring; 2-day digest cadence.
+- New adjacent workstream noted: **Ring Partner caller-ID / buyer-acceptance strategy** (with David) — "intercept and re-ping" to capture caller ID and re-ping higher-value buyers (BCI pre-ping vs caller-ID-requiring network buyers).
+- Jira note: MK-150/MK-153 tracking tickets were **deleted** — no live tickets for this project now.
+- _Sources summarized only in `context.md`; nothing sensitive/personal logged._
