@@ -1,0 +1,25 @@
+name: Ingest Gemini Batch
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # every 6h — drains finished jobs the same day
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Ingest finished Gemini batch jobs
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
+          AI_MODEL:             'gemini-3.6-flash'
+          BATCH_ACTION:         'ingest'
+        run: node scripts/process.js

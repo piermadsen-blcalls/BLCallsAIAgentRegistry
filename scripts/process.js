@@ -7,11 +7,22 @@
  *   SUPABASE_URL          - e.g. https://xxxx.supabase.co
  *   SUPABASE_SERVICE_KEY  - service role key
  *   OPENROUTER_API_KEY    - OpenRouter key (used when AI_MODEL is namespaced, e.g. "anthropic/...")
- *   ANTHROPIC_API_KEY     - Anthropic key (only used for bare ids like "claude-sonnet-4-6")
+ *   ANTHROPIC_API_KEY     - Anthropic key (only used for bare Claude ids like "claude-sonnet-4-6")
+ *   GEMINI_API_KEY        - Google AI Studio key (used for bare Gemini ids, e.g. "gemini-3.6-flash")
  *   AI_MODEL              - default "anthropic/claude-sonnet-4-6" (routed via OpenRouter)
  *   AI_MODE               - "combined" (default) or "separate"
  *   BATCH_SIZE            - number of calls to process per run (default 100)
  *   BATCH_MODE            - "true" for Anthropic batch API (bare Claude ids only; ignored for OpenRouter)
+ *
+ * Gemini Batch API (async, ~50% cheaper) is split across two runs so a job can
+ * outlive the 6h GitHub Actions cap. Bare Gemini id + one of:
+ *   BATCH_ACTION=submit   - fan unprocessed calls into batch jobs, record them in
+ *                           gemini_batch_jobs, exit. No polling.
+ *   BATCH_ACTION=ingest   - poll open gemini_batch_jobs, write finished results to
+ *                           canoe_calls. Idempotent no-op when nothing is pending.
+ *   BACKFILL_DAYS         - (submit) only fetch unprocessed calls newer than N days.
+ *   GEMINI_CHUNK          - (submit) max requests per batch job (default 500).
+ *   DRY_RUN=true          - (submit) build + log the batch without submitting.
  */
 
 // Local dev convenience: load scripts/.env if present (gitignored).
@@ -29,6 +40,7 @@ const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
 const OPENROUTER_API_KEY   = process.env.OPENROUTER_API_KEY;
+const GEMINI_API_KEY       = process.env.GEMINI_API_KEY;
 const AI_MODEL             = process.env.AI_MODEL       || 'anthropic/claude-sonnet-4-6';
 const AI_MODE              = process.env.AI_MODE        || 'combined';
 const BATCH_SIZE           = parseInt(process.env.BATCH_SIZE || '100', 10);
@@ -39,6 +51,11 @@ const TEST_BATCH_ID        = process.env.TEST_BATCH_ID  || null;
 // Fixed call-id list for test runs — ensures every model scores the SAME calls.
 const TEST_CALL_IDS        = (process.env.TEST_CALL_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const BATCH_MODE           = process.env.BATCH_MODE     === 'true';
+// Gemini Batch API two-phase controls.
+const BATCH_ACTION         = process.env.BATCH_ACTION  || '';   // '' | 'submit' | 'ingest'
+const BACKFILL_DAYS        = parseInt(process.env.BACKFILL_DAYS || '0', 10);
+const GEMINI_CHUNK         = parseInt(process.env.GEMINI_CHUNK  || '500', 10);
+const DRY_RUN              = process.env.DRY_RUN        === 'true';
 
 // ── Outcome scoring table (Taxonomy v3) ──────────────────────
 // Fallback scores used when outcome_weights table is unavailable.
@@ -266,10 +283,46 @@ function parseModelJson(text) {
 
 // ── LLM API call ──────────────────────────────────────────────
 // Namespaced model ids ("anthropic/...", "openai/...", "google/...") route
-// through OpenRouter. Bare ids ("claude-sonnet-4-6") hit the Anthropic API.
+// through OpenRouter. Bare "gemini-*" ids hit the native Gemini API; other bare
+// ids ("claude-sonnet-4-6") hit the Anthropic API.
 async function callLLM(system, userMessage) {
   if (AI_MODEL.includes('/')) return callOpenRouter(system, userMessage);
+  if (/^gemini/i.test(AI_MODEL)) return callGemini(system, userMessage);
   return callClaude(system, userMessage);
+}
+
+// Shared Gemini request body — used by both the sync call and each batch item.
+// systemInstruction carries the system prompt; responseMimeType forces clean JSON.
+function geminiRequestBody(system, userMessage) {
+  return {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+    generationConfig: {
+      temperature:      0.1,
+      maxOutputTokens:  MAX_TOKENS,
+      responseMimeType: 'application/json',
+    },
+  };
+}
+
+async function callGemini(system, userMessage) {
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'x-goog-api-key': GEMINI_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiRequestBody(system, userMessage)),
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  const usage = {
+    input:  data.usageMetadata?.promptTokenCount     || 0,
+    output: data.usageMetadata?.candidatesTokenCount || 0,
+  };
+  return { result: parseModelJson(text), usage };
 }
 
 async function callClaude(system, userMessage) {
@@ -367,17 +420,29 @@ async function flagDuplicateCallers(callIds) {
 
 // ── Supabase helpers ──────────────────────────────────────────
 async function fetchUnprocessed() {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/canoe_calls?ai_processed_at=is.null&transcription=not.is.null&transcription=neq.&select=id,transcription,zip,vertical_name,called_from,duration,created_at,canoe_outcome&order=created_at.asc&limit=${BATCH_SIZE}`,
-    {
-      headers: {
-        'apikey':        SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    }
-  );
-  if (!res.ok) throw new Error(`Supabase fetch error ${res.status}: ${await res.text()}`);
-  return res.json();
+  let filter = 'ai_processed_at=is.null&transcription=not.is.null&transcription=neq.';
+  // Backfill: only calls newer than BACKFILL_DAYS (still unprocessed-only).
+  if (BACKFILL_DAYS > 0) {
+    const since = new Date(Date.now() - BACKFILL_DAYS * 86400000).toISOString();
+    filter += `&created_at=gte.${since}`;
+  }
+  const select = 'select=id,transcription,zip,vertical_name,called_from,duration,created_at,canoe_outcome';
+  // Page via offset so a large backfill isn't silently capped by the server's
+  // per-request row limit. Caps at BATCH_SIZE total.
+  const PAGE = 1000;
+  const out = [];
+  while (out.length < BATCH_SIZE) {
+    const want = Math.min(PAGE, BATCH_SIZE - out.length);
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/canoe_calls?${filter}&${select}&order=created_at.asc&offset=${out.length}&limit=${want}`,
+      { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    );
+    if (!res.ok) throw new Error(`Supabase fetch error ${res.status}: ${await res.text()}`);
+    const rows = await res.json();
+    out.push(...rows);
+    if (rows.length < want) break;  // exhausted
+  }
+  return out;
 }
 
 async function writeResult(id, result) {
@@ -459,6 +524,32 @@ async function writeTestResult(testId, callId, outcome, flags, rawResponse, inpu
   if (!res.ok) throw new Error(`Supabase write error ${res.status}: ${await res.text()}`);
 }
 
+// Build the canoe_calls patch from a parsed model reply + call context.
+// Centralizes outcome validation, flag filtering, the code-decided duplicate_caller
+// and geo_mismatch flags, and score lookup — shared by the Anthropic-batch and
+// Gemini-batch paths. (geo_mismatch is added after the VALID_FLAGS filter on purpose.)
+function buildResultPatch(callId, parsed, callZip, duplicateIds, activePromptId, modelId = AI_MODEL) {
+  let outcome = parsed.outcome;
+  if (!VALID_OUTCOMES.includes(outcome)) outcome = 'other';
+
+  let flags = (parsed.flags || []).filter(f => VALID_FLAGS.includes(f));
+  if (duplicateIds.has(callId) && !flags.includes('duplicate_caller')) flags.push('duplicate_caller');
+  if (isGeoMismatch(callZip, parsed.stated_zip) && !flags.includes('geo_mismatch')) flags.push('geo_mismatch');
+
+  const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
+  return {
+    our_outcome:      outcome,
+    our_summary:      parsed.summary,
+    publisher_score:  scores.pub,
+    advertiser_score: scores.adv,
+    flags,
+    suspicious_call:  parsed.suspicious_call || false,
+    ai_model:         modelId,
+    ai_processed_at:  new Date().toISOString(),
+    prompt_id:        activePromptId,
+  };
+}
+
 // ── Anthropic batch API helpers ───────────────────────────────
 async function submitBatch(requests) {
   const res = await fetch('https://api.anthropic.com/v1/messages/batches', {
@@ -520,35 +611,239 @@ async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
     if (item.result.type !== 'succeeded') { console.error(`  [${item.custom_id}] Batch error: ${item.result.error?.message}`); errors++; continue; }
     try {
       const data    = item.result.message;
-      const usage   = { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 };
       const text    = data.content[0].text.trim();
       let parsed;
       try { parsed = parseModelJson(text); } catch { parsed = null; }
       if (!parsed) { console.error(`  [${item.custom_id}] Could not parse response`); errors++; continue; }
 
-      let outcome = parsed.outcome;
-      if (!VALID_OUTCOMES.includes(outcome)) outcome = 'other';
-
-      let flags = (parsed.flags || []).filter(f => VALID_FLAGS.includes(f));
-      if (duplicateIds.has(item.custom_id) && !flags.includes('duplicate_caller')) flags.push('duplicate_caller');
-      if (isGeoMismatch(zipById[item.custom_id], parsed.stated_zip) && !flags.includes('geo_mismatch')) flags.push('geo_mismatch');
-
-      const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
-      await writeResult(item.custom_id, {
-        our_outcome: outcome, our_summary: parsed.summary,
-        publisher_score: scores.pub, advertiser_score: scores.adv,
-        flags, suspicious_call: parsed.suspicious_call || false,
-        ai_model: AI_MODEL, ai_processed_at: new Date().toISOString(), prompt_id: activePromptId,
-      });
+      await writeResult(item.custom_id, buildResultPatch(item.custom_id, parsed, zipById[item.custom_id], duplicateIds, activePromptId));
       processed++;
     } catch(e) { console.error(`  [${item.custom_id}] ${e.message}`); errors++; }
   }
   console.log(`Batch done. Processed: ${processed}, Errors: ${errors}`);
 }
 
+// ── Gemini Batch API ──────────────────────────────────────────
+// Two-phase: submit() records jobs and exits; ingest() (a later run) polls those
+// jobs and writes finished results. Glued by the gemini_batch_jobs table so a job
+// can outlive the 6h GitHub Actions cap (Gemini batch SLO is up to 24h).
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+async function submitGeminiBatch(requests, displayName) {
+  const res = await fetch(`${GEMINI_BASE}/models/${AI_MODEL}:batchGenerateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': GEMINI_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ batch: { displayName, inputConfig: { requests: { requests } } } }),
+  });
+  if (!res.ok) throw new Error(`Gemini batch submit error ${res.status}: ${await res.text()}`);
+  return res.json();  // { name: "batches/…", metadata: { state, … } }
+}
+
+async function getGeminiBatch(jobName) {
+  const res = await fetch(`${GEMINI_BASE}/${jobName}`, {
+    headers: { 'x-goog-api-key': GEMINI_API_KEY },
+  });
+  if (!res.ok) throw new Error(`Gemini batch get error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// ── gemini_batch_jobs tracking table ──────────────────────────
+async function insertBatchJob(row) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/gemini_batch_jobs`, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type':  'application/json',
+      'Prefer':        'return=minimal',
+    },
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) throw new Error(`Batch job insert error ${res.status}: ${await res.text()}`);
+}
+
+async function fetchPendingBatchJobs() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/gemini_batch_jobs?status=in.(submitted,processing)&order=submitted_at.asc`,
+    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+  );
+  if (!res.ok) throw new Error(`Batch job fetch error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// Calls already in an open (submitted/processing) job. Submit stamps nothing on
+// canoe_calls, so we dedupe here to avoid re-submitting the same calls (double
+// cost) on overlapping nightly runs or a re-dispatched backfill.
+async function fetchInFlightCallIds() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/gemini_batch_jobs?status=in.(submitted,processing)&select=call_ids`,
+    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+  );
+  if (!res.ok) throw new Error(`In-flight fetch error ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  const set = new Set();
+  for (const r of rows) for (const id of (r.call_ids || [])) set.add(id);
+  return set;
+}
+
+async function updateBatchJob(id, patch) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/gemini_batch_jobs?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey':        SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type':  'application/json',
+      'Prefer':        'return=minimal',
+    },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`Batch job update error ${res.status}: ${await res.text()}`);
+}
+
+// Re-fetch the Canoe zip per call at ingest time — needed for the code-decided
+// geo_mismatch flag, since submit and ingest run in separate processes.
+async function fetchCallZips(ids) {
+  if (!ids.length) return {};
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${ids.join(',')})&select=id,zip`,
+    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+  );
+  if (!res.ok) throw new Error(`Zip fetch error ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return Object.fromEntries(rows.map(r => [r.id, r.zip]));
+}
+
+// ── Gemini submit / ingest ────────────────────────────────────
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+async function runGeminiSubmit(calls, systemPrompt, activePromptId) {
+  if (!/^gemini/i.test(AI_MODEL)) throw new Error(`BATCH_ACTION=submit requires a Gemini model; got "${AI_MODEL}"`);
+  if (!GEMINI_API_KEY && !DRY_RUN) throw new Error('GEMINI_API_KEY not set');
+
+  // Drop calls already in an open job so we never submit (and pay for) them twice.
+  const inFlight = await fetchInFlightCallIds();
+  const fresh    = calls.filter(c => !inFlight.has(c.id));
+  if (fresh.length < calls.length) console.log(`Skipping ${calls.length - fresh.length} call(s) already in open batch jobs`);
+  if (fresh.length === 0) { console.log('All candidate calls already in flight. Nothing to submit.'); return; }
+
+  const day    = new Date().toISOString().slice(0, 10);
+  const chunks = chunk(fresh, GEMINI_CHUNK);
+  console.log(`Submitting ${fresh.length} calls in ${chunks.length} job(s) of up to ${GEMINI_CHUNK}`);
+
+  let submitted = 0;
+  for (let idx = 0; idx < chunks.length; idx++) {
+    const group = chunks[idx];
+    const requests = group.map(call => {
+      const context = [
+        `Vertical: ${call.vertical_name || 'Unknown'}`,
+        `Duration: ${call.duration}s`,
+        `Transaction zip: ${call.zip || 'Unknown'}`,
+        `Canoe outcome: ${call.canoe_outcome || 'Unknown'}`,
+      ].join('\n');
+      return {
+        request:  geminiRequestBody(systemPrompt, `${context}\n\nTranscript:\n${call.transcription}`),
+        metadata: { key: call.id },
+      };
+    });
+
+    if (DRY_RUN) {
+      console.log(`  [dry-run] job ${idx + 1}/${chunks.length}: ${group.length} requests (not submitting)`);
+      continue;
+    }
+
+    const job = await submitGeminiBatch(requests, `blcalls-${day}-${idx + 1}`);
+    await insertBatchJob({
+      job_name:   job.name,
+      model:      AI_MODEL,
+      prompt_id:  activePromptId,
+      status:     'submitted',
+      call_ids:   group.map(c => c.id),
+      call_count: group.length,
+    });
+    console.log(`  Submitted ${job.name} (${group.length} calls)`);
+    submitted++;
+  }
+  console.log(`Submit done. ${submitted} job(s) recorded${DRY_RUN ? ' (dry-run: 0 real)' : ''}.`);
+}
+
+async function runGeminiIngest() {
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+  const jobs = await fetchPendingBatchJobs();
+  console.log(`Found ${jobs.length} open batch job(s)`);
+
+  for (const job of jobs) {
+    try {
+      const data  = await getGeminiBatch(job.job_name);
+      const state = data.metadata?.state || data.state || 'UNKNOWN';
+      console.log(`  ${job.job_name}: ${state}`);
+
+      if (/PENDING|RUNNING/.test(state)) {
+        if (job.status !== 'processing') await updateBatchJob(job.id, { status: 'processing' });
+        continue;  // still working — try again next ingest run
+      }
+
+      if (/SUCCEEDED/.test(state)) {
+        await ingestSucceededJob(job, data);
+        continue;
+      }
+
+      // Terminal failure — leave the calls unprocessed so a future submit retries them.
+      const status = /EXPIRED/.test(state) ? 'expired' : /CANCELLED/.test(state) ? 'cancelled' : 'failed';
+      await updateBatchJob(job.id, { status, error: state, completed_at: new Date().toISOString() });
+      console.error(`  Job ${job.job_name} ended ${state} — its calls stay unprocessed for a future submit.`);
+    } catch (e) {
+      console.error(`  [${job.job_name}] ingest error: ${e.message}`);
+    }
+  }
+}
+
+async function ingestSucceededJob(job, data) {
+  const callIds = job.call_ids || [];
+  // Inline results come back in submit order; some shapes double-nest the array.
+  const inline    = data.response?.inlinedResponses;
+  const responses = Array.isArray(inline) ? inline : (inline?.inlinedResponses || []);
+
+  const zipById      = await fetchCallZips(callIds);
+  const duplicateIds = await flagDuplicateCallers(callIds);
+
+  let processed = 0, errors = 0;
+  for (let i = 0; i < responses.length; i++) {
+    const item   = responses[i];
+    const callId = item.metadata?.key || callIds[i];   // prefer echoed key, else submit order
+    if (!callId) { errors++; continue; }
+    try {
+      if (item.error) { console.error(`  [${callId}] item error: ${JSON.stringify(item.error).slice(0, 200)}`); errors++; continue; }
+      const text = (item.response?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+      let parsed;
+      try { parsed = parseModelJson(text); } catch { parsed = null; }
+      if (!parsed) { console.error(`  [${callId}] could not parse response`); errors++; continue; }
+
+      await writeResult(callId, buildResultPatch(callId, parsed, zipById[callId], duplicateIds, job.prompt_id, job.model));
+      processed++;
+    } catch (e) { console.error(`  [${callId}] ${e.message}`); errors++; }
+  }
+
+  await updateBatchJob(job.id, {
+    status:       'completed',
+    completed_at: new Date().toISOString(),
+    error:        errors ? `${errors} item error(s)` : null,
+  });
+  console.log(`  Ingested ${job.job_name}: processed ${processed}, errors ${errors}`);
+}
+
 // ── Main ──────────────────────────────────────────────────────
 async function run() {
-  console.log(`Starting AI processing — model: ${AI_MODEL}, mode: ${AI_MODE}, test: ${TEST_MODE}`);
+  console.log(`Starting AI processing — model: ${AI_MODEL}, mode: ${AI_MODE}, action: ${BATCH_ACTION || 'sync'}, test: ${TEST_MODE}`);
+
+  // Gemini batch INGEST needs no prompt or call fetch — it drains prior jobs.
+  if (BATCH_ACTION === 'ingest') {
+    await runGeminiIngest();
+    return;
+  }
 
   // Load prompt from Supabase (falls back to hardcoded if unavailable)
   const promptRow = await loadPrompt();
@@ -571,6 +866,13 @@ async function run() {
 
   if (calls.length === 0) {
     console.log('Nothing to process.');
+    return;
+  }
+
+  // Gemini batch SUBMIT: fan calls into async jobs, record them, and exit.
+  // Duplicate + geo flags are applied later at ingest time.
+  if (BATCH_ACTION === 'submit') {
+    await runGeminiSubmit(calls, combinedPrompt, activePromptId);
     return;
   }
 

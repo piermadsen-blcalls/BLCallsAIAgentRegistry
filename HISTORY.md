@@ -154,3 +154,36 @@ Continued from the 8/7 Scores work; large session. What moved:
 - New adjacent workstream noted: **Ring Partner caller-ID / buyer-acceptance strategy** (with David) — "intercept and re-ping" to capture caller ID and re-ping higher-value buyers (BCI pre-ping vs caller-ID-requiring network buyers).
 - Jira note: MK-150/MK-153 tracking tickets were **deleted** — no live tickets for this project now.
 - _Sources summarized only in `context.md`; nothing sensitive/personal logged._
+
+### 2026-08-11 (Pier) — Gemini 3.6 Flash Batch API for nightly scoring
+- **Moved production scoring to Google's native Gemini Batch API** (`gemini-3.6-flash`,
+  ~50% cheaper than sync). Batch is async (SLO ≤24h, all-or-nothing), and a GH Actions
+  job caps at 6h, so the pipeline is **two-phase**: a nightly `submit` records batch
+  jobs and exits; a separate `ingest` polls them and writes results in a later run.
+- **`scripts/process.js`:** added native Gemini routing (bare `gemini-*` id → new
+  `callGemini`, was wrongly falling through to Anthropic), `runGeminiSubmit` /
+  `runGeminiIngest`, gemini_batch_jobs tracking helpers, and env `BATCH_ACTION`
+  (submit|ingest), `BACKFILL_DAYS`, `GEMINI_CHUNK` (default 500), `DRY_RUN`. Factored the
+  shared result-write (outcome/flag validation + code-decided duplicate_caller &
+  geo_mismatch + scores) out of `runBatch` into `buildResultPatch`, reused by both
+  batch paths.
+- **Correctness hardening beyond the plan:** submit stamps nothing on `canoe_calls`, so
+  added an **in-flight guard** (`fetchInFlightCallIds`) to never re-submit calls already
+  in an open job (double-cost on overlapping nightly runs / re-dispatched backfill), and
+  **paginated `fetchUnprocessed`** so a big backfill isn't silently capped by the server
+  row limit.
+- **Migration `027_gemini_batch_jobs.sql`:** tracks each job (job_name, model, prompt_id,
+  status, call_ids jsonb, timestamps) across runs; RLS = service-role writes / auth
+  reads, modeled on `008_alert_log`.
+- **Workflows:** new `process-submit.yml` (nightly 03:00 UTC) + `process-ingest.yml`
+  (every 6h); removed the Mon/Wed/Fri `schedule` from `process.yml` (kept its
+  `workflow_dispatch` — the calibration/A-B UI still dispatches it).
+- **Deliberately skipped** the optional frontend model-catalog/pricing entry — the
+  calibration catalog uses OpenRouter ids and `process.yml` has no `GEMINI_API_KEY`, so a
+  bare native id there would be half-wired. Left as a clean follow-up.
+- **Not yet live — manual steps remain:** add `GEMINI_API_KEY` to GitHub Actions secrets
+  + `scripts/.env` + `scripts/.env.example` (the last is permission-blocked locally);
+  apply migration `027`; then verify with a 3-call `DRY_RUN`/submit→ingest before
+  dispatching the 30-day backfill (`process-submit` with `backfill_days=30`, big
+  `batch_size`). Code is `node --check` clean; not run against live Supabase/Gemini yet.
+- External sources (Granola/Jira) not pulled this session.
