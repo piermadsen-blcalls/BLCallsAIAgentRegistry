@@ -137,8 +137,10 @@ Continued from the 8/7 Scores work; large session. What moved:
   deep-link updated to `?tab=calls`. Settings subtabs route at `?tab=settings&sub=`.
 - Scores: added a name/vertical search box; drawer got transcript link + copy-id +
   header alignment (earlier in the session).
-- Left the old compliance call-log JS (~10 now-unused functions) as dead code — flagged
-  for a follow-up cleanup. Verify the two jsonb flag filters against prod.
+- Stripped the ~10 dead compliance call-log functions (post-merge cleanup) plus their
+  orphaned state vars. Verified the two Calls jsonb flag filters against prod
+  (`supabase db query --linked`): `flags <> '[]'` = 101 flagged = `jsonb_array_length>0`
+  (exact match); `flags @> '["<flag>"]'` returns correct per-flag counts. Both correct.
 - Chose the merge shape ("everything folded in") via a Lavish visual mockup comparison
   of three options rendered in the dashboard's own design system.
 - **CSV export on the Calls tab** (toolbar button): exports every row matching the

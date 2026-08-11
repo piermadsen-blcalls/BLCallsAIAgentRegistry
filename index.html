@@ -2668,24 +2668,13 @@ async function compDelete(path) {
 
 // ── COMPLIANCE STATE ──────────────────────────────────────────
 
-let compCalls      = [];
-let compFiltered   = [];
-let compOffset     = 0;
-const COMP_PAGE    = 50;
+let compCalls      = [];   // still read by saveCorrection's local-state update
 let compDrawerCall = null;
 let compDrawerFlags = [];
 
 // ── COMPLIANCE INIT ───────────────────────────────────────────
 
 async function compInit() {
-  // set default date range to last 7 days before loading calls
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const start = new Date(today);
-  start.setDate(start.getDate() - 6);
-  compDateFrom = start.toISOString().slice(0,10);
-  compDateTo   = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString().slice(0,19);
-
   // The Settings tab needs only Team stats + account assignments now; the call log
   // (and its stats/filters) moved to the merged Calls tab.
   await Promise.all([compLoadAssignments(), compLoadTeam()]);
@@ -2734,162 +2723,6 @@ function switchCompTab(id, btn) {
   if (!_suppressRoute) history.pushState({ tab: 'settings', sub: id }, '', '?tab=settings&sub=' + id);
 }
 
-// ── STATS ─────────────────────────────────────────────────────
-
-async function compLoadStats() {
-  try {
-    const rows = await compFetch('canoe_calls?select=id,flags,compliance_reviewed&ai_processed_at=not.is.null&limit=5000');
-    const total    = rows.length;
-    const flagged  = rows.filter(r => (r.flags||[]).length > 0).length;
-    const pending  = rows.filter(r => (r.flags||[]).length > 0 && !r.compliance_reviewed).length;
-    const rate     = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
-    document.getElementById('comp-stat-total').textContent   = total.toLocaleString();
-    document.getElementById('comp-stat-flagged').textContent = flagged.toLocaleString();
-    document.getElementById('comp-stat-rate').textContent    = rate;
-    document.getElementById('comp-stat-pending').textContent = pending.toLocaleString();
-  } catch(e) { console.warn('compLoadStats:', e.message); }
-}
-
-// ── CALL LOG ──────────────────────────────────────────────────
-
-let compDateFrom = null;
-let compDateTo   = null;
-
-function compSetDatePreset(preset, btn) {
-  document.querySelectorAll('.comp-date-preset').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const customEl = document.getElementById('comp-custom-dates');
-
-  const now   = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  if (preset === 'custom') {
-    customEl.style.display = 'flex';
-    const from = document.getElementById('cf-date-from').value;
-    const to   = document.getElementById('cf-date-to').value;
-    if (!from || !to) return;
-    compDateFrom = from;
-    compDateTo   = to + 'T23:59:59';
-  } else {
-    customEl.style.display = 'none';
-    if (preset === 'month') {
-      compDateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
-    } else {
-      const start = new Date(today);
-      start.setDate(start.getDate() - (preset - 1));
-      compDateFrom = start.toISOString().slice(0,10);
-    }
-    compDateTo = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString().slice(0,19);
-  }
-  compLoadCalls();
-}
-
-async function compLoadCalls() {
-  const countEl = document.getElementById('comp-call-count');
-  if (countEl) countEl.textContent = 'Loading…';
-  try {
-    // transcription is fetched lazily per call in openCallDrawer — pulling it for
-    // every row (now ~146k rows) blew the statement timeout. Metadata only here.
-    let url = 'canoe_calls?select=id,lead_id,created_at,publisher_name,advertiser_name,vertical_name,duration,city,state,our_outcome,canoe_outcome,canoe_summary,flags,our_summary,compliance_reviewed,account_manager,zip&order=created_at.desc&limit=10000';
-    if (compDateFrom) url += `&created_at=gte.${compDateFrom}`;
-    if (compDateTo)   url += `&created_at=lte.${compDateTo}`;
-    const rows = await compFetch(url);
-    compCalls = rows;
-    if (countEl) countEl.textContent = `${rows.length.toLocaleString()} calls loaded`;
-    compApplyFilters();
-    compPopulateFilterDropdowns();
-  } catch(e) {
-    document.getElementById('comp-table-body').innerHTML = `<tr><td colspan="9" style="padding:20px;color:var(--coral)">Could not load calls: ${e.message}</td></tr>`;
-  }
-}
-
-function compPopulateFilterDropdowns() {
-  const verticals = [...new Set(compCalls.map(r => r.vertical_name).filter(Boolean))].sort();
-
-  const vSel = document.getElementById('cf-vertical');
-  while (vSel.options.length > 1) vSel.remove(1);
-  verticals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; vSel.appendChild(o); });
-
-  const mSel = document.getElementById('cf-manager');
-  while (mSel.options.length > 1) mSel.remove(1);
-  compManagers.forEach(m => { const o = document.createElement('option'); o.value = m.manager_name; o.textContent = m.manager_name; mSel.appendChild(o); });
-}
-
-function compApplyFilters() {
-  const pub       = document.getElementById('cf-publisher').value.toLowerCase();
-  const adv       = document.getElementById('cf-advertiser').value.toLowerCase();
-  const vertical  = document.getElementById('cf-vertical').value;
-  const manager   = document.getElementById('cf-manager').value;
-  const flag      = document.getElementById('cf-flag').value;
-  const outcome   = document.getElementById('cf-outcome').value;
-  const flagOnly  = document.getElementById('cf-flagged-only').classList.contains('active');
-
-  compFiltered = compCalls.filter(r => {
-    if (pub      && !(r.publisher_name||'').toLowerCase().includes(pub))   return false;
-    if (adv      && !(r.advertiser_name||'').toLowerCase().includes(adv))  return false;
-    if (vertical && r.vertical_name !== vertical)                           return false;
-    if (manager  && resolveManager(r) !== manager)                           return false;
-    if (flag     && !(r.flags||[]).includes(flag))                          return false;
-    if (outcome  && r.our_outcome !== outcome)                              return false;
-    if (flagOnly && (r.flags||[]).length === 0)                             return false;
-    return true;
-  });
-
-  compOffset = 0;
-  compRenderTable(false);
-}
-
-function toggleFlaggedOnly(btn) {
-  btn.classList.toggle('active');
-  compApplyFilters();
-}
-
-function compResetFilters() {
-  document.getElementById('cf-publisher').value  = '';
-  document.getElementById('cf-advertiser').value = '';
-  document.getElementById('cf-vertical').value   = '';
-  document.getElementById('cf-manager').value    = '';
-  document.getElementById('cf-flag').value       = '';
-  document.getElementById('cf-outcome').value    = '';
-  document.getElementById('cf-flagged-only').classList.remove('active');
-  compApplyFilters();
-}
-
-function compExportCSV() {
-  if (!compFiltered.length) return;
-  const cols = [
-    { key: 'id',             label: 'Recording ID' },
-    { key: 'lead_id',        label: 'Lead ID' },
-    { key: 'created_at',     label: 'Date' },
-    { key: 'publisher_name', label: 'Publisher' },
-    { key: 'advertiser_name',label: 'Advertiser' },
-    { key: 'vertical_name',  label: 'Vertical' },
-    { key: 'duration',       label: 'Duration (s)' },
-    { key: 'our_outcome',    label: 'Our Outcome' },
-    { key: 'canoe_outcome',  label: 'Canoe Outcome' },
-    { key: 'flags',          label: 'Flags' },
-    { key: 'our_summary',    label: 'Summary' },
-  ];
-  const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const header = cols.map(c => escape(c.label)).join(',');
-  const rows = compFiltered.map(r =>
-    cols.map(c => {
-      const v = r[c.key];
-      if (c.key === 'flags') return escape((v || []).join('; '));
-      if (c.key === 'created_at') return escape(v ? new Date(v).toLocaleDateString('en-US') : '');
-      return escape(v);
-    }).join(',')
-  );
-  const csv  = [header, ...rows].join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `compliance-calls-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 const POSITIVE_OUTCOMES = new Set(['sale','appointment','quoted_interested','quoted_undecided']);
 const NEGATIVE_OUTCOMES = new Set(['outside_geo','advertiser_service_mismatch','publisher_wrong_category','misrouted','caller_confused','agent_confused','soliciting','outside_hours','voicemail','agent_not_available']);
 
@@ -2903,53 +2736,6 @@ function flagBadges(flags) {
   if (!flags || flags.length === 0) return '';
   return flags.map(f => `<span class="flag-badge flag-${f}">${f.replace(/_/g,' ')}</span>`).join(' ');
 }
-
-function compRenderTable(append) {
-  const tbody  = document.getElementById('comp-table-body');
-  const page   = compFiltered.slice(compOffset, compOffset + COMP_PAGE);
-  const total  = compFiltered.length;
-
-  if (!append) tbody.innerHTML = '';
-
-  if (total === 0 && !append) {
-    tbody.innerHTML = '<tr><td colspan="12" class="comp-empty">No calls match these filters.</td></tr>';
-    document.getElementById('comp-table-count').textContent = '0 calls';
-    document.getElementById('comp-load-more').disabled = true;
-    return;
-  }
-
-  page.forEach(r => {
-    const date     = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—';
-    const dur      = r.duration ? `${r.duration}s` : '—';
-    const loc      = [r.city, r.state].filter(Boolean).join(', ') || '—';
-    const reviewed = r.compliance_reviewed;
-    const shortId  = r.id ? r.id.slice(0, 10) : '—';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><button onclick="copyId(event,'${r.id}')" class="copy-id-btn" title="${r.id || ''}">${shortId}<span class="copy-id-icon">⎘</span></button></td>
-      <td>${r.lead_id ? `<button onclick="copyId(event,'${r.lead_id}')" class="copy-id-btn" title="${r.lead_id}">${r.lead_id}<span class="copy-id-icon">⎘</span></button>` : '<span style="color:var(--text-3);font-size:11px">—</span>'}</td>
-      <td class="cr-mono">${date}</td>
-      <td>${r.publisher_name || '<span class="muted">—</span>'}</td>
-      <td>${r.advertiser_name || '<span class="muted">—</span>'}</td>
-      <td>${r.vertical_name || '<span class="muted">—</span>'}</td>
-      <td class="cr-mono">${dur}</td>
-      <td class="cr-mono">${loc}</td>
-      <td>${outcomeBadge(r.our_outcome)}</td>
-      <td>${flagBadges(r.flags)}</td>
-      <td style="max-width:220px">${r.transcription ? `<span style="font-size:11px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:220px" title="${r.transcription.slice(0,300).replace(/"/g,'&quot;')}">${r.transcription.slice(0,100)}…</span>` : '<span style="color:var(--border-strong);font-size:11px">—</span>'}</td>
-      <td><span class="reviewed-dot ${reviewed ? 'yes' : 'no'}" title="${reviewed ? 'Reviewed' : 'Not reviewed'}"></span></td>
-    `;
-    tr.addEventListener('click', () => openCallDrawer(r));
-    tbody.appendChild(tr);
-  });
-
-  compOffset += page.length;
-  const showing = Math.min(compOffset, total);
-  document.getElementById('comp-table-count').textContent = `${showing.toLocaleString()} of ${total.toLocaleString()} calls`;
-  document.getElementById('comp-load-more').disabled = compOffset >= total;
-}
-
-function compLoadMore() { compRenderTable(true); }
 
 // ── CALL DRAWER ───────────────────────────────────────────────
 
