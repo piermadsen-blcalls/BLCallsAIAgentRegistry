@@ -71,10 +71,10 @@ function callFlags(c) {
   return arr;
 }
 
-// Deep link into the Compliance tab, pre-filtered to this account's flagged calls for the period.
+// Deep link into the merged Calls tab, pre-filtered to this account's flagged calls for the period.
 function deepLink(account, type, fromDate, toISO) {
   if (!DASHBOARD_URL) return '';
-  const q = new URLSearchParams({ tab: 'compliance', sub: 'calllog', account, type, from: fromDate, to: toISO, flagged: '1' });
+  const q = new URLSearchParams({ tab: 'calls', account, type, from: fromDate, to: toISO, flagged: '1' });
   return `${DASHBOARD_URL}/?${q.toString()}`;  // query string, not #fragment — email clients strip fragments
 }
 

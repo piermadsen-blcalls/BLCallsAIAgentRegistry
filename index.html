@@ -673,14 +673,12 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('agents',this)">Agents</button>
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
-    <button class="nav-tab" onclick="switchTab('reporting',this)">Call Reporting</button>
-<button class="nav-tab" onclick="switchTab('compliance',this)">Compliance</button>
+    <button class="nav-tab" onclick="switchTab('calls',this)">Calls</button>
     <button class="nav-tab" onclick="switchTab('scores',this)">Scores</button>
-    <button class="nav-tab" onclick="switchTab('llm-training',this)">LLM training</button>
+    <button class="nav-tab" onclick="switchTab('settings',this)">Settings</button>
   </div>
 
-  <!-- LLM TRAINING TAB (model calibration section is relocated here on first open) -->
-  <div id="tab-llm-training" class="tab-pane"></div>
+  <!-- (LLM training folded into Settings → Training) -->
 
   <!-- AGENTS TAB -->
   <div id="tab-agents" class="tab-pane active">
@@ -799,7 +797,13 @@
   </div>
 
   <!-- CALL REPORTING TAB -->
-  <div id="tab-reporting" class="tab-pane">
+  <div id="tab-calls" class="tab-pane">
+    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
+      <div class="summary-item"><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
+      <div class="summary-item"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div></div>
+      <div class="summary-item"><div class="summary-val" id="calls-stat-rate">—</div><div class="summary-lbl">flag rate</div></div>
+      <div class="summary-item"><div class="summary-val" id="calls-stat-pending">—</div><div class="summary-lbl">pending review</div></div>
+    </div>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left">
         <!-- Date range -->
@@ -841,6 +845,18 @@
         <input class="cr-filter-input" type="text" id="cr-pub-filter" placeholder="Publisher…">
         <!-- Advertiser -->
         <input class="cr-filter-input" type="text" id="cr-adv-filter" placeholder="Advertiser…">
+        <!-- Flag type -->
+        <select class="cr-select" id="cr-flag-filter" onchange="crLoad()">
+          <option value="">All flag types</option>
+          <option value="outbound_dial">outbound_dial</option>
+          <option value="facebook_marketplace">facebook_marketplace</option>
+          <option value="angry_caller">angry_caller</option>
+          <option value="wrong_business">wrong_business</option>
+          <option value="geo_mismatch">geo_mismatch</option>
+          <option value="duplicate_caller">duplicate_caller</option>
+        </select>
+        <!-- Flagged only -->
+        <button class="comp-filter-toggle" id="cr-flagged-only" onclick="crToggleFlagged(this)">Flagged only</button>
         <!-- Search -->
         <div class="search-wrap">
           <span class="search-icon">⌕</span>
@@ -889,135 +905,36 @@
         </div>
         <span id="scores-window-note" style="font-size:12px;color:var(--text-3);font-family:var(--mono)"></span>
       </div>
-      <div class="cr-toolbar-right">
+      <div class="cr-toolbar-right" style="gap:8px;align-items:center">
+        <input class="cr-filter-input" type="text" id="scores-search" placeholder="Search name or vertical…" oninput="scoresSetSearch(this.value)" style="width:200px">
         <button class="run-btn" onclick="scoresLoad()">Refresh</button>
       </div>
     </div>
     <div id="scores-output"><div class="ins-loading">Loading…</div></div>
   </div>
 
-  <!-- COMPLIANCE TAB -->
-  <div id="tab-compliance" class="tab-pane">
+  <!-- SETTINGS TAB (Team, account assignments, admin, model training) -->
+  <div id="tab-settings" class="tab-pane">
     <div class="comp-header">
       <div>
-        <div class="comp-title">Compliance <em style="font-style:italic;color:var(--text-2)">— call monitoring</em></div>
-        <div class="comp-sub">Flagged calls, outcome accuracy, and publisher/advertiser health.</div>
-      </div>
-      <div class="comp-header-stats">
-        <div class="comp-stat"><div class="comp-stat-num" id="comp-stat-total">—</div><div class="comp-stat-label">calls processed</div></div>
-        <div class="comp-stat"><div class="comp-stat-num alert" id="comp-stat-flagged">—</div><div class="comp-stat-label">flagged</div></div>
-        <div class="comp-stat"><div class="comp-stat-num" id="comp-stat-rate">—</div><div class="comp-stat-label">flag rate</div></div>
-        <div class="comp-stat"><div class="comp-stat-num" id="comp-stat-pending">—</div><div class="comp-stat-label">pending review</div></div>
+        <div class="comp-title">Settings</div>
+        <div class="comp-sub">Team, account assignments, admin, and model training.</div>
       </div>
     </div>
 
     <div class="comp-subtabs">
-      <button class="comp-subtab active" onclick="switchCompTab('calllog',this)">Call Log</button>
-      <button class="comp-subtab" onclick="switchCompTab('team',this)">Team</button>
-      <button class="comp-subtab" onclick="switchCompTab('settings',this)">Settings</button>
+      <button class="comp-subtab active" onclick="switchCompTab('team',this)">Team</button>
+      <button class="comp-subtab" onclick="switchCompTab('settings',this)">Admin</button>
+      <button class="comp-subtab" onclick="switchCompTab('training',this)">Training</button>
     </div>
 
-    <!-- CALL LOG -->
-    <div id="comp-calllog" class="comp-pane active">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--text-3);font-weight:500;text-transform:uppercase;letter-spacing:.04em">Date range</span>
-        <button class="comp-date-preset active" onclick="compSetDatePreset(7,this)">Last 7 days</button>
-        <button class="comp-date-preset" onclick="compSetDatePreset(30,this)">Last 30 days</button>
-        <button class="comp-date-preset" onclick="compSetDatePreset('month',this)">This month</button>
-        <button class="comp-date-preset" onclick="compSetDatePreset('custom',this)">Custom</button>
-        <div id="comp-custom-dates" style="display:none;gap:6px;align-items:center;display:none">
-          <input type="date" id="cf-date-from" class="comp-filter-input" style="width:140px" onchange="compLoadCalls()">
-          <span style="font-size:12px;color:var(--text-3)">to</span>
-          <input type="date" id="cf-date-to" class="comp-filter-input" style="width:140px" onchange="compLoadCalls()">
-        </div>
-        <span id="comp-call-count" style="font-size:11px;color:var(--text-3);margin-left:8px"></span>
-      </div>
-      <div class="comp-filters">
-        <input class="comp-filter-input" id="cf-publisher" placeholder="Publisher…" oninput="compApplyFilters()">
-        <input class="comp-filter-input" id="cf-advertiser" placeholder="Advertiser…" oninput="compApplyFilters()">
-        <select class="comp-filter-select" id="cf-vertical" onchange="compApplyFilters()">
-          <option value="">All verticals</option>
-        </select>
-        <select class="comp-filter-select" id="cf-manager" onchange="compApplyFilters()">
-          <option value="">All managers</option>
-        </select>
-        <select class="comp-filter-select" id="cf-flag" onchange="compApplyFilters()">
-          <option value="">All flag types</option>
-          <option value="outbound_dial">outbound_dial</option>
-          <option value="facebook_marketplace">facebook_marketplace</option>
-          <option value="angry_caller">angry_caller</option>
-          <option value="wrong_business">wrong_business</option>
-          <option value="geo_mismatch">geo_mismatch</option>
-          <option value="duplicate_caller">duplicate_caller</option>
-        </select>
-        <select class="comp-filter-select" id="cf-outcome" onchange="compApplyFilters()">
-          <option value="">All outcomes</option>
-          <option value="sale">sale</option>
-          <option value="appointment">appointment</option>
-          <option value="quoted_interested">quoted_interested</option>
-          <option value="quoted_undecided">quoted_undecided</option>
-          <option value="quoted_too_expensive">quoted_too_expensive</option>
-          <option value="quoted_not_interested">quoted_not_interested</option>
-          <option value="quoted_abandoned">quoted_abandoned</option>
-          <option value="undecided">undecided</option>
-          <option value="not_interested">not_interested</option>
-          <option value="caller_callback">caller_callback</option>
-          <option value="agent_callback">agent_callback</option>
-          <option value="caller_hangup">caller_hangup</option>
-          <option value="ivr_hangup">ivr_hangup</option>
-          <option value="voicemail">voicemail</option>
-          <option value="agent_not_available">agent_not_available</option>
-          <option value="audio_issue">audio_issue</option>
-          <option value="outside_geo">outside_geo</option>
-          <option value="advertiser_service_mismatch">advertiser_service_mismatch</option>
-          <option value="publisher_wrong_category">publisher_wrong_category</option>
-          <option value="misrouted">misrouted</option>
-          <option value="caller_confused">caller_confused</option>
-          <option value="agent_confused">agent_confused</option>
-          <option value="customer_service">customer_service</option>
-          <option value="soliciting">soliciting</option>
-          <option value="referral">referral</option>
-          <option value="outside_hours">outside_hours</option>
-          <option value="other">other</option>
-        </select>
-        <button class="comp-filter-toggle" id="cf-flagged-only" onclick="toggleFlaggedOnly(this)">Flagged only</button>
-        <button class="comp-filter-reset" onclick="compResetFilters()">Reset</button>
-        <button onclick="compExportCSV()" style="font-family:var(--sans);font-size:11px;font-weight:500;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;white-space:nowrap">Export CSV</button>
-      </div>
-      <div class="comp-table-wrap">
-        <table class="comp-table">
-          <thead>
-            <tr>
-              <th>Recording ID</th>
-              <th>Lead ID</th>
-              <th>Date</th>
-              <th>Publisher</th>
-              <th>Advertiser</th>
-              <th>Vertical</th>
-              <th>Duration</th>
-              <th>Location</th>
-              <th>Outcome</th>
-              <th>Flags</th>
-              <th>Transcript</th>
-              <th>Reviewed</th>
-            </tr>
-          </thead>
-          <tbody id="comp-table-body">
-            <tr><td colspan="12" class="comp-loading">Loading…</td></tr>
-          </tbody>
-        </table>
-        <div class="comp-table-footer">
-          <span id="comp-table-count">—</span>
-          <button class="comp-load-more" id="comp-load-more" onclick="compLoadMore()" disabled>Load more</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- PUBLISHERS & ADVERTISERS -->
     <!-- TEAM VIEW -->
-    <div id="comp-team" class="comp-pane">
+    <div id="comp-team" class="comp-pane active">
       <div class="comp-team-grid" id="comp-team-grid"><div class="comp-loading">Loading…</div></div>
     </div>
+
+    <!-- TRAINING (model calibration section relocated here on first open) -->
+    <div id="comp-training" class="comp-pane"></div>
 
     <!-- SETTINGS -->
     <div id="comp-settings" class="comp-pane">
@@ -1266,28 +1183,28 @@ function switchTab(id, el) {
   if (el) el.classList.add('active');
   const pane = document.getElementById('tab-' + id);
   if (pane) pane.classList.add('active');
-  if (id === 'reporting') crAutoLoad();
+  if (id === 'calls') crAutoLoad();
   if (id === 'scores') scoresInit();
-  if (id === 'compliance') ensureCompliance();
-  if (id === 'llm-training') {
-    // Relocate the calibration/review section out of Settings into this tab (once).
-    const sec = document.getElementById('settings-cost-section');
-    const p = document.getElementById('tab-llm-training');
-    if (sec && sec.parentElement !== p) { sec.style.display = 'block'; p.appendChild(sec); }
-    calibInit();
-  }
+  if (id === 'settings') ensureCompliance();
   if (!_suppressRoute) history.pushState({ tab: id }, '', '?tab=' + id);
 }
 
 async function applyRoute() {
   const params = new URLSearchParams(location.search);
-  const tab = params.get('tab') || 'agents';
+  let tab = params.get('tab') || 'agents';
+  if (tab === 'reporting') tab = 'calls';   // legacy alias → merged Calls tab
+  // Legacy Compliance deep links (from digest emails) now land on the merged Calls
+  // tab, pre-filtered to the account's flagged calls for the period.
+  const complianceLegacy = (tab === 'compliance');
+  if (complianceLegacy) tab = 'calls';
+  const filteredCalls = tab === 'calls' && (complianceLegacy || params.get('flagged') === '1' || params.get('account'));
   _suppressRoute = true;
+  if (filteredCalls) crAutoLoaded = true;   // suppress the default 7-day autoload; applyCallsFilters sets the window
   switchTab(tab);
-  if (tab === 'compliance') {
+  if (filteredCalls) applyCallsFilters(params);
+  if (tab === 'settings') {
     await ensureCompliance();
-    switchCompTab(params.get('sub') || 'calllog');
-    applyComplianceFilters(params);
+    switchCompTab(params.get('sub') || 'team');
   }
   _suppressRoute = false;
 }
@@ -1308,6 +1225,7 @@ let scoresRows    = [];            // computed pairing rows for current view
 let scoresSort    = { key: 'gap', dir: -1 };
 let scoresOpenKey = null;          // pairing expanded in the WHY panel
 let scoresExcluded = new Set();    // outcomes deselected in the what-if
+let scoresSearch  = '';            // filters the ranked table by name / vertical
 
 async function scoresInit() {
   if (!scoresWeights) {
@@ -1405,13 +1323,18 @@ function scoresSetSort(key) {
 }
 function scoresFmt(s) { return s == null ? '<span class="cr-null">—</span>' : (s >= 0 ? '+' : '') + s.toFixed(1); }
 
+function scoresSetSearch(v) { scoresSearch = (v || '').trim().toLowerCase(); scoresRenderTable(); }
+
 function scoresRenderTable() {
   const out = document.getElementById('scores-output');
   if (!out) return;
-  const rows = scoresSortRows();
+  let rows = scoresSortRows();
+  if (scoresSearch) rows = rows.filter(r => (r.entity + ' ' + r.vertical).toLowerCase().includes(scoresSearch));
   const entLabel = scoresEntity === 'advertiser' ? 'Advertiser' : 'Publisher';
   if (!rows.length) {
-    out.innerHTML = `<div class="ins-loading">No comparable calls in this window yet — needs both a Canoe and a Registry outcome on the same call. Fills in as enrichment runs.</div>`;
+    out.innerHTML = scoresSearch
+      ? `<div class="ins-loading">No ${entLabel.toLowerCase()}s match “${esc(scoresSearch)}”.</div>`
+      : `<div class="ins-loading">No comparable calls in this window yet — needs both a Canoe and a Registry outcome on the same call. Fills in as enrichment runs.</div>`;
     return;
   }
   const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
@@ -1535,11 +1458,11 @@ function scoresToggleOutcome(key, outcome) {
 function scoresViewCalls(entity, vertical) {
   const now = new Date(), from = new Date(now); from.setDate(from.getDate() - 90);
   const q = new URLSearchParams({
-    tab: 'compliance', sub: 'calllog',
+    tab: 'calls',
     account: entity, type: scoresEntity === 'advertiser' ? 'advertiser' : 'publisher',
     from: from.toISOString().slice(0, 10), to: now.toISOString().slice(0, 19),
   });
-  history.pushState({ tab: 'compliance' }, '', '?' + q.toString());
+  history.pushState({ tab: 'calls' }, '', '?' + q.toString());
   applyRoute();
 }
 
@@ -2006,7 +1929,10 @@ const CR_COLUMNS = [
   { key:'ivr_duration',label:'Duration',    sortable:true,  def:true  },
   { key:'disposition', label:'Disposition', sortable:true,  def:true  },
   { key:'disposition_description', label:'Reason', sortable:false, def:true },
-  { key:'advertiser_payin', label:'Revenue', sortable:true, def:true  }
+  { key:'advertiser_payin', label:'Revenue', sortable:true, def:true  },
+  { key:'outcome',     label:'Outcome (Registry · Canoe)', sortable:false, def:true },
+  { key:'flags',       label:'Flags',      sortable:false, def:true  },
+  { key:'reviewed',    label:'Reviewed',   sortable:false, def:false }
 ];
 let crVisibleCols = {};
 CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
@@ -2072,7 +1998,7 @@ function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();
 
 // Build query
 function crBuildQuery(offset) {
-  let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
+  let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,our_summary,canoe_summary,flags,compliance_reviewed`;
   q += `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
@@ -2084,6 +2010,9 @@ function crBuildQuery(offset) {
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
+  if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
+  const flag = document.getElementById('cr-flag-filter')?.value;
+  if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
   const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
   q += `&order=${sortCol}.${sortDir}`;
@@ -2092,7 +2021,7 @@ function crBuildQuery(offset) {
 
 // Build query
 function crBuildQuery(offset) {
-  let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin`;
+  let q = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,our_summary,canoe_summary,flags,compliance_reviewed`;
   q += `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
@@ -2104,6 +2033,9 @@ function crBuildQuery(offset) {
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
+  if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
+  const flag = document.getElementById('cr-flag-filter')?.value;
+  if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
   const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
   q += `&order=${sortCol}.${sortDir}`;
@@ -2208,7 +2140,7 @@ function crRender() {
       case 'created_at':
         return `<td class="cr-mono">${crFmtDateTime(r.created_at)}</td>`;
       case 'recording':
-        return `<td>${r.recording_url ? `<a class="cr-link" href="${r.recording_url}" target="_blank" rel="noopener">Listen</a>` : '<span class="cr-null">—</span>'}</td>`;
+        return `<td>${r.recording_url ? `<a class="cr-link" href="${r.recording_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : '<span class="cr-null">—</span>'}</td>`;
       case 'sent':
         return `<td><span style="font-size:11px;font-weight:500;color:${(r.connect_duration||0)>0?'var(--teal)':'var(--text-3)'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
       case 'vertical':
@@ -2229,12 +2161,23 @@ function crRender() {
         return `<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${r.disposition_description||''}">${r.disposition_description||'<span class="cr-null">—</span>'}</td>`;
       case 'advertiser_payin':
         return `<td class="cr-mono" style="text-align:right">${crFmtRev(r.advertiser_payin)}</td>`;
+      case 'outcome': {
+        const reg = r.our_outcome
+          ? outcomeBadge(r.our_outcome)
+          : '<span style="font-size:10px;color:var(--text-3)">Registry: —</span>';
+        const canoe = `<span style="font-size:10px;color:var(--text-3)">Canoe: ${r.canoe_outcome || '—'}</span>`;
+        return `<td><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start">${reg}${canoe}</div></td>`;
+      }
+      case 'flags':
+        return `<td>${(r.flags && r.flags.length) ? flagBadges(r.flags) : '<span class="cr-null">—</span>'}</td>`;
+      case 'reviewed':
+        return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span style="color:var(--teal)">✓ reviewed</span>' : '<span style="color:var(--amber)">• pending</span>') : '<span class="cr-null">—</span>'}</td>`;
       default:
         return `<td>—</td>`;
     }
   }
 
-  const tbody = rows.map(r => `<tr>${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
+  const tbody = rows.map(r => `<tr class="cr-row" style="cursor:pointer" onclick="crOpenDrawer('${r.id}')">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
 
   const totalLabel = crTotal.toLocaleString();
   const footerText = search
@@ -2273,6 +2216,36 @@ function crAutoLoad() {
     if (lbl) lbl.textContent = fmtShortD(crDrpPickStart) + ' – ' + fmtShortD(crDrpPickEnd);
   }
   crLoad(false);
+  callsLoadStats();
+}
+
+// Merged Calls tab: clicking a row opens the shared review drawer (transcript +
+// outcomes + mark-reviewed). The drawer expects vertical_name/duration; CR rows
+// alias those to vertical/ivr_duration, so map them.
+function crOpenDrawer(id) {
+  const r = crRows.find(x => x.id === id);
+  if (!r) return;
+  openCallDrawer({ ...r, vertical_name: r.vertical, duration: r.duration ?? r.ivr_duration });
+}
+
+function crToggleFlagged(btn) { btn.classList.toggle('active'); crLoad(false); }
+
+// Compliance summary strip at the top of the Calls tab (AI-processed calls only).
+let callsStatsLoaded = false;
+async function callsLoadStats() {
+  if (callsStatsLoaded) return; callsStatsLoaded = true;
+  try {
+    const rows = await sbFetch('canoe_calls?select=id,flags,compliance_reviewed&ai_processed_at=not.is.null&limit=5000');
+    const total   = rows.length;
+    const flagged = rows.filter(r => (r.flags||[]).length > 0).length;
+    const pending = rows.filter(r => (r.flags||[]).length > 0 && !r.compliance_reviewed).length;
+    const rate    = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
+    const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('calls-stat-total',   total.toLocaleString());
+    set('calls-stat-flagged', flagged.toLocaleString());
+    set('calls-stat-rate',    rate);
+    set('calls-stat-pending', pending.toLocaleString());
+  } catch(e) { console.warn('callsLoadStats:', e.message); }
 }
 
 // ─── CSV / UPDATE PANEL ───────────────────────────────────────────────────────
@@ -2631,27 +2604,33 @@ async function compInit() {
   compDateFrom = start.toISOString().slice(0,10);
   compDateTo   = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString().slice(0,19);
 
-  await Promise.all([compLoadAssignments(), compLoadStats(), compLoadCalls(), compLoadTeam()]);
-  compPopulateFilterDropdowns();
+  // The Settings tab needs only Team stats + account assignments now; the call log
+  // (and its stats/filters) moved to the merged Calls tab.
+  await Promise.all([compLoadAssignments(), compLoadTeam()]);
 }
 
-// Apply the Compliance filters carried in a deep link (from the digest email), e.g.
-//   ?tab=compliance&sub=calllog&account=Instar&type=publisher&from=…&to=…&flagged=1
-// Called by the router; a no-op when none of those params are present.
-function applyComplianceFilters(params) {
+// Apply the filters carried in a digest deep link, now on the merged Calls tab, e.g.
+//   ?tab=calls&account=Instar&type=publisher&from=…&to=…&flagged=1
+// (legacy ?tab=compliance&sub=calllog links are rerouted here by applyRoute).
+function applyCallsFilters(params) {
   const account = params.get('account'), from = params.get('from'), to = params.get('to');
-  if (!account && params.get('flagged') !== '1' && !from) return;
-  if (from) compDateFrom = from;
-  if (to)   compDateTo   = to;
+  if (from) crDrpPickStart = from.slice(0,10);
+  if (to)   crDrpPickEnd   = to.slice(0,10);
+  if ((from || to) && crDrpPickStart && crDrpPickEnd) {
+    const lbl = document.getElementById('cr-drp-label');
+    if (lbl) lbl.textContent = fmtShortD(crDrpPickStart) + ' – ' + fmtShortD(crDrpPickEnd);
+  }
   if (account) {
-    const el = document.getElementById(params.get('type') === 'advertiser' ? 'cf-advertiser' : 'cf-publisher');
+    const el = document.getElementById(params.get('type') === 'advertiser' ? 'cr-adv-filter' : 'cr-pub-filter');
     if (el) el.value = account;
   }
   if (params.get('flagged') === '1') {
-    const el = document.getElementById('cf-flagged-only');
-    if (el && !el.classList.contains('active')) el.classList.add('active');
+    const t = document.getElementById('cr-flagged-only');
+    if (t && !t.classList.contains('active')) t.classList.add('active');
   }
-  compLoadCalls(); // reloads with the deep-linked window; compApplyFilters() reads the inputs
+  crAutoLoaded = true;      // window is set explicitly; skip the default 7-day autoload
+  crLoad(false);
+  callsLoadStats();
 }
 
 let settingsLoaded = false;
@@ -2663,7 +2642,14 @@ function switchCompTab(id, btn) {
   const pane = document.getElementById('comp-' + id);
   if (pane) pane.classList.add('active');
   if (id === 'settings' && !settingsLoaded) { settingsLoaded = true; settingsInit(); }
-  if (!_suppressRoute) history.pushState({ tab: 'compliance', sub: id }, '', '?tab=compliance&sub=' + id);
+  if (id === 'training') {
+    // Relocate the model calibration/review section into the Training sub-pane (once).
+    const sec = document.getElementById('settings-cost-section');
+    const p = document.getElementById('comp-training');
+    if (sec && p && sec.parentElement !== p) { sec.style.display = 'block'; p.appendChild(sec); }
+    calibInit();
+  }
+  if (!_suppressRoute) history.pushState({ tab: 'settings', sub: id }, '', '?tab=settings&sub=' + id);
 }
 
 // ── STATS ─────────────────────────────────────────────────────
@@ -3120,7 +3106,6 @@ async function settingsLoadManagers() {
     const rows = await compFetch('account_managers?select=id,manager_name,manager_email,is_admin,created_at&order=manager_name.asc');
     compManagers = rows || [];
     settingsRefreshManagerSelect();
-    compPopulateFilterDropdowns();
     if (!rows.length) {
       el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
       return;

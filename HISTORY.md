@@ -115,6 +115,31 @@ Continued from the 8/7 Scores work; large session. What moved:
 
 ### 2026-08-10 (Pier) — context reconciliation
 - Compiled a `context.md` for this folder from a cross-project pull (Granola last 3 weeks + Outlook + Exec Reporting board). No app/code changes beyond adding that file.
+
+### 2026-08-11 (Pier) — merged Call Reporting + Compliance; Calls/Settings redesign
+- **Fixed Call Reporting (was showing zero calls).** Root cause: `crLoad` sent the
+  anon publishable key as its bearer token, so RLS (canoe_calls SELECT is
+  authenticated-only) silently returned an empty set. Now sends the user JWT like
+  `sbFetch`. Also dropped `is_test=eq.false` (excluded NULL-`is_test` rows) and moved
+  the verticals dropdown to a `get_distinct_verticals()` loose-index-scan RPC
+  (migration `026`) — the old `select distinct` over ~264k rows was timing out (57014).
+- **Merged the two call logs into one `Calls` tab** (chosen shape: "everything folded
+  in"). Calls keeps CR's server-paginated engine and gains the compliance lens: a
+  summary strip (AI-processed / flagged / flag rate / pending), a Flagged-only toggle +
+  flag-type filter (server-side jsonb `flags` filters so pagination survives),
+  Outcome (Registry + Canoe) / Flags / Reviewed columns, and row-click opens the shared
+  review drawer (transcript + mark-reviewed).
+- **New `Settings` tab** (repurposed the old Compliance pane) with subtabs Team / Admin /
+  Training; **removed the Compliance tab and the standalone LLM-training tab** (its model
+  calibration section now lives under Settings → Training).
+- **Routing:** `?tab=calls` canonical; legacy `?tab=reporting` and `?tab=compliance…`
+  redirect to Calls (digest deep-links land on Calls, pre-filtered). `alert.js`
+  deep-link updated to `?tab=calls`. Settings subtabs route at `?tab=settings&sub=`.
+- Scores: added a name/vertical search box; drawer got transcript link + copy-id +
+  header alignment (earlier in the session).
+- Left the old compliance call-log JS (~10 now-unused functions) as dead code — flagged
+  for a follow-up cleanup. Verify the two jsonb flag filters against prod.
+- External sources (Granola/Jira) not pulled this session.
 - Reconciled state: day-to-day registry ownership handed to **James Teasdale** (Aug 3); Pier retains complex/strategic pieces. Winning dispo model = `google/gemini-3.5-flash`. Compliance flags stay separate from scoring; 2-day digest cadence.
 - New adjacent workstream noted: **Ring Partner caller-ID / buyer-acceptance strategy** (with David) — "intercept and re-ping" to capture caller ID and re-ping higher-value buyers (BCI pre-ping vs caller-ID-requiring network buyers).
 - Jira note: MK-150/MK-153 tracking tickets were **deleted** — no live tickets for this project now.
