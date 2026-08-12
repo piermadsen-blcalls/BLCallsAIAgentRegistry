@@ -1,21 +1,30 @@
 name: Backfill Drip (TEMPORARY)
 
-# One-off: drains the ~33k unprocessed calls from the last 30 days through the
-# Gemini Batch API, paced under the 3M enqueued-token quota (Tier 1). Runs hourly:
-# ingest frees budget by draining finished jobs, then submit refills up to the cap.
-# The in-flight dedup + graceful 429 stop make every run safe and resumable.
+# One-off: drains the last-30-day unprocessed calls (>=10 words) through the Gemini
+# Batch API, paced under the ~3M enqueued-token quota (Tier 1).
+#
+# GitHub's scheduled crons fire late/unreliably, so instead of a short hourly run this
+# LOOPS internally for ~5.5h (ingest to free budget + write results, then submit to
+# refill), keeping the pipeline continuously full so it drains as fast as Google's batch
+# queue allows. A 6-hourly cron restarts it; the concurrency guard prevents overlap.
+# The in-flight dedup + graceful 429 stop make every iteration safe and resumable.
 #
 # DELETE THIS FILE once the 30-day backfill is drained (unprocessed_30d ~ 0).
 # Steady-state scoring stays on process-submit.yml (nightly) + process-ingest.yml (6h).
 
 on:
   schedule:
-    - cron: '15 * * * *'  # hourly
+    - cron: '0 */6 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: backfill-drip
+  cancel-in-progress: false
 
 jobs:
   drip:
     runs-on: ubuntu-latest
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -23,23 +32,22 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Ingest finished jobs (frees enqueued-token budget)
+      - name: Drip loop (ingest -> submit every ~4 min for ~5.5h)
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
           AI_MODEL:             'gemini-3.6-flash'
-          BATCH_ACTION:         'ingest'
-        run: node scripts/process.js
-
-      - name: Submit more (fills freed budget, stops at the quota)
-        env:
-          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
-          AI_MODEL:             'gemini-3.6-flash'
-          BATCH_ACTION:         'submit'
           BACKFILL_DAYS:        '30'
           BATCH_SIZE:           '10000'
-          MIN_TRANSCRIPT_WORDS: '10'   # skip fragments; only score calls with a real transcript
-        run: node scripts/process.js
+          MIN_TRANSCRIPT_WORDS: '10'
+        run: |
+          deadline=$(( $(date +%s) + 330*60 ))
+          i=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            i=$((i+1)); echo "──────── drip iteration $i ────────"
+            BATCH_ACTION=ingest node scripts/process.js || echo "ingest error (continuing)"
+            BATCH_ACTION=submit node scripts/process.js || echo "submit error (continuing)"
+            sleep 240
+          done
+          echo "drip loop finished after $i iterations"
