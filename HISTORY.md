@@ -214,6 +214,11 @@ Continued from the 8/7 Scores work; large session. What moved:
   disposition / publisher / etc., but IGNORES the two flag drill-downs (Flagged-only,
   flag-type) via `crBuildFilters(false)` so flag rate stays a real ratio instead of
   collapsing to 100% when you drill in. All counts are `count=exact` — nothing estimated.
+- **Moved the 4 header KPIs (total agents / calls / revenue / margin) into the Agents
+  tab** (under the nav, `.agents-stats`), so they only show on Agents instead of the
+  global header. **Added a hover breakdown on the Calls "flagged" metric** — count of
+  calls per flag type, scoped to the same date + business filters, lazy per-scope, each
+  a GIN-indexed containment count.
 - **Fixed a 57014 statement timeout on the Calls table** (surfaced when testing a
   month range + Flagged-only). The table query counts ALL calls in range; over ~100k
   rows the jsonb `flags<>'[]'` filter took ~12s vs the authenticated role's 8s timeout.

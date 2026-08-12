@@ -42,6 +42,9 @@
   .stat { text-align: right; }
   .stat-num { font-family: var(--serif); font-size: 32px; color: var(--text); line-height: 1; }
   .stat-label { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  /* Agents-tab metrics: same stats, relocated under the tabs, left-aligned. */
+  .agents-stats { margin: 0 0 28px; }
+  .agents-stats .stat { text-align: left; }
 
   .nav-tabs { display: flex; gap: 0; margin-bottom: 32px; border-bottom: 1px solid var(--border); }
   .nav-tab { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text-2); background: none; border: none; padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
@@ -239,6 +242,10 @@
   .summary-val.pos { color:var(--teal); }
   .summary-val.neg { color:var(--coral); }
   .summary-lbl { font-size:11px; color:var(--text-3); margin-top:3px; }
+  /* Hover breakdown on the Calls "flagged" metric: count per flag type. */
+  .flag-tip { position:absolute; top:calc(100% + 6px); left:16px; z-index:30; min-width:210px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(0,0,0,0.10); padding:8px 10px; text-align:left; }
+  .flag-tip .fb-row { display:flex; justify-content:space-between; gap:20px; padding:3px 2px; font-size:12px; color:var(--text-2); }
+  .flag-tip .fb-row .fb-n { color:var(--text); font-variant-numeric:tabular-nums; }
   .summary-sub { font-size:11px; margin-top:4px; font-family:var(--mono); }
   .insights-section { margin-bottom:28px; }
   .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -698,12 +705,6 @@
       <p>All deployed voice AI agents, their qualification logic, and exactly how calls reach them.</p>
       <div class="data-freshness"><div class="freshness-dot"></div><span id="freshness-label">Loading...</span></div>
     </div>
-    <div class="header-stats">
-      <div class="stat"><div class="stat-num" id="stat-agents">—</div><div class="stat-label">total agents</div></div>
-      <div class="stat"><div class="stat-num" id="stat-calls">—</div><div class="stat-label" id="stat-calls-label">calls / 30d</div></div>
-      <div class="stat"><div class="stat-num" id="stat-revenue">—</div><div class="stat-label" id="stat-revenue-label">revenue / 30d</div></div>
-      <div class="stat"><div class="stat-num" id="stat-margin">—</div><div class="stat-label" id="stat-margin-label">margin / 30d</div></div>
-    </div>
   </header>
 
   <div class="nav-tabs">
@@ -718,6 +719,12 @@
 
   <!-- AGENTS TAB -->
   <div id="tab-agents" class="tab-pane active">
+    <div class="header-stats agents-stats">
+      <div class="stat"><div class="stat-num" id="stat-agents">—</div><div class="stat-label">total agents</div></div>
+      <div class="stat"><div class="stat-num" id="stat-calls">—</div><div class="stat-label" id="stat-calls-label">calls / 30d</div></div>
+      <div class="stat"><div class="stat-num" id="stat-revenue">—</div><div class="stat-label" id="stat-revenue-label">revenue / 30d</div></div>
+      <div class="stat"><div class="stat-num" id="stat-margin">—</div><div class="stat-label" id="stat-margin-label">margin / 30d</div></div>
+    </div>
     <div class="toolbar">
       <div class="toolbar-left">
         <div class="search-wrap">
@@ -836,7 +843,7 @@
   <div id="tab-calls" class="tab-pane">
     <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px;grid-template-columns:repeat(3,1fr)">
       <div class="summary-item"><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
-      <div class="summary-item"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div></div>
+      <div class="summary-item" style="position:relative" onmouseenter="callsFlagBreakdown()" onmouseleave="callsFlagBreakdownHide()"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div><div id="calls-flag-breakdown" class="flag-tip" style="display:none"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate">—</div><div class="summary-lbl">flag rate</div></div>
     </div>
     <div class="cr-toolbar">
@@ -2256,6 +2263,7 @@ function crToggleFlagged(btn) { btn.classList.toggle('active'); crLoad(false); }
 // Exact count queries (Prefer: count=exact) so the totals are uncapped and current.
 async function callsLoadStats() {
   if (!crDrpPickStart || !crDrpPickEnd) return;  // needs a selected date range
+  flagBreakdownKey = null;  // scope may have changed — recompute the hover breakdown on next hover
   try {
     const filters = crBuildFilters(false);  // ignore flag drill-downs so flag rate stays a real ratio
     const countOf = async (extra) => {
@@ -2278,6 +2286,36 @@ async function callsLoadStats() {
     set('calls-stat-rate',    rate);
   } catch(e) { console.warn('callsLoadStats:', e.message); }
 }
+
+// Hover breakdown on the "flagged" metric: count of calls per flag type, scoped to the
+// same date range + business filters as the strip (flag drill-downs ignored). Lazy —
+// computed on first hover per scope; each count is a GIN-indexed containment query.
+const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
+let flagBreakdownKey = null;
+async function callsFlagBreakdown() {
+  const tip = document.getElementById('calls-flag-breakdown');
+  if (!tip) return;
+  tip.style.display = 'block';
+  if (!crDrpPickStart || !crDrpPickEnd) { tip.innerHTML = '<div class="fb-row">Load calls first</div>'; return; }
+  const filters = crBuildFilters(false);
+  if (flagBreakdownKey === filters && tip.dataset.filled === '1') return;  // cached for this scope
+  flagBreakdownKey = filters; tip.dataset.filled = '0';
+  tip.innerHTML = '<div class="fb-row">Loading…</div>';
+  try {
+    const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
+    const rows = await Promise.all(CALLS_FLAG_TYPES.map(async f => {
+      const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${filters}&ai_processed_at=not.is.null&flags=cs.${encodeURIComponent(JSON.stringify([f]))}`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' }
+      });
+      const cr = res.headers.get('Content-Range') || '';
+      return { flag: f, n: parseInt(cr.split('/')[1], 10) || 0 };
+    }));
+    rows.sort((a,b) => b.n - a.n);
+    tip.innerHTML = rows.map(r => `<div class="fb-row"><span>${r.flag}</span><span class="fb-n">${r.n.toLocaleString()}</span></div>`).join('');
+    tip.dataset.filled = '1';
+  } catch(e) { tip.innerHTML = '<div class="fb-row">—</div>'; flagBreakdownKey = null; }
+}
+function callsFlagBreakdownHide() { const t = document.getElementById('calls-flag-breakdown'); if (t) t.style.display = 'none'; }
 
 // ─── CSV / UPDATE PANEL ───────────────────────────────────────────────────────
 function buildBQSQL(){const today=new Date();today.setHours(0,0,0,0);const end=new Date(today);end.setDate(end.getDate()-1);const start=new Date(today);start.setDate(start.getDate()-5);const f=d=>d.toISOString().split('T')[0];return`SELECT\n  id,\n  ivr_name,\n  FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,\n  FORMAT_DATE('%Y-%m-%d', DATE(created_at, 'America/Denver')) AS call_date,\n  COALESCE(publisher_name, '(direct)') AS publisher_name,\n  COALESCE(advertiser_name, '(direct)') AS advertiser_name,\n  ivr_duration,\n  connect_duration,\n  advertiser_payin,\n  publisher_payout,\n  result,\n  called_from AS phone,\n  vertical_name AS vertical\nFROM \`ringpartner-exchange.phone_lead_transactions.phone_lead_transactions\`\nWHERE LOWER(ivr_name) LIKE 'ascnd%'\n  AND is_test = FALSE\n  AND DATE(created_at, 'America/Denver') BETWEEN '${f(start)}' AND '${f(end)}'\nORDER BY created_at DESC`;}
