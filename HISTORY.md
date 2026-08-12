@@ -198,4 +198,14 @@ Continued from the 8/7 Scores work; large session. What moved:
   is pinned to 30 days. Running via a **temporary `backfill-drip.yml`** (hourly:
   ingest→submit, self-throttles under the 3M cap); DELETE that file once the 30-day set
   drains. Steady-state stays on process-submit (nightly) + process-ingest (6h).
+- **Bug found during backfill: ingest silently dropped large jobs.** `fetchCallZips`
+  built a single `id=in.(…500 ids…)` URL (~10KB) that the server dropped ("fetch
+  failed"), so succeeded jobs never wrote results (jobs safely stayed `processing`, no
+  data loss). Fixed by chunking the zip lookup ~100 ids at a time. Re-verified: 4×500
+  jobs ingested 0 errors; `by_gemini` 3 → 2,003.
+- **Calls-tab compliance metrics fixed.** `callsLoadStats` fetched ≤5,000 rows and
+  counted client-side, so the "processed by AI" total capped at 5k and never reflected
+  new Gemini calls; also a once-guard blocked refresh. Now uses `Prefer:count=exact`
+  (uncapped, refreshes each tab open). Removed the "pending review" metric (irrelevant
+  here); strip is now 3-up.
 - External sources (Granola/Jira) not pulled this session.
