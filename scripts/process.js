@@ -711,15 +711,19 @@ async function updateBatchJob(id, patch) {
 
 // Re-fetch the Canoe zip per call at ingest time — needed for the code-decided
 // geo_mismatch flag, since submit and ingest run in separate processes.
+// Chunked: a single id=in.(...) over a whole 500-call job overflows the URL and the
+// request fails ("fetch failed"), so look zips up ~100 ids at a time.
 async function fetchCallZips(ids) {
-  if (!ids.length) return {};
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${ids.join(',')})&select=id,zip`,
-    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
-  );
-  if (!res.ok) throw new Error(`Zip fetch error ${res.status}: ${await res.text()}`);
-  const rows = await res.json();
-  return Object.fromEntries(rows.map(r => [r.id, r.zip]));
+  const zipById = {};
+  for (const slice of chunk(ids, 100)) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${slice.join(',')})&select=id,zip`,
+      { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    );
+    if (!res.ok) throw new Error(`Zip fetch error ${res.status}: ${await res.text()}`);
+    for (const r of await res.json()) zipById[r.id] = r.zip;
+  }
+  return zipById;
 }
 
 // ── Gemini submit / ingest ────────────────────────────────────
