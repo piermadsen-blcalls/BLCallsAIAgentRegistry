@@ -207,5 +207,8 @@ Continued from the 8/7 Scores work; large session. What moved:
   counted client-side, so the "processed by AI" total capped at 5k and never reflected
   new Gemini calls; also a once-guard blocked refresh. Now uses `Prefer:count=exact`
   (uncapped, refreshes each tab open). Removed the "pending review" metric (irrelevant
-  here); strip is now 3-up.
+  here); strip is now 3-up. Then scoped the strip to the SAME time period + filters as
+  the table — extracted a shared `crBuildFilters()` (also collapsed an accidental
+  duplicate `crBuildQuery`) and refresh the metrics on every `crLoad`, so the numbers
+  describe the filtered view, not all-time.
 - External sources (Granola/Jira) not pulled this session.
