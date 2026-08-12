@@ -219,6 +219,16 @@ Continued from the 8/7 Scores work; large session. What moved:
   global header. **Added a hover breakdown on the Calls "flagged" metric** — count of
   calls per flag type, scoped to the same date + business filters, lazy per-scope, each
   a GIN-indexed containment count.
+- **Agents tab initial load: ~5-9s → 44ms** via a per-agent-per-day rollup (migration
+  `030`, `agent_metrics_daily`). The tab re-aggregated ~90k raw rows on every load
+  (worse under the backfill's stale-visibility-map heap fetches). Rollup is built from
+  RAW call fields only (payin/duration/result) — independent of AI processing — so it
+  was safe to build + cut over mid-backfill. `agent_metrics()` now sums ~5.8k pre-agg
+  daily rows instead of scanning raw; verified byte-identical totals vs the raw query
+  before cutover (no frontend change — same RPC signature). Refreshed daily at 01:00 UTC
+  via **pg_cron** (`refresh_agent_metrics_daily(45)` re-aggregates a trailing window to
+  catch late sync patches). VACUUM turned out unnecessary here — the rollup never scans
+  raw, and autovacuum tidies canoe_calls post-backfill.
 - **Fixed a 57014 statement timeout on the Calls table** (surfaced when testing a
   month range + Flagged-only). The table query counts ALL calls in range; over ~100k
   rows the jsonb `flags<>'[]'` filter took ~12s vs the authenticated role's 8s timeout.
