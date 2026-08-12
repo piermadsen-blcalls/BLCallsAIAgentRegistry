@@ -1,6 +1,8 @@
 # BL Calls AI Agent Registry - Context
 
 > Auto-compiled 2026-08-10 from Granola (last 3 weeks), Outlook, and the Executive Reporting board. Sources listed at the bottom. Summaries only - no raw meeting/email contents.
+>
+> **2026-08-12 infra note (from build sessions, not an auto-pull):** production AI scoring migrated to **Gemini 3.6 Flash via Google's native Batch API** (~50% cheaper, async two-phase submit/ingest); ran a 30-day backfill re-scoring the last month of calls; shipped Calls/Agents dashboard perf + metric fixes (jsonb indexes; an agent daily-rollup that cut the Agents load from ~5-9s to ~44ms). Technical detail in `HISTORY.md` / `CLAUDE.md`.
 
 ## What this is (from the Exec Reporting board)
 AI IVR call handling + compliance registry for BL Calls' AI phone agents. Syncs Canoe call data, AI-analyzes each call for outcome, compliance, and a publisher score, and alerts account managers. **Live since January**; current push is accuracy tuning, publisher scoring, and LLM-dispo training.
