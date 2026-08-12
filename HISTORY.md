@@ -211,4 +211,12 @@ Continued from the 8/7 Scores work; large session. What moved:
   the table — extracted a shared `crBuildFilters()` (also collapsed an accidental
   duplicate `crBuildQuery`) and refresh the metrics on every `crLoad`, so the numbers
   describe the filtered view, not all-time.
+- **Fixed a 57014 statement timeout on the Calls table** (surfaced when testing a
+  month range + Flagged-only). The table query counts ALL calls in range; over ~100k
+  rows the jsonb `flags<>'[]'` filter took ~12s vs the authenticated role's 8s timeout.
+  Added migration `028` — a **partial index** `canoe_calls (created_at desc) where
+  flags <> '[]'` — so flagged queries touch only the few-hundred flagged rows. Count
+  dropped 11,761ms → 79ms; counts stay exact. (Applied to prod via linked CLI.) The
+  metric strip itself was never the problem — it filters by `ai_processed_at` (indexed,
+  ~260ms). No-filter wide-range counts are ~5.7s (under 8s for now) — noted, not fixed.
 - External sources (Granola/Jira) not pulled this session.
