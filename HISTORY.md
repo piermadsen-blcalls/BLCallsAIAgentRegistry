@@ -219,4 +219,9 @@ Continued from the 8/7 Scores work; large session. What moved:
   dropped 11,761ms → 79ms; counts stay exact. (Applied to prod via linked CLI.) The
   metric strip itself was never the problem — it filters by `ai_processed_at` (indexed,
   ~260ms). No-filter wide-range counts are ~5.7s (under 8s for now) — noted, not fixed.
+- **Second 57014, second index.** The flag-TYPE dropdown filters with jsonb containment
+  (`flags @> '["outbound_dial"]'`), which 028's partial index can't serve (planner won't
+  use a `flags<>'[]'` predicate for `@>`). Migration `029` — GIN index on `flags`
+  (`jsonb_path_ops`) → that count went ~12s → 0.4ms. Both jsonb filter paths are now
+  indexed (partial for Flagged-only, GIN for flag-type). Applied to prod via linked CLI.
 - External sources (Granola/Jira) not pulled this session.
