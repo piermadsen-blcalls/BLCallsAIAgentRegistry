@@ -181,9 +181,21 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Deliberately skipped** the optional frontend model-catalog/pricing entry — the
   calibration catalog uses OpenRouter ids and `process.yml` has no `GEMINI_API_KEY`, so a
   bare native id there would be half-wired. Left as a clean follow-up.
-- **Not yet live — manual steps remain:** add `GEMINI_API_KEY` to GitHub Actions secrets
-  + `scripts/.env` + `scripts/.env.example` (the last is permission-blocked locally);
-  apply migration `027`; then verify with a 3-call `DRY_RUN`/submit→ingest before
-  dispatching the 30-day backfill (`process-submit` with `backfill_days=30`, big
-  `batch_size`). Code is `node --check` clean; not run against live Supabase/Gemini yet.
+- **Shipped + verified live (2026-08-11).** `GEMINI_API_KEY` set as a repo Actions
+  secret (AI Studio key); migration `027` applied to prod; pushed to `main`. Verified
+  end-to-end via `workflow_dispatch`: dry-run → real 3-call submit
+  (`batches/l6vhz…`, key/billing/model access all good) → ingest wrote 3/3 to
+  `canoe_calls`, 0 errors, job marked `completed`. Note: the live API returns
+  `BATCH_STATE_*` (not the docs' `JOB_STATE_*`); our substring state checks handle both.
+- **Still to add manually:** `GEMINI_API_KEY` line in `scripts/.env` (local runs) and
+  `scripts/.env.example` (permission-blocked for me).
+- **30-day backfill (~32k calls) in progress.** Quota reality: Tier 1 batch cap for
+  3.6 Flash is **3M enqueued tokens** (~2k calls in flight); firing all 63 jobs at once
+  429'd. Hardened submit to stop gracefully at the quota + resume (in-flight dedup), 1s
+  gap between job creations. Added `MIN_TRANSCRIPT_WORDS` filter — backfill only scores
+  calls with a real transcript (≥10 words; drops ~641 fragments, keeps ~32,097). Scope
+  matters: 90k calls are unprocessed all-time vs ~33k in the last 30 days, so the backfill
+  is pinned to 30 days. Running via a **temporary `backfill-drip.yml`** (hourly:
+  ingest→submit, self-throttles under the 3M cap); DELETE that file once the 30-day set
+  drains. Steady-state stays on process-submit (nightly) + process-ingest (6h).
 - External sources (Granola/Jira) not pulled this session.

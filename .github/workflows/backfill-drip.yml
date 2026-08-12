@@ -1,0 +1,45 @@
+name: Backfill Drip (TEMPORARY)
+
+# One-off: drains the ~33k unprocessed calls from the last 30 days through the
+# Gemini Batch API, paced under the 3M enqueued-token quota (Tier 1). Runs hourly:
+# ingest frees budget by draining finished jobs, then submit refills up to the cap.
+# The in-flight dedup + graceful 429 stop make every run safe and resumable.
+#
+# DELETE THIS FILE once the 30-day backfill is drained (unprocessed_30d ~ 0).
+# Steady-state scoring stays on process-submit.yml (nightly) + process-ingest.yml (6h).
+
+on:
+  schedule:
+    - cron: '15 * * * *'  # hourly
+  workflow_dispatch:
+
+jobs:
+  drip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Ingest finished jobs (frees enqueued-token budget)
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
+          AI_MODEL:             'gemini-3.6-flash'
+          BATCH_ACTION:         'ingest'
+        run: node scripts/process.js
+
+      - name: Submit more (fills freed budget, stops at the quota)
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
+          AI_MODEL:             'gemini-3.6-flash'
+          BATCH_ACTION:         'submit'
+          BACKFILL_DAYS:        '30'
+          BATCH_SIZE:           '10000'
+          MIN_TRANSCRIPT_WORDS: '10'   # skip fragments; only score calls with a real transcript
+        run: node scripts/process.js

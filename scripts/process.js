@@ -56,6 +56,10 @@ const BATCH_ACTION         = process.env.BATCH_ACTION  || '';   // '' | 'submit'
 const BACKFILL_DAYS        = parseInt(process.env.BACKFILL_DAYS || '0', 10);
 const GEMINI_CHUNK         = parseInt(process.env.GEMINI_CHUNK  || '500', 10);
 const DRY_RUN              = process.env.DRY_RUN        === 'true';
+// Skip near-empty transcripts (fragments). 0 = no filter. Used by the backfill so
+// we only score calls with a real transcript (at least one sentence).
+const MIN_TRANSCRIPT_WORDS = parseInt(process.env.MIN_TRANSCRIPT_WORDS || '0', 10);
+const wordCount = (t) => (t || '').trim().split(/\s+/).filter(Boolean).length;
 
 // ── Outcome scoring table (Taxonomy v3) ──────────────────────
 // Fallback scores used when outcome_weights table is unavailable.
@@ -442,6 +446,11 @@ async function fetchUnprocessed() {
     out.push(...rows);
     if (rows.length < want) break;  // exhausted
   }
+  if (MIN_TRANSCRIPT_WORDS > 0) {
+    const kept = out.filter(c => wordCount(c.transcription) >= MIN_TRANSCRIPT_WORDS);
+    if (kept.length < out.length) console.log(`Filtered ${out.length - kept.length} call(s) under ${MIN_TRANSCRIPT_WORDS} words`);
+    return kept;
+  }
   return out;
 }
 
@@ -755,7 +764,18 @@ async function runGeminiSubmit(calls, systemPrompt, activePromptId) {
       continue;
     }
 
-    const job = await submitGeminiBatch(requests, `blcalls-${day}-${idx + 1}`);
+    let job;
+    try {
+      job = await submitGeminiBatch(requests, `blcalls-${day}-${idx + 1}`);
+    } catch (e) {
+      // Hitting the Gemini batch quota (429) is expected on a large backfill. Stop
+      // cleanly rather than crash: jobs already submitted are safe, and re-running
+      // resumes (in-flight calls are skipped) once capacity frees as ingest drains.
+      const quota = /\b429\b|quota|RESOURCE_EXHAUSTED/i.test(e.message);
+      console.error(`  Stopping at job ${idx + 1}/${chunks.length}: ${e.message.slice(0, 200)}`);
+      if (quota) console.error('  Gemini batch quota reached — submitted jobs are safe; re-run submit to resume as capacity frees.');
+      break;
+    }
     await insertBatchJob({
       job_name:   job.name,
       model:      AI_MODEL,
@@ -766,8 +786,11 @@ async function runGeminiSubmit(calls, systemPrompt, activePromptId) {
     });
     console.log(`  Submitted ${job.name} (${group.length} calls)`);
     submitted++;
+    // Small gap so a burst of job-creation calls doesn't trip a rate limit before
+    // we reach the real ceiling (batch enqueued-token quota).
+    if (idx < chunks.length - 1) await new Promise(r => setTimeout(r, 1000));
   }
-  console.log(`Submit done. ${submitted} job(s) recorded${DRY_RUN ? ' (dry-run: 0 real)' : ''}.`);
+  console.log(`Submit done. ${submitted} job(s) recorded this run${DRY_RUN ? ' (dry-run: 0 real)' : ''}.`);
 }
 
 async function runGeminiIngest() {
