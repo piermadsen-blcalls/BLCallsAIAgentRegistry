@@ -834,11 +834,10 @@
 
   <!-- CALL REPORTING TAB -->
   <div id="tab-calls" class="tab-pane">
-    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
+    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px;grid-template-columns:repeat(3,1fr)">
       <div class="summary-item"><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
       <div class="summary-item"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate">—</div><div class="summary-lbl">flag rate</div></div>
-      <div class="summary-item"><div class="summary-val" id="calls-stat-pending">—</div><div class="summary-lbl">pending review</div></div>
     </div>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left">
@@ -2267,20 +2266,28 @@ function crOpenDrawer(id) {
 function crToggleFlagged(btn) { btn.classList.toggle('active'); crLoad(false); }
 
 // Compliance summary strip at the top of the Calls tab (AI-processed calls only).
-let callsStatsLoaded = false;
+// Uses exact count queries (Prefer: count=exact) so the totals reflect ALL processed
+// calls, not a capped 5k sample — and refreshes each time the tab is opened.
 async function callsLoadStats() {
-  if (callsStatsLoaded) return; callsStatsLoaded = true;
   try {
-    const rows = await sbFetch('canoe_calls?select=id,flags,compliance_reviewed&ai_processed_at=not.is.null&limit=5000');
-    const total   = rows.length;
-    const flagged = rows.filter(r => (r.flags||[]).length > 0).length;
-    const pending = rows.filter(r => (r.flags||[]).length > 0 && !r.compliance_reviewed).length;
-    const rate    = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
+    const countOf = async (filter) => {
+      const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
+      const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id&${filter}`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' }
+      });
+      if (!res.ok) throw new Error(`Supabase ${res.status}`);
+      const cr = res.headers.get('Content-Range') || '';
+      return parseInt(cr.split('/')[1], 10) || 0;
+    };
+    const [total, flagged] = await Promise.all([
+      countOf('ai_processed_at=not.is.null'),
+      countOf(`ai_processed_at=not.is.null&flags=neq.${encodeURIComponent('[]')}`),
+    ]);
+    const rate = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
     const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('calls-stat-total',   total.toLocaleString());
     set('calls-stat-flagged', flagged.toLocaleString());
     set('calls-stat-rate',    rate);
-    set('calls-stat-pending', pending.toLocaleString());
   } catch(e) { console.warn('callsLoadStats:', e.message); }
 }
 
