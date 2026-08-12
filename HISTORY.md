@@ -210,7 +210,10 @@ Continued from the 8/7 Scores work; large session. What moved:
   here); strip is now 3-up. Then scoped the strip to the SAME time period + filters as
   the table — extracted a shared `crBuildFilters()` (also collapsed an accidental
   duplicate `crBuildQuery`) and refresh the metrics on every `crLoad`, so the numbers
-  describe the filtered view, not all-time.
+  describe the filtered view, not all-time. The strip respects date + vertical /
+  disposition / publisher / etc., but IGNORES the two flag drill-downs (Flagged-only,
+  flag-type) via `crBuildFilters(false)` so flag rate stays a real ratio instead of
+  collapsing to 100% when you drill in. All counts are `count=exact` — nothing estimated.
 - **Fixed a 57014 statement timeout on the Calls table** (surfaced when testing a
   month range + Flagged-only). The table query counts ALL calls in range; over ~100k
   rows the jsonb `flags<>'[]'` filter took ~12s vs the authenticated role's 8s timeout.

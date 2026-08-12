@@ -2032,10 +2032,11 @@ function crFmtDateTime(iso) { if (!iso) return '—'; const d=new Date(iso); ret
 function crFmtRev(v) { return v > 0 ? '$' + v.toFixed(2) : '—'; }
 function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();if(l.includes('connect'))return'cr-dispo-connected';if(l.includes('reject'))return'cr-dispo-rejected';return'cr-dispo-other'; }
 
-// Filter portion of the Calls query (everything except select / order / pagination),
-// shared by the table load AND the summary metrics so both reflect the same time
-// period + filters.
-function crBuildFilters() {
+// Filter portion of the Calls query (everything except select / order / pagination).
+// Shared by the table load and the summary metrics. includeFlagFilters=false drops
+// the two flag drill-downs (Flagged-only, flag-type) so the metric strip stays a
+// meaningful ratio (flag rate over the scope, not forced to 100% when drilling in).
+function crBuildFilters(includeFlagFilters = true) {
   let q = `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
   if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
   const dispo = document.getElementById('cr-dispo-filter').value;
@@ -2047,9 +2048,11 @@ function crBuildFilters() {
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
-  if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
-  const flag = document.getElementById('cr-flag-filter')?.value;
-  if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
+  if (includeFlagFilters) {
+    if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
+    const flag = document.getElementById('cr-flag-filter')?.value;
+    if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
+  }
   return q;
 }
 
@@ -2254,7 +2257,7 @@ function crToggleFlagged(btn) { btn.classList.toggle('active'); crLoad(false); }
 async function callsLoadStats() {
   if (!crDrpPickStart || !crDrpPickEnd) return;  // needs a selected date range
   try {
-    const filters = crBuildFilters();
+    const filters = crBuildFilters(false);  // ignore flag drill-downs so flag rate stays a real ratio
     const countOf = async (extra) => {
       const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
       const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${filters}${extra}`, {
