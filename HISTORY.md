@@ -277,4 +277,10 @@ Continued from the 8/7 Scores work; large session. What moved:
   `populateVerticalDropdowns` — Insights still uses them); dropped only the Calls-specific
   dropdowns, the `crVertical*` fns, `crVerticalFilter`, `cr-dispo-filter`, and their
   `crBuildFilters` lines. Table columns unchanged.
+- **Minimum-volume gate on the Scores tab.** Publisher/advertiser pairings with fewer
+  than **20 scored calls** (`SCORES_MIN_CALLS`) now withhold their score — the row still
+  shows with its call count + a muted "low volume" tag (and the expand-detail gets a
+  matching note), so you see it accumulating instead of trusting a score off a handful of
+  calls. Gate is purely presentational (in `scoresRenderTable`/`scoresRenderDetail`); the
+  underlying `n` already came from `outcome_score_vectors`.
 - External sources (Granola/Jira) not pulled this session.

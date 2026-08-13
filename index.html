@@ -1351,6 +1351,7 @@ function scoresFmt(s) { return s == null ? '<span class="cr-null">—</span>' : 
 
 function scoresSetSearch(v) { scoresSearch = (v || '').trim().toLowerCase(); scoresRenderTable(); }
 
+const SCORES_MIN_CALLS = 20;  // withhold a pairing's score until it has this many scored calls
 function scoresRenderTable() {
   const out = document.getElementById('scores-output');
   if (!out) return;
@@ -1364,17 +1365,21 @@ function scoresRenderTable() {
     return;
   }
   const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
-  const body = rows.map(r => `
+  const lowMark = `<span class="cr-null" title="Score hidden until ${SCORES_MIN_CALLS}+ scored calls">—</span>`;
+  const body = rows.map(r => {
+    const low = (r.n || 0) < SCORES_MIN_CALLS;
+    return `
     <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" onclick="scoresToggleDetail('${esc(r.key)}')">
       <td>${esc(r.entity)}</td>
       <td style="color:var(--text-2)">${esc(r.vertical)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${scoresFmt(r.canoeScore)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${scoresFmt(r.oursScore)}</td>
-      <td style="text-align:right;font-family:var(--mono);color:${r.gap == null ? 'var(--text-3)' : Math.abs(r.gap) >= 2 ? 'var(--coral)' : 'var(--text)'}">${r.gap == null ? '—' : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1)}</td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${r.n.toLocaleString()}</td>
+      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.oursScore)}</td>
+      <td style="text-align:right;font-family:var(--mono);color:${low || r.gap == null ? 'var(--text-3)' : Math.abs(r.gap) >= 2 ? 'var(--coral)' : 'var(--text)'}">${low ? lowMark : (r.gap == null ? '—' : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1))}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${r.n.toLocaleString()}${low ? ' <span style="font-size:10px;opacity:.7">low volume</span>' : ''}</td>
     </tr>
     ${scoresOpenKey === r.key ? `<tr class="scores-detail-row"><td colspan="6">${scoresRenderDetail(r)}</td></tr>` : ''}
-  `).join('');
+  `;
+  }).join('');
   out.innerHTML = `<table class="canoe-table scores-table">
     <thead><tr>
       ${th('entity', entLabel, 'text-align:left')}${th('vertical', 'Vertical', 'text-align:left')}
@@ -1458,6 +1463,7 @@ function scoresRenderDetail(r) {
       ? '<div class="canoe-none" style="padding:8px 0">No individual disagreements in this window.</div>'
       : `<table class="canoe-table"><thead><tr><th>Date</th><th style="text-align:left">Publisher</th><th style="text-align:left">Advertiser</th><th style="text-align:right">Dur</th><th style="text-align:left">Disposition</th><th style="text-align:left">Canoe</th><th style="text-align:left">Registry</th><th style="text-align:right">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3);white-space:nowrap">${fmtD(c.created_at)}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'—')}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'—')}</td><td style="text-align:right;font-family:var(--mono)">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'—')}</td><td style="font-family:var(--mono)">${esc(c.canoe_outcome)}</td><td style="font-family:var(--mono)">${esc(c.our_outcome)}</td><td style="text-align:right;white-space:nowrap">${c.recording_url ? `<a class="cr-link" href="${esc(c.recording_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresShowTranscript('${esc(c.id)}')">Transcript</a> · <a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresCopyId('${esc(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
   return `<div class="scores-detail">
+    ${(r.n || 0) < SCORES_MIN_CALLS ? `<div style="margin-bottom:10px;padding:8px 12px;border:1px dashed var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">Low volume — ${r.n.toLocaleString()} scored call(s), under the ${SCORES_MIN_CALLS}-call threshold, so the score is hidden in the table. Breakdown shown for review.</div>` : ''}
     <div class="scores-detail-headline">${headline}</div>
     <div class="scores-whatif-scores">
       <span>Canoe <strong style="font-family:var(--mono)">${scoresFmt(cScore)}</strong></span>
