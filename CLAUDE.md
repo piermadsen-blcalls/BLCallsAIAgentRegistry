@@ -22,7 +22,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     `BATCH_SIZE`, `BACKFILL_DAYS`, `GEMINI_CHUNK`, `MIN_TRANSCRIPT_WORDS`, `DRY_RUN`.
   - `alert.js` — Mon/Wed/Fri 14:00 UTC — compliance/perf alerts to account
     managers via the ASCND webhook.
-- **`supabase/`** — `migrations/` (001–030) and `functions/admin-users` (edge fn).
+- **`supabase/`** — `migrations/` (001–031) and `functions/admin-users` (edge fn).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
   `028` partial + `029` GIN (`jsonb_path_ops`) index on `flags` (Calls-tab jsonb
@@ -32,8 +32,8 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 - **`.github/workflows/`** — `sync.yml` (daily 00:00), `alert.yml` (Mon/Wed/Fri),
   `process.yml` (manual/test dispatch only — cron removed), and the Gemini batch crons
   `process-submit.yml` (nightly 03:00 UTC) + `process-ingest.yml` (every 6h).
-  `backfill-drip.yml` is a **temporary** one-off (loops ingest→submit under the batch
-  quota) for the 30-day backfill — delete it once drained.
+  (A temporary `backfill-drip.yml` ran the one-off 30-day backfill on 2026-08-12/13, now
+  deleted — for a future bulk backfill, dispatch process-submit with `backfill_days`.)
 
 ## Conventions & gotchas (do not break)
 - **It's one static file.** Edit `index.html` directly. Don't add a build tool,
@@ -47,7 +47,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
   `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` (AI Studio, for the native batch),
   `ASCND_ALERT_WEBHOOK_URL`. Add new ones in both places.
 - **DB changes = a new numbered migration** in `supabase/migrations/` (next is
-  `031_…`). Don't edit existing migrations. Migrations are applied to prod by hand
+  `032_…`). Don't edit existing migrations. Migrations are applied to prod by hand
   (Supabase SQL editor or `supabase db query --linked`); the files are the record.
 - **Agents are keyed by IVR name** with an alias→canonical map (`agent_ivr_aliases`);
   resolve to the canonical name before grouping.

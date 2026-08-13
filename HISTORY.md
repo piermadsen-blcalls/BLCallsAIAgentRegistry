@@ -248,10 +248,13 @@ Continued from the 8/7 Scores work; large session. What moved:
   use a `flags<>'[]'` predicate for `@>`). Migration `029` — GIN index on `flags`
   (`jsonb_path_ops`) → that count went ~12s → 0.4ms. Both jsonb filter paths are now
   indexed (partial for Flagged-only, GIN for flag-type). Applied to prod via linked CLI.
-- **State at session end:** backfill ~78% (≈25k scored, ≈7k left; Google-batch-paced at
-  ~1k/hr, erratic; self-sustaining via the drip loop). All fixes live on prod; migrations
-  applied through `030`. Agents rollup is backfill-independent, so already fast.
-- **Cleanup / follow-ups:** delete `backfill-drip.yml` once `remaining_30d` ≈ 0 (steady
-  state = process-submit nightly + process-ingest 6h); add `GEMINI_API_KEY` to
-  `scripts/.env` + `scripts/.env.example` (env.example was permission-blocked for me).
+- **Backfill COMPLETE (2026-08-13 ~01:00 UTC).** Full 30-day ≥10-word set scored by
+  gemini-3.6-flash (`remaining_30d` = 0, ~33.6k total). Late-stage stall (~5.5h, 16:00→21:50):
+  `fetchUnprocessed` started timing out (57014) as unprocessed rows went sparse in the
+  window (created_at scan filtered ~100k processed rows). Fixed with migration `031` — a
+  partial index on unprocessed+transcribed rows (8s→78ms); the running drip loop then
+  drained the rest. **Deleted the temporary `backfill-drip.yml`**; steady state = process-submit
+  (nightly) + process-ingest (6h). Migrations applied through `031`.
+- **Remaining follow-up:** add `GEMINI_API_KEY` to `scripts/.env` + `scripts/.env.example`
+  (env.example was permission-blocked for me).
 - External sources (Granola/Jira) not pulled this session.
