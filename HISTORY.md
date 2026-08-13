@@ -283,4 +283,5 @@ Continued from the 8/7 Scores work; large session. What moved:
   matching note), so you see it accumulating instead of trusting a score off a handful of
   calls. Gate is purely presentational (in `scoresRenderTable`/`scoresRenderDetail`); the
   underlying `n` already came from `outcome_score_vectors`.
+- **Alert digest rescheduled to Mon + Thu 16:00 UTC** (was 14:00; CLAUDE.md was also mislabeled Mon/Wed/Fri, fixed). Added `ALERT_ALL_MANAGERS` (preview-only, requires `override_email`) to preview EVERY manager with accounts regardless of the enabled flag. Sent Pier 8 per-AM previews. Note: only Matt Fu currently has alerts enabled; today's real 14:00 digest fired ~55min late at 14:55.
 - External sources (Granola/Jira) not pulled this session.
