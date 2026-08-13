@@ -22,6 +22,7 @@ const DRY_RUN       = process.env.DRY_RUN === 'true';      // skip webhook POSTs
 const MANAGER_ID     = process.env.ALERT_MANAGER_ID || '';     // limit to one manager by id (testing)
 const MANAGER_NAME   = process.env.ALERT_MANAGER_NAME || '';    // limit to one manager by name (testing)
 const OVERRIDE_EMAIL = process.env.ALERT_OVERRIDE_EMAIL || '';  // send ALL output here instead of the manager (preview)
+const ALL_MANAGERS   = process.env.ALERT_ALL_MANAGERS === 'true'; // preview: include EVERY manager with accounts, ignoring the enabled flag (requires OVERRIDE_EMAIL)
 const WINDOW_DAYS    = parseInt(process.env.ALERT_WINDOW_DAYS || '', 10); // force window to last N days (testing)
 const WINDOW_FROM    = process.env.ALERT_WINDOW_FROM || '';    // explicit window start, ISO/date (testing)
 const WINDOW_TO      = process.env.ALERT_WINDOW_TO   || '';    // explicit window end, ISO/date (testing)
@@ -82,6 +83,7 @@ function deepLink(account, type, fromDate, toISO) {
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
   if (!WEBHOOK_URL && !DRY_RUN)       throw new Error('Missing ASCND_ALERT_WEBHOOK_URL (set DRY_RUN=true to skip)');
+  if (ALL_MANAGERS && !OVERRIDE_EMAIL) throw new Error('ALERT_ALL_MANAGERS is preview-only — set ALERT_OVERRIDE_EMAIL too, so it never mass-mails real managers.');
   if (!DASHBOARD_URL) console.warn('DASHBOARD_URL not set — per-account links will be omitted.');
 
   const [managers, alertRows, assignments] = await Promise.all([
@@ -90,7 +92,7 @@ async function main() {
     sb('account_manager_assignments?select=*')
   ]);
 
-  if (!alertRows || !alertRows.length) { console.log('No managers have alerts enabled. Done.'); return; }
+  if (!ALL_MANAGERS && (!alertRows || !alertRows.length)) { console.log('No managers have alerts enabled. Done.'); return; }
 
   const mgrMap = {};
   (managers || []).forEach(m => { mgrMap[m.id] = m; });
@@ -102,7 +104,14 @@ async function main() {
     (a.account_type === 'advertiser' ? mgrAccounts[a.manager_id].advertisers : mgrAccounts[a.manager_id].publishers).add(a.account_name);
   });
 
-  let settings = alertRows;
+  // Normal: only managers with alerts enabled. Preview (ALL_MANAGERS): every manager
+  // that has assigned accounts, regardless of enabled / last_sent (window comes from the
+  // override inputs). Only reachable with OVERRIDE_EMAIL set (guarded above).
+  let settings = ALL_MANAGERS
+    ? (managers || [])
+        .filter(m => { const a = mgrAccounts[m.id]; return a && (a.advertisers.size || a.publishers.size); })
+        .map(m => ({ manager_id: m.id, last_sent_at: null }))
+    : alertRows;
   if (MANAGER_ID) settings = settings.filter(s => s.manager_id === MANAGER_ID);
   else if (MANAGER_NAME) settings = settings.filter(s => (mgrMap[s.manager_id]?.manager_name || '').toLowerCase() === MANAGER_NAME.toLowerCase());
   let sentCount = 0;

@@ -2,7 +2,7 @@ name: Send Compliance Alerts
 
 on:
   schedule:
-    - cron: '0 14 * * 1,4'  # Mon + Thu at 2pm UTC (~8am MT) — after process runs at 8am UTC
+    - cron: '0 16 * * 1,4'  # Mon + Thu at 4pm UTC (~10am MT)
   workflow_dispatch:
     inputs:
       manager_id:
@@ -14,6 +14,9 @@ on:
       override_email:
         description: 'Send ALL output to this address instead of the managers (preview/testing)'
         default: ''
+      all_managers:
+        description: 'Preview: include ALL managers with accounts, ignoring the enabled flag (requires override_email)'
+        default: 'false'
       window_days:
         description: 'Force the window to the last N days (blank = since last digest)'
         default: ''
@@ -45,6 +48,7 @@ jobs:
           ALERT_MANAGER_ID:         ${{ github.event.inputs.manager_id || '' }}
           ALERT_MANAGER_NAME:       ${{ github.event.inputs.manager_name || '' }}
           ALERT_OVERRIDE_EMAIL:     ${{ github.event.inputs.override_email || '' }}
+          ALERT_ALL_MANAGERS:       ${{ github.event.inputs.all_managers || 'false' }}
           ALERT_WINDOW_DAYS:        ${{ github.event.inputs.window_days || '' }}
           ALERT_WINDOW_FROM:        ${{ github.event.inputs.window_from || '' }}
           ALERT_WINDOW_TO:          ${{ github.event.inputs.window_to || '' }}

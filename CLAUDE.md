@@ -20,8 +20,10 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     Bare `gemini-*` ids hit the native Gemini API; namespaced ids (`anthropic/…`,
     `google/…`) still route via OpenRouter for the calibration/test UI. Knobs:
     `BATCH_SIZE`, `BACKFILL_DAYS`, `GEMINI_CHUNK`, `MIN_TRANSCRIPT_WORDS`, `DRY_RUN`.
-  - `alert.js` — Mon/Wed/Fri 14:00 UTC — compliance/perf alerts to account
-    managers via the ASCND webhook.
+  - `alert.js` — Mon + Thu 16:00 UTC — compliance/perf alerts to account
+    managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
+    address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
+    accounts, ignoring the enabled flag.
 - **`supabase/`** — `migrations/` (001–032) and `functions/admin-users` (edge fn).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
