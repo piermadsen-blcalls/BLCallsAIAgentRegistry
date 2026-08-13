@@ -897,6 +897,10 @@
           <option value="geo_mismatch">geo_mismatch</option>
           <option value="duplicate_caller">duplicate_caller</option>
         </select>
+        <!-- Outcome (options populated from REVIEW_OUTCOMES on load) -->
+        <select class="cr-select" id="cr-outcome-filter" onchange="crLoad()">
+          <option value="">All outcomes</option>
+        </select>
         <!-- Flagged only -->
         <button class="comp-filter-toggle" id="cr-flagged-only" onclick="crToggleFlagged(this)">Flagged only</button>
         <!-- Search -->
@@ -2055,6 +2059,8 @@ function crBuildFilters(includeFlagFilters = true) {
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
+  const outcome = document.getElementById('cr-outcome-filter')?.value;
+  if (outcome) q += `&our_outcome=eq.${encodeURIComponent(outcome)}`;
   if (includeFlagFilters) {
     if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
     const flag = document.getElementById('cr-flag-filter')?.value;
@@ -3753,6 +3759,9 @@ function modeltestCloseComparison() {
 
 // ── CALL REVIEW / TRAINING LABELS ─────────────────────────────
 const REVIEW_OUTCOMES = ['sale','appointment','quoted_interested','quoted_undecided','quoted_too_expensive','quoted_not_interested','quoted_abandoned','undecided','not_interested','caller_callback','agent_callback','caller_hangup','ivr_hangup','voicemail','agent_not_available','audio_issue','outside_geo','advertiser_service_mismatch','publisher_wrong_category','misrouted','caller_confused','agent_confused','customer_service','soliciting','referral','outside_hours','other'];
+// Populate the Calls-tab outcome filter from the canonical outcome list (single source
+// of truth). Runs during script eval; the <select> is already in the parsed DOM above.
+(() => { const s = document.getElementById('cr-outcome-filter'); if (s) REVIEW_OUTCOMES.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o.replace(/_/g, ' '); s.appendChild(opt); }); })();
 const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
 let reviewState = null;
 

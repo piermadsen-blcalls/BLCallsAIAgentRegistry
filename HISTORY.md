@@ -258,3 +258,18 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Remaining follow-up:** add `GEMINI_API_KEY` to `scripts/.env` + `scripts/.env.example`
   (env.example was permission-blocked for me).
 - External sources (Granola/Jira) not pulled this session.
+
+### 2026-08-13 (Pier) — Vicky's Calls-tab asks
+- **Outcome filter on the Calls tab** (Vicky). Added a `cr-outcome-filter` dropdown beside
+  flag-type, options populated from the canonical `REVIEW_OUTCOMES` list; adds
+  `our_outcome=eq.<x>` via the shared `crBuildFilters()`, so both the table and the top
+  metric strip scope to it (e.g. isolate `quoted_abandoned`).
+- **Suppress `outbound_dial` on transfer verticals** (Vicky — it was noise in the summary
+  emails). Model still emits it; code strips it, same pattern as `geo_mismatch`.
+  `isTransferVertical = /transfer/i` (catches all 14 transfer verticals incl. the singular
+  "Final Expense Enriched Transfer"). Applied in `buildResultPatch` (+ the sequential
+  path); wired vertical through the write paths (`fetchCallZips`→`fetchCallMeta` now also
+  fetches `vertical_name`; runBatch `verticalById` map). One-time migration `032` stripped
+  it from **99** already-scored transfer calls (now 0). `alert.js` unchanged — it reads
+  `flags` straight from the row, so cleaned data drops it from emails automatically.
+- External sources (Granola/Jira) not pulled this session.

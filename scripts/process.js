@@ -533,17 +533,22 @@ async function writeTestResult(testId, callId, outcome, flags, rawResponse, inpu
   if (!res.ok) throw new Error(`Supabase write error ${res.status}: ${await res.text()}`);
 }
 
+// Transfer verticals expect an outbound dial, so the model's outbound_dial flag there
+// is noise — strip it code-side. Transfer verticals are named with "transfer".
+const isTransferVertical = (v) => /transfer/i.test(v || '');
+
 // Build the canoe_calls patch from a parsed model reply + call context.
 // Centralizes outcome validation, flag filtering, the code-decided duplicate_caller
-// and geo_mismatch flags, and score lookup — shared by the Anthropic-batch and
-// Gemini-batch paths. (geo_mismatch is added after the VALID_FLAGS filter on purpose.)
-function buildResultPatch(callId, parsed, callZip, duplicateIds, activePromptId, modelId = AI_MODEL) {
+// and geo_mismatch flags, the transfer-vertical outbound_dial suppression, and score
+// lookup — shared by the Anthropic-batch and Gemini-batch paths.
+function buildResultPatch(callId, parsed, callZip, duplicateIds, activePromptId, modelId = AI_MODEL, verticalName = null) {
   let outcome = parsed.outcome;
   if (!VALID_OUTCOMES.includes(outcome)) outcome = 'other';
 
   let flags = (parsed.flags || []).filter(f => VALID_FLAGS.includes(f));
   if (duplicateIds.has(callId) && !flags.includes('duplicate_caller')) flags.push('duplicate_caller');
   if (isGeoMismatch(callZip, parsed.stated_zip) && !flags.includes('geo_mismatch')) flags.push('geo_mismatch');
+  if (isTransferVertical(verticalName)) flags = flags.filter(f => f !== 'outbound_dial');
 
   const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
   return {
@@ -596,6 +601,7 @@ async function fetchBatchResults(batchId) {
 
 async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
   const zipById = Object.fromEntries(calls.map(c => [c.id, c.zip]));
+  const verticalById = Object.fromEntries(calls.map(c => [c.id, c.vertical_name]));
   const requests = calls.map(call => {
     const context = [
       `Vertical: ${call.vertical_name || 'Unknown'}`,
@@ -625,7 +631,7 @@ async function runBatch(calls, systemPrompt, duplicateIds, activePromptId) {
       try { parsed = parseModelJson(text); } catch { parsed = null; }
       if (!parsed) { console.error(`  [${item.custom_id}] Could not parse response`); errors++; continue; }
 
-      await writeResult(item.custom_id, buildResultPatch(item.custom_id, parsed, zipById[item.custom_id], duplicateIds, activePromptId));
+      await writeResult(item.custom_id, buildResultPatch(item.custom_id, parsed, zipById[item.custom_id], duplicateIds, activePromptId, AI_MODEL, verticalById[item.custom_id]));
       processed++;
     } catch(e) { console.error(`  [${item.custom_id}] ${e.message}`); errors++; }
   }
@@ -711,19 +717,20 @@ async function updateBatchJob(id, patch) {
 
 // Re-fetch the Canoe zip per call at ingest time — needed for the code-decided
 // geo_mismatch flag, since submit and ingest run in separate processes.
+// vertical_name is needed for the transfer-vertical outbound_dial suppression.
 // Chunked: a single id=in.(...) over a whole 500-call job overflows the URL and the
-// request fails ("fetch failed"), so look zips up ~100 ids at a time.
-async function fetchCallZips(ids) {
-  const zipById = {};
+// request fails ("fetch failed"), so look up ~100 ids at a time.
+async function fetchCallMeta(ids) {
+  const zipById = {}, verticalById = {};
   for (const slice of chunk(ids, 100)) {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${slice.join(',')})&select=id,zip`,
+      `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${slice.join(',')})&select=id,zip,vertical_name`,
       { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
-    if (!res.ok) throw new Error(`Zip fetch error ${res.status}: ${await res.text()}`);
-    for (const r of await res.json()) zipById[r.id] = r.zip;
+    if (!res.ok) throw new Error(`Call meta fetch error ${res.status}: ${await res.text()}`);
+    for (const r of await res.json()) { zipById[r.id] = r.zip; verticalById[r.id] = r.vertical_name; }
   }
-  return zipById;
+  return { zipById, verticalById };
 }
 
 // ── Gemini submit / ingest ────────────────────────────────────
@@ -834,7 +841,7 @@ async function ingestSucceededJob(job, data) {
   const inline    = data.response?.inlinedResponses;
   const responses = Array.isArray(inline) ? inline : (inline?.inlinedResponses || []);
 
-  const zipById      = await fetchCallZips(callIds);
+  const { zipById, verticalById } = await fetchCallMeta(callIds);
   const duplicateIds = await flagDuplicateCallers(callIds);
 
   let processed = 0, errors = 0;
@@ -849,7 +856,7 @@ async function ingestSucceededJob(job, data) {
       try { parsed = parseModelJson(text); } catch { parsed = null; }
       if (!parsed) { console.error(`  [${callId}] could not parse response`); errors++; continue; }
 
-      await writeResult(callId, buildResultPatch(callId, parsed, zipById[callId], duplicateIds, job.prompt_id, job.model));
+      await writeResult(callId, buildResultPatch(callId, parsed, zipById[callId], duplicateIds, job.prompt_id, job.model, verticalById[callId]));
       processed++;
     } catch (e) { console.error(`  [${callId}] ${e.message}`); errors++; }
   }
@@ -973,6 +980,11 @@ async function run() {
       // geo_mismatch is code-decided: caller's spoken zip vs the Canoe zip.
       if (isGeoMismatch(call.zip, stated_zip) && !flags.includes('geo_mismatch')) {
         flags.push('geo_mismatch');
+      }
+
+      // Transfer verticals expect an outbound dial — strip that noise flag.
+      if (isTransferVertical(call.vertical_name)) {
+        flags = flags.filter(f => f !== 'outbound_dial');
       }
 
       const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
