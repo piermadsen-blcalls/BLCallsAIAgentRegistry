@@ -272,4 +272,9 @@ Continued from the 8/7 Scores work; large session. What moved:
   fetches `vertical_name`; runBatch `verticalById` map). One-time migration `032` stripped
   it from **99** already-scored transfer calls (now 0). `alert.js` unchanged — it reads
   `flags` straight from the row, so cleaned data drops it from emails automatically.
+- **Removed the Verticals + Dispositions filters from the Calls toolbar** (deemed
+  useless). Surgical: kept the shared vertical helpers (`loadVerticals`/`buildVerticalOptions`/
+  `populateVerticalDropdowns` — Insights still uses them); dropped only the Calls-specific
+  dropdowns, the `crVertical*` fns, `crVerticalFilter`, `cr-dispo-filter`, and their
+  `crBuildFilters` lines. Table columns unchanged.
 - External sources (Granola/Jira) not pulled this session.

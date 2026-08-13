@@ -856,27 +856,6 @@
           </button>
           <div class="drp-popover" id="cr-drp-popover"></div>
         </div>
-        <!-- Vertical -->
-        <div class="ins-vertical-wrap" id="cr-vertical-wrap">
-          <button class="ins-vertical-trigger" onclick="crVerticalToggle(event)">
-            <span id="cr-vertical-label">All verticals</span>
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </button>
-          <div class="ins-vertical-popover" id="cr-vertical-popover">
-            <label class="ins-vertical-opt"><input type="checkbox" value="all" checked onchange="crVerticalAll(this)"><span>All verticals</span></label>
-            <label class="ins-vertical-opt"><input type="checkbox" value="Home Services" onchange="crVerticalChange()"><span>Home Services</span></label>
-            <label class="ins-vertical-opt"><input type="checkbox" value="Insurance" onchange="crVerticalChange()"><span>Insurance</span></label>
-            <label class="ins-vertical-opt"><input type="checkbox" value="Legal" onchange="crVerticalChange()"><span>Legal</span></label>
-            <label class="ins-vertical-opt"><input type="checkbox" value="Financial" onchange="crVerticalChange()"><span>Financial</span></label>
-            <label class="ins-vertical-opt"><input type="checkbox" value="Other" onchange="crVerticalChange()"><span>Other</span></label>
-          </div>
-        </div>
-        <!-- Disposition -->
-        <select class="cr-select" id="cr-dispo-filter">
-          <option value="">All dispositions</option>
-          <option value="Connected">Connected</option>
-          <option value="Rejected">Rejected</option>
-        </select>
         <!-- Has recording -->
         <select class="cr-select" id="cr-rec-filter">
           <option value="">All calls</option>
@@ -1541,8 +1520,6 @@ function buildVerticalOptions(allCb, changeFn) {
 function populateVerticalDropdowns() {
   const insPop = document.getElementById('ins-vertical-popover');
   if (insPop) insPop.innerHTML = buildVerticalOptions('insVerticalAll','insVerticalChange');
-  const crPop = document.getElementById('cr-vertical-popover');
-  if (crPop) crPop.innerHTML = buildVerticalOptions('crVerticalAll','crVerticalChange');
 }
 
 // ─── AGENTS DATE RANGE PICKER ─────────────────────────────────────────────────
@@ -1574,8 +1551,6 @@ document.addEventListener('click', e => {
   });
   const vwrap = document.getElementById('ins-vertical-wrap');
   if (vwrap && !vwrap.contains(e.target)) document.getElementById('ins-vertical-popover')?.classList.remove('open');
-  const crVWrap = document.getElementById('cr-vertical-wrap');
-  if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
   const crDWrap = document.getElementById('cr-drp-wrap');
   if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
   const crCpWrap = document.getElementById('cr-colpicker-wrap');
@@ -1958,7 +1933,6 @@ function insExpandContent(r,pA,pB){
 
 // ─── CALL REPORTING TAB ───────────────────────────────────────────────────────
 let crDrpViewYear, crDrpViewMonth, crDrpPickStart=null, crDrpPickEnd=null, crDrpSelecting=false;
-let crVerticalFilter = [];
 let crRows = [], crOffset = 0, crPageSize = 25, crHasMore = false, crTotal = 0;
 let crSortCol = 'created_at', crSortDir = -1;
 
@@ -2032,10 +2006,6 @@ function crDrpClickDay(iso){if(!crDrpPickStart||!crDrpSelecting){crDrpPickStart=
 function crDrpApply(){if(!crDrpPickStart||!crDrpPickEnd)return;document.getElementById('cr-drp-label').textContent=fmtShortD(crDrpPickStart)+' – '+fmtShortD(crDrpPickEnd);document.getElementById('cr-drp-popover').classList.remove('open');}
 
 // Vertical filter
-function crVerticalToggle(e) { e.stopPropagation(); document.getElementById('cr-vertical-popover').classList.toggle('open'); }
-function crVerticalAll(cb) { document.getElementById('cr-vertical-popover').querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=cb.checked); crVerticalUpdateLabel(); }
-function crVerticalChange() { const pop=document.getElementById('cr-vertical-popover'); const allCb=pop.querySelector('input[value="all"]'); allCb.checked=[...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].every(c=>c.checked); crVerticalUpdateLabel(); }
-function crVerticalUpdateLabel() { const pop=document.getElementById('cr-vertical-popover'); const allCb=pop.querySelector('input[value="all"]'); const sel=[...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].filter(c=>c.checked).map(c=>c.value); crVerticalFilter=sel; const lbl=document.getElementById('cr-vertical-label'); if(allCb.checked||sel.length===0){lbl.textContent='All verticals';crVerticalFilter=[];}else if(sel.length===1)lbl.textContent=sel[0];else lbl.textContent=sel.length+' verticals'; }
 
 // Format helpers
 function crFmtDuration(secs) { if (!secs) return '—'; const m=Math.floor(secs/60),s=secs%60; return m+'m '+String(s).padStart(2,'0')+'s'; }
@@ -2049,9 +2019,6 @@ function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();
 // meaningful ratio (flag rate over the scope, not forced to 100% when drilling in).
 function crBuildFilters(includeFlagFilters = true) {
   let q = `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
-  if (crVerticalFilter.length > 0) q += `&or=(${crVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`;
-  const dispo = document.getElementById('cr-dispo-filter').value;
-  if (dispo) q += `&disposition=eq.${encodeURIComponent(dispo)}`;
   const rec = document.getElementById('cr-rec-filter').value;
   if (rec === 'yes') q += `&recording_url=not.is.null`;
   else if (rec === 'no') q += `&recording_url=is.null`;
