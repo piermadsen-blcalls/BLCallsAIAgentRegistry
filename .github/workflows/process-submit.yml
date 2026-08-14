@@ -2,12 +2,18 @@ name: Submit Gemini Batch
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # daily 03:00 UTC (3hrs after the 00:00 sync)
+    # 3 spaced runs/day = up to 3000 calls, but only ~1000 ever enqueued at once
+    # (the every-6h ingest drains each batch before the next submit fires) so we
+    # stay under the AI Studio batch ceiling. Collapse to one run + a larger
+    # BATCH_SIZE once the expanded quota lands.
+    - cron: '0 3 * * *'   # 03:00 UTC (3hrs after the 00:00 sync); ingest at 06:00
+    - cron: '0 11 * * *'  # 11:00 UTC; ingest at 12:00
+    - cron: '0 19 * * *'  # 19:00 UTC; ingest at 18:00/00:00
   workflow_dispatch:
     inputs:
       backfill_days:
-        description: 'Only submit unprocessed calls newer than N days (0 = all unprocessed). Use 30 for the one-off backfill.'
-        default: '0'
+        description: 'Only submit unprocessed calls newer than N days (0 = all unprocessed, reaches back into old history). Default 30 keeps the nightly run current. Raise (e.g. 60) or set 0 for a deliberate bulk backfill.'
+        default: '30'
       batch_size:
         description: 'Max calls to pull this run (fanned into GEMINI_CHUNK-sized jobs). Raise for backfill.'
         default: '1000'
@@ -32,7 +38,7 @@ jobs:
           GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
           AI_MODEL:             'gemini-3.6-flash'
           BATCH_ACTION:         'submit'
-          BACKFILL_DAYS:        ${{ github.event.inputs.backfill_days || '0' }}
+          BACKFILL_DAYS:        ${{ github.event.inputs.backfill_days || '30' }}
           BATCH_SIZE:           ${{ github.event.inputs.batch_size || '1000' }}
           DRY_RUN:              ${{ github.event.inputs.dry_run || 'false' }}
         run: node scripts/process.js
