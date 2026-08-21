@@ -841,10 +841,11 @@
 
   <!-- CALL REPORTING TAB -->
   <div id="tab-calls" class="tab-pane">
-    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px;grid-template-columns:repeat(3,1fr)">
+    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px;grid-template-columns:repeat(4,1fr)">
       <div class="summary-item"><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
       <div class="summary-item" style="position:relative" onmouseenter="callsFlagBreakdown()" onmouseleave="callsFlagBreakdownHide()"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div><div id="calls-flag-breakdown" class="flag-tip" style="display:none"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate">—</div><div class="summary-lbl">flag rate</div></div>
+      <div class="summary-item"><div class="summary-val" id="calls-stat-revenue">—</div><div class="summary-lbl">revenue (filtered)</div></div>
     </div>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left">
@@ -2245,8 +2246,8 @@ async function callsLoadStats() {
   flagBreakdownKey = null;  // scope may have changed — recompute the hover breakdown on next hover
   try {
     const filters = crBuildFilters(false);  // ignore flag drill-downs so flag rate stays a real ratio
+    const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
     const countOf = async (extra) => {
-      const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
       const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${filters}${extra}`, {
         headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' }
       });
@@ -2254,15 +2255,31 @@ async function callsLoadStats() {
       const cr = res.headers.get('Content-Range') || '';
       return parseInt(cr.split('/')[1], 10) || 0;
     };
-    const [total, flagged] = await Promise.all([
+    // Revenue sum matches the TABLE scope (flag drill-downs included), not the AI-processed
+    // strip scope — it's a business total for exactly the rows the table is showing. One
+    // parallel aggregate request returning a single number, so no added page latency.
+    // Requires the project's aggregate functions to be enabled; if not, this rejects and
+    // the card falls back to "—" without breaking the strip.
+    const sumRevenue = async () => {
+      const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=advertiser_payin.sum()${crBuildFilters(true)}`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`Supabase ${res.status}`);
+      const rows = await res.json();
+      const row = rows && rows[0];
+      return row ? Number(Object.values(row)[0]) || 0 : 0;
+    };
+    const [total, flagged, revenue] = await Promise.all([
       countOf('&ai_processed_at=not.is.null'),
       countOf(`&ai_processed_at=not.is.null&flags=neq.${encodeURIComponent('[]')}`),
+      sumRevenue().catch(e => { console.warn('revenue sum:', e.message); return null; }),
     ]);
     const rate = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
     const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('calls-stat-total',   total.toLocaleString());
     set('calls-stat-flagged', flagged.toLocaleString());
     set('calls-stat-rate',    rate);
+    set('calls-stat-revenue', revenue == null ? '—' : '$' + Math.round(revenue).toLocaleString());
   } catch(e) { console.warn('callsLoadStats:', e.message); }
 }
 

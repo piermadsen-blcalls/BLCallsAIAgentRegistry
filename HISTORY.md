@@ -285,3 +285,45 @@ Continued from the 8/7 Scores work; large session. What moved:
   underlying `n` already came from `outcome_score_vectors`.
 - **Alert digest rescheduled to Mon + Thu 16:00 UTC** (was 14:00; CLAUDE.md was also mislabeled Mon/Wed/Fri, fixed). Added `ALERT_ALL_MANAGERS` (preview-only, requires `override_email`) to preview EVERY manager with accounts regardless of the enabled flag. Sent Pier 8 per-AM previews. Note: only Matt Fu currently has alerts enabled; today's real 14:00 digest fired ~55min late at 14:55.
 - External sources (Granola/Jira) not pulled this session.
+
+### 2026-08-14 (Pier) — keep Gemini scoring current
+- **Diagnosed "lots of yesterday's calls have no outcome."** The nightly pipeline itself
+  is healthy (Submit 03:00 → Ingest every 6h, 0 errors), but submit is `created_at.asc`
+  (oldest-first) capped at 1000/run. With ~44k June + ~12k July unprocessed rows (history
+  synced but never scored) sitting at the front of the queue, each run spent its whole
+  budget on **June** and starved the current day — Aug 13 had 1,607 transcribed calls but
+  only 11 scored. Recent window was otherwise fine (last-30-days = ~2.3k unprocessed, and
+  Aug 6–12 all cleared to <65). Transcript-less calls are already excluded; ~36% of the
+  pool is sub-20-word fragments (`MIN_TRANSCRIPT_WORDS` guard exists but is off).
+- **Fix (PR #2, merged `a40e94c`):** `process-submit.yml` now defaults `BACKFILL_DAYS=30`
+  so `fetchUnprocessed` queries `created_at >= now-30d` and never grabs older-than-window
+  history; and runs **3× spaced/day** (03:00 / 11:00 / 19:00 UTC) for up to 3000 calls/day,
+  with the every-6h ingest draining each batch before the next submit so only ~1000 is
+  ever enqueued at Gemini at once (stays under the current AI Studio batch ceiling).
+- **Kicked one manual Submit** (`backfill_days=30`) to start clearing Aug 13 immediately —
+  submitted 1000 recent calls (2×500), confirmed it targeted the window not June.
+- **Next / follow-ups:** collapse back to one run + larger `BATCH_SIZE` once AI Studio
+  expands the batch quota (~2 days out); optionally set `MIN_TRANSCRIPT_WORDS=12` to skip
+  fragment calls. External sources (Granola/Jira) not pulled this session.
+
+## Week of Aug 17, 2026
+
+### 2026-08-21 (Pier) — filtered revenue total on the Calls tab
+- **Added a 4th summary card "revenue (filtered)"** to the Calls tab strip (grid 3→4),
+  showing `SUM(advertiser_payin)` over exactly the rows matching the current filters.
+- **How:** extended `callsLoadStats()` with a third parallel request alongside the two
+  existing count queries — scoped via `crBuildFilters(true)` so it matches the TABLE
+  (flag drill-downs included), not the AI-processed strip scope. One aggregate request
+  returning a single number → no added page latency (piggybacks the existing fast
+  count-only pattern). Falls back to "—" (caught) if the request fails, so the strip
+  never breaks.
+- **Constraint hit:** PostgREST built-in aggregates are **disabled** on the project
+  (`PGRST123` confirmed live). Chose to enable aggregates over an RPC (least code, no
+  filter-logic duplication, self-correcting as filters evolve; RLS already lets clients
+  read+sum these rows so exposure delta is ~nil).
+- **Manual step still pending on Pier:** Supabase Dashboard → Project Settings → API →
+  enable aggregate functions. Until then the card shows "—".
+- Walked the options via a Lavish review artifact (`.lavish/revenue-sum.html`); Pier
+  picked the recommended combo (enable aggregates → 4th card).
+- **Pushed live to `main`** (Netlify auto-publish). External sources (Granola/Jira) not
+  pulled this session.
