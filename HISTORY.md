@@ -309,7 +309,7 @@ Continued from the 8/7 Scores work; large session. What moved:
 ## Week of Aug 17, 2026
 
 ### 2026-08-21 (Pier) — filtered revenue total on the Calls tab
-- **Added a 4th summary card "revenue (filtered)"** to the Calls tab strip (grid 3→4),
+- **Added a 4th summary card "revenue"** to the Calls tab strip (grid 3→4),
   showing `SUM(advertiser_payin)` over exactly the rows matching the current filters.
 - **How:** extended `callsLoadStats()` with a third parallel request alongside the two
   existing count queries — scoped via `crBuildFilters(true)` so it matches the TABLE
