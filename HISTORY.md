@@ -381,5 +381,17 @@ Continued from the 8/7 Scores work; large session. What moved:
   30 days. One reviewer per agent → new `agent_review_assignments` table (ivr_name PK →
   `account_managers`), inline assign dropdown, RLS mirrors `account_manager_assignments`.
   Board degrades gracefully if `035` isn't applied yet (everything reads Unassigned).
-- **Next:** apply migration `035`; once ASCND populates `hl_call_data.intent`, run the 30-day
-  intent backfill. External sources (Granola/Jira) not pulled this session.
+- **Review is now ASCND-only.** Transcript reads `ascnd_transcript` only (was falling back to
+  Canoe's `transcription`); the call list filters `ascnd_transcript=not.is.null` so only calls
+  with an AI-agent transcript show.
+- **Ingestion diagnosis (from the real GHL webhook payload).** `hl_call_data` is fed by a
+  GoHighLevel workflow ("Update Supabase with Call Data") writing its `customData` envelope.
+  Live: `ai_agent_phone_number` is in the payload+populated but **not mapped** to the column
+  (DB has 0); `transcript` isn't in customData at all (the AI transcript is the top-level
+  "Voice AI Transcript" — only 257/93k rows have any transcript, 3/3348 recently); `intent`
+  is in customData but **empty at source** (ASCND only fills it when the call is passed back
+  to Canoe). Fix is in the GHL workflow's Supabase step: map `ai_agent_phone_number`,
+  `transcript`←"Voice AI Transcript", `intent`. Backfill of transcript+agent-phone is possible
+  from a 30-day CSV/replay; intent can't be backfilled (never stored).
+- **Next:** apply migration `035` (done); GHL workflow field mapping fix (Pier, external);
+  then 30-day transcript/agent-phone backfill. External sources (Granola/Jira) not pulled.

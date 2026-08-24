@@ -2586,8 +2586,9 @@ async function loadReviewCalls(reset){
   if(RV.done) return;
   RV.loading=true;
   const PAGE=100;
-  const sel='id,created_at,publisher_name,advertiser_name,ivr_name,vertical_name,ivr_duration,disposition,disposition_description,intent,ai_agent_phone_number,our_outcome,our_summary,flags,recording_url,ascnd_recording_url,transcription,ascnd_transcript,called_from';
-  const path=`canoe_calls?select=${sel}&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&is_test=not.is.true&order=created_at.desc`;
+  const sel='id,created_at,publisher_name,advertiser_name,ivr_name,vertical_name,ivr_duration,disposition,disposition_description,intent,ai_agent_phone_number,our_outcome,our_summary,flags,recording_url,ascnd_recording_url,ascnd_transcript,called_from';
+  // Review is ASCND-only: show a call only when it has an AI-agent (ASCND) transcript.
+  const path=`canoe_calls?select=${sel}&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null&order=created_at.desc`;
   try{
     const batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${RV.offset}-${RV.offset+PAGE-1}`}})||[];
     RV.calls=RV.calls.concat(batch);
@@ -2623,7 +2624,7 @@ function renderReviewWorkspace(){
     <div class="rv-perf" id="rv-perf"></div>
     <div class="rv-cols">
       <div class="rv-panel">
-        <div class="rv-panel-head"><span class="t">Calls through this agent</span><span class="n" id="rv-count">loading…</span></div>
+        <div class="rv-panel-head"><span class="t">AI calls · ASCND transcript</span><span class="n" id="rv-count">loading…</span></div>
         <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
       </div>
       <div class="rv-panel">
@@ -2674,7 +2675,7 @@ function updateSaveEnabled(){
 
 function renderReviewCalls(){
   const box=document.getElementById('rv-calls'); if(!box) return;
-  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':'No calls in this window yet.')+'</div>'; }
+  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
   else {
     box.innerHTML=RV.calls.map((c,i)=>reviewCallRow(c,i)).join('')+
       (RV.done?'':`<div style="padding:12px 16px"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
@@ -2691,7 +2692,7 @@ function reviewCallRow(c,i){
   const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:(c.our_summary?`<div class="rv-call-desc">${esc(c.our_summary)}</div>`:'');
   const rec=c.recording_url||c.ascnd_recording_url;
   const reviewed=RV.reviewedSet.has(c.id);
-  const tx=(c.transcription||c.ascnd_transcript||'').trim();
+  const tx=(c.ascnd_transcript||'').trim();
   return `<div class="rv-call">
     <div class="rv-call-top"><span class="rv-route" title="${esc(route)}">${esc(route)}</span><span class="rv-date">${fmtDateTime(c.created_at)}</span></div>
     <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${disp}${intent}${outcome}${flags}</div>
