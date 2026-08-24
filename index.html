@@ -508,6 +508,87 @@
   .s-acct-tab:last-child { border-right:none; }
   .s-acct-tab.active { background:var(--brand-navy); color:white; }
   .s-acct-tab:hover:not(.active) { background:var(--bg); }
+
+  /* REVIEW TAB */
+  .rv-pick-intro { font-size:13px; color:var(--text-2); margin-bottom:16px; }
+  .rv-pick-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+  .rv-pick-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; cursor:pointer; transition:border-color .15s, box-shadow .15s; min-width:0; }
+  .rv-pick-card:hover { border-color:var(--brand-mint); box-shadow:0 4px 14px -8px rgba(26,46,74,.3); }
+  .rv-pick-name { font-size:14px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rv-pick-meta { font-size:11px; color:var(--text-3); margin-top:4px; display:flex; justify-content:space-between; gap:8px; }
+  .rv-pick-reviewed { font-size:10.5px; color:var(--teal); margin-top:8px; }
+  .rv-pick-never { font-size:10.5px; color:var(--amber); margin-top:8px; }
+
+  .rv-back { font-size:12px; color:var(--text-2); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 11px; cursor:pointer; margin-bottom:16px; }
+  .rv-back:hover { border-color:var(--text); color:var(--text); }
+  .rv-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .rv-title { font-family:var(--serif); font-size:26px; line-height:1.15; }
+  .rv-sub { font-size:12px; color:var(--text-2); margin-top:2px; }
+  .rv-head-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .rv-controls { display:flex; gap:8px; flex-wrap:wrap; }
+  .rv-syncbtn, .rv-logbtn { background:var(--surface); border:1px solid var(--border-strong); color:var(--brand-navy); border-radius:var(--radius-sm); padding:6px 12px; font-size:11.5px; font-weight:500; font-family:var(--sans); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .rv-syncbtn:hover, .rv-logbtn:hover { border-color:var(--brand-navy); }
+  .rv-window { font-size:11px; color:var(--text-2); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .rv-window input[type=date] { font-family:var(--mono); font-size:11px; border:1px solid var(--border); border-radius:4px; padding:2px 6px; color:var(--text); }
+  .rv-sync-status { font-size:11px; }
+
+  .rv-perf { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; margin-bottom:16px; }
+  @media (max-width:640px){ .rv-perf { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  .rv-perf-item { background:var(--surface); padding:12px 10px; text-align:center; min-width:0; }
+  .rv-perf-item.kpi { background:var(--brand-mint-bg); }
+  .rv-perf-val { font-family:var(--serif); font-size:22px; color:var(--text); line-height:1.18; }
+  .rv-perf-item.kpi .rv-perf-val { color:var(--teal); }
+  .rv-perf-lbl { font-size:9.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--text-3); margin-top:5px; }
+  .rv-perf-item.kpi .rv-perf-lbl { color:var(--teal); font-weight:600; }
+
+  .rv-cols { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:16px; align-items:start; }
+  @media (max-width:860px){ .rv-cols { grid-template-columns:1fr; } }
+  .rv-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .rv-panel-head { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .rv-panel-head .t { font-size:10px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--text-3); }
+  .rv-panel-head .n { font-family:var(--mono); font-size:11px; color:var(--text-3); }
+  .rv-list { max-height:70vh; overflow-y:auto; }
+  .rv-list::-webkit-scrollbar { width:5px; } .rv-list::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:3px; }
+
+  .rv-call { padding:13px 16px; border-bottom:1px solid var(--border); min-width:0; }
+  .rv-call:last-child { border-bottom:none; }
+  .rv-call-top { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+  .rv-route { font-size:12.5px; font-weight:600; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rv-date { font-family:var(--mono); font-size:10.5px; color:var(--text-3); white-space:nowrap; flex-shrink:0; }
+  .rv-meta { display:flex; flex-wrap:wrap; gap:6px 8px; margin-top:6px; align-items:center; }
+  .rv-chip { font-size:10.5px; padding:2px 8px; border-radius:100px; background:var(--gray-bg); color:var(--text-2); white-space:nowrap; }
+  .rv-chip.disp { background:var(--blue-bg); color:var(--blue); font-weight:500; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  .rv-chip.intent { background:var(--purple-bg); color:var(--purple); font-weight:500; }
+  .rv-call-desc { font-size:11.5px; color:var(--text-2); margin-top:7px; font-style:italic; }
+  .rv-actions { display:flex; gap:8px; margin-top:9px; flex-wrap:wrap; align-items:center; }
+  .rv-btn { font-size:10.5px; font-weight:500; color:var(--brand-navy); border:1px solid var(--border-strong); background:var(--surface); border-radius:var(--radius-sm); padding:3px 9px; cursor:pointer; font-family:var(--sans); }
+  .rv-btn:hover { border-color:var(--brand-navy); }
+  .rv-check { font-size:10.5px; color:var(--text-2); display:inline-flex; align-items:center; gap:5px; margin-left:auto; cursor:pointer; user-select:none; }
+  .rv-check.on { color:var(--teal); font-weight:600; }
+  .rv-transcript { margin-top:9px; background:var(--bg); border-radius:var(--radius-sm); padding:11px 13px; font-size:11.5px; line-height:1.7; color:var(--text-2); white-space:pre-wrap; max-height:280px; overflow-y:auto; }
+  .rv-note-in { width:100%; margin-top:8px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; font-family:var(--sans); font-size:12px; background:var(--bg); resize:vertical; min-height:38px; }
+
+  .rv-form { padding:16px; display:flex; flex-direction:column; gap:18px; position:sticky; top:12px; }
+  @media (max-width:860px){ .rv-form { position:static; } }
+  .rv-q-label { font-size:12.5px; font-weight:600; color:var(--text); display:block; margin-bottom:7px; }
+  .rv-q-label .req { color:var(--coral); margin-left:3px; }
+  .rv-q-hint { font-size:11px; color:var(--text-3); font-weight:400; }
+  .rv-seg { display:inline-flex; border:1px solid var(--border-strong); border-radius:var(--radius-sm); overflow:hidden; }
+  .rv-seg button { font-size:11.5px; padding:5px 12px; color:var(--text-2); border:none; border-right:1px solid var(--border); background:var(--surface); cursor:pointer; font-family:var(--sans); }
+  .rv-seg button:last-child { border-right:none; }
+  .rv-seg button.on { background:var(--brand-navy); color:#fff; font-weight:500; }
+  .rv-seg button.on.pos { background:var(--teal); } .rv-seg button.on.neg { background:var(--coral); } .rv-seg button.on.amb { background:var(--amber); }
+  .rv-ta { width:100%; margin-top:8px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 11px; font-family:var(--sans); font-size:12px; color:var(--text); resize:vertical; min-height:44px; background:var(--bg); }
+  .rv-apply { background:var(--brand-mint-bg); border:1px solid #A6E9D5; border-radius:var(--radius-sm); padding:11px 13px; }
+  .rv-apply .rv-q-label { color:var(--teal); }
+  .rv-apply .rv-ta { background:var(--surface); }
+  .rv-apply .rv-chk { font-size:11px; color:var(--teal); display:flex; align-items:center; gap:6px; margin-top:9px; font-weight:500; cursor:pointer; }
+  .rv-save-row { display:flex; gap:10px; align-items:center; padding-top:14px; border-top:1px solid var(--border); flex-wrap:wrap; }
+  .rv-save { background:var(--brand-navy); color:#fff; border:none; border-radius:var(--radius-sm); padding:9px 18px; font-size:12.5px; font-weight:500; font-family:var(--sans); cursor:pointer; }
+  .rv-save:hover { background:#24406b; } .rv-save:disabled { opacity:.5; cursor:not-allowed; }
+  .rv-save-msg { font-size:11.5px; }
+  .rv-history { margin-top:18px; font-size:11px; color:var(--text-3); }
+  .rv-history-item { padding:8px 0; border-top:1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -711,6 +792,7 @@
     <button class="nav-tab active" onclick="switchTab('agents',this)">Agents</button>
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('calls',this)">Calls</button>
+    <button class="nav-tab" onclick="switchTab('review',this)">Review</button>
     <button class="nav-tab" onclick="switchTab('scores',this)">Scores</button>
     <button class="nav-tab" onclick="switchTab('settings',this)">Settings</button>
   </div>
@@ -1157,6 +1239,11 @@
     </div>
   </div>
 
+  <!-- REVIEW TAB -->
+  <div id="tab-review" class="tab-pane">
+    <div id="review-root"><div class="empty">Loading agents…</div></div>
+  </div>
+
   <div class="page-footer">
     <div class="footer-note" id="last-updated">Loading data...</div>
     <div class="footer-right">
@@ -1211,6 +1298,7 @@ function switchTab(id, el) {
   const pane = document.getElementById('tab-' + id);
   if (pane) pane.classList.add('active');
   if (id === 'calls') crAutoLoad();
+  if (id === 'review') reviewInit();
   if (id === 'scores') scoresInit();
   if (id === 'settings') ensureCompliance();
   if (!_suppressRoute) history.pushState({ tab: id }, '', '?tab=' + id);
@@ -2337,6 +2425,371 @@ async function syncHlData(btn){
   }
   btn.disabled=false; btn.textContent='sync ASCND data';
 }
+
+// ─── REVIEW TAB ───────────────────────────────────────────────────────────────
+// Agent-by-agent review: read the calls that went through an agent, answer four
+// required questions, save a dated review. Each review is windowed to "calls since
+// the last logged change" so you only ever grade the current version of the agent.
+// Reuses agent_metrics (perf), aliasesForAgent (call gathering), outcomeBadge/
+// flagBadges, and the sync_hl_to_canoe_calls RPC. New tables: agent_reviews, call_reviews,
+// agent_changes (migration 033).
+let RV = null;   // current review session ({agent, ivrs, calls, windowStart, ...}) or null at the picker
+
+function cssId(s){ return String(s||'').replace(/[^a-z0-9]/gi,'_'); }
+function jsStr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function fmtDateTime(iso){ const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+function ivrQuery(ivrs){ const list='in.('+ivrs.map(v=>'"'+String(v).replace(/"/g,'\\"')+'"').join(',')+')'; return 'ivr_name='+encodeURIComponent(list); }
+
+function reviewInit(){
+  const root=document.getElementById('review-root');
+  if(!AGENTS.length){ root.innerHTML='<div class="empty">No agents loaded yet — open the Agents tab first.</div>'; return; }
+  if(RV) return;   // keep the open session when re-entering the tab
+  renderReviewPicker();
+}
+
+function renderReviewPicker(){
+  RV=null;
+  const root=document.getElementById('review-root');
+  const agents=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test').sort((a,b)=>(b.raw_calls||0)-(a.raw_calls||0));
+  root.innerHTML=
+    '<div class="rv-pick-intro">Pick an agent to review its calls and record an assessment. Each review covers calls since the agent was last changed.</div>'+
+    '<div class="rv-pick-grid">'+
+      agents.map(a=>`
+        <div class="rv-pick-card" onclick="openReview('${jsStr(a.ivrName)}')">
+          <div class="rv-pick-name" title="${esc(a.name)}">${esc(a.name)}</div>
+          <div class="rv-pick-meta"><span>${esc(a.vertical||'')}</span><span>${(a.raw_calls||0).toLocaleString()} calls</span></div>
+          <div class="rv-pick-reviewed" id="rv-lr-${cssId(a.ivrName)}">…</div>
+        </div>`).join('')+
+    '</div>';
+  loadLastReviewedLabels(agents);
+}
+
+async function loadLastReviewedLabels(agents){
+  let rows=[];
+  try{ rows=await sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=2000')||[]; }
+  catch(e){ console.warn('agent_reviews labels:',e.message); agents.forEach(a=>{const el=document.getElementById('rv-lr-'+cssId(a.ivrName)); if(el) el.textContent='';}); return; }
+  const latest={};
+  for(const r of rows){ const k=resolveIvrName(r.ivr_name); if(!latest[k]) latest[k]=r.created_at; }
+  for(const a of agents){
+    const el=document.getElementById('rv-lr-'+cssId(a.ivrName)); if(!el) continue;
+    if(latest[a.ivrName]){ el.className='rv-pick-reviewed'; el.textContent='Last reviewed '+fmtDate(new Date(latest[a.ivrName])); }
+    else { el.className='rv-pick-never'; el.textContent='Never reviewed'; }
+  }
+}
+
+async function openReview(ivrName){
+  const agent=AGENTS.find(a=>a.ivrName===ivrName);
+  if(!agent) return;
+  RV={ agent, ivrs:[agent.ivrName,...aliasesForAgent(agent.ivrName)], calls:[], offset:0, done:false, loading:false, syncing:false, windowStart:null, reviewedSet:new Set(), metrics:null, answers:{} };
+  document.getElementById('review-root').innerHTML='<div class="empty">Loading review…</div>';
+  RV.windowStart=await resolveReviewWindow(RV.ivrs);
+  renderReviewWorkspace();
+  await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
+}
+
+// period_start = latest logged change → else last review's period_end → else 30d ago.
+async function resolveReviewWindow(ivrs){
+  try{ const ch=await sbFetch(`agent_changes?select=applied_at&${ivrQuery(ivrs)}&order=applied_at.desc&limit=1`); if(ch&&ch.length&&ch[0].applied_at) return new Date(ch[0].applied_at); }catch(e){ console.warn('agent_changes:',e.message); }
+  try{ const rv=await sbFetch(`agent_reviews?select=period_end,created_at&${ivrQuery(ivrs)}&order=created_at.desc&limit=1`); if(rv&&rv.length&&rv[0].period_end) return new Date(rv[0].period_end); }catch(e){ console.warn('agent_reviews window:',e.message); }
+  const d=new Date(); d.setDate(d.getDate()-30); return d;
+}
+
+async function loadReviewMetrics(){
+  const fromTs=RV.windowStart.toISOString(), toTs=new Date().toISOString();
+  let raw=0,paid=0,revenue=0;
+  try{
+    const rows=await sbFetch('rpc/agent_metrics',{method:'POST',body:JSON.stringify({from_ts:fromTs,to_ts:toTs})})||[];
+    const canon=RV.agent.ivrName;
+    for(const r of rows){ if(resolveIvrName(r.ivr_name)===canon){ raw+=Number(r.raw||0); paid+=Number(r.paid||0); revenue+=Number(r.revenue||0); } }
+  }catch(e){ console.warn('review metrics:',e.message); }
+  RV.metrics={raw,paid,revenue};
+  updateReviewPerf();
+}
+
+async function loadReviewedSet(){
+  RV.reviewedSet=new Set();
+  try{
+    const rows=await sbFetch(`call_reviews?select=call_id&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&limit=5000`)||[];
+    rows.forEach(r=>RV.reviewedSet.add(r.call_id));
+  }catch(e){ console.warn('call_reviews:',e.message); }
+  updateReviewPerf();
+  renderReviewCalls();
+}
+
+async function loadReviewCalls(reset){
+  if(RV.loading) return;
+  if(reset){ RV.calls=[]; RV.offset=0; RV.done=false; }
+  if(RV.done) return;
+  RV.loading=true;
+  const PAGE=100;
+  const sel='id,created_at,publisher_name,advertiser_name,ivr_name,vertical_name,ivr_duration,disposition,disposition_description,intent,ai_agent_phone_number,our_outcome,our_summary,flags,recording_url,ascnd_recording_url,transcription,ascnd_transcript,called_from';
+  const path=`canoe_calls?select=${sel}&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&is_test=not.is.true&order=created_at.desc`;
+  try{
+    const batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${RV.offset}-${RV.offset+PAGE-1}`}})||[];
+    RV.calls=RV.calls.concat(batch);
+    RV.offset+=batch.length;
+    if(batch.length<PAGE) RV.done=true;
+  }catch(e){
+    console.warn('review calls:',e.message);
+    const box=document.getElementById('rv-calls'); if(box) box.innerHTML=`<div class="empty" style="padding:24px">Could not load calls: ${esc(e.message)}</div>`;
+    RV.loading=false; return;
+  }
+  RV.loading=false;
+  renderReviewCalls();
+}
+
+function renderReviewWorkspace(){
+  const a=RV.agent;
+  const aliasNote=RV.ivrs.length>1?` · ${RV.ivrs.length} IVR names`:'';
+  document.getElementById('review-root').innerHTML=`
+    <button class="rv-back" onclick="renderReviewPicker()">← All agents</button>
+    <div class="rv-head">
+      <div style="min-width:0">
+        <div class="rv-title">${esc(a.name)}</div>
+        <div class="rv-sub">${esc(a.vertical||'')} · ${esc(rtLabel(a.routingType))}${aliasNote}</div>
+      </div>
+      <div class="rv-head-right">
+        <div class="rv-controls">
+          <button class="rv-syncbtn" onclick="reviewSync(this)"><span style="width:6px;height:6px;border-radius:50%;background:var(--brand-mint);display:inline-block"></span> Sync ASCND data</button>
+          <button class="rv-logbtn" onclick="reviewLogChange()">＋ Log change</button>
+        </div>
+        <div class="rv-window">Calls since <strong id="rv-window-label">—</strong> <input type="date" id="rv-window-date" onchange="reviewSetWindow(this.value)"> <span class="rv-sync-status" id="rv-sync-status"></span></div>
+      </div>
+    </div>
+    <div class="rv-perf" id="rv-perf"></div>
+    <div class="rv-cols">
+      <div class="rv-panel">
+        <div class="rv-panel-head"><span class="t">Calls through this agent</span><span class="n" id="rv-count">loading…</span></div>
+        <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
+      </div>
+      <div class="rv-panel">
+        <div class="rv-panel-head"><span class="t">Agent review</span><span class="n">required</span></div>
+        ${reviewFormHtml()}
+      </div>
+    </div>`;
+  updateReviewPerf();
+  updateReviewWindowLabel();
+}
+
+function reviewFormHtml(){
+  const seg=(key,opts)=>`<div class="rv-seg">${opts.map(o=>`<button data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
+  return `<div class="rv-form">
+    <div><span class="rv-q-label">1 · Is the agent handling calls properly?<span class="req">*</span></span>
+      ${seg('handling',[{v:'yes',l:'Yes',tone:'pos'},{v:'mostly',l:'Mostly',tone:'amb'},{v:'no',l:'No',tone:'neg'}])}
+      <textarea class="rv-ta" id="rv-note-handling" placeholder="What's working / not…"></textarea></div>
+    <div><span class="rv-q-label">2 · Recurring glitches forming a pattern?<span class="req">*</span></span>
+      ${seg('glitches',[{v:'yes',l:'Yes',tone:'neg'},{v:'no',l:'No',tone:'pos'}])}
+      <textarea class="rv-ta" id="rv-note-glitches" placeholder="Describe the pattern…"></textarea></div>
+    <div><span class="rv-q-label">3 · Redundant questions to remove?<span class="req">*</span></span>
+      ${seg('redundant',[{v:'yes',l:'Yes',tone:'neg'},{v:'no',l:'No',tone:'pos'}])}
+      <textarea class="rv-ta" id="rv-note-redundant" placeholder="Which question(s)…"></textarea></div>
+    <div><span class="rv-q-label">4 · Wording changes to lift CVR?<span class="req">*</span></span>
+      ${seg('cvr',[{v:'yes',l:'Yes',tone:'pos'},{v:'no',l:'No'}])}
+      <textarea class="rv-ta" id="rv-note-cvr" placeholder="Proposed wording…"></textarea></div>
+    <div><span class="rv-q-label">Notes <span class="rv-q-hint">optional</span></span>
+      <textarea class="rv-ta" id="rv-note-general" placeholder="Anything else for the record…"></textarea></div>
+    <div class="rv-apply"><span class="rv-q-label">Changes I'm applying <span class="rv-q-hint">optional</span></span>
+      <textarea class="rv-ta" id="rv-changes" placeholder="e.g. Removed 2nd insurance question; reworded homeowner prompt"></textarea>
+      <label class="rv-chk"><input type="checkbox" id="rv-apply-chk" checked> Mark applied today — next review starts a fresh window from here</label></div>
+    <div class="rv-save-row"><button class="rv-save" id="rv-save-btn" onclick="saveReview()" disabled>Save review</button><span class="rv-save-msg" id="rv-save-msg"></span></div>
+  </div>`;
+}
+
+function rvSeg(key,val,btn){
+  if(!RV) return;
+  RV.answers[key]=val;
+  const seg=btn.parentElement;
+  seg.querySelectorAll('button').forEach(b=>b.className='');
+  btn.classList.add('on'); if(btn.dataset.tone) btn.classList.add(btn.dataset.tone);
+  updateSaveEnabled();
+}
+function updateSaveEnabled(){
+  const ok=RV&&['handling','glitches','redundant','cvr'].every(k=>RV.answers[k]!=null&&RV.answers[k]!=='');
+  const btn=document.getElementById('rv-save-btn'); if(btn) btn.disabled=!ok;
+}
+
+function renderReviewCalls(){
+  const box=document.getElementById('rv-calls'); if(!box) return;
+  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':'No calls in this window yet.')+'</div>'; }
+  else {
+    box.innerHTML=RV.calls.map((c,i)=>reviewCallRow(c,i)).join('')+
+      (RV.done?'':`<div style="padding:12px 16px"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
+  }
+  const cnt=document.getElementById('rv-count'); if(cnt) cnt.textContent=`${RV.calls.length}${RV.done?'':'+'} loaded`;
+}
+
+function reviewCallRow(c,i){
+  const route=[c.publisher_name,c.advertiser_name].filter(Boolean).join(' → ')||'—';
+  const disp=c.disposition?`<span class="rv-chip disp" title="${esc(c.disposition)}">${esc(c.disposition)}</span>`:'';
+  const intent=c.intent?`<span class="rv-chip intent" title="ASCND intent">${esc(c.intent)}</span>`:'';
+  const outcome=c.our_outcome?outcomeBadge(c.our_outcome):'<span class="outcome-badge">—</span>';
+  const flags=flagBadges(c.flags||[]);
+  const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:(c.our_summary?`<div class="rv-call-desc">${esc(c.our_summary)}</div>`:'');
+  const rec=c.recording_url||c.ascnd_recording_url;
+  const reviewed=RV.reviewedSet.has(c.id);
+  const tx=(c.transcription||c.ascnd_transcript||'').trim();
+  return `<div class="rv-call">
+    <div class="rv-call-top"><span class="rv-route" title="${esc(route)}">${esc(route)}</span><span class="rv-date">${fmtDateTime(c.created_at)}</span></div>
+    <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${disp}${intent}${outcome}${flags}</div>
+    ${desc}
+    <div class="rv-actions">
+      <button class="rv-btn" onclick="rvToggleTx(${i})">▸ Transcript</button>
+      ${rec?`<a class="rv-btn" href="${esc(rec)}" target="_blank" rel="noopener">▶ Recording</a>`:''}
+      <button class="rv-btn" onclick="rvShowNote(${i})">✎ Note</button>
+      <span class="rv-check${reviewed?' on':''}" id="rv-chk-${i}" onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${reviewed?'☑ Reviewed':'☐ Mark reviewed'}</span>
+    </div>
+    <div class="rv-transcript" id="rv-tx-${i}" style="display:none">${tx?esc(tx):'No transcript available.'}</div>
+    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…"></textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
+  </div>`;
+}
+
+function rvToggleTx(i){ const el=document.getElementById('rv-tx-'+i); if(el) el.style.display=el.style.display==='none'?'block':'none'; }
+function rvShowNote(i){ const w=document.getElementById('rv-note-wrap-'+i); if(w){ w.style.display=w.style.display==='none'?'block':'none'; if(w.style.display==='block'){ const t=document.getElementById('rv-note-in-'+i); if(t) t.focus(); } } }
+
+async function rvSaveNote(callId,i){
+  const by=getAuthUser(); if(!by){ alert('Log in to save a note.'); return; }
+  const ta=document.getElementById('rv-note-in-'+i); const note=ta?ta.value.trim():'';
+  try{
+    await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,note:note||null,reviewed_at:new Date().toISOString()})});
+    RV.reviewedSet.add(callId);
+    const chk=document.getElementById('rv-chk-'+i); if(chk){ chk.classList.add('on'); chk.innerHTML='☑ Reviewed'; }
+    const w=document.getElementById('rv-note-wrap-'+i); if(w) w.style.display='none';
+    updateReviewPerf();
+  }catch(e){ alert('Could not save note: '+e.message); }
+}
+
+async function toggleCallReviewed(callId,el){
+  const by=getAuthUser(); if(!by){ alert('Log in to mark calls reviewed.'); return; }
+  const on=RV.reviewedSet.has(callId);
+  try{
+    if(on){
+      const res=await fetch(`${SB_URL}/rest/v1/call_reviews?call_id=eq.${encodeURIComponent(callId)}&reviewed_by=eq.${encodeURIComponent(by)}`,{method:'DELETE',headers:authHeaders()});
+      if(!res.ok) throw new Error(`${res.status}`);
+      RV.reviewedSet.delete(callId);
+    } else {
+      await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,reviewed_at:new Date().toISOString()})});
+      RV.reviewedSet.add(callId);
+    }
+    const now=RV.reviewedSet.has(callId);
+    if(el){ el.classList.toggle('on',now); el.innerHTML=now?'☑ Reviewed':'☐ Mark reviewed'; }
+    updateReviewPerf();
+  }catch(e){ alert('Could not update reviewed: '+e.message); }
+}
+
+function updateReviewPerf(){
+  const box=document.getElementById('rv-perf'); if(!box||!RV) return;
+  const m=RV.metrics||{raw:0,paid:0,revenue:0};
+  const tiles=[
+    ['Raw calls',(m.raw||0).toLocaleString()],
+    ['Paid',(m.paid||0).toLocaleString()],
+    ['Conv.',m.raw>0?fmtPct(m.paid,m.raw):'—'],
+    ['Revenue','$'+Math.round(m.revenue||0).toLocaleString()],
+  ];
+  box.innerHTML=tiles.map(t=>`<div class="rv-perf-item"><div class="rv-perf-val">${t[1]}</div><div class="rv-perf-lbl">${t[0]}</div></div>`).join('')+
+    `<div class="rv-perf-item kpi"><div class="rv-perf-val">${RV.reviewedSet.size.toLocaleString()}</div><div class="rv-perf-lbl">Reviewed</div></div>`;
+}
+
+function updateReviewWindowLabel(){
+  if(!RV) return;
+  const el=document.getElementById('rv-window-label'); if(el) el.textContent=fmtDate(RV.windowStart);
+  const inp=document.getElementById('rv-window-date'); if(inp) inp.value=RV.windowStart.toISOString().slice(0,10);
+}
+
+function reviewSetWindow(v){
+  if(!RV||!v) return;
+  const d=new Date(v+'T00:00:00Z'); if(isNaN(d.getTime())) return;
+  RV.windowStart=d;
+  updateReviewWindowLabel();
+  Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
+}
+
+async function reviewSync(btn){
+  if(!RV||RV.syncing) return;
+  RV.syncing=true; const orig=btn.textContent; btn.textContent='Syncing…'; btn.disabled=true;
+  const st=document.getElementById('rv-sync-status'); if(st) st.textContent='';
+  try{
+    // Pair ASCND data onto canoe_calls for the review window (partial index keeps
+    // this cheap; only unpaired ascnd% rows are touched). This is the master-table
+    // function — NOT the legacy no-arg sync_hl_to_calls the footer button calls.
+    const token=(typeof getAuthToken==='function'&&getAuthToken())||SB_KEY;
+    const body=JSON.stringify({ from_ts: RV.windowStart.toISOString(), to_ts: new Date().toISOString() });
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/sync_hl_to_canoe_calls`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body});
+    if(!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const count=await res.json();
+    if(st){ st.style.color='var(--teal)'; st.textContent=`✓ enriched ${Number(count).toLocaleString()} call${count===1?'':'s'}`; }
+    await loadReviewCalls(true);
+  }catch(e){ if(st){ st.style.color='var(--coral)'; st.textContent='sync failed: '+e.message; } }
+  btn.textContent=orig; btn.disabled=false; RV.syncing=false;
+}
+
+async function reviewLogChange(){
+  if(!RV) return;
+  const desc=prompt('Describe the change you applied (e.g. "Removed 2nd insurance question; reworded homeowner prompt"). This sets the start of the next review window:');
+  if(!desc||!desc.trim()) return;
+  const nowISO=new Date().toISOString();
+  try{
+    await sbFetch('agent_changes',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:RV.agent.ivrName,changed_by:getAuthUser(),description:desc.trim(),applied_at:nowISO})});
+    RV.windowStart=new Date(nowISO);
+    updateReviewWindowLabel();
+    await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
+  }catch(e){ alert('Could not log change: '+e.message); }
+}
+
+function reviewFieldVal(id){ const el=document.getElementById(id); const v=el?(el.value||'').trim():''; return v||null; }
+
+async function saveReview(){
+  if(!RV) return;
+  const a=RV.answers;
+  if(['handling','glitches','redundant','cvr'].some(k=>a[k]==null)) return;
+  const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
+  btn.disabled=true; btn.textContent='Saving…';
+  const changesDesc=reviewFieldVal('rv-changes');
+  const markApplied=document.getElementById('rv-apply-chk').checked;
+  const nowISO=new Date().toISOString();
+  let notes=reviewFieldVal('rv-note-general')||'';
+  if(changesDesc&&!markApplied){ notes=(notes?notes+'\n\n':'')+'Planned change (not yet applied): '+changesDesc; }
+  const review={
+    ivr_name:RV.agent.ivrName,
+    reviewed_by:getAuthUser(),
+    period_start:RV.windowStart.toISOString(),
+    period_end:nowISO,
+    handling:a.handling, handling_note:reviewFieldVal('rv-note-handling'),
+    has_glitches:a.glitches==='yes', glitches_note:reviewFieldVal('rv-note-glitches'),
+    redundant_qs:a.redundant==='yes', redundant_note:reviewFieldVal('rv-note-redundant'),
+    cvr_wording:a.cvr==='yes', cvr_note:reviewFieldVal('rv-note-cvr'),
+    notes:notes||null,
+    calls_reviewed:RV.reviewedSet.size,
+  };
+  try{
+    const saved=await sbFetch('agent_reviews',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(review)});
+    const reviewId=saved&&saved[0]&&saved[0].id;
+    if(changesDesc&&markApplied){
+      await sbFetch('agent_changes',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:RV.agent.ivrName,changed_by:getAuthUser(),description:changesDesc,applied_at:nowISO,review_id:reviewId||null})});
+    }
+    msg.style.color='var(--teal)'; msg.textContent='✓ Review saved';
+    btn.textContent='Save review';
+    if(changesDesc&&markApplied){
+      RV.windowStart=new Date(nowISO);
+      resetReviewForm(); updateReviewWindowLabel();
+      await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
+    } else {
+      resetReviewForm();
+    }
+    setTimeout(()=>{ const m=document.getElementById('rv-save-msg'); if(m) m.textContent=''; },4000);
+  }catch(e){
+    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message; btn.disabled=false; btn.textContent='Save review';
+  }
+}
+
+function resetReviewForm(){
+  if(!RV) return;
+  RV.answers={};
+  ['rv-note-handling','rv-note-glitches','rv-note-redundant','rv-note-cvr','rv-note-general','rv-changes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('.rv-seg button').forEach(b=>b.className='');
+  const chk=document.getElementById('rv-apply-chk'); if(chk) chk.checked=true;
+  updateSaveEnabled();
+}
+
 function parseCSV(text){const rows=[];let cur='',row=[],inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(inQ){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=ch;}else{if(ch==='"')inQ=true;else if(ch===','){row.push(cur);cur='';}else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(ch==='\r'){}else cur+=ch;}}if(cur.length>0||row.length>0){row.push(cur);rows.push(row);}return rows;}
 function setupFileUpload(){const drop=document.getElementById('file-drop'),input=document.getElementById('file-input');input.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('dragover');}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('dragover');}));drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});}
 

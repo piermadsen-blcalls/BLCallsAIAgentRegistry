@@ -327,3 +327,50 @@ Continued from the 8/7 Scores work; large session. What moved:
   picked the recommended combo (enable aggregates → 4th card).
 - **Pushed live to `main`** (Netlify auto-publish). External sources (Granola/Jira) not
   pulled this session.
+
+## Week of Aug 24, 2026
+
+### 2026-08-24 (Pier) — Agent Review workspace (AI IVR optimization loop)
+- **New "Review" tab** (`index.html`, between Calls and Scores) — a per-agent review
+  surface. Pick an agent → read the calls that ran through it (route, disposition +
+  description, single `our_outcome` badge, flags, transcript, recording) → answer four
+  required questions (handling / recurring glitches / redundant questions / CVR wording) +
+  free notes → save a dated review. Reuses `agent_metrics` (perf strip), `aliasesForAgent`
+  (calls gathered across canonical + aliases), `outcomeBadge`/`flagBadges`, and the
+  `sync_hl_to_calls` RPC (the "Sync ASCND data" control, now also in the Review header).
+- **Repeatable-loop design.** Each review is windowed to "calls since the last logged
+  change" so you only grade the current version of the agent. Anchor = latest
+  `agent_changes.applied_at` → else last review's `period_end` → else 30d. There is **no
+  automatic change signal** (agent script lives in ASCND), so changes are logged manually:
+  one-click **＋ Log change**, or the "Changes I'm applying" box on save. Window start is
+  always shown + overridable via a date input. Added a **Reviewed** KPI (distinct calls a
+  human marked reviewed in-window) + per-call ☑ Mark reviewed / ✎ Note.
+- **Migration `033_agent_reviews.sql`** (applied to prod): three small tables —
+  `agent_reviews` (append-only history), `call_reviews` (`(call_id, reviewed_by)` PK;
+  powers the KPI + per-call note), `agent_changes` (the window anchor). RLS mirrors
+  `call_corrections` (authenticated read/insert; call_reviews also update+delete).
+- **Deliberately kept lean** after review: cut a health rating, call-tagging taxonomy +
+  auto-fill, Registry-vs-Canoe comparison, and per-call "re-run AI" from an earlier draft.
+- **`intent` + `ai_agent_phone_number` (migration `034`).** Pier updated ASCND's webhook to
+  also send `intent` and `ai_agent_phone_number`. Confirmed via live schema query that
+  `hl_call_data` is the ASCND landing table and had neither column. `034` adds both to
+  `hl_call_data` (receiving) and `canoe_calls` (master), and extends
+  `sync_hl_to_canoe_calls` to carry both through the existing caller-phone + time pairing.
+  **Pairing key intentionally unchanged** — `ai_agent_phone_number` is carried through, not
+  yet a join key (historical rows lack it; validate vs `called_to` on real data first, then
+  optionally harden + auto-learn an `ai_agent_phone_number → ivr_name` map for unpaired
+  ASCND calls). Review tab now selects both and shows an `intent` chip on each call.
+- **Fixed the Review "Sync ASCND data" button** to call `sync_hl_to_canoe_calls(from_ts,to_ts)`
+  (the master-table function `sync.js` uses) instead of the legacy no-arg `sync_hl_to_calls`
+  the footer button calls — the legacy one doesn't touch `canoe_calls`. Footer button left
+  as-is; discrepancy still worth reconciling separately.
+- **Agent attribution note:** agents are identified by Canoe's `ivr_name` (alias-resolved);
+  the `agents` registry has no phone/DID column. The agent phone number isn't *needed* for
+  attribution — it's a robustness upgrade (tighter pairing + rescuing unpaired ASCND rows).
+- Design reviewed with Pier via a Lavish artifact (`.lavish/agent-review.html`) over two
+  rounds before build. Migrations `033` + `034` applied to prod; committed + pushed to
+  `main` (Netlify auto-publish). `intent` backfill is blocked upstream — `hl_call_data`
+  has 0 rows with `intent` (ASCND hasn't populated it yet), so there's nothing to pull.
+- **Next:** assign IVRs to account managers + a review status board (needs-review = never
+  reviewed OR changed-since-last-review OR not reviewed in 30d; one AM per agent), reusing
+  `account_managers`. External sources (Granola/Jira) not pulled this session.
