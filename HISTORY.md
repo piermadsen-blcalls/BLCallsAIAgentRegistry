@@ -371,6 +371,15 @@ Continued from the 8/7 Scores work; large session. What moved:
   rounds before build. Migrations `033` + `034` applied to prod; committed + pushed to
   `main` (Netlify auto-publish). `intent` backfill is blocked upstream — `hl_call_data`
   has 0 rows with `intent` (ASCND hasn't populated it yet), so there's nothing to pull.
-- **Next:** assign IVRs to account managers + a review status board (needs-review = never
-  reviewed OR changed-since-last-review OR not reviewed in 30d; one AM per agent), reusing
-  `account_managers`. External sources (Granola/Jira) not pulled this session.
+- **Shipped the Review base to `main`** (rebased onto remote's Calls-tab revenue work;
+  `9e602e1`). `intent` backfill blocked upstream — `hl_call_data` has 0 rows with `intent`
+  (ASCND hasn't populated it), so nothing to pull until ASCND backfills the landing table.
+- **Review status board + AM assignment (migration `035`).** The Review landing view is now
+  a status board: Agent | Vertical | Assigned reviewer | Status, with All / Needs review /
+  My agents filters (My agents keys off the current user's email in `account_managers`).
+  Needs-review = never reviewed OR a change logged after the last review OR not reviewed in
+  30 days. One reviewer per agent → new `agent_review_assignments` table (ivr_name PK →
+  `account_managers`), inline assign dropdown, RLS mirrors `account_manager_assignments`.
+  Board degrades gracefully if `035` isn't applied yet (everything reads Unassigned).
+- **Next:** apply migration `035`; once ASCND populates `hl_call_data.intent`, run the 30-day
+  intent backfill. External sources (Granola/Jira) not pulled this session.

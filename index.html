@@ -519,6 +519,26 @@
   .rv-pick-reviewed { font-size:10.5px; color:var(--teal); margin-top:8px; }
   .rv-pick-never { font-size:10.5px; color:var(--amber); margin-top:8px; }
 
+  /* Review status board */
+  .rv-board-bar { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .rv-board-filter { font-size:12px; font-weight:500; padding:6px 13px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-2); border-radius:100px; cursor:pointer; font-family:var(--sans); }
+  .rv-board-filter:hover { border-color:var(--text); }
+  .rv-board-filter.active { background:var(--brand-navy); color:#fff; border-color:var(--brand-navy); }
+  .rv-board-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); }
+  table.rv-board { width:100%; border-collapse:collapse; font-size:12.5px; min-width:640px; }
+  table.rv-board th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--text-3); padding:11px 14px; border-bottom:1px solid var(--border); background:var(--bg); white-space:nowrap; }
+  table.rv-board td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  table.rv-board tbody tr { cursor:pointer; transition:background .1s; }
+  table.rv-board tbody tr:hover { background:var(--bg); }
+  table.rv-board tr:last-child td { border-bottom:none; }
+  .rv-board-name { font-weight:600; }
+  .rv-board-sel { font-family:var(--sans); font-size:11.5px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 6px; background:var(--surface); color:var(--text); max-width:200px; }
+  .rv-status { font-size:10px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; }
+  .rv-status.needs { background:var(--amber-bg); color:var(--amber); }
+  .rv-status.ok { background:var(--teal-bg); color:var(--teal); }
+  .rv-board-open { font-size:11px; color:var(--brand-navy); font-weight:600; white-space:nowrap; text-align:right; }
+  .rv-board-empty { padding:24px; text-align:center; color:var(--text-3); font-size:13px; font-style:italic; }
+
   .rv-back { font-size:12px; color:var(--text-2); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 11px; cursor:pointer; margin-bottom:16px; }
   .rv-back:hover { border-color:var(--text); color:var(--text); }
   .rv-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
@@ -2447,34 +2467,78 @@ function reviewInit(){
   renderReviewPicker();
 }
 
-function renderReviewPicker(){
+// Review status board (the landing view): assignment + needs-review status per agent.
+let reviewBoard = { managers:[], assignments:{}, lastReview:{}, lastChange:{}, filter:'all', myId:null };
+
+async function renderReviewPicker(){
   RV=null;
-  const root=document.getElementById('review-root');
-  const agents=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test').sort((a,b)=>(b.raw_calls||0)-(a.raw_calls||0));
-  root.innerHTML=
-    '<div class="rv-pick-intro">Pick an agent to review its calls and record an assessment. Each review covers calls since the agent was last changed.</div>'+
-    '<div class="rv-pick-grid">'+
-      agents.map(a=>`
-        <div class="rv-pick-card" onclick="openReview('${jsStr(a.ivrName)}')">
-          <div class="rv-pick-name" title="${esc(a.name)}">${esc(a.name)}</div>
-          <div class="rv-pick-meta"><span>${esc(a.vertical||'')}</span><span>${(a.raw_calls||0).toLocaleString()} calls</span></div>
-          <div class="rv-pick-reviewed" id="rv-lr-${cssId(a.ivrName)}">…</div>
-        </div>`).join('')+
-    '</div>';
-  loadLastReviewedLabels(agents);
+  document.getElementById('review-root').innerHTML='<div class="empty">Loading review board…</div>';
+  await loadReviewBoardData();
+  renderReviewBoard();
 }
 
-async function loadLastReviewedLabels(agents){
-  let rows=[];
-  try{ rows=await sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=2000')||[]; }
-  catch(e){ console.warn('agent_reviews labels:',e.message); agents.forEach(a=>{const el=document.getElementById('rv-lr-'+cssId(a.ivrName)); if(el) el.textContent='';}); return; }
-  const latest={};
-  for(const r of rows){ const k=resolveIvrName(r.ivr_name); if(!latest[k]) latest[k]=r.created_at; }
-  for(const a of agents){
-    const el=document.getElementById('rv-lr-'+cssId(a.ivrName)); if(!el) continue;
-    if(latest[a.ivrName]){ el.className='rv-pick-reviewed'; el.textContent='Last reviewed '+fmtDate(new Date(latest[a.ivrName])); }
-    else { el.className='rv-pick-never'; el.textContent='Never reviewed'; }
-  }
+async function loadReviewBoardData(){
+  const b=reviewBoard;
+  b.managers=[]; b.assignments={}; b.lastReview={}; b.lastChange={};
+  try{ b.managers=await sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc')||[]; }catch(e){ console.warn('managers:',e.message); }
+  try{ (await sbFetch('agent_review_assignments?select=ivr_name,manager_id')||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; }); }catch(e){ console.warn('assignments:',e.message); }
+  try{ for(const r of (await sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000')||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; } }catch(e){ console.warn('reviews:',e.message); }
+  try{ for(const r of (await sbFetch('agent_changes?select=ivr_name,applied_at&order=applied_at.desc&limit=3000')||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastChange[k]) b.lastChange[k]=r.applied_at; } }catch(e){ console.warn('changes:',e.message); }
+  const me=(getAuthUser()||'').toLowerCase();
+  b.myId = me ? ((b.managers.find(m=>(m.manager_email||'').toLowerCase()===me)||{}).id || null) : null;
+}
+
+// needs review = never reviewed OR changed since last review OR not reviewed in 30 days.
+function reviewBoardStatus(ivrName){
+  const b=reviewBoard, lr=b.lastReview[ivrName], lc=b.lastChange[ivrName];
+  if(!lr) return {status:'needs', label:'Never reviewed'};
+  if(lc && new Date(lc)>new Date(lr)) return {status:'needs', label:'Changed since review'};
+  if(Date.now()-new Date(lr).getTime() > 30*86400000) return {status:'needs', label:'Stale · '+fmtDate(new Date(lr))};
+  return {status:'ok', label:'Reviewed '+fmtDate(new Date(lr))};
+}
+
+function renderReviewBoard(){
+  const b=reviewBoard, root=document.getElementById('review-root');
+  const withStatus=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test')
+    .map(a=>({a, st:reviewBoardStatus(a.ivrName), mgr:b.assignments[a.ivrName]||null}));
+  const counts={ all:withStatus.length, needs:withStatus.filter(x=>x.st.status==='needs').length, mine:withStatus.filter(x=>x.mgr&&x.mgr===b.myId).length };
+  let rows=withStatus;
+  if(b.filter==='needs') rows=withStatus.filter(x=>x.st.status==='needs');
+  else if(b.filter==='mine') rows=withStatus.filter(x=>x.mgr&&x.mgr===b.myId);
+  rows.sort((x,y)=>{ const xn=x.st.status==='needs', yn=y.st.status==='needs'; if(xn!==yn) return xn?-1:1; return x.a.name.localeCompare(y.a.name); });
+  const selOptions=cur=>['<option value="">— Unassigned —</option>'].concat(b.managers.map(m=>`<option value="${m.id}" ${m.id===cur?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
+  const fbtn=(f,label,n)=>`<button class="rv-board-filter${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span style="opacity:.65">${n}</span></button>`;
+  root.innerHTML=
+    `<div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}${fbtn('mine','My agents',counts.mine)}
+       <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Assign each agent a reviewer; click a row to review its calls.</span></div>
+     <div class="rv-board-wrap"><table class="rv-board">
+       <thead><tr><th>Agent</th><th>Vertical</th><th>Assigned reviewer</th><th>Status</th><th></th></tr></thead>
+       <tbody>${ rows.length ? rows.map(x=>`
+         <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
+           <td class="rv-board-name">${esc(x.a.name)}</td>
+           <td style="color:var(--text-2)">${esc(x.a.vertical||'—')}</td>
+           <td onclick="event.stopPropagation()"><select class="rv-board-sel" onchange="assignAgent('${jsStr(x.a.ivrName)}',this.value)">${selOptions(x.mgr)}</select></td>
+           <td><span class="rv-status ${x.st.status}">${esc(x.st.label)}</span></td>
+           <td class="rv-board-open">Review →</td>
+         </tr>`).join('') : `<tr><td colspan="5" class="rv-board-empty">${b.filter==='mine'&&!b.myId?'You are not in the account-managers list, so nothing is assigned to you.':'No agents in this view.'}</td></tr>` }</tbody>
+     </table></div>`;
+}
+
+function reviewSetBoardFilter(f){ reviewBoard.filter=f; renderReviewBoard(); }
+
+async function assignAgent(ivrName, managerId){
+  const canon=resolveIvrName(ivrName);
+  try{
+    if(managerId){
+      await sbFetch('agent_review_assignments?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({ivr_name:canon,manager_id:managerId,assigned_by:getAuthUser(),assigned_at:new Date().toISOString()})});
+      reviewBoard.assignments[canon]=managerId;
+    } else {
+      const res=await fetch(`${SB_URL}/rest/v1/agent_review_assignments?ivr_name=eq.${encodeURIComponent(canon)}`,{method:'DELETE',headers:authHeaders()});
+      if(!res.ok) throw new Error(`${res.status}`);
+      delete reviewBoard.assignments[canon];
+    }
+    renderReviewBoard();
+  }catch(e){ alert('Could not save assignment: '+e.message); }
 }
 
 async function openReview(ivrName){
