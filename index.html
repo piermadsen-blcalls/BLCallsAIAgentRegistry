@@ -524,6 +524,9 @@
   .rv-board-filter { font-size:12px; font-weight:500; padding:6px 13px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-2); border-radius:100px; cursor:pointer; font-family:var(--sans); }
   .rv-board-filter:hover { border-color:var(--text); }
   .rv-board-filter.active { background:var(--brand-navy); color:#fff; border-color:var(--brand-navy); }
+  .rv-board-reviewer { font-size:12px; padding:6px 10px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:100px; cursor:pointer; font-family:var(--sans); }
+  .rv-board-assign { font-size:12px; font-weight:500; padding:6px 13px; border:1px solid var(--brand-navy); background:var(--brand-navy); color:#fff; border-radius:100px; cursor:pointer; font-family:var(--sans); }
+  .rv-board-assign:hover { background:#24406b; }
   .rv-board-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); }
   table.rv-board { width:100%; border-collapse:collapse; font-size:12.5px; min-width:640px; }
   table.rv-board th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--text-3); padding:11px 14px; border-bottom:1px solid var(--border); background:var(--bg); white-space:nowrap; }
@@ -2456,7 +2459,7 @@ function reviewInit(){
 }
 
 // Review status board (the landing view): assignment + needs-review status per agent.
-let reviewBoard = { managers:[], assignments:{}, lastReview:{}, counts:{}, filter:'all', myId:null };
+let reviewBoard = { managers:[], assignments:{}, lastReview:{}, counts:{}, filter:'all', reviewerFilter:'', myId:null };
 
 async function renderReviewPicker(){
   RV=null;
@@ -2498,14 +2501,19 @@ function renderReviewBoard(){
     .map(a=>({a, st:reviewBoardStatus(a.ivrName), mgr:b.assignments[a.ivrName]||null}));
   const counts={ all:withStatus.length, needs:withStatus.filter(x=>x.st.status==='needs').length, mine:withStatus.filter(x=>x.mgr&&x.mgr===b.myId).length };
   let rows=withStatus;
-  if(b.filter==='needs') rows=withStatus.filter(x=>x.st.status==='needs');
-  else if(b.filter==='mine') rows=withStatus.filter(x=>x.mgr&&x.mgr===b.myId);
+  if(b.filter==='needs') rows=rows.filter(x=>x.st.status==='needs');
+  else if(b.filter==='mine') rows=rows.filter(x=>x.mgr&&x.mgr===b.myId);
+  if(b.reviewerFilter) rows=rows.filter(x=> b.reviewerFilter==='__unassigned__' ? !x.mgr : x.mgr===b.reviewerFilter);
   rows.sort((x,y)=>{ const xn=x.st.status==='needs', yn=y.st.status==='needs'; if(xn!==yn) return xn?-1:1; return x.a.name.localeCompare(y.a.name); });
   const selOptions=cur=>['<option value="">— Unassigned —</option>'].concat(b.managers.map(m=>`<option value="${m.id}" ${m.id===cur?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
   const fbtn=(f,label,n)=>`<button class="rv-board-filter${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span style="opacity:.65">${n}</span></button>`;
+  const reviewerOpts=['<option value="">All reviewers</option>','<option value="__unassigned__"'+(b.reviewerFilter==='__unassigned__'?' selected':'')+'>Unassigned</option>']
+    .concat(b.managers.map(m=>`<option value="${m.id}" ${b.reviewerFilter===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
   root.innerHTML=
     `<div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}${fbtn('mine','My agents',counts.mine)}
-       <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Assign each agent a reviewer; click a row to review its calls.</span></div>
+       <select class="rv-board-reviewer" onchange="reviewSetReviewerFilter(this.value)">${reviewerOpts}</select>
+       <button class="rv-board-assign" onclick="autoAssignReviewers()">Auto-assign reviewers</button>
+       <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Click a row to review its calls.</span></div>
      <div class="rv-board-wrap"><table class="rv-board">
        <thead><tr><th>Agent</th><th>Vertical</th><th>Calls to review (30d)</th><th>Assigned reviewer</th><th>Status</th><th></th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
@@ -2526,6 +2534,29 @@ function renderReviewBoard(){
 }
 
 function reviewSetBoardFilter(f){ reviewBoard.filter=f; renderReviewBoard(); }
+function reviewSetReviewerFilter(v){ reviewBoard.reviewerFilter=v||''; renderReviewBoard(); }
+
+// Randomly assign a reviewer to every agent that has calls to review and isn't
+// already assigned. Excludes the current user; skips agents with no calls.
+async function autoAssignReviewers(){
+  const b=reviewBoard;
+  const me=(getAuthUser()||'').toLowerCase();
+  const pool=b.managers.filter(m=>(m.manager_email||'').toLowerCase()!==me);
+  if(!pool.length){ alert('No eligible reviewers to assign (everyone is excluded).'); return; }
+  const targets=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test')
+    .filter(a=>((b.counts[a.ivrName]||{}).reviewable||0)>0)   // has calls to review
+    .filter(a=>!b.assignments[a.ivrName]);                    // not already assigned
+  if(!targets.length){ alert('Nothing to assign — every agent with calls already has a reviewer.'); return; }
+  if(!confirm(`Randomly assign ${targets.length} unassigned agent(s) with calls across ${pool.length} reviewer(s)?`)) return;
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  const nowISO=new Date().toISOString(), byUser=getAuthUser();
+  const payload=targets.map((a,idx)=>({ ivr_name:a.ivrName, manager_id:shuffled[idx%shuffled.length].id, assigned_by:byUser, assigned_at:nowISO }));
+  try{
+    await sbFetch('agent_review_assignments?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
+    payload.forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; });
+    renderReviewBoard();
+  }catch(e){ alert('Auto-assign failed: '+e.message); }
+}
 
 async function assignAgent(ivrName, managerId){
   const canon=resolveIvrName(ivrName);
