@@ -540,20 +540,6 @@
   .rv-board-open { font-size:11px; color:var(--brand-navy); font-weight:600; white-space:nowrap; text-align:right; }
   .rv-board-empty { padding:24px; text-align:center; color:var(--text-3); font-size:13px; font-style:italic; }
 
-  /* Agent drawer: Canoe link + AM updates log */
-  .agent-updates-sec { margin-top:24px; padding-top:20px; border-top:1px solid var(--border); }
-  .canoe-ivr-link { font-size:12px; color:var(--blue); font-weight:600; text-decoration:none; }
-  .canoe-ivr-link:hover { text-decoration:underline; }
-  .au-hint { font-size:12px; color:var(--text-2); margin:6px 0 12px; }
-  .au-empty { font-size:12px; color:var(--text-3); font-style:italic; padding:4px 0; }
-  .agent-updates-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
-  .agent-update-item { background:var(--bg); border-radius:var(--radius-sm); padding:8px 12px; }
-  .agent-update-meta { font-size:10px; color:var(--text-3); margin-bottom:3px; }
-  .agent-update-body { font-size:12.5px; color:var(--text); white-space:pre-wrap; line-height:1.5; }
-  .agent-update-form { display:flex; gap:8px; align-items:flex-start; }
-  .agent-update-input { flex:1; min-width:0; min-height:40px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; font-family:var(--sans); font-size:12px; resize:vertical; background:var(--surface); color:var(--text); }
-  .agent-update-btn { background:var(--brand-navy); color:#fff; border:none; border-radius:var(--radius-sm); padding:8px 16px; font-size:12px; font-weight:500; font-family:var(--sans); cursor:pointer; white-space:nowrap; }
-  .agent-update-btn:hover { background:#24406b; }
 
   .rv-back { font-size:12px; color:var(--text-2); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 11px; cursor:pointer; margin-bottom:16px; }
   .rv-back:hover { border-color:var(--text); color:var(--text); }
@@ -576,7 +562,6 @@
   .rv-perf-item.kpi .rv-perf-lbl { color:var(--teal); font-weight:600; }
 
   .rv-cols { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:16px; align-items:start; }
-  .rv-right { min-width:0; display:flex; flex-direction:column; }
   @media (max-width:860px){ .rv-cols { grid-template-columns:1fr; } }
   .rv-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
   .rv-panel-head { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; }
@@ -613,6 +598,13 @@
   .rv-seg button:last-child { border-right:none; }
   .rv-seg button.on { background:var(--brand-navy); color:#fff; font-weight:500; }
   .rv-seg button.on.pos { background:var(--teal); } .rv-seg button.on.neg { background:var(--coral); } .rv-seg button.on.amb { background:var(--amber); }
+  .rv-opts { display:flex; flex-wrap:wrap; gap:6px; }
+  .rv-opts button { font-size:11.5px; padding:5px 11px; color:var(--text-2); border:1px solid var(--border-strong); background:var(--surface); border-radius:100px; cursor:pointer; font-family:var(--sans); }
+  .rv-opts button:hover { border-color:var(--brand-navy); }
+  .rv-opts button.on { background:var(--brand-navy); color:#fff; border-color:var(--brand-navy); font-weight:500; }
+  .rv-opts button.on.pos { background:var(--teal); border-color:var(--teal); }
+  .rv-opts button.on.neg { background:var(--coral); border-color:var(--coral); }
+  .rv-opts button.on.amb { background:var(--amber); border-color:var(--amber); }
   .rv-ta { width:100%; margin-top:8px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 11px; font-family:var(--sans); font-size:12px; color:var(--text); resize:vertical; min-height:44px; background:var(--bg); }
   .rv-apply { background:var(--brand-mint-bg); border:1px solid #A6E9D5; border-radius:var(--radius-sm); padding:11px 13px; }
   .rv-apply .rv-q-label { color:var(--teal); }
@@ -1774,15 +1766,12 @@ function renderCard(a,idx){const isOpen=openAgent===idx,es=getEffectiveStatus(a)
 function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
 const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
-return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${a.name}</div><div class="drawer-meta">${a.vertical||''} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${a.notes}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div><div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div></div><div class="agent-updates-sec"><div class="dsec-title">Account manager updates</div>${a.canoeUrl?`<div class="au-hint"><a href="${esc(a.canoeUrl)}" target="_blank" rel="noopener" class="canoe-ivr-link" onclick="event.stopPropagation()">Open IVR in Canoe ↗</a> — pull the current config there, then log the update below.</div>`:''}<div class="agent-updates-list" id="au-list-${cssId(a.ivrName)}">${renderAgentUpdates(a._updates)}</div><div class="agent-update-form"><textarea class="agent-update-input" id="au-input-${cssId(a.ivrName)}" placeholder="Log an update or change request for this agent…" onclick="event.stopPropagation()"></textarea><button class="agent-update-btn" onclick="event.stopPropagation();postAgentUpdate('${jsStr(a.ivrName)}')">Post</button></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
+return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${a.name}</div><div class="drawer-meta">${a.vertical||''} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${a.notes}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div><div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
 
 function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);return 0;});}
 function applyFilters(){const q=document.getElementById('search-input').value.toLowerCase().trim();document.getElementById('drawer-container').innerHTML='';openAgent=null;const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered);document.getElementById('agents-grid').innerHTML=sorted.length?sorted.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):'<div class="empty">No agents match.</div>';}
 function setFilter(v,el){activeFilter=v;document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');applyFilters();}
-async function toggleAgent(idx){const drawer=document.getElementById('drawer-container');if(openAgent===idx){openAgent=null;drawer.innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});return;}savedScrollY=window.scrollY;openAgent=idx;applyFilters();const a=AGENTS[idx];drawer.innerHTML=renderDrawer(a);requestAnimationFrame(()=>{const gap=drawer.getBoundingClientRect().bottom-window.innerHeight;if(gap>0)window.scrollBy({top:gap+24,behavior:'smooth'});});await Promise.all([loadAgentBreakdown(a),loadAgentUpdates(a)]);if(openAgent===idx)drawer.innerHTML=renderDrawer(a);}
-function renderAgentUpdates(list){if(!list)return'<div class="au-empty">Loading…</div>';if(!list.length)return'<div class="au-empty">No updates yet.</div>';return list.map(u=>`<div class="agent-update-item"><div class="agent-update-meta">${esc(u.author||'—')} · ${fmtDate(new Date(u.created_at))}</div><div class="agent-update-body">${esc(u.note||'')}</div></div>`).join('');}
-async function loadAgentUpdates(a){try{a._updates=await sbFetch(`agent_updates?select=author,note,created_at&ivr_name=eq.${encodeURIComponent(a.ivrName)}&order=created_at.desc&limit=50`)||[];}catch(e){console.warn('agent_updates:',e.message);a._updates=[];}}
-async function postAgentUpdate(ivrName){const a=AGENTS.find(x=>x.ivrName===ivrName);if(!a)return;const inp=document.getElementById('au-input-'+cssId(ivrName));const note=inp?inp.value.trim():'';if(!note){if(inp)inp.focus();return;}try{await sbFetch('agent_updates',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:ivrName,author:getAuthUser(),note,created_at:new Date().toISOString()})});await loadAgentUpdates(a);const list=document.getElementById('au-list-'+cssId(ivrName));if(list)list.innerHTML=renderAgentUpdates(a._updates);if(inp)inp.value='';}catch(e){alert('Could not post update: '+e.message);}}
+async function toggleAgent(idx){const drawer=document.getElementById('drawer-container');if(openAgent===idx){openAgent=null;drawer.innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});return;}savedScrollY=window.scrollY;openAgent=idx;applyFilters();const a=AGENTS[idx];drawer.innerHTML=renderDrawer(a);requestAnimationFrame(()=>{const gap=drawer.getBoundingClientRect().bottom-window.innerHeight;if(gap>0)window.scrollBy({top:gap+24,behavior:'smooth'});});await loadAgentBreakdown(a);if(openAgent===idx)drawer.innerHTML=renderDrawer(a);}
 // Publisher/advertiser breakdown for one agent, fetched on drawer open (migration 022).
 async function loadAgentBreakdown(a){
   const key=activeRange.label||'';
@@ -2555,7 +2544,6 @@ async function openReview(ivrName){
   RV={ agent, ivrs:[agent.ivrName,...aliasesForAgent(agent.ivrName)], calls:[], offset:0, done:false, loading:false, syncing:false, windowStart:null, reviewedSet:new Set(), metrics:null, answers:{} };
   document.getElementById('review-root').innerHTML='<div class="empty">Loading review…</div>';
   RV.windowStart=resolveReviewWindow();
-  await loadAgentUpdates(RV.agent);
   renderReviewWorkspace();
   await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
 }
@@ -2628,49 +2616,34 @@ function renderReviewWorkspace(){
         <div class="rv-panel-head"><span class="t">AI calls · ASCND transcript</span><span class="n" id="rv-count">loading…</span></div>
         <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
       </div>
-      <div class="rv-right">
-        <div class="rv-panel" style="margin-bottom:16px">
-          <div class="rv-panel-head"><span class="t">IVR info &amp; updates</span></div>
-          ${reviewIvrInfoHtml()}
-        </div>
-        <div class="rv-panel">
-          <div class="rv-panel-head"><span class="t">Agent review</span><span class="n">required</span></div>
-          ${reviewFormHtml()}
-        </div>
+      <div class="rv-panel">
+        <div class="rv-panel-head"><span class="t">Agent review</span><span class="n">required</span></div>
+        ${reviewFormHtml()}
       </div>
     </div>`;
   updateReviewPerf();
   updateReviewWindowLabel();
 }
 
-function reviewIvrInfoHtml(){
-  const a=RV.agent;
-  return `<div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
-    ${a.canoeUrl
-      ? `<div class="au-hint" style="margin:0"><a href="${esc(a.canoeUrl)}" target="_blank" rel="noopener" class="canoe-ivr-link">Open IVR in Canoe ↗</a> — pull the config there, then log it below.</div>`
-      : `<div class="au-hint" style="margin:0;color:var(--text-3)">No Canoe link set for this agent yet.</div>`}
-    <div class="agent-updates-list" id="au-list-${cssId(a.ivrName)}">${renderAgentUpdates(a._updates)}</div>
-    <div class="agent-update-form"><textarea class="agent-update-input" id="au-input-${cssId(a.ivrName)}" placeholder="Log IVR info, an update, or a change request for this agent…"></textarea><button class="agent-update-btn" onclick="postAgentUpdate('${jsStr(a.ivrName)}')">Post</button></div>
-  </div>`;
-}
-
 function reviewFormHtml(){
-  const seg=(key,opts)=>`<div class="rv-seg">${opts.map(o=>`<button data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
+  const opts=(key,arr)=>`<div class="rv-opts">${arr.map(o=>`<button data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
   return `<div class="rv-form">
-    <div><span class="rv-q-label">1 · Is the agent handling calls properly?<span class="req">*</span></span>
-      ${seg('handling',[{v:'yes',l:'Yes',tone:'pos'},{v:'mostly',l:'Mostly',tone:'amb'},{v:'no',l:'No',tone:'neg'}])}
-      <textarea class="rv-ta" id="rv-note-handling" placeholder="What's working / not…"></textarea></div>
-    <div><span class="rv-q-label">2 · Recurring glitches forming a pattern?<span class="req">*</span></span>
-      ${seg('glitches',[{v:'yes',l:'Yes',tone:'neg'},{v:'no',l:'No',tone:'pos'}])}
-      <textarea class="rv-ta" id="rv-note-glitches" placeholder="Describe the pattern…"></textarea></div>
-    <div><span class="rv-q-label">3 · Redundant questions to remove?<span class="req">*</span></span>
-      ${seg('redundant',[{v:'yes',l:'Yes',tone:'neg'},{v:'no',l:'No',tone:'pos'}])}
-      <textarea class="rv-ta" id="rv-note-redundant" placeholder="Which question(s)…"></textarea></div>
-    <div><span class="rv-q-label">4 · Wording changes to lift CVR?<span class="req">*</span></span>
-      ${seg('cvr',[{v:'yes',l:'Yes',tone:'pos'},{v:'no',l:'No'}])}
-      <textarea class="rv-ta" id="rv-note-cvr" placeholder="Proposed wording…"></textarea></div>
-    <div><span class="rv-q-label">Notes <span class="rv-q-hint">optional</span></span>
-      <textarea class="rv-ta" id="rv-note-general" placeholder="Anything else for the record…"></textarea></div>
+    <div><span class="rv-q-label">1 · Is the agent qualifying correctly?<span class="req">*</span></span>
+      ${opts('qualifying',[{v:'accurate',l:'Accurate',tone:'pos'},{v:'over_transfer',l:'Over-transfers',tone:'neg'},{v:'over_reject',l:'Over-rejects',tone:'neg'},{v:'both',l:'Both',tone:'neg'}])}
+      <textarea class="rv-ta" id="rv-note-qualifying" placeholder="Examples of wrong transfers / wrong rejects…"></textarea></div>
+    <div><span class="rv-q-label">2 · Where are callers dropping off?<span class="req">*</span></span>
+      ${opts('dropoff',[{v:'rarely',l:'Rarely',tone:'pos'},{v:'intro',l:'Intro',tone:'amb'},{v:'mid_qual',l:'Mid-qualification',tone:'amb'},{v:'transfer',l:'At transfer',tone:'amb'}])}
+      <textarea class="rv-ta" id="rv-note-dropoff" placeholder="What happens right before they drop…"></textarea></div>
+    <div><span class="rv-q-label">3 · Does it understand callers &amp; flow smoothly?<span class="req">*</span></span>
+      ${opts('understanding',[{v:'smooth',l:'Smooth',tone:'pos'},{v:'mishears',l:'Mishears / repeats',tone:'neg'},{v:'pauses',l:'Pauses / talks over',tone:'neg'},{v:'stuck',l:'Gets stuck',tone:'neg'}])}
+      <textarea class="rv-ta" id="rv-note-understanding" placeholder="Where it breaks down…"></textarea></div>
+    <div><span class="rv-q-label">4 · Is the script tight &amp; well-ordered?<span class="req">*</span></span>
+      ${opts('script',[{v:'good',l:'Good',tone:'pos'},{v:'too_long',l:'Too long / redundant',tone:'neg'},{v:'late_dq',l:'Disqualifiers too late',tone:'neg'},{v:'missing',l:'Missing a question',tone:'amb'}])}
+      <textarea class="rv-ta" id="rv-note-script" placeholder="Which question to cut / move / add…"></textarea></div>
+    <div><span class="rv-q-label">5 · Wording change to lift conversion <span class="rv-q-hint">optional</span></span>
+      <textarea class="rv-ta" id="rv-wording" placeholder="Proposed copy…"></textarea></div>
+    <div><span class="rv-q-label">6 · The #1 change to make to this agent<span class="req">*</span></span>
+      <textarea class="rv-ta" id="rv-top-change" placeholder="The single highest-impact fix…" oninput="updateSaveEnabled()"></textarea></div>
     <div class="rv-save-row"><button class="rv-save" id="rv-save-btn" onclick="saveReview()" disabled>Save review</button><span class="rv-save-msg" id="rv-save-msg"></span></div>
   </div>`;
 }
@@ -2684,7 +2657,8 @@ function rvSeg(key,val,btn){
   updateSaveEnabled();
 }
 function updateSaveEnabled(){
-  const ok=RV&&['handling','glitches','redundant','cvr'].every(k=>RV.answers[k]!=null&&RV.answers[k]!=='');
+  const ok=RV&&['qualifying','dropoff','understanding','script'].every(k=>RV.answers[k]!=null&&RV.answers[k]!=='')
+    &&(document.getElementById('rv-top-change')?.value||'').trim().length>0;
   const btn=document.getElementById('rv-save-btn'); if(btn) btn.disabled=!ok;
 }
 
@@ -2786,20 +2760,26 @@ function reviewFieldVal(id){ const el=document.getElementById(id); const v=el?(e
 async function saveReview(){
   if(!RV) return;
   const a=RV.answers;
-  if(['handling','glitches','redundant','cvr'].some(k=>a[k]==null)) return;
+  const topChange=reviewFieldVal('rv-top-change');
+  if(['qualifying','dropoff','understanding','script'].some(k=>a[k]==null)||!topChange){ const t=document.getElementById('rv-top-change'); if(!topChange&&t) t.focus(); return; }
   const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
   btn.disabled=true; btn.textContent='Saving…';
   const nowISO=new Date().toISOString();
+  const answers={
+    qualifying:a.qualifying, qualifying_note:reviewFieldVal('rv-note-qualifying'),
+    dropoff:a.dropoff, dropoff_note:reviewFieldVal('rv-note-dropoff'),
+    understanding:a.understanding, understanding_note:reviewFieldVal('rv-note-understanding'),
+    script:a.script, script_note:reviewFieldVal('rv-note-script'),
+    wording:reviewFieldVal('rv-wording'),
+    top_change:topChange,
+  };
   const review={
     ivr_name:RV.agent.ivrName,
     reviewed_by:getAuthUser(),
     period_start:RV.windowStart.toISOString(),
     period_end:nowISO,
-    handling:a.handling, handling_note:reviewFieldVal('rv-note-handling'),
-    has_glitches:a.glitches==='yes', glitches_note:reviewFieldVal('rv-note-glitches'),
-    redundant_qs:a.redundant==='yes', redundant_note:reviewFieldVal('rv-note-redundant'),
-    cvr_wording:a.cvr==='yes', cvr_note:reviewFieldVal('rv-note-cvr'),
-    notes:reviewFieldVal('rv-note-general'),
+    answers,
+    notes:topChange,
     calls_reviewed:RV.reviewedSet.size,
   };
   try{
@@ -2816,8 +2796,8 @@ async function saveReview(){
 function resetReviewForm(){
   if(!RV) return;
   RV.answers={};
-  ['rv-note-handling','rv-note-glitches','rv-note-redundant','rv-note-cvr','rv-note-general'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.querySelectorAll('.rv-seg button').forEach(b=>b.className='');
+  ['rv-note-qualifying','rv-note-dropoff','rv-note-understanding','rv-note-script','rv-wording','rv-top-change'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('.rv-opts button').forEach(b=>b.className='');
   updateSaveEnabled();
 }
 
