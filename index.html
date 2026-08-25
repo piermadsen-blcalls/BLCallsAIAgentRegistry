@@ -2449,9 +2449,13 @@ function jsStr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function fmtDateTime(iso){ const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
 function ivrQuery(ivrs){ const list='in.('+ivrs.map(v=>'"'+String(v).replace(/"/g,'\\"')+'"').join(',')+')'; return 'ivr_name='+encodeURIComponent(list); }
 
-function reviewInit(){
+async function reviewInit(){
   const root=document.getElementById('review-root');
-  if(!AGENTS.length){ root.innerHTML='<div class="empty">No agents loaded yet — open the Agents tab first.</div>'; return; }
+  if(!AGENTS.length){
+    root.innerHTML='<div class="empty">Loading agents…</div>';
+    try{ await (agentsLoadedPromise || Promise.all([loadAliases(), loadAgentsFromSupabase()])); }catch(e){ console.warn('review agents load:',e.message); }
+  }
+  if(!AGENTS.length){ root.innerHTML='<div class="empty">No agents found.</div>'; return; }
   if(RV) return;   // keep the open session when re-entering the tab
   renderReviewPicker();
 }
@@ -2958,9 +2962,11 @@ async function checkForUnregisteredAgents() {
   } catch(e) { console.warn("checkForUnregisteredAgents:", e.message); }
 }
 
+let agentsLoadedPromise = null;
 async function bootDashboard() {
   agentDrpInit();
-  await Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
+  agentsLoadedPromise = Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
+  await agentsLoadedPromise;
   loadVerticals();
   populateVerticalDropdowns();
   crVisibleCols = {}; CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
