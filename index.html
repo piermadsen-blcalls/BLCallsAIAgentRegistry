@@ -2551,13 +2551,19 @@ async function openReview(ivrName){
 // Fixed trailing-30-day window (overridable via the date input).
 function resolveReviewWindow(){ const d=new Date(); d.setDate(d.getDate()-30); return d; }
 
+// KPIs are scoped to exactly the calls shown in the drawer: AI calls with an
+// ASCND transcript in the window (same filter as the call list).
 async function loadReviewMetrics(){
-  const fromTs=RV.windowStart.toISOString(), toTs=new Date().toISOString();
   let raw=0,paid=0,revenue=0;
   try{
-    const rows=await sbFetch('rpc/agent_metrics',{method:'POST',body:JSON.stringify({from_ts:fromTs,to_ts:toTs})})||[];
-    const canon=RV.agent.ivrName;
-    for(const r of rows){ if(resolveIvrName(r.ivr_name)===canon){ raw+=Number(r.raw||0); paid+=Number(r.paid||0); revenue+=Number(r.revenue||0); } }
+    const sel='advertiser_payin';
+    const path=`canoe_calls?select=${sel}&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null`;
+    let offset=0; const PAGE=1000;
+    while(true){
+      const batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}})||[];
+      for(const c of batch){ raw++; const pay=Number(c.advertiser_payin||0); if(pay>0) paid++; revenue+=pay; }
+      if(batch.length<PAGE) break; offset+=PAGE;
+    }
   }catch(e){ console.warn('review metrics:',e.message); }
   RV.metrics={raw,paid,revenue};
   updateReviewPerf();
@@ -2617,7 +2623,7 @@ function renderReviewWorkspace(){
         <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
       </div>
       <div class="rv-panel">
-        <div class="rv-panel-head"><span class="t">Agent review</span><span class="n">required</span></div>
+        <div class="rv-panel-head"><span class="t">Agent review</span><span class="n">save anytime</span></div>
         ${reviewFormHtml()}
       </div>
     </div>`;
@@ -2628,23 +2634,23 @@ function renderReviewWorkspace(){
 function reviewFormHtml(){
   const opts=(key,arr)=>`<div class="rv-opts">${arr.map(o=>`<button data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
   return `<div class="rv-form">
-    <div><span class="rv-q-label">1 · Is the agent qualifying correctly?<span class="req">*</span></span>
+    <div><span class="rv-q-label">1 · Is the agent qualifying correctly?</span>
       ${opts('qualifying',[{v:'accurate',l:'Accurate',tone:'pos'},{v:'over_transfer',l:'Over-transfers',tone:'neg'},{v:'over_reject',l:'Over-rejects',tone:'neg'},{v:'both',l:'Both',tone:'neg'}])}
       <textarea class="rv-ta" id="rv-note-qualifying" placeholder="Examples of wrong transfers / wrong rejects…"></textarea></div>
-    <div><span class="rv-q-label">2 · Where are callers dropping off?<span class="req">*</span></span>
+    <div><span class="rv-q-label">2 · Where are callers dropping off?</span>
       ${opts('dropoff',[{v:'rarely',l:'Rarely',tone:'pos'},{v:'intro',l:'Intro',tone:'amb'},{v:'mid_qual',l:'Mid-qualification',tone:'amb'},{v:'transfer',l:'At transfer',tone:'amb'}])}
       <textarea class="rv-ta" id="rv-note-dropoff" placeholder="What happens right before they drop…"></textarea></div>
-    <div><span class="rv-q-label">3 · Does it understand callers &amp; flow smoothly?<span class="req">*</span></span>
+    <div><span class="rv-q-label">3 · Does it understand callers &amp; flow smoothly?</span>
       ${opts('understanding',[{v:'smooth',l:'Smooth',tone:'pos'},{v:'mishears',l:'Mishears / repeats',tone:'neg'},{v:'pauses',l:'Pauses / talks over',tone:'neg'},{v:'stuck',l:'Gets stuck',tone:'neg'}])}
       <textarea class="rv-ta" id="rv-note-understanding" placeholder="Where it breaks down…"></textarea></div>
-    <div><span class="rv-q-label">4 · Is the script tight &amp; well-ordered?<span class="req">*</span></span>
+    <div><span class="rv-q-label">4 · Is the script tight &amp; well-ordered?</span>
       ${opts('script',[{v:'good',l:'Good',tone:'pos'},{v:'too_long',l:'Too long / redundant',tone:'neg'},{v:'late_dq',l:'Disqualifiers too late',tone:'neg'},{v:'missing',l:'Missing a question',tone:'amb'}])}
       <textarea class="rv-ta" id="rv-note-script" placeholder="Which question to cut / move / add…"></textarea></div>
     <div><span class="rv-q-label">5 · Wording change to lift conversion <span class="rv-q-hint">optional</span></span>
       <textarea class="rv-ta" id="rv-wording" placeholder="Proposed copy…"></textarea></div>
-    <div><span class="rv-q-label">6 · The #1 change to make to this agent<span class="req">*</span></span>
+    <div><span class="rv-q-label">6 · The #1 change to make to this agent</span>
       <textarea class="rv-ta" id="rv-top-change" placeholder="The single highest-impact fix…" oninput="updateSaveEnabled()"></textarea></div>
-    <div class="rv-save-row"><button class="rv-save" id="rv-save-btn" onclick="saveReview()" disabled>Save review</button><span class="rv-save-msg" id="rv-save-msg"></span></div>
+    <div class="rv-save-row"><button class="rv-save" id="rv-save-btn" onclick="saveReview()">Save review</button><span class="rv-save-msg" id="rv-save-msg"></span></div>
   </div>`;
 }
 
@@ -2656,11 +2662,7 @@ function rvSeg(key,val,btn){
   btn.classList.add('on'); if(btn.dataset.tone) btn.classList.add(btn.dataset.tone);
   updateSaveEnabled();
 }
-function updateSaveEnabled(){
-  const ok=RV&&['qualifying','dropoff','understanding','script'].every(k=>RV.answers[k]!=null&&RV.answers[k]!=='')
-    &&(document.getElementById('rv-top-change')?.value||'').trim().length>0;
-  const btn=document.getElementById('rv-save-btn'); if(btn) btn.disabled=!ok;
-}
+function updateSaveEnabled(){}  // review is saveable at any stage — nothing gated
 
 function renderReviewCalls(){
   const box=document.getElementById('rv-calls'); if(!box) return;
@@ -2732,7 +2734,7 @@ function updateReviewPerf(){
   const box=document.getElementById('rv-perf'); if(!box||!RV) return;
   const m=RV.metrics||{raw:0,paid:0,revenue:0};
   const tiles=[
-    ['Raw calls',(m.raw||0).toLocaleString()],
+    ['Calls',(m.raw||0).toLocaleString()],
     ['Paid',(m.paid||0).toLocaleString()],
     ['Conv.',m.raw>0?fmtPct(m.paid,m.raw):'—'],
     ['Revenue','$'+Math.round(m.revenue||0).toLocaleString()],
@@ -2761,7 +2763,6 @@ async function saveReview(){
   if(!RV) return;
   const a=RV.answers;
   const topChange=reviewFieldVal('rv-top-change');
-  if(['qualifying','dropoff','understanding','script'].some(k=>a[k]==null)||!topChange){ const t=document.getElementById('rv-top-change'); if(!topChange&&t) t.focus(); return; }
   const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
   btn.disabled=true; btn.textContent='Saving…';
   const nowISO=new Date().toISOString();
