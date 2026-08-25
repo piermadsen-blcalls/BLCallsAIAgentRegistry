@@ -562,8 +562,6 @@
   .rv-sub { font-size:12px; color:var(--text-2); margin-top:2px; }
   .rv-head-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
   .rv-controls { display:flex; gap:8px; flex-wrap:wrap; }
-  .rv-syncbtn, .rv-logbtn { background:var(--surface); border:1px solid var(--border-strong); color:var(--brand-navy); border-radius:var(--radius-sm); padding:6px 12px; font-size:11.5px; font-weight:500; font-family:var(--sans); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-  .rv-syncbtn:hover, .rv-logbtn:hover { border-color:var(--brand-navy); }
   .rv-window { font-size:11px; color:var(--text-2); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
   .rv-window input[type=date] { font-family:var(--mono); font-size:11px; border:1px solid var(--border); border-radius:4px; padding:2px 6px; color:var(--text); }
   .rv-sync-status { font-size:11px; }
@@ -2464,7 +2462,7 @@ function reviewInit(){
 }
 
 // Review status board (the landing view): assignment + needs-review status per agent.
-let reviewBoard = { managers:[], assignments:{}, lastReview:{}, lastChange:{}, counts:{}, filter:'all', myId:null };
+let reviewBoard = { managers:[], assignments:{}, lastReview:{}, counts:{}, filter:'all', myId:null };
 
 async function renderReviewPicker(){
   RV=null;
@@ -2475,20 +2473,18 @@ async function renderReviewPicker(){
 
 async function loadReviewBoardData(){
   const b=reviewBoard;
-  b.managers=[]; b.assignments={}; b.lastReview={}; b.lastChange={}; b.counts={};
+  b.managers=[]; b.assignments={}; b.lastReview={}; b.counts={};
   const since=new Date(Date.now()-30*86400000).toISOString();
   const nope=e=>{console.warn('review board:',e.message);return[];};
-  const [mgrs,assigns,reviews,changes,counts]=await Promise.all([
+  const [mgrs,assigns,reviews,counts]=await Promise.all([
     sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc').catch(nope),
     sbFetch('agent_review_assignments?select=ivr_name,manager_id').catch(nope),
     sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000').catch(nope),
-    sbFetch('agent_changes?select=ivr_name,applied_at&order=applied_at.desc&limit=3000').catch(nope),
     sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
   ]);
   b.managers=mgrs||[];
   (assigns||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; });
   for(const r of (reviews||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; }
-  for(const r of (changes||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastChange[k]) b.lastChange[k]=r.applied_at; }
   for(const r of (counts||[])){ const k=resolveIvrName(r.ivr_name); const cur=b.counts[k]||{reviewable:0,reviewed:0}; cur.reviewable+=Number(r.reviewable||0); cur.reviewed+=Number(r.reviewed||0); b.counts[k]=cur; }
   const me=(getAuthUser()||'').toLowerCase();
   b.myId = me ? ((b.managers.find(m=>(m.manager_email||'').toLowerCase()===me)||{}).id || null) : null;
@@ -2496,10 +2492,9 @@ async function loadReviewBoardData(){
 
 // needs review = never reviewed OR changed since last review OR not reviewed in 30 days.
 function reviewBoardStatus(ivrName){
-  const b=reviewBoard, lr=b.lastReview[ivrName], lc=b.lastChange[ivrName];
+  const b=reviewBoard, lr=b.lastReview[ivrName];
   if(!lr) return {status:'needs', label:'Never reviewed'};
-  if(lc && new Date(lc)>new Date(lr)) return {status:'needs', label:'Changed since review'};
-  if(Date.now()-new Date(lr).getTime() > 30*86400000) return {status:'needs', label:'Stale · '+fmtDate(new Date(lr))};
+  if(Date.now()-new Date(lr).getTime() > 30*86400000) return {status:'needs', label:'Due · last '+fmtDate(new Date(lr))};
   return {status:'ok', label:'Reviewed '+fmtDate(new Date(lr))};
 }
 
@@ -2558,17 +2553,13 @@ async function openReview(ivrName){
   if(!agent) return;
   RV={ agent, ivrs:[agent.ivrName,...aliasesForAgent(agent.ivrName)], calls:[], offset:0, done:false, loading:false, syncing:false, windowStart:null, reviewedSet:new Set(), metrics:null, answers:{} };
   document.getElementById('review-root').innerHTML='<div class="empty">Loading review…</div>';
-  RV.windowStart=await resolveReviewWindow(RV.ivrs);
+  RV.windowStart=resolveReviewWindow();
   renderReviewWorkspace();
   await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
 }
 
-// period_start = latest logged change → else last review's period_end → else 30d ago.
-async function resolveReviewWindow(ivrs){
-  try{ const ch=await sbFetch(`agent_changes?select=applied_at&${ivrQuery(ivrs)}&order=applied_at.desc&limit=1`); if(ch&&ch.length&&ch[0].applied_at) return new Date(ch[0].applied_at); }catch(e){ console.warn('agent_changes:',e.message); }
-  try{ const rv=await sbFetch(`agent_reviews?select=period_end,created_at&${ivrQuery(ivrs)}&order=created_at.desc&limit=1`); if(rv&&rv.length&&rv[0].period_end) return new Date(rv[0].period_end); }catch(e){ console.warn('agent_reviews window:',e.message); }
-  const d=new Date(); d.setDate(d.getDate()-30); return d;
-}
+// Fixed trailing-30-day window (overridable via the date input).
+function resolveReviewWindow(){ const d=new Date(); d.setDate(d.getDate()-30); return d; }
 
 async function loadReviewMetrics(){
   const fromTs=RV.windowStart.toISOString(), toTs=new Date().toISOString();
@@ -2626,11 +2617,7 @@ function renderReviewWorkspace(){
         <div class="rv-sub">${esc(a.vertical||'')} · ${esc(rtLabel(a.routingType))}${aliasNote}</div>
       </div>
       <div class="rv-head-right">
-        <div class="rv-controls">
-          <button class="rv-syncbtn" onclick="reviewSync(this)"><span style="width:6px;height:6px;border-radius:50%;background:var(--brand-mint);display:inline-block"></span> Sync ASCND data</button>
-          <button class="rv-logbtn" onclick="reviewLogChange()">＋ Log change</button>
-        </div>
-        <div class="rv-window">Calls since <strong id="rv-window-label">—</strong> <input type="date" id="rv-window-date" onchange="reviewSetWindow(this.value)"> <span class="rv-sync-status" id="rv-sync-status"></span></div>
+        <div class="rv-window">Reviewing calls since <strong id="rv-window-label">—</strong> <input type="date" id="rv-window-date" onchange="reviewSetWindow(this.value)"></div>
       </div>
     </div>
     <div class="rv-perf" id="rv-perf"></div>
@@ -2773,38 +2760,6 @@ function reviewSetWindow(v){
   RV.windowStart=d;
   updateReviewWindowLabel();
   Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
-}
-
-async function reviewSync(btn){
-  if(!RV||RV.syncing) return;
-  RV.syncing=true; const orig=btn.textContent; btn.textContent='Syncing…'; btn.disabled=true;
-  const st=document.getElementById('rv-sync-status'); if(st) st.textContent='';
-  try{
-    // Pair ASCND data onto canoe_calls for the review window (partial index keeps
-    // this cheap; only unpaired ascnd% rows are touched). This is the master-table
-    // function — NOT the legacy no-arg sync_hl_to_calls the footer button calls.
-    const token=(typeof getAuthToken==='function'&&getAuthToken())||SB_KEY;
-    const body=JSON.stringify({ from_ts: RV.windowStart.toISOString(), to_ts: new Date().toISOString() });
-    const res=await fetch(`${SB_URL}/rest/v1/rpc/sync_hl_to_canoe_calls`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body});
-    if(!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
-    const count=await res.json();
-    if(st){ st.style.color='var(--teal)'; st.textContent=`✓ enriched ${Number(count).toLocaleString()} call${count===1?'':'s'}`; }
-    await loadReviewCalls(true);
-  }catch(e){ if(st){ st.style.color='var(--coral)'; st.textContent='sync failed: '+e.message; } }
-  btn.textContent=orig; btn.disabled=false; RV.syncing=false;
-}
-
-async function reviewLogChange(){
-  if(!RV) return;
-  const desc=prompt('Describe the change you applied (e.g. "Removed 2nd insurance question; reworded homeowner prompt"). This sets the start of the next review window:');
-  if(!desc||!desc.trim()) return;
-  const nowISO=new Date().toISOString();
-  try{
-    await sbFetch('agent_changes',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:RV.agent.ivrName,changed_by:getAuthUser(),description:desc.trim(),applied_at:nowISO})});
-    RV.windowStart=new Date(nowISO);
-    updateReviewWindowLabel();
-    await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
-  }catch(e){ alert('Could not log change: '+e.message); }
 }
 
 function reviewFieldVal(id){ const el=document.getElementById(id); const v=el?(el.value||'').trim():''; return v||null; }
