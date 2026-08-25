@@ -537,8 +537,6 @@
   .rv-status.needs { background:var(--amber-bg); color:var(--amber); }
   .rv-status.ok { background:var(--teal-bg); color:var(--teal); }
   .rv-board-calls { font-size:12px; white-space:nowrap; }
-  .rv-unrev { font-size:10px; font-weight:600; padding:2px 8px; border-radius:100px; background:var(--amber-bg); color:var(--amber); margin-left:4px; }
-  .rv-done { font-size:10px; font-weight:600; color:var(--teal); margin-left:4px; }
   .rv-board-open { font-size:11px; color:var(--brand-navy); font-weight:600; white-space:nowrap; text-align:right; }
   .rv-board-empty { padding:24px; text-align:center; color:var(--text-3); font-size:13px; font-style:italic; }
 
@@ -1284,10 +1282,6 @@
 
   <div class="page-footer">
     <div class="footer-note" id="last-updated">Loading data...</div>
-    <div class="footer-right">
-      <span id="sync-status" style="font-size:11px;color:var(--text-3)"></span>
-      <button class="update-link" onclick="syncHlData(this)">sync ASCND data</button>
-    </div>
   </div>
 
   <!-- Manual CSV-upload panel removed from the UI — data now auto-syncs into canoe_calls
@@ -2447,25 +2441,6 @@ function buildBQSQL(){const today=new Date();today.setHours(0,0,0,0);const end=n
 function copySQL(btn){navigator.clipboard.writeText(document.getElementById('bq-sql').textContent.trim()).then(()=>{btn.textContent='Copied!';btn.style.background='var(--teal-bg)';btn.style.color='var(--teal)';setTimeout(()=>{btn.textContent='Copy query';btn.style.background='';btn.style.color='';},2000);});}
 function toggleUpdatePanel(){document.getElementById('update-panel').classList.toggle('open');}
 
-async function syncHlData(btn){
-  const status=document.getElementById('sync-status');
-  btn.disabled=true; btn.textContent='syncing…';
-  if(status) status.textContent='';
-  try{
-    const res=await fetch(`${SB_URL}/rest/v1/rpc/sync_hl_to_calls`,{
-      method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
-      body:'{}'
-});
-    if(!res.ok){const err=await res.text();throw new Error(`${res.status}: ${err}`);}
-    const count=await res.json();
-    if(status){status.textContent=`✓ enriched ${Number(count).toLocaleString()} call${count===1?'':'s'}`;status.style.color='var(--teal)';}
-    if(crRows.length) crLoad(false);
-  }catch(e){
-    if(status){status.textContent='sync failed: '+e.message;status.style.color='var(--coral)';}
-  }
-  btn.disabled=false; btn.textContent='sync ASCND data';
-}
 
 // ─── REVIEW TAB ───────────────────────────────────────────────────────────────
 // Agent-by-agent review: read the calls that went through an agent, answer four
@@ -2541,9 +2516,9 @@ function renderReviewBoard(){
      <div class="rv-board-wrap"><table class="rv-board">
        <thead><tr><th>Agent</th><th>Vertical</th><th>Calls to review (30d)</th><th>Assigned reviewer</th><th>Status</th><th></th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
-         const cnt=b.counts[x.a.ivrName]||{reviewable:0,reviewed:0}; const unrev=Math.max(0,cnt.reviewable-cnt.reviewed);
+         const cnt=b.counts[x.a.ivrName]||{reviewable:0,reviewed:0};
          const cells=cnt.reviewable
-           ? `<strong>${cnt.reviewed}</strong><span style="color:var(--text-3)"> / ${cnt.reviewable} reviewed</span>${unrev>0?` <span class="rv-unrev">${unrev} to go</span>`:' <span class="rv-done">✓ done</span>'}`
+           ? `<strong>${cnt.reviewed}</strong><span style="color:var(--text-3)"> / ${cnt.reviewable} reviewed</span>`
            : '<span style="color:var(--text-3)">—</span>';
          return `
          <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
