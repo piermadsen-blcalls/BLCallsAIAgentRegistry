@@ -580,6 +580,10 @@
   .rv-chip.disp { background:var(--blue-bg); color:var(--blue); font-weight:500; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
   .rv-chip.intent { background:var(--purple-bg); color:var(--purple); font-weight:500; }
   .rv-call-desc { font-size:11.5px; color:var(--text-2); margin-top:7px; font-style:italic; }
+  .rv-callnote { font-size:12px; color:var(--text); background:var(--amber-bg); border-radius:var(--radius-sm); padding:7px 10px; margin-top:7px; line-height:1.5; }
+  .rv-callnote-by { color:var(--text-3); font-size:10.5px; }
+  .rv-clear-btn { font-size:11px; font-weight:500; color:var(--coral); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:4px 10px; cursor:pointer; font-family:var(--sans); }
+  .rv-clear-btn:hover { border-color:var(--coral); }
   .rv-actions { display:flex; gap:8px; margin-top:9px; flex-wrap:wrap; align-items:center; }
   .rv-btn { font-size:10.5px; font-weight:500; color:var(--brand-navy); border:1px solid var(--border-strong); background:var(--surface); border-radius:var(--radius-sm); padding:3px 9px; cursor:pointer; font-family:var(--sans); }
   .rv-btn:hover { border-color:var(--brand-navy); }
@@ -2538,14 +2542,62 @@ async function assignAgent(ivrName, managerId){
   }catch(e){ alert('Could not save assignment: '+e.message); }
 }
 
+// Notes/reviews load for 30 days after the last note — unless the reviewer hit
+// "Clear all notes" for this agent (stored per-browser), which advances the cutoff.
+function reviewNotesSince(ivrName){
+  const base=new Date(Date.now()-30*86400000);
+  try{ const c=localStorage.getItem('rvCleared:'+ivrName); if(c){ const cd=new Date(c); if(!isNaN(cd.getTime())&&cd>base) return cd; } }catch(e){}
+  return base;
+}
+
 async function openReview(ivrName){
   const agent=AGENTS.find(a=>a.ivrName===ivrName);
   if(!agent) return;
-  RV={ agent, ivrs:[agent.ivrName,...aliasesForAgent(agent.ivrName)], calls:[], offset:0, done:false, loading:false, syncing:false, windowStart:null, reviewedSet:new Set(), metrics:null, answers:{} };
+  RV={ agent, ivrs:[agent.ivrName,...aliasesForAgent(agent.ivrName)], calls:[], offset:0, done:false, loading:false, syncing:false, windowStart:null, reviewedSet:new Set(), notesByCall:{}, savedReview:null, metrics:null, answers:{} };
   document.getElementById('review-root').innerHTML='<div class="empty">Loading review…</div>';
   RV.windowStart=resolveReviewWindow();
+  RV.notesSince=reviewNotesSince(agent.ivrName);
+  await loadAgentReview();
   renderReviewWorkspace();
+  applyLoadedReview();
   await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
+}
+
+// Load the most recent saved review (within the notes window) to pre-fill the form.
+async function loadAgentReview(){
+  RV.savedReview=null;
+  try{
+    const since=(RV.notesSince||RV.windowStart).toISOString();
+    const rows=await sbFetch(`agent_reviews?select=answers,notes,reviewed_by,created_at&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=1`)||[];
+    if(rows.length) RV.savedReview=rows[0];
+  }catch(e){ console.warn('agent_reviews load:',e.message); }
+}
+
+function applyLoadedReview(){
+  const r=RV&&RV.savedReview; if(!r||!r.answers) return;
+  const ans=r.answers;
+  RV.answers={qualifying:ans.qualifying,dropoff:ans.dropoff,understanding:ans.understanding,script:ans.script};
+  [['qualifying',ans.qualifying],['dropoff',ans.dropoff],['understanding',ans.understanding],['script',ans.script]].forEach(([k,v])=>{
+    if(!v) return; const btn=document.querySelector('.rv-opts button[data-key="'+k+'"][data-val="'+v+'"]');
+    if(btn){ btn.classList.add('on'); if(btn.dataset.tone) btn.classList.add(btn.dataset.tone); }
+  });
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el&&val!=null) el.value=val; };
+  set('rv-note-qualifying',ans.qualifying_note); set('rv-note-dropoff',ans.dropoff_note);
+  set('rv-note-understanding',ans.understanding_note); set('rv-note-script',ans.script_note);
+  set('rv-wording',ans.wording); set('rv-top-change',ans.top_change);
+  const msg=document.getElementById('rv-save-msg'); if(msg){ msg.style.color='var(--text-3)'; msg.textContent='loaded your '+fmtDate(new Date(r.created_at))+' review'; }
+}
+
+// Clear all notes from the frontend for this agent (history stays in the DB).
+async function clearAllNotes(){
+  if(!RV) return;
+  if(!confirm('Clear all notes for this agent from the screen? They stay saved in history — this just gives you a fresh slate.')) return;
+  try{ localStorage.setItem('rvCleared:'+RV.agent.ivrName, new Date().toISOString()); }catch(e){}
+  RV.notesSince=reviewNotesSince(RV.agent.ivrName);
+  RV.savedReview=null;
+  resetReviewForm();
+  await loadReviewedSet();
+  const msg=document.getElementById('rv-save-msg'); if(msg){ msg.style.color='var(--text-3)'; msg.textContent='cleared (history kept)'; setTimeout(()=>{ const m=document.getElementById('rv-save-msg'); if(m) m.textContent=''; },3000); }
 }
 
 // Fixed trailing-30-day window (overridable via the date input).
@@ -2570,10 +2622,11 @@ async function loadReviewMetrics(){
 }
 
 async function loadReviewedSet(){
-  RV.reviewedSet=new Set();
+  RV.reviewedSet=new Set(); RV.notesByCall={};
   try{
-    const rows=await sbFetch(`call_reviews?select=call_id&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&limit=5000`)||[];
-    rows.forEach(r=>RV.reviewedSet.add(r.call_id));
+    const since=(RV.notesSince||RV.windowStart).toISOString();
+    const rows=await sbFetch(`call_reviews?select=call_id,note,reviewed_by,reviewed_at&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(since)}&order=reviewed_at.desc&limit=5000`)||[];
+    for(const r of rows){ RV.reviewedSet.add(r.call_id); if(r.note&&!RV.notesByCall[r.call_id]) RV.notesByCall[r.call_id]={note:r.note,by:r.reviewed_by,at:r.reviewed_at}; }
   }catch(e){ console.warn('call_reviews:',e.message); }
   updateReviewPerf();
   renderReviewCalls();
@@ -2623,7 +2676,7 @@ function renderReviewWorkspace(){
         <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
       </div>
       <div class="rv-panel">
-        <div class="rv-panel-head"><span class="t">Agent review</span><span class="n">save anytime</span></div>
+        <div class="rv-panel-head"><span class="t">Agent review</span><button class="rv-clear-btn" onclick="clearAllNotes()">Clear all notes</button></div>
         ${reviewFormHtml()}
       </div>
     </div>`;
@@ -2632,7 +2685,7 @@ function renderReviewWorkspace(){
 }
 
 function reviewFormHtml(){
-  const opts=(key,arr)=>`<div class="rv-opts">${arr.map(o=>`<button data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
+  const opts=(key,arr)=>`<div class="rv-opts">${arr.map(o=>`<button data-key="${key}" data-val="${o.v}" data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
   return `<div class="rv-form">
     <div><span class="rv-q-label">1 · Is the agent qualifying correctly?</span>
       ${opts('qualifying',[{v:'accurate',l:'Accurate',tone:'pos'},{v:'over_transfer',l:'Over-transfers',tone:'neg'},{v:'over_reject',l:'Over-rejects',tone:'neg'},{v:'both',l:'Both',tone:'neg'}])}
@@ -2682,18 +2735,21 @@ function reviewCallRow(c,i){
   const rec=c.recording_url||c.ascnd_recording_url;
   const reviewed=RV.reviewedSet.has(c.id);
   const tx=(c.ascnd_transcript||'').trim();
+  const saved=RV.notesByCall&&RV.notesByCall[c.id];
+  const noteShown=saved?`<div class="rv-callnote">📝 ${esc(saved.note)}<span class="rv-callnote-by"> — ${esc(saved.by||'—')} · ${fmtDate(new Date(saved.at))}</span></div>`:'';
   return `<div class="rv-call">
     <div class="rv-call-top"><span class="rv-route" title="${esc(route)}">${esc(route)}</span><span class="rv-date">${fmtDateTime(c.created_at)}</span></div>
     <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${disp}${flags}</div>
     ${desc}
+    ${noteShown}
     <div class="rv-actions">
       <button class="rv-btn" onclick="rvToggleTx(${i})">▸ Transcript</button>
       ${rec?`<a class="rv-btn" href="${esc(rec)}" target="_blank" rel="noopener">▶ Recording</a>`:''}
-      <button class="rv-btn" onclick="rvShowNote(${i})">✎ Note</button>
+      <button class="rv-btn" onclick="rvShowNote(${i})">✎ ${saved?'Edit note':'Note'}</button>
       <span class="rv-check${reviewed?' on':''}" id="rv-chk-${i}" onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${reviewed?'☑ Reviewed':'☐ Mark reviewed'}</span>
     </div>
     <div class="rv-transcript" id="rv-tx-${i}" style="display:none">${tx?esc(tx):'No transcript available.'}</div>
-    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…"></textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
+    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
   </div>`;
 }
 
@@ -2703,11 +2759,12 @@ function rvShowNote(i){ const w=document.getElementById('rv-note-wrap-'+i); if(w
 async function rvSaveNote(callId,i){
   const by=getAuthUser(); if(!by){ alert('Log in to save a note.'); return; }
   const ta=document.getElementById('rv-note-in-'+i); const note=ta?ta.value.trim():'';
+  const nowISO=new Date().toISOString();
   try{
-    await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,note:note||null,reviewed_at:new Date().toISOString()})});
+    await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,note:note||null,reviewed_at:nowISO})});
     RV.reviewedSet.add(callId);
-    const chk=document.getElementById('rv-chk-'+i); if(chk){ chk.classList.add('on'); chk.innerHTML='☑ Reviewed'; }
-    const w=document.getElementById('rv-note-wrap-'+i); if(w) w.style.display='none';
+    if(note) RV.notesByCall[callId]={note,by,at:nowISO}; else delete RV.notesByCall[callId];
+    renderReviewCalls();
     updateReviewPerf();
   }catch(e){ alert('Could not save note: '+e.message); }
 }
