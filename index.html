@@ -2476,16 +2476,20 @@ async function renderReviewPicker(){
 async function loadReviewBoardData(){
   const b=reviewBoard;
   b.managers=[]; b.assignments={}; b.lastReview={}; b.lastChange={}; b.counts={};
-  try{ const since=new Date(Date.now()-30*86400000).toISOString();
-    for(const r of (await sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})})||[])){
-      const k=resolveIvrName(r.ivr_name); const cur=b.counts[k]||{reviewable:0,reviewed:0};
-      cur.reviewable+=Number(r.reviewable||0); cur.reviewed+=Number(r.reviewed||0); b.counts[k]=cur;
-    }
-  }catch(e){ console.warn('review_counts:',e.message); }
-  try{ b.managers=await sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc')||[]; }catch(e){ console.warn('managers:',e.message); }
-  try{ (await sbFetch('agent_review_assignments?select=ivr_name,manager_id')||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; }); }catch(e){ console.warn('assignments:',e.message); }
-  try{ for(const r of (await sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000')||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; } }catch(e){ console.warn('reviews:',e.message); }
-  try{ for(const r of (await sbFetch('agent_changes?select=ivr_name,applied_at&order=applied_at.desc&limit=3000')||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastChange[k]) b.lastChange[k]=r.applied_at; } }catch(e){ console.warn('changes:',e.message); }
+  const since=new Date(Date.now()-30*86400000).toISOString();
+  const nope=e=>{console.warn('review board:',e.message);return[];};
+  const [mgrs,assigns,reviews,changes,counts]=await Promise.all([
+    sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc').catch(nope),
+    sbFetch('agent_review_assignments?select=ivr_name,manager_id').catch(nope),
+    sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000').catch(nope),
+    sbFetch('agent_changes?select=ivr_name,applied_at&order=applied_at.desc&limit=3000').catch(nope),
+    sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
+  ]);
+  b.managers=mgrs||[];
+  (assigns||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; });
+  for(const r of (reviews||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; }
+  for(const r of (changes||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastChange[k]) b.lastChange[k]=r.applied_at; }
+  for(const r of (counts||[])){ const k=resolveIvrName(r.ivr_name); const cur=b.counts[k]||{reviewable:0,reviewed:0}; cur.reviewable+=Number(r.reviewable||0); cur.reviewed+=Number(r.reviewed||0); b.counts[k]=cur; }
   const me=(getAuthUser()||'').toLowerCase();
   b.myId = me ? ((b.managers.find(m=>(m.manager_email||'').toLowerCase()===me)||{}).id || null) : null;
 }
