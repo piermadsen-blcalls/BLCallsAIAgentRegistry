@@ -2665,9 +2665,6 @@ function reviewFormHtml(){
       <textarea class="rv-ta" id="rv-note-cvr" placeholder="Proposed wording…"></textarea></div>
     <div><span class="rv-q-label">Notes <span class="rv-q-hint">optional</span></span>
       <textarea class="rv-ta" id="rv-note-general" placeholder="Anything else for the record…"></textarea></div>
-    <div class="rv-apply"><span class="rv-q-label">Changes I'm applying <span class="rv-q-hint">optional</span></span>
-      <textarea class="rv-ta" id="rv-changes" placeholder="e.g. Removed 2nd insurance question; reworded homeowner prompt"></textarea>
-      <label class="rv-chk"><input type="checkbox" id="rv-apply-chk" checked> Mark applied today — next review starts a fresh window from here</label></div>
     <div class="rv-save-row"><button class="rv-save" id="rv-save-btn" onclick="saveReview()" disabled>Save review</button><span class="rv-save-msg" id="rv-save-msg"></span></div>
   </div>`;
 }
@@ -2698,16 +2695,14 @@ function renderReviewCalls(){
 function reviewCallRow(c,i){
   const route=[c.publisher_name,c.advertiser_name].filter(Boolean).join(' → ')||'—';
   const disp=c.disposition?`<span class="rv-chip disp" title="${esc(c.disposition)}">${esc(c.disposition)}</span>`:'';
-  const intent=c.intent?`<span class="rv-chip intent" title="ASCND intent">${esc(c.intent)}</span>`:'';
-  const outcome=c.our_outcome?outcomeBadge(c.our_outcome):'<span class="outcome-badge">—</span>';
   const flags=flagBadges(c.flags||[]);
-  const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:(c.our_summary?`<div class="rv-call-desc">${esc(c.our_summary)}</div>`:'');
+  const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:'';
   const rec=c.recording_url||c.ascnd_recording_url;
   const reviewed=RV.reviewedSet.has(c.id);
   const tx=(c.ascnd_transcript||'').trim();
   return `<div class="rv-call">
     <div class="rv-call-top"><span class="rv-route" title="${esc(route)}">${esc(route)}</span><span class="rv-date">${fmtDateTime(c.created_at)}</span></div>
-    <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${disp}${intent}${outcome}${flags}</div>
+    <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${disp}${flags}</div>
     ${desc}
     <div class="rv-actions">
       <button class="rv-btn" onclick="rvToggleTx(${i})">▸ Transcript</button>
@@ -2820,11 +2815,7 @@ async function saveReview(){
   if(['handling','glitches','redundant','cvr'].some(k=>a[k]==null)) return;
   const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
   btn.disabled=true; btn.textContent='Saving…';
-  const changesDesc=reviewFieldVal('rv-changes');
-  const markApplied=document.getElementById('rv-apply-chk').checked;
   const nowISO=new Date().toISOString();
-  let notes=reviewFieldVal('rv-note-general')||'';
-  if(changesDesc&&!markApplied){ notes=(notes?notes+'\n\n':'')+'Planned change (not yet applied): '+changesDesc; }
   const review={
     ivr_name:RV.agent.ivrName,
     reviewed_by:getAuthUser(),
@@ -2834,24 +2825,14 @@ async function saveReview(){
     has_glitches:a.glitches==='yes', glitches_note:reviewFieldVal('rv-note-glitches'),
     redundant_qs:a.redundant==='yes', redundant_note:reviewFieldVal('rv-note-redundant'),
     cvr_wording:a.cvr==='yes', cvr_note:reviewFieldVal('rv-note-cvr'),
-    notes:notes||null,
+    notes:reviewFieldVal('rv-note-general'),
     calls_reviewed:RV.reviewedSet.size,
   };
   try{
-    const saved=await sbFetch('agent_reviews',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(review)});
-    const reviewId=saved&&saved[0]&&saved[0].id;
-    if(changesDesc&&markApplied){
-      await sbFetch('agent_changes',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:RV.agent.ivrName,changed_by:getAuthUser(),description:changesDesc,applied_at:nowISO,review_id:reviewId||null})});
-    }
+    await sbFetch('agent_reviews',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(review)});
     msg.style.color='var(--teal)'; msg.textContent='✓ Review saved';
     btn.textContent='Save review';
-    if(changesDesc&&markApplied){
-      RV.windowStart=new Date(nowISO);
-      resetReviewForm(); updateReviewWindowLabel();
-      await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
-    } else {
-      resetReviewForm();
-    }
+    resetReviewForm();
     setTimeout(()=>{ const m=document.getElementById('rv-save-msg'); if(m) m.textContent=''; },4000);
   }catch(e){
     msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message; btn.disabled=false; btn.textContent='Save review';
@@ -2861,9 +2842,8 @@ async function saveReview(){
 function resetReviewForm(){
   if(!RV) return;
   RV.answers={};
-  ['rv-note-handling','rv-note-glitches','rv-note-redundant','rv-note-cvr','rv-note-general','rv-changes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['rv-note-handling','rv-note-glitches','rv-note-redundant','rv-note-cvr','rv-note-general'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('.rv-seg button').forEach(b=>b.className='');
-  const chk=document.getElementById('rv-apply-chk'); if(chk) chk.checked=true;
   updateSaveEnabled();
 }
 
