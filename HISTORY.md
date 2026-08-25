@@ -393,5 +393,22 @@ Continued from the 8/7 Scores work; large session. What moved:
   to Canoe). Fix is in the GHL workflow's Supabase step: map `ai_agent_phone_number`,
   `transcript`←"Voice AI Transcript", `intent`. Backfill of transcript+agent-phone is possible
   from a 30-day CSV/replay; intent can't be backfilled (never stored).
-- **Next:** apply migration `035` (done); GHL workflow field mapping fix (Pier, external);
-  then 30-day transcript/agent-phone backfill. External sources (Granola/Jira) not pulled.
+- **Transcript backfill DONE (036 + `scripts/load_ascnd_transcripts.js`).** Found the real
+  source: a newer GHL contacts export with a `Voice AI Transcript` column populated on 100%
+  of 36,111 rows (the earlier file only had the sparse `Call Transcript`). Loaded to a
+  staging table → `hl_call_data.transcript` (join on `contact_id`) → `canoe_calls.ascnd_transcript`
+  (nearest phone+time, last 30d). Result: 21,909 of 30,406 AI calls (72%) now have a
+  transcript, 16,632 distinct; per-agent distribution matches the export. Caveat: one
+  transcript per contact (most recent call), so ~24% of rows repeat a caller's transcript.
+- **Webhook transcript fix is LIVE.** Isolating post-export rows (pure webhook): 981/1,157
+  (85%) now have a transcript — the GHL `Voice AI Transcript → transcript` mapping was added.
+  Still 0 for `intent` (blank at source until passed back to Canoe) and `ai_agent_phone_number`
+  (still not mapped in GHL) — those two mappings remain.
+- **Review board reviewed/unreviewed signal (037).** New `review_counts(since_ts)` RPC →
+  per-agent reviewable (has ASCND transcript) vs reviewed (`call_reviews`) over 30d; board
+  shows `reviewed / total · N to go` per agent. Footer "sync ASCND data" button confirmed
+  vestigial (calls legacy `sync_hl_to_calls` → old table); Review-header button uses the
+  correct `sync_hl_to_canoe_calls`.
+- **Next:** apply `037`; map `intent`+`ai_agent_phone_number` in GHL; AM "give updates"
+  affordance (Canoe IVR link per agent — need the Canoe UI URL pattern / `ivr_id` mapping).
+  External sources (Granola/Jira) not pulled.

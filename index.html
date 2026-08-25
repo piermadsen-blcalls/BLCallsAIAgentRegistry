@@ -536,6 +536,9 @@
   .rv-status { font-size:10px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; }
   .rv-status.needs { background:var(--amber-bg); color:var(--amber); }
   .rv-status.ok { background:var(--teal-bg); color:var(--teal); }
+  .rv-board-calls { font-size:12px; white-space:nowrap; }
+  .rv-unrev { font-size:10px; font-weight:600; padding:2px 8px; border-radius:100px; background:var(--amber-bg); color:var(--amber); margin-left:4px; }
+  .rv-done { font-size:10px; font-weight:600; color:var(--teal); margin-left:4px; }
   .rv-board-open { font-size:11px; color:var(--brand-navy); font-weight:600; white-space:nowrap; text-align:right; }
   .rv-board-empty { padding:24px; text-align:center; color:var(--text-3); font-size:13px; font-style:italic; }
 
@@ -2468,7 +2471,7 @@ function reviewInit(){
 }
 
 // Review status board (the landing view): assignment + needs-review status per agent.
-let reviewBoard = { managers:[], assignments:{}, lastReview:{}, lastChange:{}, filter:'all', myId:null };
+let reviewBoard = { managers:[], assignments:{}, lastReview:{}, lastChange:{}, counts:{}, filter:'all', myId:null };
 
 async function renderReviewPicker(){
   RV=null;
@@ -2479,7 +2482,13 @@ async function renderReviewPicker(){
 
 async function loadReviewBoardData(){
   const b=reviewBoard;
-  b.managers=[]; b.assignments={}; b.lastReview={}; b.lastChange={};
+  b.managers=[]; b.assignments={}; b.lastReview={}; b.lastChange={}; b.counts={};
+  try{ const since=new Date(Date.now()-30*86400000).toISOString();
+    for(const r of (await sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})})||[])){
+      const k=resolveIvrName(r.ivr_name); const cur=b.counts[k]||{reviewable:0,reviewed:0};
+      cur.reviewable+=Number(r.reviewable||0); cur.reviewed+=Number(r.reviewed||0); b.counts[k]=cur;
+    }
+  }catch(e){ console.warn('review_counts:',e.message); }
   try{ b.managers=await sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc')||[]; }catch(e){ console.warn('managers:',e.message); }
   try{ (await sbFetch('agent_review_assignments?select=ivr_name,manager_id')||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; }); }catch(e){ console.warn('assignments:',e.message); }
   try{ for(const r of (await sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000')||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; } }catch(e){ console.warn('reviews:',e.message); }
@@ -2512,15 +2521,21 @@ function renderReviewBoard(){
     `<div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}${fbtn('mine','My agents',counts.mine)}
        <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Assign each agent a reviewer; click a row to review its calls.</span></div>
      <div class="rv-board-wrap"><table class="rv-board">
-       <thead><tr><th>Agent</th><th>Vertical</th><th>Assigned reviewer</th><th>Status</th><th></th></tr></thead>
-       <tbody>${ rows.length ? rows.map(x=>`
+       <thead><tr><th>Agent</th><th>Vertical</th><th>Calls to review (30d)</th><th>Assigned reviewer</th><th>Status</th><th></th></tr></thead>
+       <tbody>${ rows.length ? rows.map(x=>{
+         const cnt=b.counts[x.a.ivrName]||{reviewable:0,reviewed:0}; const unrev=Math.max(0,cnt.reviewable-cnt.reviewed);
+         const cells=cnt.reviewable
+           ? `<strong>${cnt.reviewed}</strong><span style="color:var(--text-3)"> / ${cnt.reviewable} reviewed</span>${unrev>0?` <span class="rv-unrev">${unrev} to go</span>`:' <span class="rv-done">✓ done</span>'}`
+           : '<span style="color:var(--text-3)">—</span>';
+         return `
          <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
            <td class="rv-board-name">${esc(x.a.name)}</td>
            <td style="color:var(--text-2)">${esc(x.a.vertical||'—')}</td>
+           <td class="rv-board-calls">${cells}</td>
            <td onclick="event.stopPropagation()"><select class="rv-board-sel" onchange="assignAgent('${jsStr(x.a.ivrName)}',this.value)">${selOptions(x.mgr)}</select></td>
            <td><span class="rv-status ${x.st.status}">${esc(x.st.label)}</span></td>
            <td class="rv-board-open">Review →</td>
-         </tr>`).join('') : `<tr><td colspan="5" class="rv-board-empty">${b.filter==='mine'&&!b.myId?'You are not in the account-managers list, so nothing is assigned to you.':'No agents in this view.'}</td></tr>` }</tbody>
+         </tr>`; }).join('') : `<tr><td colspan="6" class="rv-board-empty">${b.filter==='mine'&&!b.myId?'You are not in the account-managers list, so nothing is assigned to you.':'No agents in this view.'}</td></tr>` }</tbody>
      </table></div>`;
 }
 
