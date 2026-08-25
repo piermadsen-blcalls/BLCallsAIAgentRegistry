@@ -409,6 +409,12 @@ Continued from the 8/7 Scores work; large session. What moved:
   shows `reviewed / total · N to go` per agent. Footer "sync ASCND data" button confirmed
   vestigial (calls legacy `sync_hl_to_calls` → old table); Review-header button uses the
   correct `sync_hl_to_canoe_calls`.
-- **Next:** apply `037`; map `intent`+`ai_agent_phone_number` in GHL; AM "give updates"
-  affordance (Canoe IVR link per agent — need the Canoe UI URL pattern / `ivr_id` mapping).
+- **AM updates + Canoe link (038).** Added `agents.canoe_url` (a per-agent link to the IVR
+  in Canoe, to be populated from a CSV Pier provides) and an `agent_updates` append-log. The
+  agent drawer now shows an "Open IVR in Canoe ↗" link + an "Account manager updates" box
+  where AMs log change requests manually (link is just to fetch the info; they still enter
+  updates by hand). RLS mirrors the authenticated read/insert pattern.
+- **Next:** apply `037` + `038`; Pier sends the `ivr_name → canoe_url` CSV (I'll load it);
+  map `intent`+`ai_agent_phone_number` in GHL; optionally remove the vestigial footer sync
+  button. External sources (Granola/Jira) not pulled.
   External sources (Granola/Jira) not pulled.
