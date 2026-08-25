@@ -24,13 +24,15 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
     address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
     accounts, ignoring the enabled flag.
-- **`supabase/`** — `migrations/` (001–032) and `functions/admin-users` (edge fn).
+- **`supabase/`** — `migrations/` (001–041) and `functions/admin-users` (edge fn).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
   `028` partial + `029` GIN (`jsonb_path_ops`) index on `flags` (Calls-tab jsonb
   filters — fix 57014 timeouts), `030` `agent_metrics_daily` rollup that `agent_metrics`
   reads instead of scanning raw (Agents load ~5-9s → ~44ms), refreshed daily by **pg_cron**
-  (`refresh-agent-rollup`, 01:00 UTC).
+  (`refresh-agent-rollup`, 01:00 UTC). `041` `outcome_score_daily` rollup that
+  `outcome_score_vectors` sums instead of scanning raw (same fix for the slow Scores tab),
+  refreshed daily by pg_cron (`refresh-outcome-score-rollup`, 01:30 UTC).
 - **`.github/workflows/`** — `sync.yml` (daily 00:00), `alert.yml` (Mon/Wed/Fri),
   `process.yml` (manual/test dispatch only — cron removed), and the Gemini batch crons
   `process-submit.yml` (nightly 03:00 UTC) + `process-ingest.yml` (every 6h).
@@ -49,7 +51,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
   `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` (AI Studio, for the native batch),
   `ASCND_ALERT_WEBHOOK_URL`. Add new ones in both places.
 - **DB changes = a new numbered migration** in `supabase/migrations/` (next is
-  `033_…`). Don't edit existing migrations. Migrations are applied to prod by hand
+  `042_…`). Don't edit existing migrations. Migrations are applied to prod by hand
   (Supabase SQL editor or `supabase db query --linked`); the files are the record.
 - **Agents are keyed by IVR name** with an alias→canonical map (`agent_ivr_aliases`);
   resolve to the canonical name before grouping.

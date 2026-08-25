@@ -418,3 +418,18 @@ Continued from the 8/7 Scores work; large session. What moved:
   map `intent`+`ai_agent_phone_number` in GHL; optionally remove the vestigial footer sync
   button. External sources (Granola/Jira) not pulled.
   External sources (Granola/Jira) not pulled.
+
+### 2026-08-25 (Pier) — Scores tab perf: rollup for outcome_score_vectors
+- **Scores tab was seconds-slow to load.** Root cause: `outcome_score_vectors()` (017) scanned
+  the wide `canoe_calls` table for the comparable set (both `canoe_outcome` + `our_outcome`
+  set) over a 90d window and grouped at read time on every load; the 018 partial index was
+  keyed on `created_at` but didn't include the projected columns, so Postgres still did a heap
+  fetch per matching row (worse under write load). Same problem/fix as the Agents tab (030).
+- **Migration `041_scoring_vectors_rollup.sql`** (NOT yet applied to prod): new
+  `outcome_score_daily` rollup keyed by (entity_type, entity_name, vertical, source, outcome,
+  day) covering both entity types + both sources; `refresh_outcome_score_daily(days_back=120)`
+  recompute fn; one-time full populate; `outcome_score_vectors` rewritten to sum the rollup
+  (same signature + return shape → no `index.html` change). pg_cron `refresh-outcome-score-rollup`
+  daily 01:30 UTC. 120d refresh window covers the 90d master + backfill margin.
+- **Next:** apply `041` in the Supabase SQL editor, then reload the Scores tab to confirm
+  the speedup. External sources (Granola/Jira) not pulled.
