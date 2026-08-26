@@ -433,3 +433,16 @@ Continued from the 8/7 Scores work; large session. What moved:
   daily 01:30 UTC. 120d refresh window covers the 90d master + backfill margin.
 - **Next:** apply `041` in the Supabase SQL editor, then reload the Scores tab to confirm
   the speedup. External sources (Granola/Jira) not pulled.
+
+### 2026-08-26 (Pier) — Calls-tab CSV export: add AI summaries + publisher's AM
+- Extended `crExportAll()` in `index.html` to add three columns: `publisher_account_manager`,
+  `our_summary` (registry summary), and `canoe_summary` (Canoe summary). Summaries were already
+  in the Calls query, just not written to the CSV. AM resolved from the live
+  `account_manager_assignments` table (publisher-side), with a guard that loads `compAssignments`
+  if Settings hasn't already (export works on a fresh reload without opening Settings).
+- Also brainstormed (plan only, not built) a "forward to publisher" copy/paste block for the
+  supply-manager alert digest (FB Marketplace + Outbound dial calls, per publisher), plus a
+  future `mailto:` "Draft in Outlook" button. Plan saved in
+  `.claude/plans/misty-chasing-dijkstra.md`. Est. ~1 day for phases 1+2.
+- **Next:** verify the CSV export live post-deploy; decide whether to build the alert-digest
+  forward block. External sources (Granola/Jira) not pulled.
