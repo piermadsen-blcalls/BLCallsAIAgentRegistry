@@ -446,3 +446,72 @@ Continued from the 8/7 Scores work; large session. What moved:
   `.claude/plans/misty-chasing-dijkstra.md`. Est. ~1 day for phases 1+2.
 - **Next:** verify the CSV export live post-deploy; decide whether to build the alert-digest
   forward block. External sources (Granola/Jira) not pulled.
+
+### 2026-09-08 (Pier) — Review board counter ignored reviews on alias-named agents
+- **Symptom:** agents in the Review pane showed calls being ticked off, but the board's
+  "Calls to review (30d)" column didn't move (Pest Control, water damage cited).
+- **Root cause was a read/write key asymmetry in `index.html`, not the RPC.**
+  `loadReviewBoardData()` buckets `review_counts` / assignments / lastReview under
+  `resolveIvrName(raw)` (canonical), but `renderReviewBoard()` looked them up under the raw
+  `agents.ivr_name`. Any `agents` row whose own `ivr_name` is itself an alias therefore missed
+  its own bucket and read "—" / "Never reviewed" permanently. `openReview()` had the mirror
+  problem: it built its call query from the unresolved name, so the pane happily listed calls
+  the board was counting elsewhere. Ruled out first (both wrong): `review_counts` missing the
+  `is_test is not true` filter every other RPC has, and the board's hard-coded 30d window vs
+  the pane's adjustable one.
+- **Trigger in the data:** Canoe emits the Pest Control IVR with a **double space** after
+  "ASCND". `agent_ivr_aliases` folds the single-space variant into the double-space canonical,
+  but an `agents` row also existed against the variant, mis-named "Pest Control Compliance"
+  (the real compliance agent is a different IVR). That row's 242 calls / 12 reviews were
+  counted under "Pest Control" while the board rendered them nowhere.
+- **Fixed:** board lookups + `openReview()` now resolve through the alias map.
+  **Migration `042_dedupe_pest_control_agent.sql`** (NOT yet applied to prod) drops the
+  duplicate `agents` row and folds its reviewer assignment onto the canonical — Pier's call
+  that it's one agent, per the alias.
+- **Known-unfixed:** water damage was never broken (its name isn't an alias; it read 1/2 all
+  along) — only 2 water-damage calls with an ASCND transcript exist in the last 30d, so older
+  reviews can't show in a 30d-windowed counter. Making that window follow the pane's date
+  picker is still open. `ASCND AI Agent - Pest Control BH Direct - Outgoing` (1 call) has no
+  `agents` row and no alias, so it stays invisible.
+- **`042` DELIBERATELY DEFERRED (Pier's call, 2026-09-08)** — shipped the frontend fix without
+  it. Consequence while it stays unapplied: the board shows TWO "Pest Control Compliance" rows,
+  the phantom one duplicating Pest Control's 37 / 475, so eyeballed pest-control totals read
+  ~2x. Both rows open the same 475-call pane, and because `assignAgent` writes (and now reads)
+  by canonical name, their reviewer dropdowns and review-status cells are wired to the same DB
+  row — assigning or reviewing one silently changes the other. Note the frontend fix only ever
+  affected this one row: query B found exactly one `agents` row whose own `ivr_name` is an
+  alias, so the code change is really hardening and `042` is the actual fix for the symptom.
+- **Next:** apply `042` when convenient, then confirm Pest Control reads 37 / 475 with a single
+  "Pest Control Compliance" row. External sources (Granola/Jira) not pulled.
+
+### 2026-09-08 (Pier) — Calls tab: per-call outcome score columns (Pub + Adv)
+- Added `Pub Score` / `Adv Score` to the Calls tab so scores appear in the table AND ride along
+  in the CSV export. No migration needed: the scores were already stamped per call on
+  `canoe_calls.publisher_score` / `.advertiser_score` (schema `001`, weights `005`) by
+  `process.js` at analysis time — the Calls tab just never selected them.
+- Four touch points in `index.html`: `CR_COLUMNS` (both `def:true`, both `sortable:true` since
+  they're real column names so the existing `&order=` path works unchanged), the `crBuildQuery`
+  select, a `renderCell` case, and the `crExportAll` cols array. Column-picker toggles and
+  saved prefs need no change — the picker iterates `CR_COLUMNS`, and `crLoadColPrefs` only
+  overrides keys present in the saved blob, so existing users get the new columns visible
+  without their prefs being wiped.
+- Kept BOTH scores rather than collapsing to one "Score": the weights genuinely differ per side
+  (`soliciting` -5/0, `outside_geo` 0/-3), so a single number would have been invented. Renderer
+  distinguishes a real `0` (e.g. `other`, `not_interested`) from `null` (not yet AI-processed) —
+  0 renders as 0, null as "—", export leaves null empty.
+- **Mobile fix required by the wider table:** `.cr-table-wrap` was `overflow:hidden` with
+  `width:100%` + `white-space:nowrap` headers and no media query, so on narrow viewports the
+  nowrap headers push the table past 100% and the right-hand columns were CLIPPED, not
+  scrollable — exactly where the two new columns land. Added `overflow-x:auto` after the
+  existing `overflow:hidden` (keeps the border-radius clipped on y, scrolls on x), matching
+  the `.rv-board-wrap` pattern already used for the Review board's wide table.
+- **Caveat worth a decision:** `process.js` stamps from its OWN hardcoded `OUTCOME_SCORES`
+  table (lines 67-96) and never reads `outcome_weights` — the "fallback when the table is
+  unavailable" comment is misleading, it's the only path. The Scores tab, by contrast, applies
+  live `outcome_weights` read-time (`017`, by design: "no per-call score stamping"). So if
+  anyone has edited weights in the Settings admin UI, the new export columns will disagree with
+  the Scores tab until `recalculate_call_scores()` is run (wired to a button at
+  `index.html:3958`). Hardcoded values currently match the `005` seed.
+- **Next:** confirm live weights still match the `005` seed; if not, run
+  `recalculate_call_scores()` before anyone trusts the exported scores, and consider having
+  `process.js` read `outcome_weights` at startup. External sources (Granola/Jira) not pulled.
