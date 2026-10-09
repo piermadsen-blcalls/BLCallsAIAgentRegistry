@@ -994,9 +994,21 @@
           <option value="duplicate_caller">duplicate_caller</option>
         </select>
         <!-- Outcome (options populated from REVIEW_OUTCOMES on load) -->
-        <select class="cr-select" id="cr-outcome-filter" onchange="crLoad()">
+        <select class="cr-select" id="cr-outcome-filter" onchange="crOutcomeChange()">
           <option value="">All outcomes</option>
         </select>
+        <!-- Outcome group (score sign from outcome_weights; options populated from CR_OUTCOME_GROUPS) -->
+        <select class="cr-select" id="cr-outcome-group-filter" onchange="crOutcomeGroupChange()">
+          <option value="">All outcome groups</option>
+        </select>
+        <!-- Vertical (multi-select; options populated by populateVerticalDropdowns) -->
+        <div class="ins-vertical-wrap" id="cr-vertical-wrap">
+          <button class="ins-vertical-trigger" onclick="crVerticalToggle(event)">
+            <span id="cr-vertical-label">All verticals</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="ins-vertical-popover" id="cr-vertical-popover"></div>
+        </div>
         <!-- Flagged only -->
         <button class="comp-filter-toggle" id="cr-flagged-only" onclick="crToggleFlagged(this)">Flagged only</button>
         <!-- Search -->
@@ -1342,7 +1354,7 @@ async function applyRoute() {
   // tab, pre-filtered to the account's flagged calls for the period.
   const complianceLegacy = (tab === 'compliance');
   if (complianceLegacy) tab = 'calls';
-  const filteredCalls = tab === 'calls' && (complianceLegacy || params.get('flagged') === '1' || params.get('account'));
+  const filteredCalls = tab === 'calls' && (complianceLegacy || params.get('flagged') === '1' || params.get('account') || params.get('outcomeGroup') || params.get('vertical'));
   _suppressRoute = true;
   if (filteredCalls) crAutoLoaded = true;   // suppress the default 7-day autoload; applyCallsFilters sets the window
   switchTab(tab);
@@ -1372,7 +1384,8 @@ let scoresOpenKey = null;          // pairing expanded in the WHY panel
 let scoresExcluded = new Set();    // outcomes deselected in the what-if
 let scoresSearch  = '';            // filters the ranked table by name / vertical
 
-async function scoresInit() {
+// Shared by the Scores tab and the Calls-tab outcome-group filter.
+async function loadOutcomeWeights() {
   if (!scoresWeights) {
     try {
       const rows = await sbFetch('outcome_weights?select=outcome,pub_score,adv_score');
@@ -1380,6 +1393,11 @@ async function scoresInit() {
       (rows || []).forEach(r => { scoresWeights[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
     } catch(e) { scoresWeights = {}; console.warn('scores weights:', e.message); }
   }
+  return scoresWeights;
+}
+
+async function scoresInit() {
+  await loadOutcomeWeights();
   scoresSetEntity(scoresEntity);
 }
 
@@ -1645,6 +1663,14 @@ function buildVerticalOptions(allCb, changeFn) {
 function populateVerticalDropdowns() {
   const insPop = document.getElementById('ins-vertical-popover');
   if (insPop) insPop.innerHTML = buildVerticalOptions('insVerticalAll','insVerticalChange');
+  const crPop = document.getElementById('cr-vertical-popover');
+  if (crPop) crPop.innerHTML = buildVerticalOptions('crVerticalAll','crVerticalChange');
+}
+// Loads + renders the verticals once. Awaited by crLoad so deep links never race the fetch.
+let verticalsPromise = null;
+function ensureVerticals() {
+  if (!verticalsPromise) verticalsPromise = loadVerticals().then(() => { populateVerticalDropdowns(); crApplyPendingVerticals(); });
+  return verticalsPromise;
 }
 
 // ─── AGENTS DATE RANGE PICKER ─────────────────────────────────────────────────
@@ -1678,6 +1704,8 @@ document.addEventListener('click', e => {
   if (vwrap && !vwrap.contains(e.target)) document.getElementById('ins-vertical-popover')?.classList.remove('open');
   const crDWrap = document.getElementById('cr-drp-wrap');
   if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
+  const crVWrap = document.getElementById('cr-vertical-wrap');
+  if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
   const crCpWrap = document.getElementById('cr-colpicker-wrap');
   if (crCpWrap && !crCpWrap.contains(e.target)) document.getElementById('cr-colpicker-popover')?.classList.remove('open');
 });
@@ -2058,7 +2086,7 @@ function insExpandContent(r,pA,pB){
 
 // ─── CALL REPORTING TAB ───────────────────────────────────────────────────────
 let crDrpViewYear, crDrpViewMonth, crDrpPickStart=null, crDrpPickEnd=null, crDrpSelecting=false;
-let crRows = [], crOffset = 0, crPageSize = 25, crHasMore = false, crTotal = 0;
+let crRows = [], crOffset = 0, crPageSize = 25, crHasMore = false, crTotal = null, crLoadSeq = 0;   // crTotal null = exact count still loading
 let crSortCol = 'created_at', crSortDir = -1;
 
 // Column definitions: key, label, sortable, default-visible
@@ -2141,6 +2169,56 @@ function crFmtDateTime(iso) { if (!iso) return '—'; const d=new Date(iso); ret
 function crFmtRev(v) { return v > 0 ? '$' + v.toFixed(2) : '—'; }
 function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();if(l.includes('connect'))return'cr-dispo-connected';if(l.includes('reject'))return'cr-dispo-rejected';return'cr-dispo-other'; }
 
+// ── Outcome groups: score sign per side, read from outcome_weights (loadOutcomeWeights) ──
+const CR_OUTCOME_GROUPS = [
+  { key:'adv_pos', side:'adv_score', sign: 1, label:'Positive advertiser outcomes' },
+  { key:'adv_neu', side:'adv_score', sign: 0, label:'Neutral advertiser outcomes' },
+  { key:'adv_neg', side:'adv_score', sign:-1, label:'Negative advertiser outcomes' },
+  { key:'pub_pos', side:'pub_score', sign: 1, label:'Positive publisher outcomes' },
+  { key:'pub_neu', side:'pub_score', sign: 0, label:'Neutral publisher outcomes' },
+  { key:'pub_neg', side:'pub_score', sign:-1, label:'Negative publisher outcomes' },
+];
+(() => { const s = document.getElementById('cr-outcome-group-filter'); if (s) CR_OUTCOME_GROUPS.forEach(g => { const opt = document.createElement('option'); opt.value = g.key; opt.textContent = g.label; s.appendChild(opt); }); })();
+function crOutcomeGroupMembers(key) {
+  const g = CR_OUTCOME_GROUPS.find(x => x.key === key);
+  if (!g || !scoresWeights) return [];
+  return Object.keys(scoresWeights).filter(o => Math.sign(Number(scoresWeights[o][g.side]) || 0) === g.sign);
+}
+// A single outcome and an outcome group would AND into contradictory filters, so picking one clears the other.
+function crOutcomeChange() { if (document.getElementById('cr-outcome-filter').value) document.getElementById('cr-outcome-group-filter').value = ''; crLoad(); }
+function crOutcomeGroupChange() { if (document.getElementById('cr-outcome-group-filter').value) document.getElementById('cr-outcome-filter').value = ''; crLoad(); }
+
+// ── Calls-tab vertical multi-select (mirrors the Insights one; applied via Load calls) ──
+let crPendingVerticals = null;   // deep-link selection waiting for the options to render
+function crVerticalToggle(e) { e.stopPropagation(); document.getElementById('cr-vertical-popover').classList.toggle('open'); }
+function crVerticalAll(cb) {
+  document.getElementById('cr-vertical-popover').querySelectorAll('input[type=checkbox]').forEach(c => c.checked = cb.checked);
+  crVerticalUpdateLabel();
+}
+function crVerticalChange() {
+  const pop = document.getElementById('cr-vertical-popover');
+  pop.querySelector('input[value="all"]').checked = [...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].every(c => c.checked);
+  crVerticalUpdateLabel();
+}
+// Empty array = no vertical filter (All checked, or nothing checked).
+function crSelectedVerticals() {
+  const pop = document.getElementById('cr-vertical-popover');
+  if (!pop || pop.querySelector('input[value="all"]')?.checked) return [];
+  return [...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].filter(c => c.checked).map(c => c.value);
+}
+function crVerticalUpdateLabel() {
+  const sel = crSelectedVerticals();
+  document.getElementById('cr-vertical-label').textContent = !sel.length ? 'All verticals' : sel.length === 1 ? sel[0] : sel.length + ' verticals';
+}
+function crApplyPendingVerticals() {
+  const pop = document.getElementById('cr-vertical-popover');
+  if (!crPendingVerticals || !pop || !pop.querySelector('input[value="all"]')) return;   // options not rendered yet
+  const want = new Set(crPendingVerticals);
+  pop.querySelectorAll('input[type=checkbox]:not([value="all"])').forEach(c => { c.checked = want.has(c.value); });
+  crVerticalChange();
+  crPendingVerticals = null;
+}
+
 // Filter portion of the Calls query (everything except select / order / pagination).
 // Shared by the table load and the summary metrics. includeFlagFilters=false drops
 // the two flag drill-downs (Flagged-only, flag-type) so the metric strip stays a
@@ -2156,6 +2234,14 @@ function crBuildFilters(includeFlagFilters = true) {
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
   const outcome = document.getElementById('cr-outcome-filter')?.value;
   if (outcome) q += `&our_outcome=eq.${encodeURIComponent(outcome)}`;
+  const group = document.getElementById('cr-outcome-group-filter')?.value;
+  if (group) {
+    // An empty group must match nothing, not silently drop the filter.
+    const members = crOutcomeGroupMembers(group);
+    q += members.length ? `&our_outcome=in.(${encodeURIComponent(members.join(','))})` : `&our_outcome=eq.${encodeURIComponent('__no_match__')}`;
+  }
+  const verticals = crSelectedVerticals();
+  if (verticals.length) q += `&vertical_name=in.(${encodeURIComponent(verticals.map(v => '"' + v.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"').join(','))})`;
   if (includeFlagFilters) {
     if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
     const flag = document.getElementById('cr-flag-filter')?.value;
@@ -2174,28 +2260,47 @@ function crBuildQuery(offset) {
 
 async function crLoad(append=false) {
   if (!crDrpPickStart || !crDrpPickEnd) { alert('Select a date range first.'); return; }
-  if (!append) { crRows = []; crOffset = 0; crTotal = 0; }
+  if (!append) { crRows = []; crOffset = 0; crTotal = null; }
+  const seq = append ? crLoadSeq : ++crLoadSeq;   // load-more must not orphan the in-flight count
   const btn = document.getElementById('cr-run-btn');
   btn.disabled = true; btn.textContent = 'Loading…';
+  await Promise.all([loadOutcomeWeights(), ensureVerticals()]);   // group + vertical filters need both
   if (!append) document.getElementById('cr-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>`;
   try {
     const res = await fetch(`${SB_URL}/rest/v1/${crBuildQuery(crOffset)}`, {
-      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${getAuthToken() || SB_KEY}`, 'Content-Type':'application/json', 'Prefer':'count=exact', 'Range-Unit':'items', 'Range':`${crOffset}-${crOffset+crPageSize-1}` }
+      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${getAuthToken() || SB_KEY}`, 'Content-Type':'application/json', 'Range-Unit':'items', 'Range':`${crOffset}-${crOffset+crPageSize-1}` }
     });
     if (!res.ok) { const err = await res.text(); throw new Error(`Supabase ${res.status}: ${err}`); }
-    const cr = res.headers.get('content-range');
-    if (cr) { const m = cr.match(/\/(\d+|\*)$/); if (m && m[1] !== '*') crTotal = parseInt(m[1]); }
     const txt = await res.text();
     const newRows = txt ? JSON.parse(txt) : [];
     crRows = append ? [...crRows, ...newRows] : newRows;
     crOffset += newRows.length;
-    crHasMore = crOffset < crTotal;
+    crHasMore = crTotal == null ? newRows.length === crPageSize : crOffset < crTotal;
     crRender();
-    if (!append) callsLoadStats();   // refresh the summary strip with the same filters
+    if (!append) { crLoadTotal(seq); callsLoadStats(); }   // exact count + summary strip load in the background
   } catch(e) {
     document.getElementById('cr-output').innerHTML = `<div class="ins-loading" style="color:var(--coral)">Error: ${e.message}</div>`;
   }
   btn.disabled = false; btn.textContent = 'Load calls';
+}
+
+// The exact row count is the slow part of a Calls load (a scan over the wide table), while a
+// page of rows is fast. Rows render first; this fills the exact total in once it arrives.
+async function crLoadTotal(seq) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${crBuildFilters()}`, {
+      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${getAuthToken() || SB_KEY}`, 'Prefer':'count=exact', 'Range-Unit':'items', 'Range':'0-0' }
+    });
+    if (!res.ok) throw new Error(`Supabase ${res.status}`);
+    const n = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
+    if (seq !== crLoadSeq || isNaN(n)) return;   // superseded by a newer load, or no count returned
+    crTotal = n;
+    crHasMore = crOffset < crTotal;
+    crRender();
+  } catch(e) {
+    console.warn('calls total:', e.message);
+    if (seq === crLoadSeq) { crTotal = undefined; crRender(); }   // undefined = count failed; footer says so
+  }
 }
 
 async function crExportAll() {
@@ -2323,7 +2428,7 @@ function crRender() {
 
   const tbody = rows.map(r => `<tr class="cr-row" style="cursor:pointer" onclick="crOpenDrawer('${r.id}')">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
 
-  const totalLabel = crTotal.toLocaleString();
+  const totalLabel = crTotal == null ? (crTotal === null ? 'counting…' : 'unknown') : crTotal.toLocaleString();
   const footerText = search
     ? `Showing ${rows.length.toLocaleString()} of ${crRows.length.toLocaleString()} loaded (${totalLabel} total match filters)`
     : `Showing ${rows.length.toLocaleString()} of ${totalLabel} rows`;
@@ -2991,8 +3096,7 @@ async function bootDashboard() {
   agentDrpInit();
   agentsLoadedPromise = Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
   await agentsLoadedPromise;
-  loadVerticals();
-  populateVerticalDropdowns();
+  ensureVerticals();
   crVisibleCols = {}; CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();
   recomputeStats();
@@ -3282,6 +3386,10 @@ function applyCallsFilters(params) {
     const el = document.getElementById(params.get('type') === 'advertiser' ? 'cr-adv-filter' : 'cr-pub-filter');
     if (el) el.value = account;
   }
+  const group = params.get('outcomeGroup');
+  if (group && CR_OUTCOME_GROUPS.some(g => g.key === group)) document.getElementById('cr-outcome-group-filter').value = group;
+  const verts = params.get('vertical');
+  if (verts) { crPendingVerticals = verts.split(',').map(v => v.trim()).filter(Boolean); crApplyPendingVerticals(); }
   if (params.get('flagged') === '1') {
     const t = document.getElementById('cr-flagged-only');
     if (t && !t.classList.contains('active')) t.classList.add('active');
