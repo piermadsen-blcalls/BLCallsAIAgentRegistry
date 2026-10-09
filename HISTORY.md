@@ -515,3 +515,22 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Next:** confirm live weights still match the `005` seed; if not, run
   `recalculate_call_scores()` before anyone trusts the exported scores, and consider having
   `process.js` read `outcome_weights` at startup. External sources (Granola/Jira) not pulled.
+
+## Week of Oct 5, 2026
+
+### 2026-10-09 (Pier)
+- **MK-175 (Calls tab filters):** added an outcome-group filter (Positive / Neutral / Negative x
+  Advertiser / Publisher, derived from live `outcome_weights` score sign) and a vertical
+  multi-select to the Calls toolbar. Both flow through `crBuildFilters`, so the table, summary
+  strip, revenue, flag breakdown and CSV export all respect them. Deep links accept
+  `outcomeGroup` and `vertical` params. Picking a single outcome clears the group and vice versa.
+- **Performance finding:** exact `count(*)` over a 90-day window already took ~7.5s (cap is 8s),
+  and either new filter pushed it to a 57014 timeout; page fetches were always fast (~15ms).
+  Fix: migration `043` adds `(our_outcome, created_at) INCLUDE (vertical_name)` and
+  `(vertical_name, created_at) INCLUDE (our_outcome)`. Counts now run ~15-75ms warm, 2-5s on a
+  cold first touch, all under the cap. Also changed `crLoad` to render rows first and fill in the
+  exact total in the background (`crLoadTotal`), so the table no longer waits on the count.
+- Confirmed live `outcome_weights` matches the `005` seed (closes the earlier drift question).
+- Applied `043` to production by hand via the Supabase CLI. Brief write lock on `canoe_calls`.
+- **Next:** browser check (all six groups, multi-vertical, deep link, ~375px), then PR. Still
+  open: `process.js` hardcoded `OUTCOME_SCORES`. External sources (Wispr/Jira) not pulled.
