@@ -639,3 +639,14 @@ Continued from the 8/7 Scores work; large session. What moved:
   review, then activate v4 for new calls (no re-score of history).
 - **Mobile:** the call drawer was a fixed 540px, so on phones its left ~165px was off-screen; now
   `min(540px, 100vw)`. Desktop unchanged.
+- **MK-186 test results (gemini-3.6-flash native, test mode, nothing written to canoe_calls):**
+  random 100 (50 insurance quoted_abandoned / 25 other insurance / 25 non-insurance) -> 0
+  coached_call; targeted 40 transcripts matching coaching-like phrases -> 1 flagged (caller asks
+  "what am I supposed to tell them"), the other 39 were benign uses ("they told me it would cost",
+  referrals, hold messages) and correctly not flagged. v3 re-run baseline on the same 100: outcomes
+  match production 84/100 vs v4 85/100, flags 99/100 both -> v4 changes nothing else; the ~15%
+  outcome drift is model re-run variance. Flag is conservative; recall unproven without known
+  coached examples. OpenRouter key in GH secrets returns 401 "User not found" (Settings model
+  testing via OpenRouter is broken); `process.yml` now passes GEMINI_API_KEY so tests use native
+  Gemini. Test ids: ed986d27 (v4 random), 66f31e56 (v4 targeted), d1e7a4d1 (v3 baseline).
+- **Next:** PR + merge (process.js/alert.js must be on main first), then activate prompt v4.
