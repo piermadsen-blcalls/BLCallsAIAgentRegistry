@@ -579,6 +579,10 @@ Continued from the 8/7 Scores work; large session. What moved:
   objective save, note add, review save + empty-review guard + history all write and render;
   labelled test rows deleted afterwards. Fixed during check: objective text collided with the
   global `.empty` class (huge card on mobile), Refresh tap target, long scope line truncated.
-- **Pre-existing mobile issues (not from this change):** page scrolls sideways at 375px because
-  the off-screen `#comp-drawer` (540px fixed) and the header email pill overflow.
-- **Next:** commit + PR. Not done: call-list filters (Pier didn't pick them).
+- **Pre-existing mobile issue (not from this change):** every page scrolled sideways at 375px
+  (~527px wide). Cause was the nav tabs, the header row/email pill and the login card - not
+  `#comp-drawer` as first suspected. Fixed separately in PR #5 (`fix/mobile-horizontal-overflow`).
+- **Shipped as PR #4** (`feat/mk-183-review-filters`, commit 8eca9b1); `044` already on prod.
+- **Next:** review + merge PR #4 and PR #5; apply `042` (Pest Control duplicate); alias the
+  "Electrician Compliance ... - outgoing" IVR; team to assign the unassigned accounts. Not done:
+  call-list filters (Pier didn't pick them).
