@@ -650,3 +650,19 @@ Continued from the 8/7 Scores work; large session. What moved:
   testing via OpenRouter is broken); `process.yml` now passes GEMINI_API_KEY so tests use native
   Gemini. Test ids: ed986d27 (v4 random), 66f31e56 (v4 targeted), d1e7a4d1 (v3 baseline).
 - **Next:** PR + merge (process.js/alert.js must be on main first), then activate prompt v4.
+- **Changes after Pier's 2026-10-16 meeting with Vicky (Wispr: "AI Registry and SaaS Direction"):**
+  - MK-184 reversed to a REAL flag (meeting decision: "quoted abandon is added as a compliance flag
+    while also staying an outcome"). `process.js` `addOutcomeFlags` adds `quoted_abandoned` when the
+    outcome is quoted_abandoned (batch + sync paths); badge/filter workaround removed; flag breakdown
+    includes it. NOT in the AM digest (Pier). Backfill = migration `047` (2,457 calls), to run right
+    after merge. Kept separate from coached_call (Pier).
+  - MK-186: v4 prompt now also names incentives ("I was told I'd get an Amazon card") - migration
+    `048` (applied; v4 still inactive) + fallback prompt. Re-test on 40 incentive-phrase calls:
+    1 flagged (reward-card mailer caller), 1 similar reward-card caller missed, 38 correctly not
+    flagged (card payments, insurer rewards programs, IVR "if anyone promised you a gift card"
+    disclaimers). Conservative; Vicky's framing: judge publishers by flag-rate outliers, not per call.
+  - MK-183 follow-up ("we don't need assignments"): Review board loses the Assigned reviewer column,
+    reviewer filter and "My agents". `agent_review_assignments` data left in place, unused.
+  - Later / separate ticket: publisher coached-flag-rate vs average outlier view (Vicky's idea).
+  - Also from the meeting: MK-177 naming conventions is next priority; MK-180 is Pier's; Pier to get
+    Vicky Cowork + Claude Code access.
