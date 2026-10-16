@@ -526,7 +526,18 @@
   .rv-board-filter { font-size:12px; font-weight:500; padding:6px 13px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-2); border-radius:100px; cursor:pointer; font-family:var(--sans); }
   .rv-board-filter:hover { border-color:var(--text); }
   .rv-board-filter.active { background:var(--brand-navy); color:#fff; border-color:var(--brand-navy); }
-  .rv-board-reviewer { font-size:12px; padding:6px 10px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:100px; cursor:pointer; font-family:var(--sans); }
+  .rv-board-reviewer { font-size:12px; padding:6px 10px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:100px; cursor:pointer; font-family:var(--sans); max-width:100%; }
+  .rv-board-scope-lbl { font-size:11px; color:var(--text-3); }
+  .rv-scope-bar { padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); }
+  .rv-scope-bar .run-btn { padding:6px 16px; font-size:12px; }
+  .rv-scope-bar .rv-refresh { padding:6px 12px; font-size:12px; }
+  .rv-acct-trigger { max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rv-acct-popover { width:320px; max-width:calc(100vw - 32px); padding:0; }
+  .rv-acct-tools { display:flex; gap:6px; padding:8px; border-bottom:1px solid var(--border); }
+  .rv-acct-search { flex:1; min-width:0; font-family:var(--sans); font-size:12px; padding:6px 8px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); }
+  .rv-acct-list { max-height:300px; overflow-y:auto; padding:4px 0; }
+  .rv-acct-none { padding:12px 14px; font-size:12px; color:var(--text-3); font-style:italic; }
+  .rv-board-accts { font-size:11.5px; color:var(--text-2); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .rv-board-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); }
   table.rv-board { width:100%; border-collapse:collapse; font-size:12.5px; min-width:640px; }
   table.rv-board th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--text-3); padding:11px 14px; border-bottom:1px solid var(--border); background:var(--bg); white-space:nowrap; }
@@ -536,14 +547,40 @@
   table.rv-board tr:last-child td { border-bottom:none; }
   .rv-board-name { font-weight:600; }
   .rv-board-sel { font-family:var(--sans); font-size:11.5px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 6px; background:var(--surface); color:var(--text); max-width:200px; }
-  .rv-status { font-size:10px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; }
-  .rv-status.needs { background:var(--amber-bg); color:var(--amber); }
-  .rv-status.ok { background:var(--teal-bg); color:var(--teal); }
   .rv-board-calls { font-size:12px; white-space:nowrap; }
   .rv-board-open { font-size:11px; color:var(--brand-navy); font-weight:600; white-space:nowrap; text-align:right; }
   .rv-board-empty { padding:24px; text-align:center; color:var(--text-3); font-size:13px; font-style:italic; }
 
 
+  .rv-objective { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--brand-mint); border-radius:var(--radius); padding:12px 16px; margin-bottom:12px; }
+  .rv-objective .rv-ta { margin-top:8px; background:var(--surface); }
+  .rv-obj-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .rv-obj-lbl { font-size:10px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--text-3); }
+  .rv-obj-text { font-size:13.5px; color:var(--text); margin-top:6px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .rv-obj-text.is-empty { color:var(--text-3); font-style:italic; }
+  .rv-obj-actions { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  .rv-scope-note { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--text-2); margin-bottom:12px; overflow-wrap:anywhere; }
+  .rv-side { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .rv-sect > summary { cursor:pointer; list-style:none; }
+  .rv-sect > summary::-webkit-details-marker { display:none; }
+  .rv-sect > summary .t::before { content:'▸ '; }
+  .rv-sect[open] > summary .t::before { content:'▾ '; }
+  .rv-sect:not([open]) > summary { border-bottom:none; }
+  .rv-sect .rv-form { position:static; }
+  .rv-notes-add { padding:12px 16px; border-bottom:1px solid var(--border); }
+  .rv-notes-add .rv-ta { margin-top:0; }
+  .rv-notes-add .rv-save-row { border-top:none; padding-top:8px; }
+  .rv-notes, .rv-history { max-height:360px; overflow-y:auto; }
+  .rv-note-item, .rv-hist { padding:10px 16px; border-bottom:1px solid var(--border); }
+  .rv-note-item:last-child, .rv-hist:last-child { border-bottom:none; }
+  .rv-note-text { font-size:12.5px; color:var(--text); line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .rv-hist-top { display:flex; justify-content:space-between; gap:10px; font-size:12px; }
+  .rv-hist-line { font-size:12px; color:var(--text-2); margin-top:6px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .rv-hist-line b { color:var(--text); font-weight:600; }
+  .rv-chip.pos { background:var(--teal-bg); color:var(--teal); }
+  .rv-chip.neg { background:var(--coral-bg); color:var(--coral); }
+  .rv-chip.amb { background:var(--amber-bg); color:var(--amber); }
+  .rv-empty-sm { padding:16px; font-size:12px; color:var(--text-3); font-style:italic; }
   .rv-back { font-size:12px; color:var(--text-2); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 11px; cursor:pointer; margin-bottom:16px; }
   .rv-back:hover { border-color:var(--text); color:var(--text); }
   .rv-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
@@ -555,14 +592,11 @@
   .rv-window input[type=date] { font-family:var(--mono); font-size:11px; border:1px solid var(--border); border-radius:4px; padding:2px 6px; color:var(--text); }
   .rv-sync-status { font-size:11px; }
 
-  .rv-perf { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; margin-bottom:16px; }
-  @media (max-width:640px){ .rv-perf { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  .rv-perf { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; margin-bottom:16px; }
+  @media (max-width:640px){ .rv-perf { grid-template-columns:repeat(2,minmax(0,1fr)); } }
   .rv-perf-item { background:var(--surface); padding:12px 10px; text-align:center; min-width:0; }
-  .rv-perf-item.kpi { background:var(--brand-mint-bg); }
   .rv-perf-val { font-family:var(--serif); font-size:22px; color:var(--text); line-height:1.18; }
-  .rv-perf-item.kpi .rv-perf-val { color:var(--teal); }
   .rv-perf-lbl { font-size:9.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--text-3); margin-top:5px; }
-  .rv-perf-item.kpi .rv-perf-lbl { color:var(--teal); font-weight:600; }
 
   .rv-cols { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:16px; align-items:start; }
   @media (max-width:860px){ .rv-cols { grid-template-columns:1fr; } }
@@ -585,8 +619,6 @@
   .rv-call-desc { font-size:11.5px; color:var(--text-2); margin-top:7px; font-style:italic; }
   .rv-callnote { font-size:12px; color:var(--text); background:var(--amber-bg); border-radius:var(--radius-sm); padding:7px 10px; margin-top:7px; line-height:1.5; }
   .rv-callnote-by { color:var(--text-3); font-size:10.5px; }
-  .rv-clear-btn { font-size:11px; font-weight:500; color:var(--coral); background:none; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:4px 10px; cursor:pointer; font-family:var(--sans); }
-  .rv-clear-btn:hover { border-color:var(--coral); }
   .rv-actions { display:flex; gap:8px; margin-top:9px; flex-wrap:wrap; align-items:center; }
   .rv-btn { font-size:10.5px; font-weight:500; color:var(--brand-navy); border:1px solid var(--border-strong); background:var(--surface); border-radius:var(--radius-sm); padding:3px 9px; cursor:pointer; font-family:var(--sans); }
   .rv-btn:hover { border-color:var(--brand-navy); }
@@ -1706,6 +1738,8 @@ document.addEventListener('click', e => {
   if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
   const crVWrap = document.getElementById('cr-vertical-wrap');
   if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
+  const rvAWrap = document.getElementById('rv-acct-wrap');
+  if (rvAWrap && !rvAWrap.contains(e.target)) document.getElementById('rv-acct-popover')?.classList.remove('open');
   const crCpWrap = document.getElementById('cr-colpicker-wrap');
   if (crCpWrap && !crCpWrap.contains(e.target)) document.getElementById('cr-colpicker-popover')?.classList.remove('open');
 });
@@ -1781,7 +1815,7 @@ async function refreshMetrics(){
 function recomputeStats(){document.getElementById('stat-agents').textContent=AGENTS.length;document.getElementById('stat-calls').textContent=AGENTS.reduce((s,a)=>s+(a.raw_calls||0),0).toLocaleString();document.getElementById('stat-revenue').textContent='$'+(AGENTS.reduce((s,a)=>s+(a.revenue||0),0)/1000).toFixed(1)+'k';document.getElementById('stat-margin').textContent='$'+(AGENTS.reduce((s,a)=>s+(a.margin||0),0)/1000).toFixed(1)+'k';}
 
 // ─── AGENTS METADATA ──────────────────────────────────────────────────────────
-async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?select=*&order=name.asc');if(!rows||!rows.length){AGENTS=[];return;}AGENTS=rows.map(r=>({ivrName:r.ivr_name,name:r.name,vertical:r.vertical||'Other',status:r.status||'live',routingType:r.routing_type||'unknown',qualifying:Array.isArray(r.qualifying)?r.qualifying:[],disqualify:r.disqualify,publisherCampaigns:Array.isArray(r.publisher_campaigns)?r.publisher_campaigns:[],ivrTargets:Array.isArray(r.ivr_targets)?r.ivr_targets:[],notes:r.notes,canoeUrl:r.canoe_url||null,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0,margin:0,conversion:0,pubBreakdown:[],advBreakdown:[]}));}catch(e){console.error('Could not load agents:',e.message);AGENTS=[];document.getElementById('agents-grid').innerHTML=`<div class="empty">Could not load agents: ${e.message}</div>`;}}
+async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?select=*&order=name.asc');if(!rows||!rows.length){AGENTS=[];return;}AGENTS=rows.map(r=>({ivrName:r.ivr_name,name:r.name,vertical:r.vertical||'Other',status:r.status||'live',routingType:r.routing_type||'unknown',qualifying:Array.isArray(r.qualifying)?r.qualifying:[],disqualify:r.disqualify,publisherCampaigns:Array.isArray(r.publisher_campaigns)?r.publisher_campaigns:[],ivrTargets:Array.isArray(r.ivr_targets)?r.ivr_targets:[],notes:r.notes,objective:r.objective||'',canoeUrl:r.canoe_url||null,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0,margin:0,conversion:0,pubBreakdown:[],advBreakdown:[]}));}catch(e){console.error('Could not load agents:',e.message);AGENTS=[];document.getElementById('agents-grid').innerHTML=`<div class="empty">Could not load agents: ${e.message}</div>`;}}
 
 // ─── TEST CALL LINKS ──────────────────────────────────────────────────────────
 let testCallMap={};
@@ -1801,7 +1835,7 @@ function renderCard(a,idx){const isOpen=openAgent===idx,es=getEffectiveStatus(a)
 function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
 const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
-return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${a.name}</div><div class="drawer-meta">${a.vertical||''} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${a.notes}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div><div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
+return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${a.name}</div><div class="drawer-meta">${a.vertical||''} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${a.notes}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):'<div class="canoe-none" style="padding:8px 0;">Loading…</div>'}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
 
 function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);return 0;});}
 function applyFilters(){const q=document.getElementById('search-input').value.toLowerCase().trim();document.getElementById('drawer-container').innerHTML='';openAgent=null;const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered);document.getElementById('agents-grid').innerHTML=sorted.length?sorted.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):'<div class="empty">No agents match.</div>';}
@@ -2584,7 +2618,13 @@ async function reviewInit(){
 }
 
 // Review status board (the landing view): assignment + needs-review status per agent.
-let reviewBoard = { managers:[], assignments:{}, lastReview:{}, counts:{}, filter:'all', reviewerFilter:'', myId:null };
+// MK-183 "View by" scope: Account Manager → advertisers, or Supply Manager → publishers.
+// draft = what the filter bar shows; applied = what the table uses (copied on Apply).
+// links = canonical ivr → {advertiser:{name:calls}, publisher:{…}} over the same 30d window
+// (agent_counterparties, migration 044).
+const rvScopeBlank=()=>({ side:'advertiser', mgr:'', accts:[], reviewer:'' });
+let reviewBoard = { managers:[], assignments:{}, lastReview:{}, counts:{}, filter:'all', myId:null,
+  acctAssign:[], links:{}, draft:rvScopeBlank(), applied:rvScopeBlank(), scopeInit:false, acctSearch:'' };
 
 async function renderReviewPicker(){
   RV=null;
@@ -2595,21 +2635,35 @@ async function renderReviewPicker(){
 
 async function loadReviewBoardData(){
   const b=reviewBoard;
-  b.managers=[]; b.assignments={}; b.lastReview={}; b.counts={};
+  b.managers=[]; b.assignments={}; b.lastReview={}; b.counts={}; b.acctAssign=[]; b.links={};
   const since=new Date(Date.now()-30*86400000).toISOString();
   const nope=e=>{console.warn('review board:',e.message);return[];};
-  const [mgrs,assigns,reviews,counts]=await Promise.all([
+  const [mgrs,assigns,reviews,counts,acctAssign,links]=await Promise.all([
     sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc').catch(nope),
     sbFetch('agent_review_assignments?select=ivr_name,manager_id').catch(nope),
     sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000').catch(nope),
     sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
+    sbFetch('account_manager_assignments?select=account_name,account_type,manager_id').catch(nope),
+    sbFetch('rpc/agent_counterparties',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
   ]);
   b.managers=mgrs||[];
+  b.acctAssign=acctAssign||[];
+  for(const r of (links||[])){
+    if(r.counterparty==='(unknown)') continue;
+    const k=resolveIvrName(r.ivr_name), l=b.links[k]||(b.links[k]={advertiser:{},publisher:{}});
+    if(l[r.side]) l[r.side][r.counterparty]=(l[r.side][r.counterparty]||0)+Number(r.calls||0);
+  }
   (assigns||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; });
   for(const r of (reviews||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; }
   for(const r of (counts||[])){ const k=resolveIvrName(r.ivr_name); const cur=b.counts[k]||{reviewable:0,reviewed:0}; cur.reviewable+=Number(r.reviewable||0); cur.reviewed+=Number(r.reviewed||0); b.counts[k]=cur; }
   const me=(getAuthUser()||'').toLowerCase();
   b.myId = me ? ((b.managers.find(m=>(m.manager_email||'').toLowerCase()===me)||{}).id || null) : null;
+  // First load only: scope the board to my own accounts if I manage any (advertisers first).
+  if(!b.scopeInit){
+    b.scopeInit=true;
+    const side=['advertiser','publisher'].find(s=>b.myId&&b.acctAssign.some(a=>a.manager_id===b.myId&&a.account_type===s));
+    if(side){ b.draft={...rvScopeBlank(), side, mgr:b.myId}; b.applied={...b.draft}; }
+  }
 }
 
 // needs review = never reviewed OR changed since last review OR not reviewed in 30 days.
@@ -2620,48 +2674,141 @@ function reviewBoardStatus(ivrName){
   return {status:'ok', label:'Reviewed '+fmtDate(new Date(lr))};
 }
 
+const rvSideOf=(key,side)=>(reviewBoard.links[key]||{})[side]||{};
+// Accounts a scope selects: the picked ones, else all of the manager's on that side, else null (no scope).
+function rvScopeSet(s){
+  if(s.accts.length) return new Set(s.accts);
+  if(s.mgr) return new Set(reviewBoard.acctAssign.filter(a=>a.account_type===s.side&&a.manager_id===s.mgr).map(a=>a.account_name));
+  return null;
+}
+
 function renderReviewBoard(){
-  const b=reviewBoard, root=document.getElementById('review-root');
+  const b=reviewBoard, root=document.getElementById('review-root'), ap=b.applied, dr=b.draft;
   // counts/assignments/lastReview are all keyed by the CANONICAL name, so resolve
   // before looking up — an agents row registered under an aliased name would
   // otherwise miss its own bucket and read "—" / "Never reviewed".
-  const withStatus=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test')
+  const boardAgents=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test')
     .map(a=>{ const k=resolveIvrName(a.ivrName); return {a, key:k, st:reviewBoardStatus(k), mgr:b.assignments[k]||null}; });
+  // Applied scope: an agent is in scope when it touched one of the scoped accounts in 30d.
+  const scopeSet=rvScopeSet(ap), apAdv=ap.side==='advertiser';
+  let withStatus=boardAgents;
+  if(scopeSet){
+    withStatus=boardAgents.map(x=>{ const m=rvSideOf(x.key,ap.side); return {...x, accts:Object.keys(m).filter(n=>scopeSet.has(n)).sort((p,q)=>m[q]-m[p])}; })
+      .filter(x=>x.accts.length);
+  }
+  if(ap.reviewer) withStatus=withStatus.filter(x=> ap.reviewer==='__unassigned__' ? !x.mgr : x.mgr===ap.reviewer);
   const counts={ all:withStatus.length, needs:withStatus.filter(x=>x.st.status==='needs').length, mine:withStatus.filter(x=>x.mgr&&x.mgr===b.myId).length };
   let rows=withStatus;
   if(b.filter==='needs') rows=rows.filter(x=>x.st.status==='needs');
   else if(b.filter==='mine') rows=rows.filter(x=>x.mgr&&x.mgr===b.myId);
-  if(b.reviewerFilter) rows=rows.filter(x=> b.reviewerFilter==='__unassigned__' ? !x.mgr : x.mgr===b.reviewerFilter);
   rows.sort((x,y)=>{ const xn=x.st.status==='needs', yn=y.st.status==='needs'; if(xn!==yn) return xn?-1:1; return x.a.name.localeCompare(y.a.name); });
+
+  // Draft controls (filter bar): options follow the DRAFT side + manager.
+  const drAdv=dr.side==='advertiser', drNoun=drAdv?'advertisers':'publishers';
+  const acctIvrs={};   // account → board agents it touched (option counts)
+  boardAgents.forEach(x=>Object.keys(rvSideOf(x.key,dr.side)).forEach(n=>{ acctIvrs[n]=(acctIvrs[n]||0)+1; }));
+  const drMgrAccts=dr.mgr ? new Set(b.acctAssign.filter(a=>a.account_type===dr.side&&a.manager_id===dr.mgr).map(a=>a.account_name)) : null;
+  const acctOpts=Object.keys(acctIvrs).filter(n=>!drMgrAccts||drMgrAccts.has(n)).sort((p,q)=>p.localeCompare(q));
+  const picked=new Set(dr.accts);
+  const sideMgrs=b.managers.filter(m=>b.acctAssign.some(a=>a.manager_id===m.id&&a.account_type===dr.side));
+  const mgrOpts=[`<option value="">All ${drAdv?'account':'supply'} managers</option>`]
+    .concat(sideMgrs.map(m=>`<option value="${m.id}" ${dr.mgr===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
+  const reviewerOpts=['<option value="">All reviewers</option>','<option value="__unassigned__"'+(dr.reviewer==='__unassigned__'?' selected':'')+'>Unassigned</option>']
+    .concat(b.managers.map(m=>`<option value="${m.id}" ${dr.reviewer===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
+  const acctList=acctOpts.map(n=>`<label class="ins-vertical-opt" data-name="${esc(n.toLowerCase())}"><input type="checkbox" value="${esc(n)}" ${picked.has(n)?'checked':''} onchange="rvAcctToggle(this)"><span>${esc(n)} <span style="color:var(--text-3)">(${acctIvrs[n]} IVR${acctIvrs[n]===1?'':'s'})</span></span></label>`).join('')
+    || `<div class="rv-acct-none">No ${drNoun} with IVR calls in the last 30 days.</div>`;
+  const sideBtn=(side,label)=>`<button class="rv-board-filter${dr.side===side?' active':''}" onclick="rvDraftSide('${side}')">${label}</button>`;
+  const dirty=JSON.stringify(dr)!==JSON.stringify(ap);
+
   const selOptions=cur=>['<option value="">— Unassigned —</option>'].concat(b.managers.map(m=>`<option value="${m.id}" ${m.id===cur?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
   const fbtn=(f,label,n)=>`<button class="rv-board-filter${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span style="opacity:.65">${n}</span></button>`;
-  const reviewerOpts=['<option value="">All reviewers</option>','<option value="__unassigned__"'+(b.reviewerFilter==='__unassigned__'?' selected':'')+'>Unassigned</option>']
-    .concat(b.managers.map(m=>`<option value="${m.id}" ${b.reviewerFilter===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
+  const acctCell=x=>{ const shown=x.accts.slice(0,2).join(', '), more=x.accts.length-2;
+    return `<td class="rv-board-accts" title="${esc(x.accts.join(', '))}">${esc(shown)}${more>0?` <span style="color:var(--text-3)">+${more}</span>`:''}</td>`; };
+  const emptyMsg = b.filter==='mine'&&!b.myId ? 'You are not in the account-managers list, so nothing is assigned to you.'
+    : scopeSet ? `No agents ${apAdv?'sent calls to':'took calls from'} these ${apAdv?'advertisers':'publishers'} in the last 30 days.`
+    : 'No agents in this view.';
   root.innerHTML=
-    `<div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}${fbtn('mine','My agents',counts.mine)}
-       <select class="rv-board-reviewer" onchange="reviewSetReviewerFilter(this.value)">${reviewerOpts}</select>
+    `<div class="rv-board-bar rv-scope-bar"><span class="rv-board-scope-lbl">View by</span>
+       ${sideBtn('advertiser','Account Manager')}${sideBtn('publisher','Supply Manager')}
+       <select class="rv-board-reviewer" aria-label="${drAdv?'Account':'Supply'} manager" onchange="rvDraftMgr(this.value)">${mgrOpts}</select>
+       <div class="ins-vertical-wrap" id="rv-acct-wrap">
+         <button class="rv-board-reviewer rv-acct-trigger" onclick="rvAcctToggleOpen(event)"><span id="rv-acct-label">${esc(rvAcctLabel(dr))}</span> ▾</button>
+         <div class="ins-vertical-popover rv-acct-popover" id="rv-acct-popover">
+           <div class="rv-acct-tools"><input type="search" class="rv-acct-search" placeholder="Search ${drNoun}…" value="${esc(b.acctSearch)}" oninput="rvAcctSearch(this.value)">
+             <button class="rv-btn" onclick="rvAcctClear()">Clear</button></div>
+           <div class="rv-acct-list" id="rv-acct-list">${acctList}</div>
+         </div>
+       </div>
+       <select class="rv-board-reviewer" aria-label="Reviewer" onchange="rvDraftReviewer(this.value)">${reviewerOpts}</select>
+       <button class="run-btn rv-scope-apply" ${dirty?'':'disabled'} onclick="rvApplyScope()">Apply</button>
+       <button class="rv-btn rv-refresh" onclick="rvRefreshBoard(this)" title="Reload board data">↻ Refresh</button></div>
+     <div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}${fbtn('mine','My agents',counts.mine)}
        <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Click a row to review its calls.</span></div>
      <div class="rv-board-wrap"><table class="rv-board">
-       <thead><tr><th>Agent</th><th>Vertical</th><th>Calls to review (30d)</th><th>Assigned reviewer</th><th>Status</th><th></th></tr></thead>
+       <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th>Assigned reviewer</th><th>Last reviewed</th><th></th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
          const cnt=b.counts[x.key]||{reviewable:0,reviewed:0};
-         const cells=cnt.reviewable
-           ? `<strong>${cnt.reviewed}</strong><span style="color:var(--text-3)"> / ${cnt.reviewable} reviewed</span>`
-           : '<span style="color:var(--text-3)">—</span>';
+         const cells=cnt.reviewable ? cnt.reviewable.toLocaleString() : '<span style="color:var(--text-3)">—</span>';
          return `
          <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
            <td class="rv-board-name">${esc(x.a.name)}</td>
            <td style="color:var(--text-2)">${esc(x.a.vertical||'—')}</td>
+           ${scopeSet?acctCell(x):''}
            <td class="rv-board-calls">${cells}</td>
            <td onclick="event.stopPropagation()"><select class="rv-board-sel" onchange="assignAgent('${jsStr(x.a.ivrName)}',this.value)">${selOptions(x.mgr)}</select></td>
-           <td><span class="rv-status ${x.st.status}">${esc(x.st.label)}</span></td>
+           <td class="rv-board-calls">${b.lastReview[x.key]?fmtDate(new Date(b.lastReview[x.key])):'<span style="color:var(--text-3)">—</span>'}</td>
            <td class="rv-board-open">Review →</td>
-         </tr>`; }).join('') : `<tr><td colspan="6" class="rv-board-empty">${b.filter==='mine'&&!b.myId?'You are not in the account-managers list, so nothing is assigned to you.':'No agents in this view.'}</td></tr>` }</tbody>
+         </tr>`; }).join('') : `<tr><td colspan="${scopeSet?7:6}" class="rv-board-empty">${esc(emptyMsg)}</td></tr>` }</tbody>
      </table></div>`;
+  if(b.acctSearch) rvAcctSearch(b.acctSearch);
 }
 
+function rvAcctLabel(s){
+  const noun=s.side==='advertiser'?'advertisers':'publishers';
+  return !s.accts.length ? `All ${noun}` : s.accts.length===1 ? s.accts[0] : `${s.accts.length} ${noun}`;
+}
 function reviewSetBoardFilter(f){ reviewBoard.filter=f; renderReviewBoard(); }
-function reviewSetReviewerFilter(v){ reviewBoard.reviewerFilter=v||''; renderReviewBoard(); }
+// Draft edits: side/manager change the account options, so they re-render the bar;
+// checkbox ticks only update the label + Apply state (keeps the popover open).
+function rvDraftSide(side){
+  const b=reviewBoard, d=b.draft; if(d.side===side) return;
+  d.side=side; d.accts=[]; b.acctSearch='';
+  if(d.mgr&&!b.acctAssign.some(a=>a.manager_id===d.mgr&&a.account_type===side)) d.mgr='';
+  renderReviewBoard();
+}
+function rvDraftMgr(v){ const b=reviewBoard; b.draft.mgr=v||''; b.draft.accts=[]; b.acctSearch=''; renderReviewBoard(); }
+function rvDraftReviewer(v){ reviewBoard.draft.reviewer=v||''; rvSyncApply(); }
+function rvAcctToggle(cb){
+  const d=reviewBoard.draft;
+  d.accts=cb.checked ? [...new Set([...d.accts,cb.value])].sort((p,q)=>p.localeCompare(q)) : d.accts.filter(n=>n!==cb.value);
+  rvSyncApply();
+}
+function rvAcctClear(){
+  reviewBoard.draft.accts=[];
+  document.querySelectorAll('#rv-acct-list input[type=checkbox]').forEach(c=>{ c.checked=false; });
+  rvSyncApply();
+}
+function rvSyncApply(){
+  const b=reviewBoard, lbl=document.getElementById('rv-acct-label'), btn=document.querySelector('.rv-scope-apply');
+  if(lbl) lbl.textContent=rvAcctLabel(b.draft);
+  if(btn) btn.disabled=JSON.stringify(b.draft)===JSON.stringify(b.applied);
+}
+function rvAcctToggleOpen(e){
+  e.stopPropagation();
+  const pop=document.getElementById('rv-acct-popover'); if(!pop) return;
+  pop.classList.toggle('open');
+  if(pop.classList.contains('open')) pop.querySelector('.rv-acct-search')?.focus();
+}
+function rvAcctSearch(q){
+  reviewBoard.acctSearch=q; const s=q.trim().toLowerCase();
+  document.querySelectorAll('#rv-acct-list label').forEach(l=>{ l.style.display=!s||l.dataset.name.includes(s)?'':'none'; });
+}
+function rvApplyScope(){ const b=reviewBoard; b.applied={...b.draft, accts:[...b.draft.accts]}; renderReviewBoard(); }
+async function rvRefreshBoard(btn){
+  if(btn){ btn.disabled=true; btn.textContent='Refreshing…'; }
+  await loadReviewBoardData();
+  renderReviewBoard();
+}
 
 async function assignAgent(ivrName, managerId){
   const canon=resolveIvrName(ivrName);
@@ -2678,13 +2825,17 @@ async function assignAgent(ivrName, managerId){
   }catch(e){ alert('Could not save assignment: '+e.message); }
 }
 
-// Notes/reviews load for 30 days after the last note — unless the reviewer hit
-// "Clear all notes" for this agent (stored per-browser), which advances the cutoff.
-function reviewNotesSince(ivrName){
-  const base=new Date(Date.now()-30*86400000);
-  try{ const c=localStorage.getItem('rvCleared:'+ivrName); if(c){ const cd=new Date(c); if(!isNaN(cd.getTime())&&cd>base) return cd; } }catch(e){}
-  return base;
-}
+// The review questions — shared by the form and the history list (labels for saved values).
+const RV_QUESTIONS=[
+  {key:'qualifying', q:'Is the agent qualifying correctly?', short:'Qualifying',
+   opts:[{v:'accurate',l:'Accurate',tone:'pos'},{v:'over_transfer',l:'Over-transfers',tone:'neg'},{v:'over_reject',l:'Over-rejects',tone:'neg'},{v:'both',l:'Both',tone:'neg'}]},
+  {key:'dropoff', q:'Where are callers dropping off?', short:'Drop-off',
+   opts:[{v:'rarely',l:'Rarely',tone:'pos'},{v:'intro',l:'Intro',tone:'amb'},{v:'mid_qual',l:'Mid-qualification',tone:'amb'},{v:'transfer',l:'At transfer',tone:'amb'}]},
+  {key:'understanding', q:'Does it understand callers & flow smoothly?', short:'Understanding',
+   opts:[{v:'smooth',l:'Smooth',tone:'pos'},{v:'mishears',l:'Mishears / repeats',tone:'neg'},{v:'pauses',l:'Pauses / talks over',tone:'neg'},{v:'stuck',l:'Gets stuck',tone:'neg'}]},
+  {key:'script', q:'Is the script tight & well-ordered?', short:'Script',
+   opts:[{v:'good',l:'Good',tone:'pos'},{v:'too_long',l:'Too long / redundant',tone:'neg'},{v:'late_dq',l:'Disqualifiers too late',tone:'neg'},{v:'missing',l:'Missing a question',tone:'amb'}]},
+];
 
 async function openReview(ivrName){
   const agent=AGENTS.find(a=>a.ivrName===ivrName);
@@ -2692,63 +2843,47 @@ async function openReview(ivrName){
   // Scope to the canonical name + every alias of it, so the pane's call set matches
   // the board's count bucket even when agent.ivrName is itself an alias.
   const canon=resolveIvrName(agent.ivrName);
-  RV={ agent, ivrs:[canon,...aliasesForAgent(canon)], calls:[], offset:0, done:false, loading:false, syncing:false, windowStart:null, reviewedSet:new Set(), notesByCall:{}, savedReview:null, metrics:null, answers:{} };
-  document.getElementById('review-root').innerHTML='<div class="empty">Loading review…</div>';
-  RV.windowStart=resolveReviewWindow();
-  RV.notesSince=reviewNotesSince(agent.ivrName);
-  await loadAgentReview();
+  // Carry the board's applied View-by scope: only this agent's calls with the scoped accounts.
+  const ap=reviewBoard.applied, set=rvScopeSet(ap);
+  const accts=set ? Object.keys(rvSideOf(canon,ap.side)).filter(n=>set.has(n)).sort((p,q)=>p.localeCompare(q)) : [];
+  RV={ agent, ivrs:[canon,...aliasesForAgent(canon)], calls:[], offset:0, done:false, loading:false, seq:0, mseq:0,
+       windowStart:resolveReviewWindow(), reviewedSet:new Set(), notesByCall:{}, metrics:null, answers:{},
+       history:[], notes:[], scope: accts.length ? {side:ap.side, accts, on:true} : null };
   renderReviewWorkspace();
-  applyLoadedReview();
-  await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
-}
-
-// Load the most recent saved review (within the notes window) to pre-fill the form.
-async function loadAgentReview(){
-  RV.savedReview=null;
-  try{
-    const since=(RV.notesSince||RV.windowStart).toISOString();
-    const rows=await sbFetch(`agent_reviews?select=answers,notes,reviewed_by,created_at&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=1`)||[];
-    if(rows.length) RV.savedReview=rows[0];
-  }catch(e){ console.warn('agent_reviews load:',e.message); }
-}
-
-function applyLoadedReview(){
-  const r=RV&&RV.savedReview; if(!r||!r.answers) return;
-  const ans=r.answers;
-  RV.answers={qualifying:ans.qualifying,dropoff:ans.dropoff,understanding:ans.understanding,script:ans.script};
-  [['qualifying',ans.qualifying],['dropoff',ans.dropoff],['understanding',ans.understanding],['script',ans.script]].forEach(([k,v])=>{
-    if(!v) return; const btn=document.querySelector('.rv-opts button[data-key="'+k+'"][data-val="'+v+'"]');
-    if(btn){ btn.classList.add('on'); if(btn.dataset.tone) btn.classList.add(btn.dataset.tone); }
-  });
-  const set=(id,val)=>{ const el=document.getElementById(id); if(el&&val!=null) el.value=val; };
-  set('rv-note-qualifying',ans.qualifying_note); set('rv-note-dropoff',ans.dropoff_note);
-  set('rv-note-understanding',ans.understanding_note); set('rv-note-script',ans.script_note);
-  set('rv-wording',ans.wording); set('rv-top-change',ans.top_change);
-  const msg=document.getElementById('rv-save-msg'); if(msg){ msg.style.color='var(--text-3)'; msg.textContent='loaded your '+fmtDate(new Date(r.created_at))+' review'; }
-}
-
-// Clear all notes from the frontend for this agent (history stays in the DB).
-async function clearAllNotes(){
-  if(!RV) return;
-  if(!confirm('Clear all notes for this agent from the screen? They stay saved in history — this just gives you a fresh slate.')) return;
-  try{ localStorage.setItem('rvCleared:'+RV.agent.ivrName, new Date().toISOString()); }catch(e){}
-  RV.notesSince=reviewNotesSince(RV.agent.ivrName);
-  RV.savedReview=null;
-  resetReviewForm();
-  await loadReviewedSet();
-  const msg=document.getElementById('rv-save-msg'); if(msg){ msg.style.color='var(--text-3)'; msg.textContent='cleared (history kept)'; setTimeout(()=>{ const m=document.getElementById('rv-save-msg'); if(m) m.textContent=''; },3000); }
+  await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true), loadReviewHistory(), loadAgentNotes() ]);
 }
 
 // Fixed trailing-30-day window (overridable via the date input).
 function resolveReviewWindow(){ const d=new Date(); d.setDate(d.getDate()-30); return d; }
 
-// KPIs are scoped to exactly the calls shown in the drawer: AI calls with an
-// ASCND transcript in the window (same filter as the call list).
+// Extra PostgREST filter for the scoped accounts ('' when unscoped or toggled off).
+function rvScopeQuery(){
+  const s=RV&&RV.scope; if(!s||!s.on) return '';
+  const col=s.side==='advertiser'?'advertiser_name':'publisher_name';
+  return '&'+col+'='+encodeURIComponent('in.('+s.accts.map(v=>'"'+String(v).replace(/"/g,'\\"')+'"').join(',')+')');
+}
+function renderScopeNote(){
+  const box=document.getElementById('rv-scope-note'), s=RV&&RV.scope; if(!box) return;
+  if(!s){ box.style.display='none'; return; }
+  const noun=(s.side==='advertiser'?'advertiser':'publisher')+(s.accts.length===1?'':'s');
+  box.innerHTML = s.on
+    ? `<span title="${esc(s.accts.join(', '))}">Showing calls ${s.side==='advertiser'?'to':'from'} ${s.accts.length===1?'':s.accts.length+' '}${noun}: <strong>${esc(s.accts.slice(0,3).join(', '))}</strong>${s.accts.length>3?` +${s.accts.length-3} more`:''}</span><button class="rv-btn" onclick="rvToggleScope()">Show all calls</button>`
+    : `<span>Showing all calls for this agent.</span><button class="rv-btn" onclick="rvToggleScope()">Only the ${s.accts.length===1?'':s.accts.length+' '}filtered ${noun}</button>`;
+}
+function rvToggleScope(){
+  if(!RV||!RV.scope) return;
+  RV.scope.on=!RV.scope.on;
+  renderScopeNote();
+  Promise.all([ loadReviewMetrics(), loadReviewCalls(true) ]);
+}
+
+// KPIs are scoped to exactly the calls shown in the list: AI calls with an ASCND
+// transcript in the window (and the scoped accounts, when on).
 async function loadReviewMetrics(){
+  const rv=RV, seq=++rv.mseq;
   let raw=0,paid=0,revenue=0;
   try{
-    const sel='advertiser_payin';
-    const path=`canoe_calls?select=${sel}&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null`;
+    const path=`canoe_calls?select=advertiser_payin&${ivrQuery(rv.ivrs)}${rvScopeQuery()}&created_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null`;
     let offset=0; const PAGE=1000;
     while(true){
       const batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}})||[];
@@ -2756,47 +2891,51 @@ async function loadReviewMetrics(){
       if(batch.length<PAGE) break; offset+=PAGE;
     }
   }catch(e){ console.warn('review metrics:',e.message); }
-  RV.metrics={raw,paid,revenue};
+  if(RV!==rv||seq!==rv.mseq) return;   // superseded (scope/window changed, or left the agent)
+  rv.metrics={raw,paid,revenue};
   updateReviewPerf();
 }
 
 async function loadReviewedSet(){
   RV.reviewedSet=new Set(); RV.notesByCall={};
   try{
-    const since=(RV.notesSince||RV.windowStart).toISOString();
-    const rows=await sbFetch(`call_reviews?select=call_id,note,reviewed_by,reviewed_at&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(since)}&order=reviewed_at.desc&limit=5000`)||[];
+    const rows=await sbFetch(`call_reviews?select=call_id,note,reviewed_by,reviewed_at&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&order=reviewed_at.desc&limit=5000`)||[];
     for(const r of rows){ RV.reviewedSet.add(r.call_id); if(r.note&&!RV.notesByCall[r.call_id]) RV.notesByCall[r.call_id]={note:r.note,by:r.reviewed_by,at:r.reviewed_at}; }
   }catch(e){ console.warn('call_reviews:',e.message); }
-  updateReviewPerf();
   renderReviewCalls();
 }
 
 async function loadReviewCalls(reset){
-  if(RV.loading) return;
-  if(reset){ RV.calls=[]; RV.offset=0; RV.done=false; }
-  if(RV.done) return;
-  RV.loading=true;
+  if(reset){ RV.calls=[]; RV.offset=0; RV.done=false; RV.loading=false; RV.seq++; }
+  if(RV.loading||RV.done) return;
+  const rv=RV, seq=rv.seq;
+  rv.loading=true;
   const PAGE=100;
   const sel='id,created_at,publisher_name,advertiser_name,ivr_name,vertical_name,ivr_duration,disposition,disposition_description,intent,ai_agent_phone_number,our_outcome,our_summary,flags,recording_url,ascnd_recording_url,ascnd_transcript,called_from';
   // Review is ASCND-only: show a call only when it has an AI-agent (ASCND) transcript.
-  const path=`canoe_calls?select=${sel}&${ivrQuery(RV.ivrs)}&created_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null&order=created_at.desc`;
+  const path=`canoe_calls?select=${sel}&${ivrQuery(rv.ivrs)}${rvScopeQuery()}&created_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null&order=created_at.desc`;
+  let batch;
   try{
-    const batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${RV.offset}-${RV.offset+PAGE-1}`}})||[];
-    RV.calls=RV.calls.concat(batch);
-    RV.offset+=batch.length;
-    if(batch.length<PAGE) RV.done=true;
+    batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${rv.offset}-${rv.offset+PAGE-1}`}})||[];
   }catch(e){
+    if(RV!==rv||seq!==rv.seq) return;
     console.warn('review calls:',e.message);
     const box=document.getElementById('rv-calls'); if(box) box.innerHTML=`<div class="empty" style="padding:24px">Could not load calls: ${esc(e.message)}</div>`;
-    RV.loading=false; return;
+    rv.loading=false; return;
   }
-  RV.loading=false;
+  if(RV!==rv||seq!==rv.seq) return;   // superseded by a newer reset
+  rv.calls=rv.calls.concat(batch);
+  rv.offset+=batch.length;
+  if(batch.length<PAGE) rv.done=true;
+  rv.loading=false;
   renderReviewCalls();
 }
 
 function renderReviewWorkspace(){
   const a=RV.agent;
   const aliasNote=RV.ivrs.length>1?` · ${RV.ivrs.length} IVR names`:'';
+  // Open the review form by default only when the agent is due a review.
+  const due=reviewBoardStatus(resolveIvrName(a.ivrName)).status==='needs';
   document.getElementById('review-root').innerHTML=`
     <button class="rv-back" onclick="renderReviewPicker()">← All agents</button>
     <div class="rv-head">
@@ -2808,40 +2947,139 @@ function renderReviewWorkspace(){
         <div class="rv-window">Reviewing calls since <strong id="rv-window-label">—</strong> <input type="date" id="rv-window-date" onchange="reviewSetWindow(this.value)"></div>
       </div>
     </div>
+    <div class="rv-objective" id="rv-objective"></div>
+    <div class="rv-scope-note" id="rv-scope-note"></div>
     <div class="rv-perf" id="rv-perf"></div>
     <div class="rv-cols">
       <div class="rv-panel">
         <div class="rv-panel-head"><span class="t">AI calls · ASCND transcript</span><span class="n" id="rv-count">loading…</span></div>
         <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
       </div>
-      <div class="rv-panel">
-        <div class="rv-panel-head"><span class="t">Agent review</span><button class="rv-clear-btn" onclick="clearAllNotes()">Clear all notes</button></div>
-        ${reviewFormHtml()}
+      <div class="rv-side">
+        <div class="rv-panel">
+          <div class="rv-panel-head"><span class="t">Notes · what changed and why</span><span class="n" id="rv-notes-n"></span></div>
+          <div class="rv-notes-add">
+            <textarea class="rv-ta" id="rv-note-new" placeholder="What did you change on this agent, and why?"></textarea>
+            <div class="rv-save-row"><button class="rv-save" id="rv-note-btn" onclick="addAgentNote()">Add note</button><span class="rv-save-msg" id="rv-note-msg"></span></div>
+          </div>
+          <div class="rv-notes" id="rv-notes"><div class="rv-empty-sm">Loading notes…</div></div>
+        </div>
+        <details class="rv-panel rv-sect"${due?' open':''}>
+          <summary class="rv-panel-head"><span class="t">Review this agent</span><span class="n" id="rv-last-review"></span></summary>
+          ${reviewFormHtml()}
+        </details>
+        <details class="rv-panel rv-sect">
+          <summary class="rv-panel-head"><span class="t">Review history</span><span class="n" id="rv-history-n"></span></summary>
+          <div class="rv-history" id="rv-history"><div class="rv-empty-sm">Loading…</div></div>
+        </details>
       </div>
     </div>`;
+  renderObjective(false);
+  renderScopeNote();
   updateReviewPerf();
   updateReviewWindowLabel();
 }
 
+// ── IVR objective (agents.objective, migration 044) ──
+function renderObjective(editing){
+  const box=document.getElementById('rv-objective'); if(!box||!RV) return;
+  const obj=RV.agent.objective||'';
+  box.innerHTML = editing
+    ? `<div class="rv-obj-lbl">IVR objective</div>
+       <textarea class="rv-ta" id="rv-obj-in" placeholder="What is this IVR trying to achieve?">${esc(obj)}</textarea>
+       <div class="rv-obj-actions"><button class="rv-save" id="rv-obj-save" onclick="saveObjective()">Save</button><button class="rv-btn" onclick="renderObjective(false)">Cancel</button><span class="rv-save-msg" id="rv-obj-msg"></span></div>`
+    : `<div class="rv-obj-top"><div class="rv-obj-lbl">IVR objective</div><button class="rv-btn" onclick="renderObjective(true)">${obj?'Edit':'Add objective'}</button></div>
+       <div class="rv-obj-text${obj?'':' is-empty'}">${obj?esc(obj):'No objective set yet.'}</div>`;
+  if(editing) document.getElementById('rv-obj-in')?.focus();
+}
+async function saveObjective(){
+  const ta=document.getElementById('rv-obj-in'), btn=document.getElementById('rv-obj-save'), msg=document.getElementById('rv-obj-msg');
+  const val=(ta?ta.value:'').trim()||null;
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    // return=representation so an RLS-blocked / no-match update (0 rows, still 2xx) is caught.
+    const rows=await sbFetch(`agents?ivr_name=eq.${encodeURIComponent(RV.agent.ivrName)}`,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({objective:val})});
+    if(!rows||!rows.length) throw new Error('no agent row was updated');
+    RV.agent.objective=val||'';
+    renderObjective(false);
+  }catch(e){
+    btn.disabled=false; btn.textContent='Save';
+    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message;
+  }
+}
+
+// ── Notes log (agent_updates, migration 038): append-only "what changed and why" ──
+async function loadAgentNotes(){
+  const rv=RV;
+  let notes;
+  try{ notes=await sbFetch(`agent_updates?select=author,note,created_at&${ivrQuery(rv.ivrs)}&order=created_at.desc&limit=100`)||[]; }
+  catch(e){ console.warn('agent_updates:',e.message); notes=null; }
+  if(RV!==rv) return;
+  rv.notes=notes;
+  renderAgentNotes();
+}
+function renderAgentNotes(){
+  const box=document.getElementById('rv-notes'), n=document.getElementById('rv-notes-n'); if(!box) return;
+  if(RV.notes===null){ box.innerHTML='<div class="rv-empty-sm">Could not load notes.</div>'; return; }
+  if(n) n.textContent=RV.notes.length?String(RV.notes.length):'';
+  box.innerHTML=RV.notes.length
+    ? RV.notes.map(x=>`<div class="rv-note-item"><div class="rv-note-text">${esc(x.note)}</div><div class="rv-callnote-by">${esc(x.author||'—')} · ${fmtDateTime(x.created_at)}</div></div>`).join('')
+    : '<div class="rv-empty-sm">No notes yet. Log what you change on this agent and why.</div>';
+}
+async function addAgentNote(){
+  const by=getAuthUser(); if(!by){ alert('Log in to add a note.'); return; }
+  const ta=document.getElementById('rv-note-new'), note=(ta?ta.value:'').trim();
+  const btn=document.getElementById('rv-note-btn'), msg=document.getElementById('rv-note-msg');
+  if(!note){ ta?.focus(); return; }
+  btn.disabled=true; msg.textContent='';
+  try{
+    await sbFetch('agent_updates',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:resolveIvrName(RV.agent.ivrName),author:by,note})});
+    ta.value='';
+    await loadAgentNotes();
+  }catch(e){ msg.style.color='var(--coral)'; msg.textContent='Could not save: '+e.message; }
+  btn.disabled=false;
+}
+
+// ── Review history (agent_reviews): every saved review for this agent, any reviewer ──
+async function loadReviewHistory(){
+  const rv=RV;
+  let rows;
+  try{ rows=await sbFetch(`agent_reviews?select=reviewed_by,created_at,answers,notes&${ivrQuery(rv.ivrs)}&order=created_at.desc&limit=20`)||[]; }
+  catch(e){ console.warn('agent_reviews:',e.message); rows=null; }
+  if(RV!==rv) return;
+  rv.history=rows;
+  renderReviewHistory();
+}
+function renderReviewHistory(){
+  const box=document.getElementById('rv-history'), n=document.getElementById('rv-history-n'), last=document.getElementById('rv-last-review');
+  if(!box) return;
+  const h=RV.history;
+  if(h===null){ box.innerHTML='<div class="rv-empty-sm">Could not load review history.</div>'; return; }
+  if(n) n.textContent=h.length?String(h.length)+(h.length===20?'+':''):'';
+  if(last) last.textContent=h.length?`last ${fmtDate(new Date(h[0].created_at))} · ${h[0].reviewed_by||'—'}`:'never reviewed';
+  box.innerHTML=h.length ? h.map(r=>{
+    const ans=r.answers||{};
+    const chips=RV_QUESTIONS.map(q=>{ const o=q.opts.find(o=>o.v===ans[q.key]); return o?`<span class="rv-chip ${o.tone}">${q.short}: ${o.l}</span>`:''; }).join('');
+    const top=ans.top_change||r.notes;
+    // Older reviews (pre-slim form) kept a note per question + a wording field.
+    const details=[ans.details, ...RV_QUESTIONS.map(q=>ans[q.key+'_note']), ans.wording].filter(Boolean);
+    return `<div class="rv-hist">
+      <div class="rv-hist-top"><strong>${esc(r.reviewed_by||'—')}</strong><span class="rv-date">${fmtDateTime(r.created_at)}</span></div>
+      ${chips?`<div class="rv-meta">${chips}</div>`:''}
+      ${top?`<div class="rv-hist-line"><b>#1 change:</b> ${esc(top)}</div>`:''}
+      ${details.map(d=>`<div class="rv-hist-line">${esc(d)}</div>`).join('')}
+    </div>`; }).join('')
+    : '<div class="rv-empty-sm">No reviews saved for this agent yet.</div>';
+}
+
 function reviewFormHtml(){
-  const opts=(key,arr)=>`<div class="rv-opts">${arr.map(o=>`<button data-key="${key}" data-val="${o.v}" data-tone="${o.tone||''}" onclick="rvSeg('${key}','${o.v}',this)">${o.l}</button>`).join('')}</div>`;
   return `<div class="rv-form">
-    <div><span class="rv-q-label">1 · Is the agent qualifying correctly?</span>
-      ${opts('qualifying',[{v:'accurate',l:'Accurate',tone:'pos'},{v:'over_transfer',l:'Over-transfers',tone:'neg'},{v:'over_reject',l:'Over-rejects',tone:'neg'},{v:'both',l:'Both',tone:'neg'}])}
-      <textarea class="rv-ta" id="rv-note-qualifying" placeholder="Examples of wrong transfers / wrong rejects…"></textarea></div>
-    <div><span class="rv-q-label">2 · Where are callers dropping off?</span>
-      ${opts('dropoff',[{v:'rarely',l:'Rarely',tone:'pos'},{v:'intro',l:'Intro',tone:'amb'},{v:'mid_qual',l:'Mid-qualification',tone:'amb'},{v:'transfer',l:'At transfer',tone:'amb'}])}
-      <textarea class="rv-ta" id="rv-note-dropoff" placeholder="What happens right before they drop…"></textarea></div>
-    <div><span class="rv-q-label">3 · Does it understand callers &amp; flow smoothly?</span>
-      ${opts('understanding',[{v:'smooth',l:'Smooth',tone:'pos'},{v:'mishears',l:'Mishears / repeats',tone:'neg'},{v:'pauses',l:'Pauses / talks over',tone:'neg'},{v:'stuck',l:'Gets stuck',tone:'neg'}])}
-      <textarea class="rv-ta" id="rv-note-understanding" placeholder="Where it breaks down…"></textarea></div>
-    <div><span class="rv-q-label">4 · Is the script tight &amp; well-ordered?</span>
-      ${opts('script',[{v:'good',l:'Good',tone:'pos'},{v:'too_long',l:'Too long / redundant',tone:'neg'},{v:'late_dq',l:'Disqualifiers too late',tone:'neg'},{v:'missing',l:'Missing a question',tone:'amb'}])}
-      <textarea class="rv-ta" id="rv-note-script" placeholder="Which question to cut / move / add…"></textarea></div>
-    <div><span class="rv-q-label">5 · Wording change to lift conversion <span class="rv-q-hint">optional</span></span>
-      <textarea class="rv-ta" id="rv-wording" placeholder="Proposed copy…"></textarea></div>
-    <div><span class="rv-q-label">6 · The #1 change to make to this agent</span>
-      <textarea class="rv-ta" id="rv-top-change" placeholder="The single highest-impact fix…" oninput="updateSaveEnabled()"></textarea></div>
+    ${RV_QUESTIONS.map((q,i)=>`<div><span class="rv-q-label">${i+1} · ${esc(q.q)}</span>
+      <div class="rv-opts">${q.opts.map(o=>`<button data-key="${q.key}" data-val="${o.v}" data-tone="${o.tone}" onclick="rvSeg('${q.key}','${o.v}',this)">${o.l}</button>`).join('')}</div></div>`).join('')}
+    <div><span class="rv-q-label">The #1 change to make to this agent</span>
+      <textarea class="rv-ta" id="rv-top-change" placeholder="The single highest-impact fix…"></textarea></div>
+    <div><span class="rv-q-label">Details <span class="rv-q-hint">optional · examples, wording ideas</span></span>
+      <textarea class="rv-ta" id="rv-details" placeholder="Example calls, where it breaks down, proposed wording…"></textarea></div>
     <div class="rv-save-row"><button class="rv-save" id="rv-save-btn" onclick="saveReview()">Save review</button><span class="rv-save-msg" id="rv-save-msg"></span></div>
   </div>`;
 }
@@ -2852,9 +3090,7 @@ function rvSeg(key,val,btn){
   const seg=btn.parentElement;
   seg.querySelectorAll('button').forEach(b=>b.className='');
   btn.classList.add('on'); if(btn.dataset.tone) btn.classList.add(btn.dataset.tone);
-  updateSaveEnabled();
 }
-function updateSaveEnabled(){}  // review is saveable at any stage — nothing gated
 
 function renderReviewCalls(){
   const box=document.getElementById('rv-calls'); if(!box) return;
@@ -2904,7 +3140,6 @@ async function rvSaveNote(callId,i){
     RV.reviewedSet.add(callId);
     if(note) RV.notesByCall[callId]={note,by,at:nowISO}; else delete RV.notesByCall[callId];
     renderReviewCalls();
-    updateReviewPerf();
   }catch(e){ alert('Could not save note: '+e.message); }
 }
 
@@ -2922,7 +3157,6 @@ async function toggleCallReviewed(callId,el){
     }
     const now=RV.reviewedSet.has(callId);
     if(el){ el.classList.toggle('on',now); el.innerHTML=now?'☑ Reviewed':'☐ Mark reviewed'; }
-    updateReviewPerf();
   }catch(e){ alert('Could not update reviewed: '+e.message); }
 }
 
@@ -2935,8 +3169,7 @@ function updateReviewPerf(){
     ['Conv.',m.raw>0?fmtPct(m.paid,m.raw):'—'],
     ['Revenue','$'+Math.round(m.revenue||0).toLocaleString()],
   ];
-  box.innerHTML=tiles.map(t=>`<div class="rv-perf-item"><div class="rv-perf-val">${t[1]}</div><div class="rv-perf-lbl">${t[0]}</div></div>`).join('')+
-    `<div class="rv-perf-item kpi"><div class="rv-perf-val">${RV.reviewedSet.size.toLocaleString()}</div><div class="rv-perf-lbl">Reviewed</div></div>`;
+  box.innerHTML=tiles.map(t=>`<div class="rv-perf-item"><div class="rv-perf-val">${t[1]}</div><div class="rv-perf-lbl">${t[0]}</div></div>`).join('');
 }
 
 function updateReviewWindowLabel(){
@@ -2958,18 +3191,12 @@ function reviewFieldVal(id){ const el=document.getElementById(id); const v=el?(e
 async function saveReview(){
   if(!RV) return;
   const a=RV.answers;
-  const topChange=reviewFieldVal('rv-top-change');
+  const topChange=reviewFieldVal('rv-top-change'), details=reviewFieldVal('rv-details');
   const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
+  if(!RV_QUESTIONS.some(q=>a[q.key])&&!topChange&&!details){ msg.style.color='var(--coral)'; msg.textContent='Answer at least one question first.'; return; }
   btn.disabled=true; btn.textContent='Saving…';
   const nowISO=new Date().toISOString();
-  const answers={
-    qualifying:a.qualifying, qualifying_note:reviewFieldVal('rv-note-qualifying'),
-    dropoff:a.dropoff, dropoff_note:reviewFieldVal('rv-note-dropoff'),
-    understanding:a.understanding, understanding_note:reviewFieldVal('rv-note-understanding'),
-    script:a.script, script_note:reviewFieldVal('rv-note-script'),
-    wording:reviewFieldVal('rv-wording'),
-    top_change:topChange,
-  };
+  const answers={ qualifying:a.qualifying, dropoff:a.dropoff, understanding:a.understanding, script:a.script, top_change:topChange, details };
   const review={
     ivr_name:RV.agent.ivrName,
     reviewed_by:getAuthUser(),
@@ -2981,21 +3208,14 @@ async function saveReview(){
   };
   try{
     await sbFetch('agent_reviews',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(review)});
+    // The form keeps what you saved; the new review shows at the top of the history.
     msg.style.color='var(--teal)'; msg.textContent='✓ Review saved';
-    btn.textContent='Save review';
-    resetReviewForm();
-    setTimeout(()=>{ const m=document.getElementById('rv-save-msg'); if(m) m.textContent=''; },4000);
+    reviewBoard.lastReview[resolveIvrName(RV.agent.ivrName)]=nowISO;
+    await loadReviewHistory();
   }catch(e){
-    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message; btn.disabled=false; btn.textContent='Save review';
+    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message;
   }
-}
-
-function resetReviewForm(){
-  if(!RV) return;
-  RV.answers={};
-  ['rv-note-qualifying','rv-note-dropoff','rv-note-understanding','rv-note-script','rv-wording','rv-top-change'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.querySelectorAll('.rv-opts button').forEach(b=>b.className='');
-  updateSaveEnabled();
+  btn.disabled=false; btn.textContent='Save review';
 }
 
 function parseCSV(text){const rows=[];let cur='',row=[],inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(inQ){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=ch;}else{if(ch==='"')inQ=true;else if(ch===','){row.push(cur);cur='';}else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(ch==='\r'){}else cur+=ch;}}if(cur.length>0||row.length>0){row.push(cur);rows.push(row);}return rows;}

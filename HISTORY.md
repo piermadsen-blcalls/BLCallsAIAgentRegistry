@@ -534,3 +534,51 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Applied `043` to production by hand via the Supabase CLI. Brief write lock on `canoe_calls`.
 - **Next:** browser check (all six groups, multi-vertical, deep link, ~375px), then PR. Still
   open: `process.js` hardcoded `OUTCOME_SCORES`. External sources (Wispr/Jira) not pulled.
+
+## Week of Oct 12, 2026
+
+### 2026-10-15 (Pier) - MK-183 step 1: Review-board AM/SM filters, objective, notes (data layer)
+- **Ticket (Hot, target Fri Oct 23):** filter the Review board by Account Manager -> Advertisers
+  -> IVRs or Supply Manager -> Publishers -> IVRs, plus a per-agent IVR objective and a notes
+  log (Lydia's comment). Decided: extend the Review board (no new tab), any logged-in user can
+  edit the objective, notes are an append-only log reusing `agent_updates` (038, live, 0 rows,
+  UI removed in a113a62).
+- **No new role needed:** "Supply Manager" = a manager with publisher assignments in
+  `account_manager_assignments`; "Account Manager" = advertiser assignments.
+- **Coverage gap (blocker for usefulness, not for build):** of accounts active on IVRs in the
+  last 30d, 69/154 publishers and 15/98 advertisers have no manager assigned. Team needs to
+  fill these in via Settings -> Accounts -> Unassigned before launch.
+- **Perf:** raw 30d ivr -> counterparty group-by on `canoe_calls` took ~11.3s (55k heap
+  fetches), over the 8s cap. Wrote `044_agent_counterparties_and_objective.sql`: daily
+  `agent_counterparty_daily` rollup (~17k rows for 45d) + `agent_counterparties(since_ts)` RPC
+  + pg_cron `refresh-agent-counterparty-rollup` 01:15 UTC, and `agents.objective`. Board read
+  measured at ~10ms against a session-only temp copy. **Applied to prod 2026-10-15** via the
+  Supabase CLI (~18s): 16,806 rollup rows (Aug 31 to Oct 15), RPC ~13ms, cron job scheduled.
+- Objective needs no RPC: `agents` already has an authenticated update policy (002).
+- Context: Oct 9 Q3 review with Andre touched a registry performance drop tied to
+  compliance/blacklisting (details in Wispr). Jira: MK-183 only.
+- **Review board (step 2, per Pier's feedback):** "View by" Account Manager / Supply Manager
+  -> manager -> multi-select advertisers/publishers (searchable popover, IVR counts), plus the
+  reviewer filter. Filters are staged and take effect on **Apply** (like Calls-tab Load calls);
+  **Refresh** reloads board data. All / Needs review / My agents stay instant. Defaults to my own
+  accounts on first load. Dropped the "N / M reviewed" progress (Pier: not useful) - column is
+  now plain "AI calls (30d)". Status column replaced by "Last reviewed" (date of the latest
+  submitted review, any reviewer; "—" if never). Needs review filter + sort unchanged.
+- **Review workspace rework (step 3):** objective card at the top (inline edit, PATCH on
+  `agents`, guarded with return=representation); calls + KPIs follow the board scope with a
+  "Show all calls" toggle; one Notes log (`agent_updates`, "what changed and why"); review form
+  slimmed to 4 option questions + #1 change + optional details, collapsible, open by default only
+  when due, and no longer wipes on save; Review history lists all reviewers' saved reviews (old
+  per-question notes still render). Removed the localStorage-only "Clear all notes" and the
+  Reviewed KPI tile. Objective also shows read-only in the Agents drawer.
+- **Browser-verified (desktop + 375px, live Supabase):** board scope + multi-select + search +
+  Apply/Refresh; Lydia (adv) and Mike Polz (pub) each scope to 23 rows (22 agents + the known
+  Pest Control duplicate row - `042` still unapplied); Caius scopes to 0, correct (his 5 IVRs
+  are passthrough/unregistered, incl. an unaliased "Electrician Compliance ... - outgoing"
+  IVR). Workspace: scope carried (Pest Control 67 calls / 10 advs scoped vs 500 / 17 all),
+  objective save, note add, review save + empty-review guard + history all write and render;
+  labelled test rows deleted afterwards. Fixed during check: objective text collided with the
+  global `.empty` class (huge card on mobile), Refresh tap target, long scope line truncated.
+- **Pre-existing mobile issues (not from this change):** page scrolls sideways at 375px because
+  the off-screen `#comp-drawer` (540px fixed) and the header email pill overflow.
+- **Next:** commit + PR. Not done: call-list filters (Pier didn't pick them).
