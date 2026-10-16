@@ -50,6 +50,14 @@
   .nav-tab { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text-2); background: none; border: none; padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
   .nav-tab.active { color: var(--brand-navy); border-bottom-color: var(--brand-mint); }
   .nav-tab:hover:not(.active) { color: var(--text); }
+  /* Phones: the six tabs are ~530px wide, which made the whole page scroll sideways.
+     Scroll the tab bar itself instead (inset shadow replaces the border, which
+     overflow would otherwise clip under the active tab's underline). */
+  @media (max-width:640px){
+    .nav-tabs { overflow-x:auto; overflow-y:hidden; scrollbar-width:none; border-bottom:none; box-shadow:inset 0 -1px 0 var(--border); }
+    .nav-tabs::-webkit-scrollbar { display:none; }
+    .nav-tab { flex-shrink:0; padding:12px 14px; margin-bottom:0; }
+  }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
 
@@ -341,6 +349,11 @@
   .login-btn { width:100%; font-family:var(--sans); font-size:13px; font-weight:500; padding:10px; background:var(--brand-navy); color:white; border:none; border-radius:var(--radius-sm); cursor:pointer; margin-top:8px; transition:opacity 0.15s; }
   .acct-btn { display:flex; align-items:center; gap:7px; font-family:var(--sans); font-size:12px; font-weight:500; color:var(--text-2); background:var(--surface); border:1px solid var(--border-strong); border-radius:100px; padding:6px 14px; cursor:pointer; transition:color 0.15s; }
   .acct-btn:hover { color:var(--text); }
+  @media (max-width:640px){
+    .login-card { width:calc(100vw - 32px); max-width:380px; padding:32px 24px; }
+    #acct-email { max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .logo-divider, .logo-product { display:none; }   /* the H1 below already names the product */
+  }
   .acct-dropdown { position:absolute; right:0; top:calc(100% + 6px); background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(26,46,74,0.12); min-width:180px; padding:6px; display:none; z-index:50; }
   .acct-dropdown.open { display:block; }
   .acct-dropdown button { display:block; width:100%; text-align:left; font-family:var(--sans); font-size:13px; color:var(--text); background:none; border:none; padding:9px 10px; border-radius:var(--radius-sm); cursor:pointer; }
