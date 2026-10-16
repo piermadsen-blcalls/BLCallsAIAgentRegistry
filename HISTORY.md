@@ -583,6 +583,39 @@ Continued from the 8/7 Scores work; large session. What moved:
   (~527px wide). Cause was the nav tabs, the header row/email pill and the login card - not
   `#comp-drawer` as first suspected. Fixed separately in PR #5 (`fix/mobile-horizontal-overflow`).
 - **Shipped as PR #4** (`feat/mk-183-review-filters`, commit 8eca9b1); `044` already on prod.
-- **Next:** review + merge PR #4 and PR #5; apply `042` (Pest Control duplicate); alias the
-  "Electrician Compliance ... - outgoing" IVR; team to assign the unassigned accounts. Not done:
+- **Live 2026-10-15:** PR #4 (97d1c48) and PR #5 (373c716) squash-merged to `main`; Netlify
+  production confirmed serving both, and the live site is 375px wide at 375px.
+- **Applied `042` to prod 2026-10-15** (Pest Control duplicate). Inspected first: the variant
+  "Pest Control Compliance" row's qualifying/disqualify were an exact copy of the real
+  `...Pest Control Compliance - Outgoing` agent and its 2 IVR targets were short-name copies of
+  the canonical's, so nothing was lost. Now one row each for Pest Control / Pest Control
+  Compliance / Pest Control D2M; one-space variant still aliased to the canonical; canonical's
+  reviewer assignment kept. Lydia / Mike Polz boards should now read 22 (was 23 incl. the
+  duplicate) - verified in the DB, not re-checked in the browser.
+- **Next:** alias the "Electrician Compliance ... - outgoing" IVR; team to assign the unassigned accounts. Not done:
   call-list filters (Pier didn't pick them).
+
+### 2026-10-15 (Pier) - Agents view: instant load + instant drawer (branch `perf/agents-view-load`)
+- **Root cause of "slow" was mostly failure, not query time.** (1) Boot fired data requests with
+  the stored token while the auth boot refreshed it in parallel; an expired token got
+  `401 JWT expired`, nothing retried, and the Agents grid sat on "No agents match." / 0s until a
+  manual reload (reproduced on the live site). (2) `toggleAgent` set `openAgent` then called
+  `applyFilters()`, which reset it to null, so the post-load re-render never fired: a first-time
+  drawer stuck on "Loading…" (Pier's screenshot) until closed and reopened.
+- **Fixes:** `sbFetch` waits for a due/in-flight token refresh and retries once on 401;
+  `refreshSession` is single-flight (overlapping refreshes spent the same refresh token twice,
+  which can log you out). `applyFilters(keepOpen)` for the drawer. Breakdown failures now show
+  "Couldn't load this breakdown" + Retry instead of an endless "Loading…".
+- **Speed:** migration `045` (applied to prod) adds sent/paid/revenue to
+  `agent_counterparty_daily`, backfills from 2026-05-31 (56,948 rows, ~48s), and adds
+  `agent_breakdown_all(from_ts, to_ts)` (~55ms for every agent). The frontend prefetches it with
+  the card metrics, so a drawer opens in ~18ms with no request. Verified identical to the raw
+  query for all agents over 90 days (2,501 rows, 0 diffs). Freshness date now fetched in
+  parallel with metrics.
+- **Measured locally against live Supabase:** all data in ~0.4s after the HTML; with an expired
+  token ~1.2s (one refresh, then data) instead of never.
+- **Mobile (drawer, pre-existing):** breakdown tables pushed past the drawer edge (`1fr` grid
+  min-content) and the 7-stat strip made the page 494px wide at 375px. Now `minmax(0,1fr)`,
+  tables scroll sideways in place, stats wrap 3-up; page is 375px. Desktop unchanged.
+- **Next:** commit + PR + deploy (awaiting Pier). Possible follow-up: cache the last Agents data
+  in localStorage for an instant first paint. Wispr/Jira not re-pulled this round.
