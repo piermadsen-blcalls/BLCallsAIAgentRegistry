@@ -103,7 +103,15 @@ const VALID_FLAGS = [
   'angry_caller',
   'wrong_business',
   'duplicate_caller',
+  'coached_call',   // MK-186 (prompt v4)
 ];
+// Flags derived from the outcome rather than asked of the model (MK-184): quoted_abandoned
+// is both an outcome and a compliance flag, so it lands in flag filters/counts.
+const OUTCOME_FLAGS = ['quoted_abandoned'];
+function addOutcomeFlags(flags, outcome) {
+  if (OUTCOME_FLAGS.includes(outcome) && !flags.includes(outcome)) flags.push(outcome);
+  return flags;
+}
 // geo_mismatch is NOT model-decided anymore — it's injected by code by comparing
 // the caller's spoken zip (extracted by the model as stated_zip) to the Canoe zip.
 
@@ -207,6 +215,7 @@ FLAG DEFINITIONS:
 - angry_caller: Caller is hostile, aggressive, or explicitly upset. Often coincides with outbound_dial.
 - wrong_business: Caller explicitly states they were trying to reach a different, specific named business (e.g. "I was trying to call Terminix, not you").
 - duplicate_caller: Same caller number appears in a different vertical or from a different publisher within 48 hours (detected externally — do not flag from transcript alone).
+- coached_call: The caller appears coached or incentivized to make this call rather than calling with a genuine need. Flag only on a concrete sign, e.g. they say a third party told them what to say or to call ("they told me to say this", "the guy said to call and say ..."), they mention being paid or promised a reward for calling or for getting a quote ("I was told I'd get an Amazon card", "they're giving me a gift card"), they recite answers or ask what they are supposed to say, or they cannot give basic details about themselves or their situation (their own address, the property, the specific problem) and stay vague when asked for specifics. Do NOT flag a genuine referral ("my neighbor recommended you"), a caller who is just brief or nervous, or one who only lacks a technical detail.
 
 Also evaluate: suspicious_call — true if the caller does not appear to be a genuine lead (testing the system, probing without intent to buy, or other ulterior motive).
 
@@ -549,6 +558,7 @@ function buildResultPatch(callId, parsed, callZip, duplicateIds, activePromptId,
   if (duplicateIds.has(callId) && !flags.includes('duplicate_caller')) flags.push('duplicate_caller');
   if (isGeoMismatch(callZip, parsed.stated_zip) && !flags.includes('geo_mismatch')) flags.push('geo_mismatch');
   if (isTransferVertical(verticalName)) flags = flags.filter(f => f !== 'outbound_dial');
+  addOutcomeFlags(flags, outcome);
 
   const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
   return {
@@ -986,6 +996,7 @@ async function run() {
       if (isTransferVertical(call.vertical_name)) {
         flags = flags.filter(f => f !== 'outbound_dial');
       }
+      addOutcomeFlags(flags, outcome);
 
       const scores = OUTCOME_SCORES[outcome] || { pub: 0, adv: 0 };
 

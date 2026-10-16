@@ -619,3 +619,50 @@ Continued from the 8/7 Scores work; large session. What moved:
   tables scroll sideways in place, stats wrap 3-up; page is 375px. Desktop unchanged.
 - **Next:** commit + PR + deploy (awaiting Pier). Possible follow-up: cache the last Agents data
   in localStorage for an instant first paint. Wispr/Jira not re-pulled this round.
+
+### 2026-10-16 (Pier) - MK-179 / MK-184 / MK-186 (branch `feat/mk-179-184-186-call-flags`)
+- Ranked the 9 open MK tickets by complexity; Pier picked the three easiest. (MK-183 closed by
+  Pier; unassigned accounts + unlinked Electrician IVR: Pier said ignore.)
+- **MK-179 (notes not saving):** corrections WERE saved to `call_corrections` (27 notes / 22 calls,
+  incl. Mike's 4 on Sep 21-22) but never read back. Call drawer now shows "Saved notes" (newest
+  first, author, time, outcome/flag changes) and refreshes after a save. Note: a correction still
+  doesn't change the call's own outcome/flags (pre-existing; possible separate ticket).
+- **MK-184 (quoted abandoned):** Pier chose filter + badge over a stored flag, so flagged totals,
+  "Flagged only" and digests are unaffected. `quoted_abandoned` added to the Calls flag-type filter
+  (maps to `our_outcome`), purple badge in Calls table / call drawer / Review rows. Combines with the
+  vertical multi-select (MK-175). Verified: Oct 9-15 = 175 calls (59 Auto Insurance (Insured)), = DB.
+- **MK-186 (coached calls):** new `coached_call` compliance flag. Migration `046` inserts prompt
+  v4 (= v3 + a coached_call definition; outcome prompt identical) INACTIVE. `process.js` VALID_FLAGS
+  + fallback prompt, `alert.js` digest (Pier: include), Calls filter / correction buttons / flag
+  breakdown / model-test review flags. Plan: test v4 on a fixed 100-call sample (50 insurance
+  quoted_abandoned, 25 other insurance, 25 non-insurance; test mode -> model_test_results only),
+  review, then activate v4 for new calls (no re-score of history).
+- **Mobile:** the call drawer was a fixed 540px, so on phones its left ~165px was off-screen; now
+  `min(540px, 100vw)`. Desktop unchanged.
+- **MK-186 test results (gemini-3.6-flash native, test mode, nothing written to canoe_calls):**
+  random 100 (50 insurance quoted_abandoned / 25 other insurance / 25 non-insurance) -> 0
+  coached_call; targeted 40 transcripts matching coaching-like phrases -> 1 flagged (caller asks
+  "what am I supposed to tell them"), the other 39 were benign uses ("they told me it would cost",
+  referrals, hold messages) and correctly not flagged. v3 re-run baseline on the same 100: outcomes
+  match production 84/100 vs v4 85/100, flags 99/100 both -> v4 changes nothing else; the ~15%
+  outcome drift is model re-run variance. Flag is conservative; recall unproven without known
+  coached examples. OpenRouter key in GH secrets returns 401 "User not found" (Settings model
+  testing via OpenRouter is broken); `process.yml` now passes GEMINI_API_KEY so tests use native
+  Gemini. Test ids: ed986d27 (v4 random), 66f31e56 (v4 targeted), d1e7a4d1 (v3 baseline).
+- **Next:** PR + merge (process.js/alert.js must be on main first), then activate prompt v4.
+- **Changes after Pier's 2026-10-16 meeting with Vicky (Wispr: "AI Registry and SaaS Direction"):**
+  - MK-184 reversed to a REAL flag (meeting decision: "quoted abandon is added as a compliance flag
+    while also staying an outcome"). `process.js` `addOutcomeFlags` adds `quoted_abandoned` when the
+    outcome is quoted_abandoned (batch + sync paths); badge/filter workaround removed; flag breakdown
+    includes it. NOT in the AM digest (Pier). Backfill = migration `047` (2,457 calls), to run right
+    after merge. Kept separate from coached_call (Pier).
+  - MK-186: v4 prompt now also names incentives ("I was told I'd get an Amazon card") - migration
+    `048` (applied; v4 still inactive) + fallback prompt. Re-test on 40 incentive-phrase calls:
+    1 flagged (reward-card mailer caller), 1 similar reward-card caller missed, 38 correctly not
+    flagged (card payments, insurer rewards programs, IVR "if anyone promised you a gift card"
+    disclaimers). Conservative; Vicky's framing: judge publishers by flag-rate outliers, not per call.
+  - MK-183 follow-up ("we don't need assignments"): Review board loses the Assigned reviewer column,
+    reviewer filter and "My agents". `agent_review_assignments` data left in place, unused.
+  - Later / separate ticket: publisher coached-flag-rate vs average outlier view (Vicky's idea).
+  - Also from the meeting: MK-177 naming conventions is next priority; MK-180 is Pier's; Pier to get
+    Vicky Cowork + Claude Code access.

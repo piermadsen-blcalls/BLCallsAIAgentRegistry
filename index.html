@@ -403,6 +403,8 @@
   .flag-wrong_business     { background:#EDE9FE; color:#4C1D95; }
   .flag-incentivized_caller { background:#DCFCE7; color:#14532D; }
   .flag-geo_mismatch       { background:#DBEAFE; color:#1E3A8A; }
+  .flag-quoted_abandoned   { background:#EDE9FE; color:#5B21B6; }
+  .flag-coached_call       { background:#FCE7F3; color:#9D174D; }
   .flag-duplicate_caller   { background:#F3F4F6; color:#374151; }
 
   /* outcome badge */
@@ -434,7 +436,7 @@
   .drawer-call-id:hover::after { content:'click to copy'; font-size:9px; color:var(--brand-mint); }
 
   /* call drawer */
-  .comp-drawer { position:fixed; right:0; top:0; bottom:0; width:540px; background:var(--surface); border-left:1px solid var(--border-strong); box-shadow:-4px 0 24px rgba(0,0,0,0.08); z-index:1000; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+  .comp-drawer { position:fixed; right:0; top:0; bottom:0; width:min(540px, 100vw); background:var(--surface); border-left:1px solid var(--border-strong); box-shadow:-4px 0 24px rgba(0,0,0,0.08); z-index:1000; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.22s cubic-bezier(0.4,0,0.2,1); }
   .comp-drawer.open { transform:translateX(0); }
   .comp-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:999; display:none; }
   .comp-drawer-overlay.open { display:block; }
@@ -472,6 +474,9 @@
   .correction-save-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:7px 18px; background:var(--brand-navy); color:white; border:none; border-radius:var(--radius-sm); cursor:pointer; }
   .correction-save-btn:disabled { opacity:0.4; cursor:not-allowed; }
   .correction-saved { font-size:11px; color:var(--teal); margin-left:10px; }
+  .correction-history-item { background:var(--amber-bg); border-radius:var(--radius-sm); padding:8px 11px; margin-bottom:8px; }
+  .correction-history-note { font-size:12.5px; color:var(--text); line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .correction-history-meta { font-size:10.5px; color:var(--text-3); margin-top:4px; overflow-wrap:anywhere; }
 
   /* accounts view */
   .comp-accounts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
@@ -562,7 +567,6 @@
   table.rv-board tbody tr:hover { background:var(--bg); }
   table.rv-board tr:last-child td { border-bottom:none; }
   .rv-board-name { font-weight:600; }
-  .rv-board-sel { font-family:var(--sans); font-size:11.5px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 6px; background:var(--surface); color:var(--text); max-width:200px; }
   .rv-board-calls { font-size:12px; white-space:nowrap; }
   .rv-board-open { font-size:11px; color:var(--brand-navy); font-weight:600; white-space:nowrap; text-align:right; }
   .rv-board-empty { padding:24px; text-align:center; color:var(--text-3); font-size:13px; font-style:italic; }
@@ -775,6 +779,10 @@
       <div class="drawer-section-title">Transcript</div>
       <div class="drawer-transcript" id="drawer-transcript"></div>
     </div>
+    <div id="correction-history-section" style="display:none">
+      <div class="drawer-section-title">Saved notes</div>
+      <div id="correction-history"></div>
+    </div>
     <div>
       <div class="drawer-section-title">Make a Correction</div>
       <div class="correction-form" id="correction-form">
@@ -822,6 +830,7 @@
             <button class="correction-flag-btn" data-flag="wrong_business">wrong_business</button>
             <button class="correction-flag-btn" data-flag="geo_mismatch">geo_mismatch</button>
             <button class="correction-flag-btn" data-flag="duplicate_caller">duplicate_caller</button>
+            <button class="correction-flag-btn" data-flag="coached_call">coached_call</button>
           </div>
         </div>
         <div style="margin-bottom:12px">
@@ -1040,6 +1049,8 @@
           <option value="wrong_business">wrong_business</option>
           <option value="geo_mismatch">geo_mismatch</option>
           <option value="duplicate_caller">duplicate_caller</option>
+          <option value="coached_call">coached_call</option>
+          <option value="quoted_abandoned">quoted_abandoned</option>
         </select>
         <!-- Outcome (options populated from REVIEW_OUTCOMES on load) -->
         <select class="cr-select" id="cr-outcome-filter" onchange="crOutcomeChange()">
@@ -2623,7 +2634,7 @@ async function callsLoadStats() {
 // Hover breakdown on the "flagged" metric: count of calls per flag type, scoped to the
 // same date range + business filters as the strip (flag drill-downs ignored). Lazy —
 // computed on first hover per scope; each count is a GIN-indexed containment query.
-const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
+const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller','coached_call','quoted_abandoned'];
 let flagBreakdownKey = null;
 async function callsFlagBreakdown() {
   const tip = document.getElementById('calls-flag-breakdown');
@@ -2686,8 +2697,8 @@ async function reviewInit(){
 // draft = what the filter bar shows; applied = what the table uses (copied on Apply).
 // links = canonical ivr → {advertiser:{name:calls}, publisher:{…}} over the same 30d window
 // (agent_counterparties, migration 044).
-const rvScopeBlank=()=>({ side:'advertiser', mgr:'', accts:[], reviewer:'' });
-let reviewBoard = { managers:[], assignments:{}, lastReview:{}, counts:{}, filter:'all', myId:null,
+const rvScopeBlank=()=>({ side:'advertiser', mgr:'', accts:[] });
+let reviewBoard = { managers:[], lastReview:{}, counts:{}, filter:'all', myId:null,
   acctAssign:[], links:{}, draft:rvScopeBlank(), applied:rvScopeBlank(), scopeInit:false, acctSearch:'' };
 
 async function renderReviewPicker(){
@@ -2699,12 +2710,11 @@ async function renderReviewPicker(){
 
 async function loadReviewBoardData(){
   const b=reviewBoard;
-  b.managers=[]; b.assignments={}; b.lastReview={}; b.counts={}; b.acctAssign=[]; b.links={};
+  b.managers=[]; b.lastReview={}; b.counts={}; b.acctAssign=[]; b.links={};
   const since=new Date(Date.now()-30*86400000).toISOString();
   const nope=e=>{console.warn('review board:',e.message);return[];};
-  const [mgrs,assigns,reviews,counts,acctAssign,links]=await Promise.all([
+  const [mgrs,reviews,counts,acctAssign,links]=await Promise.all([
     sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc').catch(nope),
-    sbFetch('agent_review_assignments?select=ivr_name,manager_id').catch(nope),
     sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000').catch(nope),
     sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
     sbFetch('account_manager_assignments?select=account_name,account_type,manager_id').catch(nope),
@@ -2717,7 +2727,6 @@ async function loadReviewBoardData(){
     const k=resolveIvrName(r.ivr_name), l=b.links[k]||(b.links[k]={advertiser:{},publisher:{}});
     if(l[r.side]) l[r.side][r.counterparty]=(l[r.side][r.counterparty]||0)+Number(r.calls||0);
   }
-  (assigns||[]).forEach(r=>{ b.assignments[resolveIvrName(r.ivr_name)]=r.manager_id; });
   for(const r of (reviews||[])){ const k=resolveIvrName(r.ivr_name); if(!b.lastReview[k]) b.lastReview[k]=r.created_at; }
   for(const r of (counts||[])){ const k=resolveIvrName(r.ivr_name); const cur=b.counts[k]||{reviewable:0,reviewed:0}; cur.reviewable+=Number(r.reviewable||0); cur.reviewed+=Number(r.reviewed||0); b.counts[k]=cur; }
   const me=(getAuthUser()||'').toLowerCase();
@@ -2748,11 +2757,11 @@ function rvScopeSet(s){
 
 function renderReviewBoard(){
   const b=reviewBoard, root=document.getElementById('review-root'), ap=b.applied, dr=b.draft;
-  // counts/assignments/lastReview are all keyed by the CANONICAL name, so resolve
+  // counts/lastReview are keyed by the CANONICAL name, so resolve
   // before looking up — an agents row registered under an aliased name would
   // otherwise miss its own bucket and read "—" / "Never reviewed".
   const boardAgents=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test')
-    .map(a=>{ const k=resolveIvrName(a.ivrName); return {a, key:k, st:reviewBoardStatus(k), mgr:b.assignments[k]||null}; });
+    .map(a=>{ const k=resolveIvrName(a.ivrName); return {a, key:k, st:reviewBoardStatus(k)}; });
   // Applied scope: an agent is in scope when it touched one of the scoped accounts in 30d.
   const scopeSet=rvScopeSet(ap), apAdv=ap.side==='advertiser';
   let withStatus=boardAgents;
@@ -2760,11 +2769,9 @@ function renderReviewBoard(){
     withStatus=boardAgents.map(x=>{ const m=rvSideOf(x.key,ap.side); return {...x, accts:Object.keys(m).filter(n=>scopeSet.has(n)).sort((p,q)=>m[q]-m[p])}; })
       .filter(x=>x.accts.length);
   }
-  if(ap.reviewer) withStatus=withStatus.filter(x=> ap.reviewer==='__unassigned__' ? !x.mgr : x.mgr===ap.reviewer);
-  const counts={ all:withStatus.length, needs:withStatus.filter(x=>x.st.status==='needs').length, mine:withStatus.filter(x=>x.mgr&&x.mgr===b.myId).length };
+  const counts={ all:withStatus.length, needs:withStatus.filter(x=>x.st.status==='needs').length };
   let rows=withStatus;
   if(b.filter==='needs') rows=rows.filter(x=>x.st.status==='needs');
-  else if(b.filter==='mine') rows=rows.filter(x=>x.mgr&&x.mgr===b.myId);
   rows.sort((x,y)=>{ const xn=x.st.status==='needs', yn=y.st.status==='needs'; if(xn!==yn) return xn?-1:1; return x.a.name.localeCompare(y.a.name); });
 
   // Draft controls (filter bar): options follow the DRAFT side + manager.
@@ -2777,19 +2784,15 @@ function renderReviewBoard(){
   const sideMgrs=b.managers.filter(m=>b.acctAssign.some(a=>a.manager_id===m.id&&a.account_type===dr.side));
   const mgrOpts=[`<option value="">All ${drAdv?'account':'supply'} managers</option>`]
     .concat(sideMgrs.map(m=>`<option value="${m.id}" ${dr.mgr===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
-  const reviewerOpts=['<option value="">All reviewers</option>','<option value="__unassigned__"'+(dr.reviewer==='__unassigned__'?' selected':'')+'>Unassigned</option>']
-    .concat(b.managers.map(m=>`<option value="${m.id}" ${dr.reviewer===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
   const acctList=acctOpts.map(n=>`<label class="ins-vertical-opt" data-name="${esc(n.toLowerCase())}"><input type="checkbox" value="${esc(n)}" ${picked.has(n)?'checked':''} onchange="rvAcctToggle(this)"><span>${esc(n)} <span style="color:var(--text-3)">(${acctIvrs[n]} IVR${acctIvrs[n]===1?'':'s'})</span></span></label>`).join('')
     || `<div class="rv-acct-none">No ${drNoun} with IVR calls in the last 30 days.</div>`;
   const sideBtn=(side,label)=>`<button class="rv-board-filter${dr.side===side?' active':''}" onclick="rvDraftSide('${side}')">${label}</button>`;
   const dirty=JSON.stringify(dr)!==JSON.stringify(ap);
 
-  const selOptions=cur=>['<option value="">— Unassigned —</option>'].concat(b.managers.map(m=>`<option value="${m.id}" ${m.id===cur?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
   const fbtn=(f,label,n)=>`<button class="rv-board-filter${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span style="opacity:.65">${n}</span></button>`;
   const acctCell=x=>{ const shown=x.accts.slice(0,2).join(', '), more=x.accts.length-2;
     return `<td class="rv-board-accts" title="${esc(x.accts.join(', '))}">${esc(shown)}${more>0?` <span style="color:var(--text-3)">+${more}</span>`:''}</td>`; };
-  const emptyMsg = b.filter==='mine'&&!b.myId ? 'You are not in the account-managers list, so nothing is assigned to you.'
-    : scopeSet ? `No agents ${apAdv?'sent calls to':'took calls from'} these ${apAdv?'advertisers':'publishers'} in the last 30 days.`
+  const emptyMsg = scopeSet ? `No agents ${apAdv?'sent calls to':'took calls from'} these ${apAdv?'advertisers':'publishers'} in the last 30 days.`
     : 'No agents in this view.';
   root.innerHTML=
     `<div class="rv-board-bar rv-scope-bar"><span class="rv-board-scope-lbl">View by</span>
@@ -2803,13 +2806,12 @@ function renderReviewBoard(){
            <div class="rv-acct-list" id="rv-acct-list">${acctList}</div>
          </div>
        </div>
-       <select class="rv-board-reviewer" aria-label="Reviewer" onchange="rvDraftReviewer(this.value)">${reviewerOpts}</select>
        <button class="run-btn rv-scope-apply" ${dirty?'':'disabled'} onclick="rvApplyScope()">Apply</button>
        <button class="rv-btn rv-refresh" onclick="rvRefreshBoard(this)" title="Reload board data">↻ Refresh</button></div>
-     <div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}${fbtn('mine','My agents',counts.mine)}
+     <div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}
        <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Click a row to review its calls.</span></div>
      <div class="rv-board-wrap"><table class="rv-board">
-       <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th>Assigned reviewer</th><th>Last reviewed</th><th></th></tr></thead>
+       <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th>Last reviewed</th><th></th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
          const cnt=b.counts[x.key]||{reviewable:0,reviewed:0};
          const cells=cnt.reviewable ? cnt.reviewable.toLocaleString() : '<span style="color:var(--text-3)">—</span>';
@@ -2819,10 +2821,9 @@ function renderReviewBoard(){
            <td style="color:var(--text-2)">${esc(x.a.vertical||'—')}</td>
            ${scopeSet?acctCell(x):''}
            <td class="rv-board-calls">${cells}</td>
-           <td onclick="event.stopPropagation()"><select class="rv-board-sel" onchange="assignAgent('${jsStr(x.a.ivrName)}',this.value)">${selOptions(x.mgr)}</select></td>
            <td class="rv-board-calls">${b.lastReview[x.key]?fmtDate(new Date(b.lastReview[x.key])):'<span style="color:var(--text-3)">—</span>'}</td>
            <td class="rv-board-open">Review →</td>
-         </tr>`; }).join('') : `<tr><td colspan="${scopeSet?7:6}" class="rv-board-empty">${esc(emptyMsg)}</td></tr>` }</tbody>
+         </tr>`; }).join('') : `<tr><td colspan="${scopeSet?6:5}" class="rv-board-empty">${esc(emptyMsg)}</td></tr>` }</tbody>
      </table></div>`;
   if(b.acctSearch) rvAcctSearch(b.acctSearch);
 }
@@ -2841,7 +2842,6 @@ function rvDraftSide(side){
   renderReviewBoard();
 }
 function rvDraftMgr(v){ const b=reviewBoard; b.draft.mgr=v||''; b.draft.accts=[]; b.acctSearch=''; renderReviewBoard(); }
-function rvDraftReviewer(v){ reviewBoard.draft.reviewer=v||''; rvSyncApply(); }
 function rvAcctToggle(cb){
   const d=reviewBoard.draft;
   d.accts=cb.checked ? [...new Set([...d.accts,cb.value])].sort((p,q)=>p.localeCompare(q)) : d.accts.filter(n=>n!==cb.value);
@@ -2872,21 +2872,6 @@ async function rvRefreshBoard(btn){
   if(btn){ btn.disabled=true; btn.textContent='Refreshing…'; }
   await loadReviewBoardData();
   renderReviewBoard();
-}
-
-async function assignAgent(ivrName, managerId){
-  const canon=resolveIvrName(ivrName);
-  try{
-    if(managerId){
-      await sbFetch('agent_review_assignments?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({ivr_name:canon,manager_id:managerId,assigned_by:getAuthUser(),assigned_at:new Date().toISOString()})});
-      reviewBoard.assignments[canon]=managerId;
-    } else {
-      const res=await fetch(`${SB_URL}/rest/v1/agent_review_assignments?ivr_name=eq.${encodeURIComponent(canon)}`,{method:'DELETE',headers:authHeaders()});
-      if(!res.ok) throw new Error(`${res.status}`);
-      delete reviewBoard.assignments[canon];
-    }
-    renderReviewBoard();
-  }catch(e){ alert('Could not save assignment: '+e.message); }
 }
 
 // The review questions — shared by the form and the history list (labels for saved values).
@@ -3769,6 +3754,8 @@ function openCallDrawer(call) {
       .catch(() => { txEl.textContent = 'Could not load transcript.'; });
   }
 
+  loadCorrectionHistory(call.id);
+
   // reset correction form
   document.getElementById('correction-outcome').value = '';
   document.getElementById('correction-note').value    = '';
@@ -3780,6 +3767,38 @@ function openCallDrawer(call) {
 
   document.getElementById('comp-drawer').classList.add('open');
   document.getElementById('comp-drawer-overlay').classList.add('open');
+}
+
+// MK-179: corrections were saved to call_corrections but never read back, so notes looked
+// unsaved. Show every saved note for the call (newest first) above the correction form.
+async function loadCorrectionHistory(callId) {
+  const section = document.getElementById('correction-history-section');
+  const el = document.getElementById('correction-history');
+  section.style.display = 'none'; el.innerHTML = '';
+  let rows;
+  try {
+    rows = await compFetch(`call_corrections?call_id=eq.${encodeURIComponent(callId)}&select=corrected_by,corrected_at,note,outcome_before,outcome_after,flags_before,flags_after&order=corrected_at.desc`) || [];
+  } catch (e) {
+    console.warn('call_corrections:', e.message);
+    rows = null;
+  }
+  if (!compDrawerCall || compDrawerCall.id !== callId) return;   // drawer moved on to another call
+  if (rows === null) {
+    section.style.display = '';
+    el.innerHTML = '<div class="correction-history-meta">Could not load saved notes.</div>';
+    return;
+  }
+  if (!rows.length) return;
+  section.style.display = '';
+  el.innerHTML = rows.map(r => {
+    const changes = [];
+    if (r.outcome_after && r.outcome_after !== r.outcome_before) changes.push(`outcome ${r.outcome_before || '—'} → ${r.outcome_after}`);
+    const fb = r.flags_before || [], fa = r.flags_after || [];
+    fa.filter(f => !fb.includes(f)).forEach(f => changes.push('+' + f));
+    fb.filter(f => !fa.includes(f)).forEach(f => changes.push('−' + f));
+    return `<div class="correction-history-item"><div class="correction-history-note">${esc(r.note || '')}</div>` +
+      `<div class="correction-history-meta">${esc(r.corrected_by || '—')} · ${fmtDateTime(r.corrected_at)}${changes.length ? ' · ' + esc(changes.join(', ')) : ''}</div></div>`;
+  }).join('');
 }
 
 function closeCallDrawer() {
@@ -3835,6 +3854,8 @@ async function saveCorrection() {
     const local = compCalls.find(c => c.id === compDrawerCall.id);
     if (local) local.compliance_reviewed = true;
 
+    document.getElementById('correction-note').value = '';
+    loadCorrectionHistory(compDrawerCall.id);
     document.getElementById('correction-saved').style.display = 'inline';
     setTimeout(() => { document.getElementById('correction-saved').style.display = 'none'; }, 3000);
   } catch(e) {
@@ -4709,7 +4730,7 @@ const REVIEW_OUTCOMES = ['sale','appointment','quoted_interested','quoted_undeci
 // Populate the Calls-tab outcome filter from the canonical outcome list (single source
 // of truth). Runs during script eval; the <select> is already in the parsed DOM above.
 (() => { const s = document.getElementById('cr-outcome-filter'); if (s) REVIEW_OUTCOMES.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o.replace(/_/g, ' '); s.appendChild(opt); }); })();
-const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
+const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller','coached_call'];
 let reviewState = null;
 
 async function reviewOpen(testId) {
