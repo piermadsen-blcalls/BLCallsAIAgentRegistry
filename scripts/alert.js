@@ -36,9 +36,10 @@ const FLAG_LABELS = {
   wrong_business:       'Wrong business',
   duplicate_caller:     'Duplicate caller',
   geo_mismatch:         'Geo mismatch',
+  coached_call:         'Coached call',
   suspicious_call:      'Suspicious call',
 };
-const AI_FLAGS = ['outbound_dial', 'facebook_marketplace', 'angry_caller', 'wrong_business', 'duplicate_caller', 'geo_mismatch'];
+const AI_FLAGS = ['outbound_dial', 'facebook_marketplace', 'angry_caller', 'wrong_business', 'duplicate_caller', 'geo_mismatch', 'coached_call'];
 
 const BOOTSTRAP_DAYS = 7;  // first-ever digest window when there's no last_sent_at
 

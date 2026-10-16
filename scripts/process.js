@@ -103,6 +103,7 @@ const VALID_FLAGS = [
   'angry_caller',
   'wrong_business',
   'duplicate_caller',
+  'coached_call',   // MK-186 (prompt v4)
 ];
 // geo_mismatch is NOT model-decided anymore — it's injected by code by comparing
 // the caller's spoken zip (extracted by the model as stated_zip) to the Canoe zip.
@@ -207,6 +208,7 @@ FLAG DEFINITIONS:
 - angry_caller: Caller is hostile, aggressive, or explicitly upset. Often coincides with outbound_dial.
 - wrong_business: Caller explicitly states they were trying to reach a different, specific named business (e.g. "I was trying to call Terminix, not you").
 - duplicate_caller: Same caller number appears in a different vertical or from a different publisher within 48 hours (detected externally — do not flag from transcript alone).
+- coached_call: The caller appears coached or incentivized to make this call rather than calling with a genuine need. Flag only on a concrete sign, e.g. they say a third party told them what to say or to call ("they told me to say this", "the guy said to call and say ..."), they recite answers or ask what they are supposed to say, or they cannot give basic details about themselves or their situation (their own address, the property, the specific problem) and stay vague when asked for specifics. Do NOT flag a genuine referral ("my neighbor recommended you"), a caller who is just brief or nervous, or one who only lacks a technical detail.
 
 Also evaluate: suspicious_call — true if the caller does not appear to be a genuine lead (testing the system, probing without intent to buy, or other ulterior motive).
 

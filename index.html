@@ -403,6 +403,8 @@
   .flag-wrong_business     { background:#EDE9FE; color:#4C1D95; }
   .flag-incentivized_caller { background:#DCFCE7; color:#14532D; }
   .flag-geo_mismatch       { background:#DBEAFE; color:#1E3A8A; }
+  .flag-quoted_abandoned   { background:#EDE9FE; color:#5B21B6; }
+  .flag-coached_call       { background:#FCE7F3; color:#9D174D; }
   .flag-duplicate_caller   { background:#F3F4F6; color:#374151; }
 
   /* outcome badge */
@@ -434,7 +436,7 @@
   .drawer-call-id:hover::after { content:'click to copy'; font-size:9px; color:var(--brand-mint); }
 
   /* call drawer */
-  .comp-drawer { position:fixed; right:0; top:0; bottom:0; width:540px; background:var(--surface); border-left:1px solid var(--border-strong); box-shadow:-4px 0 24px rgba(0,0,0,0.08); z-index:1000; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+  .comp-drawer { position:fixed; right:0; top:0; bottom:0; width:min(540px, 100vw); background:var(--surface); border-left:1px solid var(--border-strong); box-shadow:-4px 0 24px rgba(0,0,0,0.08); z-index:1000; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.22s cubic-bezier(0.4,0,0.2,1); }
   .comp-drawer.open { transform:translateX(0); }
   .comp-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:999; display:none; }
   .comp-drawer-overlay.open { display:block; }
@@ -472,6 +474,9 @@
   .correction-save-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:7px 18px; background:var(--brand-navy); color:white; border:none; border-radius:var(--radius-sm); cursor:pointer; }
   .correction-save-btn:disabled { opacity:0.4; cursor:not-allowed; }
   .correction-saved { font-size:11px; color:var(--teal); margin-left:10px; }
+  .correction-history-item { background:var(--amber-bg); border-radius:var(--radius-sm); padding:8px 11px; margin-bottom:8px; }
+  .correction-history-note { font-size:12.5px; color:var(--text); line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .correction-history-meta { font-size:10.5px; color:var(--text-3); margin-top:4px; overflow-wrap:anywhere; }
 
   /* accounts view */
   .comp-accounts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
@@ -775,6 +780,10 @@
       <div class="drawer-section-title">Transcript</div>
       <div class="drawer-transcript" id="drawer-transcript"></div>
     </div>
+    <div id="correction-history-section" style="display:none">
+      <div class="drawer-section-title">Saved notes</div>
+      <div id="correction-history"></div>
+    </div>
     <div>
       <div class="drawer-section-title">Make a Correction</div>
       <div class="correction-form" id="correction-form">
@@ -822,6 +831,7 @@
             <button class="correction-flag-btn" data-flag="wrong_business">wrong_business</button>
             <button class="correction-flag-btn" data-flag="geo_mismatch">geo_mismatch</button>
             <button class="correction-flag-btn" data-flag="duplicate_caller">duplicate_caller</button>
+            <button class="correction-flag-btn" data-flag="coached_call">coached_call</button>
           </div>
         </div>
         <div style="margin-bottom:12px">
@@ -1040,6 +1050,8 @@
           <option value="wrong_business">wrong_business</option>
           <option value="geo_mismatch">geo_mismatch</option>
           <option value="duplicate_caller">duplicate_caller</option>
+          <option value="coached_call">coached_call</option>
+          <option value="quoted_abandoned">quoted_abandoned</option>
         </select>
         <!-- Outcome (options populated from REVIEW_OUTCOMES on load) -->
         <select class="cr-select" id="cr-outcome-filter" onchange="crOutcomeChange()">
@@ -2343,7 +2355,10 @@ function crBuildFilters(includeFlagFilters = true) {
   if (includeFlagFilters) {
     if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
     const flag = document.getElementById('cr-flag-filter')?.value;
-    if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
+    // quoted_abandoned is an outcome shown as a flag-style signal (MK-184), not a stored flag,
+    // so it doesn't inflate the flagged totals.
+    if (flag && SIGNAL_OUTCOMES[flag]) q += `&our_outcome=eq.${encodeURIComponent(flag)}`;
+    else if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
   }
   return q;
 }
@@ -2516,7 +2531,8 @@ function crRender() {
         return `<td class="cr-mono" style="text-align:right;color:${color}">${n > 0 ? '+' : ''}${n}</td>`;
       }
       case 'flags':
-        return `<td>${(r.flags && r.flags.length) ? flagBadges(r.flags) : '<span class="cr-null">—</span>'}</td>`;
+        { const b = [flagBadges(r.flags || []), signalBadges(r.our_outcome)].filter(Boolean).join(' ');
+          return `<td>${b || '<span class="cr-null">—</span>'}</td>`; }
       case 'reviewed':
         return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span style="color:var(--teal)">✓ reviewed</span>' : '<span style="color:var(--amber)">• pending</span>') : '<span class="cr-null">—</span>'}</td>`;
       default:
@@ -2623,7 +2639,7 @@ async function callsLoadStats() {
 // Hover breakdown on the "flagged" metric: count of calls per flag type, scoped to the
 // same date range + business filters as the strip (flag drill-downs ignored). Lazy —
 // computed on first hover per scope; each count is a GIN-indexed containment query.
-const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
+const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller','coached_call'];
 let flagBreakdownKey = null;
 async function callsFlagBreakdown() {
   const tip = document.getElementById('calls-flag-breakdown');
@@ -3169,7 +3185,7 @@ function renderReviewCalls(){
 function reviewCallRow(c,i){
   const route=[c.publisher_name,c.advertiser_name].filter(Boolean).join(' → ')||'—';
   const disp=c.disposition?`<span class="rv-chip disp" title="${esc(c.disposition)}">${esc(c.disposition)}</span>`:'';
-  const flags=flagBadges(c.flags||[]);
+  const flags=[flagBadges(c.flags||[]),signalBadges(c.our_outcome)].filter(Boolean).join(' ');
   const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:'';
   const rec=c.recording_url||c.ascnd_recording_url;
   const reviewed=RV.reviewedSet.has(c.id);
@@ -3717,6 +3733,13 @@ function outcomeBadge(outcome) {
   return `<span class="outcome-badge ${cls}">${outcome}</span>`;
 }
 
+// Outcomes surfaced as flag-style badges + a "flag type" filter (MK-184). They are NOT stored
+// in canoe_calls.flags, so "Flagged only", flagged counts and the digests are unaffected.
+const SIGNAL_OUTCOMES = { quoted_abandoned: 'quoted abandoned' };
+function signalBadges(outcome) {
+  return SIGNAL_OUTCOMES[outcome] ? `<span class="flag-badge flag-${outcome}">${SIGNAL_OUTCOMES[outcome]}</span>` : '';
+}
+
 function flagBadges(flags) {
   if (!flags || flags.length === 0) return '';
   return flags.map(f => `<span class="flag-badge flag-${f}">${f.replace(/_/g,' ')}</span>`).join(' ');
@@ -3746,8 +3769,9 @@ function openCallDrawer(call) {
     (call.canoe_outcome ? `<span class="drawer-canoe-outcome" style="margin-left:12px">Canoe: ${call.canoe_outcome}</span>` : '');
 
   const flagsEl = document.getElementById('drawer-flags');
-  flagsEl.innerHTML = compDrawerFlags.length
-    ? `<div class="drawer-flags-row">${flagBadges(compDrawerFlags)}</div>`
+  const signal = signalBadges(call.our_outcome);
+  flagsEl.innerHTML = compDrawerFlags.length || signal
+    ? `<div class="drawer-flags-row">${[flagBadges(compDrawerFlags), signal].filter(Boolean).join(' ')}</div>`
     : '<div class="drawer-no-flags">No compliance flags</div>';
 
   const summaryEl = document.getElementById('drawer-summary');
@@ -3769,6 +3793,8 @@ function openCallDrawer(call) {
       .catch(() => { txEl.textContent = 'Could not load transcript.'; });
   }
 
+  loadCorrectionHistory(call.id);
+
   // reset correction form
   document.getElementById('correction-outcome').value = '';
   document.getElementById('correction-note').value    = '';
@@ -3780,6 +3806,38 @@ function openCallDrawer(call) {
 
   document.getElementById('comp-drawer').classList.add('open');
   document.getElementById('comp-drawer-overlay').classList.add('open');
+}
+
+// MK-179: corrections were saved to call_corrections but never read back, so notes looked
+// unsaved. Show every saved note for the call (newest first) above the correction form.
+async function loadCorrectionHistory(callId) {
+  const section = document.getElementById('correction-history-section');
+  const el = document.getElementById('correction-history');
+  section.style.display = 'none'; el.innerHTML = '';
+  let rows;
+  try {
+    rows = await compFetch(`call_corrections?call_id=eq.${encodeURIComponent(callId)}&select=corrected_by,corrected_at,note,outcome_before,outcome_after,flags_before,flags_after&order=corrected_at.desc`) || [];
+  } catch (e) {
+    console.warn('call_corrections:', e.message);
+    rows = null;
+  }
+  if (!compDrawerCall || compDrawerCall.id !== callId) return;   // drawer moved on to another call
+  if (rows === null) {
+    section.style.display = '';
+    el.innerHTML = '<div class="correction-history-meta">Could not load saved notes.</div>';
+    return;
+  }
+  if (!rows.length) return;
+  section.style.display = '';
+  el.innerHTML = rows.map(r => {
+    const changes = [];
+    if (r.outcome_after && r.outcome_after !== r.outcome_before) changes.push(`outcome ${r.outcome_before || '—'} → ${r.outcome_after}`);
+    const fb = r.flags_before || [], fa = r.flags_after || [];
+    fa.filter(f => !fb.includes(f)).forEach(f => changes.push('+' + f));
+    fb.filter(f => !fa.includes(f)).forEach(f => changes.push('−' + f));
+    return `<div class="correction-history-item"><div class="correction-history-note">${esc(r.note || '')}</div>` +
+      `<div class="correction-history-meta">${esc(r.corrected_by || '—')} · ${fmtDateTime(r.corrected_at)}${changes.length ? ' · ' + esc(changes.join(', ')) : ''}</div></div>`;
+  }).join('');
 }
 
 function closeCallDrawer() {
@@ -3835,6 +3893,8 @@ async function saveCorrection() {
     const local = compCalls.find(c => c.id === compDrawerCall.id);
     if (local) local.compliance_reviewed = true;
 
+    document.getElementById('correction-note').value = '';
+    loadCorrectionHistory(compDrawerCall.id);
     document.getElementById('correction-saved').style.display = 'inline';
     setTimeout(() => { document.getElementById('correction-saved').style.display = 'none'; }, 3000);
   } catch(e) {
@@ -4709,7 +4769,7 @@ const REVIEW_OUTCOMES = ['sale','appointment','quoted_interested','quoted_undeci
 // Populate the Calls-tab outcome filter from the canonical outcome list (single source
 // of truth). Runs during script eval; the <select> is already in the parsed DOM above.
 (() => { const s = document.getElementById('cr-outcome-filter'); if (s) REVIEW_OUTCOMES.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o.replace(/_/g, ' '); s.appendChild(opt); }); })();
-const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller'];
+const REVIEW_FLAGS = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller','coached_call'];
 let reviewState = null;
 
 async function reviewOpen(testId) {
