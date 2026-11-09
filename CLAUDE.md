@@ -9,35 +9,34 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
   framework, no build step.** Tabs: Agents, Insights, Calls, Scores, Settings.
   Talks directly to Supabase REST via the `sbFetch()` helper; the Settings →
   model-calibration UI can dispatch the `process.yml` GitHub Action.
-- **`scripts/`** — Node jobs, run by GitHub Actions on a schedule:
-  - `sync.js` — daily 00:00 UTC — two-pass Canoe → Supabase `canoe_calls`
+- **`scripts/`** — Node jobs, run by GitHub Actions on a schedule (see `.github/workflows/`):
+  - `sync.js` — two-pass Canoe → Supabase `canoe_calls`
     (pass 1 upsert calls; pass 2 patch transcription/duration/outcome).
   - `process.js` — AI analysis of unprocessed calls; writes outcome + compliance
-    flags back to the row. Production scoring runs on **Gemini 3.6 Flash via Google's
-    native Batch API** (~50% cheaper, async). Batch is **two-phase** (env `BATCH_ACTION`):
+    flags back to the row. Production scoring runs on **Gemini via Google's
+    native Batch API** (cheaper, async). Batch is **two-phase** (env `BATCH_ACTION`):
     `submit` records jobs in `gemini_batch_jobs` and exits; `ingest` polls them and
     writes results in a later run (survives the 6h GH Actions cap vs Gemini's ≤24h SLO).
     Bare `gemini-*` ids hit the native Gemini API; namespaced ids (`anthropic/…`,
     `google/…`) still route via OpenRouter for the calibration/test UI. Knobs:
     `BATCH_SIZE`, `BACKFILL_DAYS`, `GEMINI_CHUNK`, `MIN_TRANSCRIPT_WORDS`, `DRY_RUN`.
-  - `alert.js` — Mon + Thu 16:00 UTC — compliance/perf alerts to account
+  - `alert.js` — compliance/perf alerts to account
     managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
     address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
     accounts, ignoring the enabled flag.
-- **`supabase/`** — `migrations/` (001–048) and `functions/admin-users` (edge fn).
+- **`supabase/`** — `migrations/` and `functions/admin-users` (edge fn).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
   `028` partial + `029` GIN (`jsonb_path_ops`) index on `flags` (Calls-tab jsonb
   filters — fix 57014 timeouts), `030` `agent_metrics_daily` rollup that `agent_metrics`
-  reads instead of scanning raw (Agents load ~5-9s → ~44ms), refreshed daily by **pg_cron**
-  (`refresh-agent-rollup`, 01:00 UTC). `041` `outcome_score_daily` rollup that
+  reads instead of scanning raw (fixes slow Agents load), refreshed daily by **pg_cron**
+  (`refresh-agent-rollup`). `041` `outcome_score_daily` rollup that
   `outcome_score_vectors` sums instead of scanning raw (same fix for the slow Scores tab),
-  refreshed daily by pg_cron (`refresh-outcome-score-rollup`, 01:30 UTC).
-- **`.github/workflows/`** — `sync.yml` (daily 00:00), `alert.yml` (Mon/Wed/Fri),
-  `process.yml` (manual/test dispatch only — cron removed), and the Gemini batch crons
-  `process-submit.yml` (nightly 03:00 UTC) + `process-ingest.yml` (every 6h).
-  (A temporary `backfill-drip.yml` ran the one-off 30-day backfill on 2026-08-12/13, now
-  deleted — for a future bulk backfill, dispatch process-submit with `backfill_days`.)
+  refreshed daily by pg_cron (`refresh-outcome-score-rollup`).
+- **`.github/workflows/`** — `sync.yml`, `alert.yml`,
+  `process.yml` (manual/test dispatch only), and the Gemini batch crons
+  `process-submit.yml` + `process-ingest.yml`. Schedules live in the workflow files.
+  For a bulk backfill, dispatch process-submit with `backfill_days`.
 
 ## Conventions & gotchas (do not break)
 - **It's one static file.** Edit `index.html` directly. Don't add a build tool,
@@ -50,8 +49,8 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
   commit: `CANOE_API_KEY`, `SUPABASE_SERVICE_KEY`, `OPENROUTER_API_KEY`,
   `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` (AI Studio, for the native batch),
   `ASCND_ALERT_WEBHOOK_URL`. Add new ones in both places.
-- **DB changes = a new numbered migration** in `supabase/migrations/` (next is
-  `042_…`). Don't edit existing migrations. Migrations are applied to prod by hand
+- **DB changes = a new numbered migration** in `supabase/migrations/`, numbered after
+  the highest existing one. Don't edit existing migrations. Migrations are applied to prod by hand
   (Supabase SQL editor or `supabase db query --linked`); the files are the record.
 - **Agents are keyed by IVR name** with an alias→canonical map (`agent_ivr_aliases`);
   resolve to the canonical name before grouping.
