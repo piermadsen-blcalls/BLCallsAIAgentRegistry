@@ -666,3 +666,86 @@ Continued from the 8/7 Scores work; large session. What moved:
   - Later / separate ticket: publisher coached-flag-rate vs average outlier view (Vicky's idea).
   - Also from the meeting: MK-177 naming conventions is next priority; MK-180 is Pier's; Pier to get
     Vicky Cowork + Claude Code access.
+- **Live 2026-10-16:** PR #7 squash-merged (39056ee), Netlify serving it. Migration `047` applied right
+  after (2,457/2,457 quoted_abandoned calls flagged, 0 stray). Prompt v4 activated (v3 off; exactly
+  one active) - new calls get coached_call from the next nightly Gemini batch (03:00 UTC submit),
+  and it appears in the AM digest. Note: Settings' "set active prompt" calls `rpc/set_active_prompt`,
+  which does not exist in the DB (button is broken; activation done by SQL). No Jira ticket for the
+  publisher-outlier idea (Pier).
+
+## Week of Oct 19, 2026
+
+### 2026-10-20 (from Wispr/Jira/Teams - context reconciliation 2026-11-09)
+- **Ticket intake changed:** account managers now file their own MK tickets for their clients' IVRs,
+  with a component picker - "AI IVR" routes to the IVR builder, "Agent Registry Update" routes to
+  the owner. Tickets must state the objective and specifics.
+- `quoted_abandoned` flag confirmed live and useful (auto-insurance relaunch; seed for coached-call
+  detection). Caller-ID coverage up sharply after one publisher started passing it; Facebook
+  Marketplace calls falling, so focus shifts to coached calls.
+- Ideas raised, not ticketed: verify caller addresses (third-party data or transcript AI); pass a
+  unique call-outcome ID back via Canoe sub-IDs (confirmed possible).
+- Possible scoring gap: conversion for some client performance reports was entered by hand because
+  scoring "wasn't pulling" - unconfirmed, worth checking.
+- MK-177 (Canoe/registry IVR naming match + process to register new IVRs) chased for a date; still open.
+- Compliance analyst to run an outcome-accuracy analysis on calls since Aug 1.
+
+### 2026-10-21 / 10-22 (pre-leave)
+- Pre-leave check-ins: BL Calls covered for the leave; hiring a day-to-day AI IVR monitoring person.
+- AI-routed revenue and volume fell sharply Jul -> Oct while conversion held. Main drivers per
+  meetings: fraud-driven publisher pauses/blacklisting (dentist, auto-accident), routing changes and
+  dentist pass-through volume; a registry tracking error is not ruled out. Severe supply crunch
+  (Oct 22); buyers cutting back over coached calls.
+- Registry confirmed password-protected (Teams, Oct 22). Longer term it moves into Canoe; the
+  new CTO was briefed Oct 16 and flagged the current build as needing a secure home.
+- Canoe's own AI-outcome pipeline found failing on a large share of calls for a big client
+  (EX-2399 / IOSD-30316) - affects the Canoe outcomes the registry syncs.
+- Owner on paternity leave from ~Oct 24.
+
+## Week of Oct 26, 2026 (owner on leave)
+
+### 2026-10-26 - 10-28
+- No registry code changes during leave; the IVR builder deferred registry work to the owner.
+- Naming mismatch bit again: reusing an existing Windows AI IVR stalled because registry names
+  don't match Canoe names; a new IVR ticket (MK-187) was filed instead, then put on hold Oct 27.
+- Demand-side lead stood up a separate Compliance Tracker dashboard (refreshes daily from Jira
+  compliance tickets) - independent of the registry.
+- Audit coordinator asked for post-audit reporting from the registry (notes per AM, objectives
+  present/missing, IVRs changed, new IVR requests, trends). No export exists; manual pull attempted.
+- New BL Calls Ticket Grooming format kicked off (owner out).
+
+## Week of Nov 2, 2026 (owner on leave)
+
+### 2026-11-02 - 11-06
+- **All-team AI IVR audit week ran Nov 2-6 on the registry Review tab** (filter by advertiser /
+  supply manager, review transcripts + recordings, save notes). The MK-183 filters/notes shipped in
+  October carried it; AMs used the shared notes and Review History.
+- MK-188: one AM missing from the Review tab name filter (worked around by filtering by publisher);
+  auto-assigned to the owner. Check whether it survives the "drop assignments" change in 39056ee.
+- **Process gap surfaced:** the IVR builder creates AI IVRs in Canoe but not in the registry
+  (MK-189 Medicare compliance IVR, Nov 2-4; Pest Control compliance IVR added to a new advertiser
+  campaign via ADOPS-20349, Nov 6). Several agents are likely missing from the registry.
+- New IVR requests from AMs: MK-190 (screen out an advertiser's do-not-service job list), MK-192
+  (keypress -> AI IVR for a home-security campaign). MK-191: new AI IVR reviewer found most abandons
+  on an electrician campaign happen at a zip keypress IVR before the agent; proposed prompt tweaks
+  and moving the zip check into the agent.
+- Canoe AI-outcome fix (EX-2399) moved to Pending Deployment Nov 5. Coached/fraud caller IDs
+  reported by a buyer were blocked in Canoe (SY-926).
+- AMs report coached calls rising industry-wide (Nov 6) - makes the `coached_call` flag directly
+  relevant. Supabase sends weekly security-advisory emails about the registry project (public
+  schema), unread since late Sep.
+- Jira lag: MK-184 and MK-186 still show To Do though both shipped in 39056ee.
+
+## Week of Nov 9, 2026
+
+### 2026-11-09 (owner back) - context reconciliation
+- Owner returned. Audit coordinator + demand-side lead replaced registry-based audit reporting with
+  an AM team debrief (Nov 12), so no registry reporting changes needed for now. A new monitoring
+  hire will take over day-to-day AI IVR monitoring and joins the debrief.
+- Rewrote `context.md` as `CONTEXT.md` (current picture, roles not names) and added the Oct 20 -
+  Nov 9 entries above. Sources: repo + git log, Wispr (Aug 4 - Oct 23; nothing recorded during
+  leave), Jira MK/EX/ADOPS/SY (to Nov 9), Outlook/Teams/calendar (Sep 15 - Nov 9). Details in
+  Wispr/Jira.
+- CLAUDE.md is stale in spots (says next migration is `042`; repo is at `048`) - not edited here.
+- **Next:** register missing IVRs (MK-189, ADOPS-20349) and ship MK-177; MK-188; close MK-184/186
+  in Jira; verify `coached_call` is firing and tell AMs; look at the Supabase advisory; fix
+  Settings "set active prompt" (missing `rpc/set_active_prompt`).
