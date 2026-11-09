@@ -1106,6 +1106,12 @@
       #tab-scores .scores-detail-headline{font-size:13px;margin-bottom:8px}
       #tab-scores .scores-whatif-scores{display:flex;gap:18px;align-items:center;font-size:13px}
       #tab-scores .scores-th{white-space:nowrap}
+      #tab-scores .scores-tier{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap}
+      #tab-scores .scores-tier-1{background:var(--teal-bg);color:var(--teal)}
+      #tab-scores .scores-tier-2{background:var(--blue-bg);color:var(--blue)}
+      #tab-scores .scores-tier-3{background:var(--amber-bg);color:var(--amber)}
+      #tab-scores .scores-tier-4{background:var(--coral-bg);color:var(--coral)}
+      @media (max-width:640px){ #scores-output{overflow-x:auto} }
     </style>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left" style="align-items:center;gap:14px">
@@ -1531,12 +1537,50 @@ function scoresComputeRows(vectors) {
   };
   return Object.entries(byKey).map(([key, p]) => {
     const c = scoreOf(p.canoe), o = scoreOf(p.ours);
+    const rates = scoresRates(p.ours, weightOf), n = Math.max(c.n, o.n);
     return {
       key, entity: p.entity, vertical: p.vertical, canoe: p.canoe, ours: p.ours,
-      canoeScore: c.score, oursScore: o.score, n: Math.max(c.n, o.n),
-      gap: (o.score != null && c.score != null) ? (o.score - c.score) : null
+      canoeScore: c.score, oursScore: o.score, n,
+      gap: (o.score != null && c.score != null) ? (o.score - c.score) : null,
+      defect: rates.defect, conv: rates.conv,
+      tier: n >= SCORES_MIN_CALLS ? scoresTierOf(o.score, rates.defect, rates.conv, scoresEntity) : null
     };
   });
+}
+
+// Tiering (Vicky's framework, CONTEXT): a pairing gets the best tier whose three bars
+// it clears on its Registry outcomes; otherwise Tier 4. The original Tier 1 bar (avg 4+,
+// defect <8%, conv-adjacent >15%) fit 1 of 559 publisher pairings, so the bars were
+// re-tuned on 2026-11-09 to the live distribution: 90d, pairings with 20+ calls, cut at
+// the quartiles (Tier 1 = best quartile, Tier 2 = median, Tier 3 = worst quartile), rounded.
+// Result then: publishers 31 / 125 / 168 / 235, advertisers 50 / 113 / 149 / 196.
+const SCORES_TIERS = {
+  publisher: [
+    { tier: 1, minAvg: 0.9,   maxDefect: 0.07, minConv: 0.15 },
+    { tier: 2, minAvg: 0.25,  maxDefect: 0.13, minConv: 0.08 },
+    { tier: 3, minAvg: -0.15, maxDefect: 0.20, minConv: 0.03 },
+  ],
+  advertiser: [
+    { tier: 1, minAvg: 0.5,   maxDefect: 0.20, minConv: 0.15 },
+    { tier: 2, minAvg: -0.3,  maxDefect: 0.30, minConv: 0.08 },
+    { tier: 3, minAvg: -0.8,  maxDefect: 0.43, minConv: 0.02 },
+  ],
+};
+// Defect rate = share of calls whose outcome weight is below 0; conversion-adjacent = 2+.
+function scoresRates(vec, weightOf) {
+  let n = 0, defect = 0, conv = 0;
+  for (const [o, c] of Object.entries(vec)) {
+    const w = weightOf(o);
+    n += c;
+    if (w < 0) defect += c;
+    if (w >= 2) conv += c;
+  }
+  return n ? { defect: defect / n, conv: conv / n } : { defect: null, conv: null };
+}
+function scoresTierOf(avg, defect, conv, entity) {
+  if (avg == null || defect == null) return null;
+  const t = SCORES_TIERS[entity].find(t => avg >= t.minAvg && defect <= t.maxDefect && conv >= t.minConv);
+  return t ? t.tier : 4;
 }
 
 function scoresSortRows() {
@@ -1546,6 +1590,9 @@ function scoresSortRows() {
                  : key === 'canoe'    ? (r.canoeScore ?? -999)
                  : key === 'ours'     ? (r.oursScore ?? -999)
                  : key === 'n'        ? r.n
+                 : key === 'defect'   ? (r.n < SCORES_MIN_CALLS || r.defect == null ? -Infinity : r.defect)
+                 : key === 'conv'     ? (r.n < SCORES_MIN_CALLS || r.conv == null ? -Infinity : r.conv)
+                 : key === 'tier'     ? (r.tier == null ? -Infinity : -r.tier) // first click: Tier 1 on top
                  : (r.gap == null ? -Infinity : Math.abs(r.gap)); // 'gap' sorts by magnitude
   return [...scoresRows].sort((a, b) => { const x = val(a), y = val(b); return x < y ? -dir : x > y ? dir : 0; });
 }
@@ -1554,6 +1601,7 @@ function scoresSetSort(key) {
   scoresRenderTable();
 }
 function scoresFmt(s) { return s == null ? '<span class="cr-null">—</span>' : (s >= 0 ? '+' : '') + s.toFixed(1); }
+function scoresPct(x) { return x == null ? '<span class="cr-null">—</span>' : (x * 100).toFixed(0) + '%'; }
 
 function scoresSetSearch(v) { scoresSearch = (v || '').trim().toLowerCase(); scoresRenderTable(); }
 
@@ -1572,6 +1620,8 @@ function scoresRenderTable() {
   }
   const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
   const lowMark = `<span class="cr-null" title="Score hidden until ${SCORES_MIN_CALLS}+ scored calls">—</span>`;
+  const tierTitle = 'Best tier whose bars all pass (Registry outcomes), else Tier 4: '
+    + SCORES_TIERS[scoresEntity].map(t => `Tier ${t.tier} = avg ${t.minAvg >= 0 ? '+' : ''}${t.minAvg}+, defect ≤${Math.round(t.maxDefect * 100)}%, conv-adj ≥${Math.round(t.minConv * 100)}%`).join('; ');
   const body = rows.map(r => {
     const low = (r.n || 0) < SCORES_MIN_CALLS;
     return `
@@ -1581,16 +1631,21 @@ function scoresRenderTable() {
       <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
       <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.oursScore)}</td>
       <td style="text-align:right;font-family:var(--mono);color:${low || r.gap == null ? 'var(--text-3)' : Math.abs(r.gap) >= 2 ? 'var(--coral)' : 'var(--text)'}">${low ? lowMark : (r.gap == null ? '—' : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1))}</td>
+      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresPct(r.defect)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresPct(r.conv)}</td>
+      <td style="text-align:right">${low || r.tier == null ? lowMark : `<span class="scores-tier scores-tier-${r.tier}">Tier ${r.tier}</span>`}</td>
       <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${r.n.toLocaleString()}${low ? ' <span style="font-size:10px;opacity:.7">low volume</span>' : ''}</td>
     </tr>
-    ${scoresOpenKey === r.key ? `<tr class="scores-detail-row"><td colspan="6">${scoresRenderDetail(r)}</td></tr>` : ''}
+    ${scoresOpenKey === r.key ? `<tr class="scores-detail-row"><td colspan="9">${scoresRenderDetail(r)}</td></tr>` : ''}
   `;
   }).join('');
   out.innerHTML = `<table class="canoe-table scores-table">
     <thead><tr>
       ${th('entity', entLabel, 'text-align:left')}${th('vertical', 'Vertical', 'text-align:left')}
       ${th('canoe', 'Canoe', 'text-align:right', 'Weighted score from Canoe outcomes')}${th('ours', 'Registry', 'text-align:right', 'Weighted score from Registry AI outcomes')}
-      ${th('gap', 'Gap', 'text-align:right', 'Registry minus Canoe')}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
+      ${th('gap', 'Gap', 'text-align:right', 'Registry minus Canoe')}
+      ${th('defect', 'Defect', 'text-align:right', 'Share of calls with a negative-weight Registry outcome')}${th('conv', 'Conv-adj', 'text-align:right', 'Share of calls with a Registry outcome weighted 2+ (quoted interested/undecided, appointment, sale)')}
+      ${th('tier', 'Tier', 'text-align:right', tierTitle)}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;

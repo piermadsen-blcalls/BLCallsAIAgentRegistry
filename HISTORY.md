@@ -694,3 +694,17 @@ Continued from the 8/7 Scores work; large session. What moved:
   3,523 -> 4,144; newest reviewable call 11-03 03:31 -> 11-08 22:21 (later calls pair on the next
   nightly sync).
 - External sources (Wispr/Jira) not pulled this session (reconciled earlier today).
+
+### 2026-11-09 (Pier) - Renamed IVRs reconnected, score tiers, outliers-first digest (branch `fm/ivr-features-ship`)
+- **Renamed IVRs (migration `050`, not yet applied):** Canoe's Oct 7 rename (`_<DID>` suffix) left every
+  agent at 0 calls since mid-October. 050 aliases all 35 renamed names (28 by stripping the suffix,
+  Multi-Category (GLS) by Canoe `ivr_id`, 4 to newly registered agents) and registers 6 new agents
+  (home service compliance, Check For Transfers + marketplace, Pest Control BH Direct, Insurance
+  (auto+home), Wildlife Removal Saved Listing, Medicare - Aragon). Read-only dry run: 7,194 calls since
+  Oct 7 resolve to agents afterwards. Self-healing: `heal_renamed_ivr_aliases()` learns `ivr_id` ->
+  agent and aliases future renames nightly (pg_cron 00:45 UTC). New IVRs still need registering by hand.
+- **Score tiers (Scores tab):** Defect, Conv-adj and Tier columns. Thresholds re-tuned from the live
+  90d quartiles because the old Tier 1 bar fit 1 of 559 publisher pairings; now 31/125/168/235.
+- **Digest:** outliers first (flag rate z >= 3 vs vertical baseline, 3+ calls), the rest one line each.
+- Next: apply 050 in the SQL editor; Vicky to confirm tier bars and the new agents' vertical/routing.
+- External sources (Wispr/Jira) not pulled this session.
