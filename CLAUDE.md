@@ -24,7 +24,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
     address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
     accounts, ignoring the enabled flag.
-- **`supabase/`** — `migrations/` and `functions/admin-users` (edge fn).
+- **`supabase/`** — `migrations/` and edge fns `functions/admin-users` + `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
   `028` partial + `029` GIN (`jsonb_path_ops`) index on `flags` (Calls-tab jsonb
