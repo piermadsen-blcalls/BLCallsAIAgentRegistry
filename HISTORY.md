@@ -666,3 +666,31 @@ Continued from the 8/7 Scores work; large session. What moved:
   - Later / separate ticket: publisher coached-flag-rate vs average outlier view (Vicky's idea).
   - Also from the meeting: MK-177 naming conventions is next priority; MK-180 is Pier's; Pier to get
     Vicky Cowork + Claude Code access.
+
+## Week of Nov 9, 2026
+
+### 2026-11-09 (Pier) - Calls to Review empty since the DST change: webhook time-zone bug (branch `fm/ivr-calls-review`)
+- **Symptom:** Review tab showed no AI calls newer than 2026-11-03. Frontend/API healthy (all board +
+  pane requests 200, list query ~0.1-0.4s); the calls simply had no `ascnd_transcript`.
+- **Cause - our own edge function `hl-call-webhook`:** GHL sends `call_timestamp` as US-Pacific wall
+  time with no offset; the function picked PDT vs PST by asking `Intl` about **America/Vancouver**.
+  tzdata 2026 makes Vancouver permanent UTC-7 (BC dropped the fall-back), so once the Edge runtime
+  picked up that tzdata (~2026-11-03 04:00 UTC; function itself last deployed 2026-08-25) every
+  post-fall-back call was converted with -7 instead of -8 and stored 1h early.
+  `sync_hl_to_canoe_calls` pairs on +/-7s, so it paired 0 calls (sync Pass 3 "Enriched 0" every
+  night since 11-04). Median offset -1s through 11-02, +3599s from 11-03.
+- **Fix 1 - function:** source (never committed before) added verbatim as v4, then `America/Vancouver`
+  -> `America/Los_Angeles`. Deno regression test `supabase/functions/hl-call-webhook/test/` pins the
+  2026 tzdata behaviour; fails on v4 (09:00 PST stored as 16:00Z), passes with the fix. **Deployed
+  by Pier 2026-11-09 ~19:58 UTC (v5)**; first webhook after it stamped correctly (received 19:59:38,
+  call 19:58:26). GHL needs no change.
+- **Fix 2 - migration `049` (repairs rows already stored skewed, 11-03 -> function deploy):** pairing
+  accepts a gap within 7s of 0 or +/-1h, preferring exact-time matches, plus a backfill from 11-03.
+  Dry run: existing pairs unchanged (0 of 1,877 picks differ); 679 of 854 skewed calls pair (624 with
+  transcript). Regression test `supabase/tests/049_ascnd_pairing_test.sql` (read-only, run after
+  049); also verified in a local PGlite Postgres. **Applied by Pier in the SQL editor
+  2026-11-09 ~20:00 UTC** (the agent's live apply was blocked by its permission gate). Backfill
+  result: ASCND calls since 11-03 with a transcript 12 -> 636; `review_counts` 30d reviewable
+  3,523 -> 4,144; newest reviewable call 11-03 03:31 -> 11-08 22:21 (later calls pair on the next
+  nightly sync).
+- External sources (Wispr/Jira) not pulled this session (reconciled earlier today).
