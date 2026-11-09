@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     return new Response('Missing phone', { status: 400 });
   }
 
-  // Parse call_timestamp — Pacific time (America/Vancouver)
+  // Parse call_timestamp — US Pacific time (America/Los_Angeles)
   // Format from payload: "2026-06-03 15:10:54"
   const rawTimestamp = (customData.call_timestamp || '').trim();
   if (!rawTimestamp) {
@@ -35,16 +35,16 @@ Deno.serve(async (req) => {
   }
 
   // Determine Pacific offset for the given date (PDT = UTC-7, PST = UTC-8)
-  // by checking what UTC time corresponds to noon on that date in Vancouver
+  // by checking what UTC time corresponds to noon on that date in Los Angeles
   const [datePart, timePart] = rawTimestamp.split(' ');
   const [year, month, day] = datePart.split('-').map(Number);
   const [hour, minute, second] = timePart.split(':').map(Number);
 
   // Test if this date is in PDT (second Sunday in March through first Sunday in November)
-  // Simple approach: try both offsets and pick the one that matches Vancouver's actual offset
+  // Simple approach: try both offsets and pick the one that matches Los Angeles' actual offset
   const testDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   const vancouverHour = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Vancouver',
+    timeZone: 'America/Los_Angeles', // not Vancouver: BC stays on UTC-7 from Nov 2026
     hour: 'numeric',
     hour12: false
   }).format(testDate);

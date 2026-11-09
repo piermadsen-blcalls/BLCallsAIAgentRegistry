@@ -1,17 +1,17 @@
 -- ============================================================
 -- 049_ascnd_pairing_dst_tolerant.sql
--- Since ~2026-11-03 04:00 UTC the ASCND webhook sends call_timestamp exactly
--- one hour behind the real call time (US-Eastern wall time stamped with the
--- stale EDT offset after DST ended). sync_hl_to_canoe_calls paired on
+-- Since ~2026-11-03 04:00 UTC hl_call_data.call_timestamp lands exactly one
+-- hour behind the real call time: the hl-call-webhook edge function resolved
+-- Pacific time via America/Vancouver, which tzdata 2026 keeps on UTC-7 after
+-- the US fall-back (fixed in the function). sync_hl_to_canoe_calls paired on
 -- |canoe.created_at - hl.call_timestamp| <= 7s, so it paired nothing and no
 -- AI call got an ascnd_transcript -> the Review tab ("Calls to review",
 -- ASCND-only) stopped showing new calls.
 --
 -- Fix: accept a pairing gap within 7s of either 0 or +/-1h, preferring an
--- exact-time match whenever one exists. No hard-coded shift, so pairing keeps
--- working whether the sender is correct, one DST hour off now, or flips back
--- at the March DST change. The real fix is upstream (ASCND must send a UTC /
--- zone-correct timestamp); this is the safety net.
+-- exact-time match whenever one exists. No hard-coded shift, so it pairs both
+-- the rows already stored skewed (11-03 until the function fix is deployed)
+-- and correct rows after it, and stays a safety net for future DST surprises.
 --
 -- Run in Supabase SQL Editor (block 1, then the backfill in block 2).
 -- ============================================================
