@@ -666,3 +666,27 @@ Continued from the 8/7 Scores work; large session. What moved:
   - Later / separate ticket: publisher coached-flag-rate vs average outlier view (Vicky's idea).
   - Also from the meeting: MK-177 naming conventions is next priority; MK-180 is Pier's; Pier to get
     Vicky Cowork + Claude Code access.
+
+## Week of Nov 9, 2026
+
+### 2026-11-09 (Pier) - Calls to Review empty since the DST change: ASCND timestamp skew (branch `fm/ivr-calls-review`)
+- **Symptom:** Review tab showed no AI calls newer than 2026-11-03. Frontend/API healthy (all board +
+  pane requests 200, list query ~0.1-0.4s); the calls simply had no `ascnd_transcript`.
+- **Cause:** since ~2026-11-03 04:00 UTC the ASCND webhook sends `hl_call_data.call_timestamp`
+  exactly 1h behind the real call time (Eastern wall time stamped with the stale EDT offset after
+  DST ended). `sync_hl_to_canoe_calls` paired on +/-7s, so it paired 0 calls (sync Pass 3
+  "Enriched 0" every night since 11-04). Median offset -1s through 11-02, +3599s from 11-03.
+- **Fix - migration `049`:** pairing accepts a gap within 7s of 0 or +/-1h, preferring exact-time
+  matches (no fixed shift, so it survives the March DST flip or an upstream fix), plus a backfill
+  from 11-03. Dry run: existing pairs unchanged (0 of 1,877 picks differ); 679 of 854 skewed calls
+  pair (624 with transcript). Regression test `supabase/tests/049_ascnd_pairing_test.sql`
+  (read-only, run after 049); also verified in a local PGlite Postgres.
+  **Status: NOT yet applied to prod** - the agent's live apply was blocked by its permission gate.
+  Run `049` in the SQL editor, then the test, then check the Review tab.
+- **Upstream fix still needed (ASCND / GoHighLevel, outside this repo):** the workflow whose
+  webhook action POSTs to Supabase `rest/v1/hl_call_data` must send `call_timestamp` as a real
+  instant: ISO-8601 UTC with `Z` (or an America/New_York zone-aware offset: -05:00 winter,
+  -04:00 summer). Also check the GHL sub-account time zone (Settings > Business Profile) is the
+  named zone America/New_York, not a fixed GMT-04:00 offset. Inferred from data (payload bodies
+  aren't logged); the skew began ~46h after DST ended, so a sender-side change landed on 11-03.
+- External sources (Wispr/Jira) not pulled this session (reconciled earlier today).
