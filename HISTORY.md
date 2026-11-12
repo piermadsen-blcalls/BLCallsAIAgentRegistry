@@ -708,3 +708,19 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Digest:** outliers first (flag rate z >= 3 vs vertical baseline, 3+ calls), the rest one line each.
 - Next: apply 050 in the SQL editor; Vicky to confirm tier bars and the new agents' vertical/routing.
 - External sources (Wispr/Jira) not pulled this session.
+
+## Week of Nov 9, 2026
+
+### 2026-11-12 (Pier) - Insights + Calls loading fix (branch `fm/ivr-insights`)
+- **Insights:** a month-vs-month run paged raw `canoe_calls` with deep OFFSETs. Each page
+  re-reads every row before it, so the 44k/37k pages hit the 8s signed-in statement timeout
+  (57014) and the whole analysis failed. A page at offset 100k takes 28.8s. It now fetches one
+  UTC day at a time (`order=id`, 3 days in parallel). The worst page is ~1-2s.
+- **Calls:** "Has recording" filtered on `recording_url`, which sync never fills (NULL on every
+  row since May). The query walked the whole range looking for 25 matches and timed out on
+  ranges of 2+ weeks. It now filters on `recording_id` (9.5s -> 1ms). The Recording column's
+  Listen link still reads `recording_url`, so it shows a dash for every row. Not changed here.
+- Shared class, separate triggers: both hit the 8s timeout on raw `canoe_calls`. The Calls
+  background counts also failed once while an Insights run was loading at the same time.
+- Regression test: `tests/insights-calls-load.test.js`. No migration or Supabase setting change.
+- External sources (Wispr/Jira) not pulled this session.
