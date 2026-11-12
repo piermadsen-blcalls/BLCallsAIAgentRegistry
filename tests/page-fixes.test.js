@@ -142,13 +142,18 @@ test('Calls search is a server-side filter over the whole range, with quoted val
 test('Calls + Insights vertical filters quote verticals with parentheses and commas', async () => {
   const verticals = ['Auto Insurance (Insured)', 'Flights (Domestic - US)', 'A, "B"'];
   assert.deepEqual(pgItems(param(callsCtx({ verticals }).crBuildFilters(), 'vertical_name')[0].replace(/^in\.\((.*)\)$/, '$1')), verticals);
-  const urls = [];
-  const ctx = load({ insVerticalFilter: verticals, sbFetch: async url => { urls.push(url); return []; } },
-    ['function pgQuote(', 'function isSent(', 'function isPaid(', 'function insDayWindows(', 'async function insFetchPeriod('], ['insFetchPeriod']);
+  const urls = [], rpcVerticals = [];
+  const ctx = load({ insVerticalFilter: verticals, sbFetch: async (url, opts) => {
+    urls.push(url);
+    // Before migration 051 the RPC is missing and Insights falls back to raw per-day pages.
+    if (url === 'rpc/insights_period') { rpcVerticals.push(JSON.parse(opts.body).verticals); throw new Error('Supabase 404: {"code":"PGRST202"}'); }
+    return [];
+  } }, ['function pgQuote(', 'function isSent(', 'function isPaid(', 'function insDayWindows(', 'async function insFetchRetry(', 'async function insFetchPeriod('], ['insFetchPeriod']);
   await ctx.insFetchPeriod('2026-11-02', '2026-11-02');
-  assert.equal(urls.length, 1);
-  assert.equal(param(urls[0], 'or').length, 0, 'no or=(vertical_name.eq.…), which PostgREST misparsed');
-  assert.deepEqual(pgItems(param(urls[0], 'vertical_name')[0].replace(/^in\.\((.*)\)$/, '$1')), verticals);
+  assert.deepEqual(rpcVerticals, [verticals], 'the RPC gets the verticals as a JSON array, unquoted');
+  assert.equal(urls.length, 2);
+  assert.equal(param(urls[1], 'or').length, 0, 'no or=(vertical_name.eq.…), which PostgREST misparsed');
+  assert.deepEqual(pgItems(param(urls[1], 'vertical_name')[0].replace(/^in\.\((.*)\)$/, '$1')), verticals);
 });
 
 test('Export CSV: a zero-row export re-enables the button', async () => {

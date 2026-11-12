@@ -744,3 +744,24 @@ Continued from the 8/7 Scores work; large session. What moved:
   bitmap plan, ~0.35 s vs 8.7-14 s, ~0.6 MB vs 2.8 MB), `055` (accounts list via index skip scan).
   The page works before and after 054 (falls back to the old RPC).
 - Tests: `tests/page-fixes.test.js`. External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-12 (Pier) - Insights still timed out after #12 (branch `fm/ivr-insights2`)
+- **Cause:** per-day paging was not enough. At 18:30Z the first page of 2026-09-04 and
+  2026-10-02 took 8.5s/8.7s and hit the 8s timeout; later pages of the same day took 0.1-0.4s.
+  Offset doesn't matter (`order=id` sorts the whole day every page). What matters is the first
+  touch of a day's ~3-5k heap pages on this 1 GB instance: 1-1.6s alone, 2-4.2s with 6 in
+  flight (measured), up to 8.7s in the real run. One failed page failed the whole run.
+- **Live aggregate ruled out:** one month as a server-side GROUP BY took 17.8s (39k heap fetches).
+- **Fix:** migration `051_insights_rollup.sql`. `insights_daily` (day x vertical x agent x
+  publisher x advertiser, ~700 rows/day) holds settled days (older than yesterday, since
+  sync re-pulls 2 days and runs ~03:00-05:00Z). `insights_period()` sums it and reads only
+  the newest days live (~1s), as one jsonb array. pg_cron `refresh-insights-rollup` at 07:30Z,
+  45-day window (~15s). Rollback: `supabase/rollbacks/051_insights_rollup_down.sql`.
+- **Page:** Insights makes one RPC per period. Until 051 is applied it falls back to the
+  per-day fetch, and both paths retry 57014 (3 tries, backoff).
+- Tests: `tests/insights-calls-load.test.js` (replays the 18:30 failure) and
+  `supabase/tests/051_insights_rollup_test.sql` (passes locally in PGlite, as does the rollback).
+- Noticed, not changed: the 01:00-01:30Z rollup crons (agents/counterparty/scores) run
+  before the sync actually lands (~03:00-05:00Z), so their newest day stays partial a night.
+- Next: captain OK, then apply 051 in the SQL editor + run its test; then remove the fallback.
+- External sources (Wispr/Jira) not pulled this session.
