@@ -150,7 +150,7 @@ test('Calls: "Has recording" filters on recording_id (recording_url is never pop
     crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [],
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: () => false } }) },
   };
-  vm.runInNewContext(lift('function crBuildFilters(') + ';\nthis.crBuildFilters = crBuildFilters;', ctx);
+  vm.runInNewContext(['function localDayRange(', 'function crBuildFilters('].map(lift).join(';\n') + ';\nthis.crBuildFilters = crBuildFilters;', ctx);
   assert.match(ctx.crBuildFilters(), /&recording_id=not\.is\.null/);
   values['cr-rec-filter'] = 'no';
   assert.match(ctx.crBuildFilters(), /&recording_id=is\.null/);

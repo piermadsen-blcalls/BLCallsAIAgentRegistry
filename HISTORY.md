@@ -725,6 +725,26 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Regression test: `tests/insights-calls-load.test.js`. No migration or Supabase setting change.
 - External sources (Wispr/Jira) not pulled this session.
 
+### 2026-11-12 (Pier) - Page fixes from the Nov 9 bug bash + speed review (branch `fm/ivr-pagefix`)
+- **Calls:** paging/export sorted by a non-unique column repeated and dropped rows (319 of 13,273
+  for Nov 2-8 by Publisher); every sort now ends `id.asc`, and Pub/Adv Score sort unscored calls
+  last. The date range is the viewer's local days (was UTC, ~7 h off). Search is a server-side
+  filter (it only searched the 25 loaded rows). Export no longer sticks on "Exporting…".
+- **Calls speed:** total, strip and per-flag hover breakdown come from 2 aggregate requests
+  instead of 4-20 count scans. The hover tooltip was clipped by the strip and never showed; fixed.
+- **Settings > Admin:** AI Prompts list loads (call counts are planner estimates filled in after;
+  it used to download ~120k rows and fail with a 500). Weights button says "about N calls" or
+  "count unavailable", never "0 calls". Admin sections no longer wait on the accounts list.
+- **Scores:** names with an apostrophe expand again. Weights + vectors load in parallel.
+- **Insights:** vertical filter quotes values, so "Auto Insurance (Insured)" etc. match.
+- **Hardening:** Calls/Settings requests use `sbFetch`'s token refresh; `esc()`/`jsStr()` escape
+  quotes; DB text in Agents/Calls/drawer/Insights is escaped; stored URLs must be http(s).
+- **Boot:** landing on a non-Agents tab no longer loads Agents metrics/breakdowns/verticals.
+- **Pending migrations (need approval, not applied):** `054` (Scores per-pairing RPC + work_mem /
+  bitmap plan, ~0.35 s vs 8.7-14 s, ~0.6 MB vs 2.8 MB), `055` (accounts list via index skip scan).
+  The page works before and after 054 (falls back to the old RPC).
+- Tests: `tests/page-fixes.test.js`. External sources (Wispr/Jira) not pulled this session.
+
 ### 2026-11-12 (Pier) - Insights still timed out after #12 (branch `fm/ivr-insights2`)
 - **Cause:** per-day paging was not enough. At 18:30Z the first page of 2026-09-04 and
   2026-10-02 took 8.5s/8.7s and hit the 8s timeout; later pages of the same day took 0.1-0.4s.
