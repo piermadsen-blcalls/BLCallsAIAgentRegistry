@@ -767,10 +767,10 @@ Continued from the 8/7 Scores work; large session. What moved:
 - External sources (Wispr/Jira) not pulled this session.
 
 ### 2026-11-12 (Pier) - Data fixes: rollups, digest window, dry run, recordings, sync catch-up (branch `fm/ivr-datafix`)
-- **Rollups (migration `052`, pending approval):** yesterday was ~90% missing from Agents/Scores/Review
+- **Rollups (migration `052`):** yesterday was ~90% missing from Agents/Scores/Review
   (Nov 11: 28 of 539 calls) because the 01:00-01:30Z refreshes ran before the sync landed
-  (02:40-04:50Z). And every refresh dropped its boundary day's first ~hour for good: 3,086 calls /
-  $21,985 short in `agent_metrics_daily`, 1,166 in `agent_counterparty_daily`. 052 uses one
+  (02:40-04:50Z). And every refresh dropped its boundary day's first ~hour for good: 3,086 calls
+  short in `agent_metrics_daily`, 1,166 in `agent_counterparty_daily`. 052 uses one
   UTC-midnight cutoff, adds a refresh queue that sync and ingest fill and pg_cron drains every
   10 min (refreshes take 20-90s, past the API's 8s timeout), moves the nightly safety net to
   06:45-07:05Z, and adds `sync_state`. `053` rebuilds the lost days once. Both tested in PGlite.
@@ -784,4 +784,9 @@ Continued from the 8/7 Scores work; large session. What moved:
   (run still fails); the next run catches up from the last full sync. Submit chains off the sync;
   ingest every 2h; crons off the top of the hour; concurrency groups.
 - Not changed: Canoe `service_mismatch` weight (needs a decision).
+- **Applied to prod (captain's standing OK), each tested:** `051` (+ its test; 133,913 rows),
+  `052` (+ its test), `053` (rollups now match `canoe_calls` on every day: +3,633 calls
+  in `agent_metrics_daily` incl. Nov 11-12, +1,091 calls in `outcome_score_daily`), `054` (pairings totals =
+  vectors), `055` (same 354 names). Signed-in timings: Insights month-vs-month ~0.6s warm / 4.9s
+  cold, Scores 90d 0.15s, Admin accounts 0.30s.
 - External sources (Wispr/Jira) not pulled this session.
