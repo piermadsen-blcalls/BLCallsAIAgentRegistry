@@ -1,5 +1,5 @@
 -- ============================================================
--- 052_distinct_accounts_skip_scan.sql
+-- 055_distinct_accounts_skip_scan.sql
 -- Settings > Admin > "Publisher & Advertiser Assignments" lists every publisher/advertiser name.
 -- get_distinct_accounts() GROUP BYs all of canoe_calls (527k rows) to get ~350 names: mean 3.9 s,
 -- max 19 s, and a 500 after 21.5 s in the Nov 9 bug bash, so the table showed the raw error.

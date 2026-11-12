@@ -1559,7 +1559,7 @@ async function scoresLoad() {
 }
 
 // Per-pairing outcome vectors: { entity_name, vertical, canoe: {outcome: n}, ours: {outcome: n} }.
-// outcome_score_pairings (051) returns them already grouped (~1.5k rows, ~0.6 MB for Master 90d).
+// outcome_score_pairings (054) returns them already grouped (~1.5k rows, ~0.6 MB for Master 90d).
 // Until that migration is applied, fold the long-format outcome_score_vectors rows (~22k, ~2.7 MB).
 let scoresPairsRpc = true;   // false once outcome_score_pairings 404s (migration not applied yet)
 async function scoresFetchPairs(from, to) {

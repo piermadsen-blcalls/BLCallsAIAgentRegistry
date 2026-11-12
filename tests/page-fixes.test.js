@@ -241,7 +241,7 @@ test("Scores: rows whose name has an apostrophe expand (the key is not spliced i
   assert.deepEqual(toggled, [key, 'sale']);
 });
 
-test('Scores: uses outcome_score_pairings, and folds outcome_score_vectors until 051 is applied', async () => {
+test('Scores: uses outcome_score_pairings, and folds outcome_score_vectors until 054 is applied', async () => {
   const pairs = [{ entity_name: 'Acme', vertical: 'Roofing', canoe: { sale: 2 }, ours: { sale: 1, misrouted: 1 } }];
   const calls = [];
   const mk = status => load({

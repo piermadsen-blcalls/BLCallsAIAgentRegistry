@@ -740,7 +740,7 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Hardening:** Calls/Settings requests use `sbFetch`'s token refresh; `esc()`/`jsStr()` escape
   quotes; DB text in Agents/Calls/drawer/Insights is escaped; stored URLs must be http(s).
 - **Boot:** landing on a non-Agents tab no longer loads Agents metrics/breakdowns/verticals.
-- **Pending migrations (need approval, not applied):** `051` (Scores per-pairing RPC + work_mem /
-  bitmap plan, ~0.35 s vs 8.7-14 s, ~0.6 MB vs 2.8 MB), `052` (accounts list via index skip scan).
-  The page works before and after 051 (falls back to the old RPC).
+- **Pending migrations (need approval, not applied):** `054` (Scores per-pairing RPC + work_mem /
+  bitmap plan, ~0.35 s vs 8.7-14 s, ~0.6 MB vs 2.8 MB), `055` (accounts list via index skip scan).
+  The page works before and after 054 (falls back to the old RPC).
 - Tests: `tests/page-fixes.test.js`. External sources (Wispr/Jira) not pulled this session.

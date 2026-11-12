@@ -1,5 +1,5 @@
 -- ============================================================
--- 051_scores_pairings_rpc.sql
+-- 054_scores_pairings_rpc.sql
 -- Scores tab speed. outcome_score_vectors (041) returns long-format rows (entity x vertical x
 -- source x outcome): ~22.4k rows / 2.8 MB of JSON for the Master 90d publisher view, which the
 -- page folds back into ~1.55k pairings. Its plan is the bigger cost: with the default 2 MB
