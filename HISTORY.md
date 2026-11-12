@@ -765,3 +765,28 @@ Continued from the 8/7 Scores work; large session. What moved:
   before the sync actually lands (~03:00-05:00Z), so their newest day stays partial a night.
 - Next: captain OK, then apply 051 in the SQL editor + run its test; then remove the fallback.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-12 (Pier) - Data fixes: rollups, digest window, dry run, recordings, sync catch-up (branch `fm/ivr-datafix`)
+- **Rollups (migration `052`):** yesterday was ~90% missing from Agents/Scores/Review
+  (Nov 11: 28 of 539 calls) because the 01:00-01:30Z refreshes ran before the sync landed
+  (02:40-04:50Z). And every refresh dropped its boundary day's first ~hour for good: 3,086 calls
+  short in `agent_metrics_daily`, 1,166 in `agent_counterparty_daily`. 052 uses one
+  UTC-midnight cutoff, adds a refresh queue that sync and ingest fill and pg_cron drains every
+  10 min (refreshes take 20-90s, past the API's 8s timeout), moves the nightly safety net to
+  06:45-07:05Z, and adds `sync_state`. `053` rebuilds the lost days once. Both tested in PGlite.
+- **Digest:** windowed on `ai_processed_at` instead of `created_at` (Nov 9 send: 225 of 529 flagged
+  calls were scored after the send and never reported). Scoring writes are now write-once so a call
+  is reported exactly once. `DRY_RUN` no longer writes `alert_log`, so it can't block real digests.
+- **Recordings:** sync stopped upserting null over `recording_type`/`recording_url`. Canoe's
+  recording URL field is unverified (no Canoe key/docs here): Pass 2 now logs the recordings/get
+  field names. Calls tab Listen falls back to the ASCND AI-agent recording.
+- **Sync/scheduling:** Canoe calls back off exponentially; a failed Pass 1 no longer skips Pass 2/3
+  (run still fails); the next run catches up from the last full sync. Submit chains off the sync;
+  ingest every 2h; crons off the top of the hour; concurrency groups.
+- Not changed: Canoe `service_mismatch` weight (needs a decision).
+- **Applied to prod (captain's standing OK), each tested:** `051` (+ its test; 133,913 rows),
+  `052` (+ its test), `053` (rollups now match `canoe_calls` on every day: +3,633 calls
+  in `agent_metrics_daily` incl. Nov 11-12, +1,091 calls in `outcome_score_daily`), `054` (pairings totals =
+  vectors), `055` (same 354 names). Signed-in timings: Insights month-vs-month ~0.6s warm / 4.9s
+  cold, Scores 90d 0.15s, Admin accounts 0.30s.
+- External sources (Wispr/Jira) not pulled this session.

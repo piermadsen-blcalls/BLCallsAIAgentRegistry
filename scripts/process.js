@@ -463,9 +463,12 @@ async function fetchUnprocessed() {
   return out;
 }
 
+// Write-once: only a call with no score yet is written. Production scoring only ever picks
+// unprocessed calls, so this only bites when a call was scored twice (e.g. submitted in two batch
+// jobs). Keeping the first score keeps ai_processed_at fixed, which the digest windows on.
 async function writeResult(id, result) {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/canoe_calls?id=eq.${id}`,
+    `${SUPABASE_URL}/rest/v1/canoe_calls?id=eq.${id}&ai_processed_at=is.null`,
     {
       method: 'PATCH',
       headers: {
@@ -730,17 +733,39 @@ async function updateBatchJob(id, patch) {
 // vertical_name is needed for the transfer-vertical outbound_dial suppression.
 // Chunked: a single id=in.(...) over a whole 500-call job overflows the URL and the
 // request fails ("fetch failed"), so look up ~100 ids at a time.
+// created_at gives the oldest day the job's scores touch, for the rollup refresh request.
 async function fetchCallMeta(ids) {
-  const zipById = {}, verticalById = {};
+  const zipById = {}, verticalById = {}, createdById = {};
   for (const slice of chunk(ids, 100)) {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${slice.join(',')})&select=id,zip,vertical_name`,
+      `${SUPABASE_URL}/rest/v1/canoe_calls?id=in.(${slice.join(',')})&select=id,zip,vertical_name,created_at`,
       { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
     if (!res.ok) throw new Error(`Call meta fetch error ${res.status}: ${await res.text()}`);
-    for (const r of await res.json()) { zipById[r.id] = r.zip; verticalById[r.id] = r.vertical_name; }
+    for (const r of await res.json()) { zipById[r.id] = r.zip; verticalById[r.id] = r.vertical_name; createdById[r.id] = r.created_at; }
   }
-  return { zipById, verticalById };
+  return { zipById, verticalById, createdById };
+}
+
+// Ask pg_cron to rebuild rollups from the day of from_ts (migration 052). Only queues the work:
+// a refresh takes 20-90s, past the 8s statement timeout every PostgREST call runs under.
+// Non-fatal: the nightly pg_cron refresh still catches up if this fails.
+async function requestRollupRefresh(fromTs, rollups) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/request_rollup_refresh`, {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({ from_ts: fromTs, rollups }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    console.log(`  Requested ${rollups.join(', ')} rollup refresh from ${fromTs}`);
+  } catch (e) {
+    console.warn(`  Rollup refresh request failed (nightly refresh will catch up): ${e.message}`);
+  }
 }
 
 // ── Gemini submit / ingest ────────────────────────────────────
@@ -851,10 +876,10 @@ async function ingestSucceededJob(job, data) {
   const inline    = data.response?.inlinedResponses;
   const responses = Array.isArray(inline) ? inline : (inline?.inlinedResponses || []);
 
-  const { zipById, verticalById } = await fetchCallMeta(callIds);
+  const { zipById, verticalById, createdById } = await fetchCallMeta(callIds);
   const duplicateIds = await flagDuplicateCallers(callIds);
 
-  let processed = 0, errors = 0;
+  let processed = 0, errors = 0, oldest = null;
   for (let i = 0; i < responses.length; i++) {
     const item   = responses[i];
     const callId = item.metadata?.key || callIds[i];   // prefer echoed key, else submit order
@@ -868,6 +893,8 @@ async function ingestSucceededJob(job, data) {
 
       await writeResult(callId, buildResultPatch(callId, parsed, zipById[callId], duplicateIds, job.prompt_id, job.model, verticalById[callId]));
       processed++;
+      const created = createdById[callId];
+      if (created && (!oldest || Date.parse(created) < Date.parse(oldest))) oldest = created;
     } catch (e) { console.error(`  [${callId}] ${e.message}`); errors++; }
   }
 
@@ -877,6 +904,8 @@ async function ingestSucceededJob(job, data) {
     error:        errors ? `${errors} item error(s)` : null,
   });
   console.log(`  Ingested ${job.job_name}: processed ${processed}, errors ${errors}`);
+  // New scores change the Scores tab rollup for the days these calls were made.
+  if (oldest) await requestRollupRefresh(oldest, ['outcome_score']);
 }
 
 // ── Main ──────────────────────────────────────────────────────
@@ -1029,7 +1058,11 @@ async function run() {
   if (TEST_MODE) await updateTestStatus(TEST_BATCH_ID, errors === 0 ? 'completed' : 'failed');
 }
 
-run().catch(err => {
-  console.error('Processing failed:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch(err => {
+    console.error('Processing failed:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { ingestSucceededJob };
