@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Agent Registry — Buyerlink Calls</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://wvnfcxhbztnefhzjhfgg.supabase.co" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -253,9 +255,18 @@
   .summary-val.pos { color:var(--teal); }
   .summary-val.neg { color:var(--coral); }
   .summary-lbl { font-size:11px; color:var(--text-3); margin-top:3px; }
-  /* Hover breakdown on the Calls "flagged" metric: count per flag type. */
+  /* Hover breakdown on the Calls "flagged" metric: count per flag type. It hangs below the
+     strip, so that strip can't clip its overflow (it did, and the breakdown never showed). */
+  #calls-summary-strip { overflow:visible; }
   .flag-tip { position:absolute; top:calc(100% + 6px); left:16px; z-index:30; min-width:210px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(0,0,0,0.10); padding:8px 10px; text-align:left; }
   .flag-tip .fb-row { display:flex; justify-content:space-between; gap:20px; padding:3px 2px; font-size:12px; color:var(--text-2); }
+  /* Phones: four cards don't fit 375px (the Calls strip clipped its revenue card); two per row. */
+  @media (max-width:640px){
+    .summary-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .summary-item { padding:12px 14px; }
+    .summary-item:nth-child(odd) { border-left:none; }
+    .summary-item:nth-child(n+3) { border-top:1px solid var(--border); }
+  }
   .flag-tip .fb-row .fb-n { color:var(--text); font-variant-numeric:tabular-nums; }
   .summary-sub { font-size:11px; margin-top:4px; font-family:var(--mono); }
   .insights-section { margin-bottom:28px; }
@@ -517,6 +528,8 @@
   .settings-save-btn { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 14px; border-radius:var(--radius-sm); background:var(--teal); color:white; border:none; cursor:pointer; white-space:nowrap; }
   .settings-cancel-btn { font-family:var(--sans); font-size:12px; padding:6px 14px; border-radius:var(--radius-sm); background:transparent; color:var(--text-2); border:1px solid var(--border-strong); cursor:pointer; }
   .settings-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  /* Phones: wide Admin tables (weights, prompts, managers, accounts) scroll in their own box instead of the page. */
+  @media (max-width:640px){ #settings-prompts-list, #settings-weights-table, .settings-table-wrap { overflow-x:auto; } }
   .settings-table { width:100%; border-collapse:collapse; font-size:12px; }
   .settings-table thead th { font-size:10px; font-weight:500; color:var(--text-3); text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); background:var(--bg); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; }
   .settings-table tbody tr { border-bottom:1px solid var(--border); }
@@ -1014,7 +1027,7 @@
 
   <!-- CALL REPORTING TAB -->
   <div id="tab-calls" class="tab-pane">
-    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px;grid-template-columns:repeat(4,1fr)">
+    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
       <div class="summary-item"><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
       <div class="summary-item" style="position:relative" onmouseenter="callsFlagBreakdown()" onmouseleave="callsFlagBreakdownHide()"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div><div id="calls-flag-breakdown" class="flag-tip" style="display:none"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate">—</div><div class="summary-lbl">flag rate</div></div>
@@ -1376,6 +1389,17 @@ let activeFilter = 'all', openAgent = null, savedScrollY = 0;
 // ─── SHARED HELPERS ───────────────────────────────────────────────────────────
 function toISO(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
 function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : '—'; }
+// [start, endExclusive) ISO instants for the viewer's local days startISO..endISO (end day inclusive),
+// so a picked range matches the local times the tables show (UTC days were ~7 h off).
+function localDayRange(startISO, endISO) {
+  const to = new Date(endISO + 'T00:00:00'); to.setDate(to.getDate() + 1);
+  return [new Date(startISO + 'T00:00:00').toISOString(), to.toISOString()];
+}
+// A value quoted for a PostgREST list or or=() filter. Unquoted values containing , ( ) or "
+// parse as syntax, so e.g. "Auto Insurance (Insured)" silently matched nothing.
+function pgQuote(v) { return '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
+// Only http(s) links are rendered from stored URLs (a javascript: URL would run on click).
+function httpUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
 
 // Requests start at page load, in parallel with the auth boot's token refresh. Sending a
 // stored-but-expired token fails with "JWT expired", so: refresh first if the token is due,
@@ -1385,7 +1409,8 @@ function sbTokenDue() {
   const exp = parseInt(localStorage.getItem('sb_expires_at') || '0', 10);
   return !!(exp && localStorage.getItem('sb_refresh_token') && Date.now() >= exp - 60000);
 }
-async function sbFetch(path, options={}) {
+// Returns the raw Response, for callers that read headers (Content-Range counts) or the status.
+async function sbRequest(path, options={}) {
   if (_refreshInFlight || sbTokenDue()) await refreshSession();
   const send = () => fetch(`${SB_URL}/rest/v1/${path}`, {
     ...options,
@@ -1393,9 +1418,21 @@ async function sbFetch(path, options={}) {
   });
   let res = await send();
   if (res.status === 401 && localStorage.getItem('sb_refresh_token') && await refreshSession()) res = await send();
+  return res;
+}
+async function sbFetch(path, options={}) {
+  const res = await sbRequest(path, options);
   if (!res.ok) { const err = await res.text(); throw new Error(`Supabase ${res.status}: ${err}`); }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+// Row count for a query from Content-Range. 'planned' is the planner's estimate (~1 ms); an exact
+// count over 100k+ canoe_calls rows can pass the 8 s statement timeout. null = no count returned.
+async function sbCount(path, mode='planned') {
+  const res = await sbRequest(path, { headers: { 'Prefer': `count=${mode}`, 'Range-Unit': 'items', 'Range': '0-0' } });
+  if (!res.ok) throw new Error(`Supabase ${res.status}`);
+  const n = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
+  return isNaN(n) ? null : n;
 }
 
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
@@ -1407,13 +1444,17 @@ let _suppressRoute = false;
 function navBtnFor(id)  { return [...document.querySelectorAll('.nav-tab')].find(b => (b.getAttribute('onclick') || '').includes(`switchTab('${id}'`)); }
 function compBtnFor(id) { return [...document.querySelectorAll('.comp-subtab')].find(b => (b.getAttribute('onclick') || '').includes(`switchCompTab('${id}'`)); }
 
+let currentTab = new URLSearchParams(location.search).get('tab') || 'agents';   // the landing tab until switchTab runs
 function switchTab(id, el) {
+  currentTab = id;
   el = el || navBtnFor(id);
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   if (el) el.classList.add('active');
   const pane = document.getElementById('tab-' + id);
   if (pane) pane.classList.add('active');
+  if (id === 'agents' && agentsMetricsDeferred) refreshMetrics();
+  if (id === 'insights') ensureVerticals();
   if (id === 'calls') crAutoLoad();
   if (id === 'review') reviewInit();
   if (id === 'scores') scoresInit();
@@ -1471,8 +1512,7 @@ async function loadOutcomeWeights() {
   return scoresWeights;
 }
 
-async function scoresInit() {
-  await loadOutcomeWeights();
+function scoresInit() {
   scoresSetEntity(scoresEntity);
 }
 
@@ -1506,29 +1546,45 @@ async function scoresLoad() {
   const { from, to, label } = scoresWindowRange();
   const note = document.getElementById('scores-window-note');
   if (note) note.textContent = (scoresWindow === 'master' ? 'Master · ' : 'Window · ') + label;
-  let vectors;
+  let pairs;
   try {
-    vectors = await sbFetch('rpc/outcome_score_vectors', {
-      method: 'POST',
-      body: JSON.stringify({ from_ts: from, to_ts: to, entity_type: scoresEntity })
-    });
+    // Weights and vectors in parallel (weights used to be awaited first: one extra round trip).
+    [pairs] = await Promise.all([scoresFetchPairs(from, to), loadOutcomeWeights()]);
   } catch(e) {
     if (out) out.innerHTML = `<div class="ins-loading">Could not load scores: ${esc(e.message)}</div>`;
     return;
   }
-  scoresRows = scoresComputeRows(vectors || []);
+  scoresRows = scoresComputeRows(pairs);
   scoresRenderTable();
 }
 
-// Aggregate long-format vectors → per-pairing rows with both scores.
-function scoresComputeRows(vectors) {
-  const wField = scoresEntity === 'advertiser' ? 'adv_score' : 'pub_score';
+// Per-pairing outcome vectors: { entity_name, vertical, canoe: {outcome: n}, ours: {outcome: n} }.
+// outcome_score_pairings (051) returns them already grouped (~1.5k rows, ~0.6 MB for Master 90d).
+// Until that migration is applied, fold the long-format outcome_score_vectors rows (~22k, ~2.7 MB).
+let scoresPairsRpc = true;   // false once outcome_score_pairings 404s (migration not applied yet)
+async function scoresFetchPairs(from, to) {
+  const body = JSON.stringify({ from_ts: from, to_ts: to, entity_type: scoresEntity });
+  if (scoresPairsRpc) {
+    const res = await sbRequest('rpc/outcome_score_pairings', { method: 'POST', body });
+    if (res.ok) return (await res.json()) || [];
+    if (res.status !== 404) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+    scoresPairsRpc = false;
+  }
   const byKey = {};
-  for (const v of vectors) {
-    const key = v.entity_name + '' + v.vertical;
-    if (!byKey[key]) byKey[key] = { entity: v.entity_name, vertical: v.vertical, canoe: {}, ours: {} };
+  for (const v of (await sbFetch('rpc/outcome_score_vectors', { method: 'POST', body })) || []) {
+    const key = v.entity_name + '\u0001' + v.vertical;
+    if (!byKey[key]) byKey[key] = { entity_name: v.entity_name, vertical: v.vertical, canoe: {}, ours: {} };
     byKey[key][v.source === 'canoe' ? 'canoe' : 'ours'][v.outcome] = Number(v.n);
   }
+  return Object.values(byKey);
+}
+
+// Per-pairing vectors → rows with both scores.
+function scoresComputeRows(pairs) {
+  const wField = scoresEntity === 'advertiser' ? 'adv_score' : 'pub_score';
+  const counts = vec => Object.fromEntries(Object.entries(vec || {}).map(([o, n]) => [o, Number(n)]));
+  const byKey = {};
+  for (const p of pairs) byKey[p.entity_name + '\u0001' + p.vertical] = { entity: p.entity_name, vertical: p.vertical, canoe: counts(p.canoe), ours: counts(p.ours) };
   const weightOf = o => (scoresWeights[o]?.[wField] ?? 0);
   const scoreOf = vec => {
     let num = 0, den = 0;
@@ -1625,7 +1681,7 @@ function scoresRenderTable() {
   const body = rows.map(r => {
     const low = (r.n || 0) < SCORES_MIN_CALLS;
     return `
-    <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" onclick="scoresToggleDetail('${esc(r.key)}')">
+    <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" data-key="${esc(r.key)}" onclick="scoresToggleDetail(this.dataset.key)">
       <td>${esc(r.entity)}</td>
       <td style="color:var(--text-2)">${esc(r.vertical)}</td>
       <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
@@ -1710,7 +1766,7 @@ function scoresRenderDetail(r) {
   const rowsHtml = ranked.map(x => {
     const excl = scoresExcluded.has(x.o);
     return `<tr style="${excl ? 'opacity:.4' : ''}">
-      <td><label style="cursor:pointer;display:flex;gap:6px;align-items:center"><input type="checkbox" ${excl ? '' : 'checked'} onclick="event.stopPropagation();scoresToggleOutcome('${esc(r.key)}','${esc(x.o)}')"><span style="font-family:var(--mono)">${esc(x.o)}</span></label></td>
+      <td><label style="cursor:pointer;display:flex;gap:6px;align-items:center"><input type="checkbox" ${excl ? '' : 'checked'} data-key="${esc(r.key)}" data-outcome="${esc(x.o)}" onclick="event.stopPropagation();scoresToggleOutcome(this.dataset.key,this.dataset.outcome)"><span style="font-family:var(--mono)">${esc(x.o)}</span></label></td>
       <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${x.w}</td>
       <td style="text-align:right;font-family:var(--mono)">${x.cN || ''}</td>
       <td style="text-align:right;font-family:var(--mono)">${x.oN || ''}</td>
@@ -1722,7 +1778,7 @@ function scoresRenderDetail(r) {
     ? '<div class="canoe-none" style="padding:8px 0">Loading calls…</div>'
     : dis.length === 0
       ? '<div class="canoe-none" style="padding:8px 0">No individual disagreements in this window.</div>'
-      : `<table class="canoe-table"><thead><tr><th>Date</th><th style="text-align:left">Publisher</th><th style="text-align:left">Advertiser</th><th style="text-align:right">Dur</th><th style="text-align:left">Disposition</th><th style="text-align:left">Canoe</th><th style="text-align:left">Registry</th><th style="text-align:right">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3);white-space:nowrap">${fmtD(c.created_at)}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'—')}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'—')}</td><td style="text-align:right;font-family:var(--mono)">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'—')}</td><td style="font-family:var(--mono)">${esc(c.canoe_outcome)}</td><td style="font-family:var(--mono)">${esc(c.our_outcome)}</td><td style="text-align:right;white-space:nowrap">${c.recording_url ? `<a class="cr-link" href="${esc(c.recording_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresShowTranscript('${esc(c.id)}')">Transcript</a> · <a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresCopyId('${esc(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
+      : `<table class="canoe-table"><thead><tr><th>Date</th><th style="text-align:left">Publisher</th><th style="text-align:left">Advertiser</th><th style="text-align:right">Dur</th><th style="text-align:left">Disposition</th><th style="text-align:left">Canoe</th><th style="text-align:left">Registry</th><th style="text-align:right">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3);white-space:nowrap">${fmtD(c.created_at)}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'—')}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'—')}</td><td style="text-align:right;font-family:var(--mono)">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'—')}</td><td style="font-family:var(--mono)">${esc(c.canoe_outcome)}</td><td style="font-family:var(--mono)">${esc(c.our_outcome)}</td><td style="text-align:right;white-space:nowrap">${httpUrl(c.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(c.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresShowTranscript('${jsStr(c.id)}')">Transcript</a> · <a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresCopyId('${jsStr(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
   return `<div class="scores-detail">
     ${(r.n || 0) < SCORES_MIN_CALLS ? `<div style="margin-bottom:10px;padding:8px 12px;border:1px dashed var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">Low volume — ${r.n.toLocaleString()} scored call(s), under the ${SCORES_MIN_CALLS}-call threshold, so the score is hidden in the table. Breakdown shown for review.</div>` : ''}
     <div class="scores-detail-headline">${headline}</div>
@@ -1781,7 +1837,7 @@ async function loadVerticals() {
 }
 function buildVerticalOptions(allCb, changeFn) {
   let html = `<label class="ins-vertical-opt"><input type="checkbox" value="all" checked onchange="${allCb}(this)"><span>All verticals</span></label>`;
-  html += VERTICALS.map(v => `<label class="ins-vertical-opt"><input type="checkbox" value="${v.replace(/"/g,'&quot;')}" onchange="${changeFn}()"><span>${v}</span></label>`).join('');
+  html += VERTICALS.map(v => `<label class="ins-vertical-opt"><input type="checkbox" value="${esc(v)}" onchange="${changeFn}()"><span>${esc(v)}</span></label>`).join('');
   return html;
 }
 function populateVerticalDropdowns() {
@@ -1872,9 +1928,14 @@ function isPaid(c){return(c.advertiser_payin||0)>0;}
 function aggregateForAgent(agent,calls){let raw=0,sent=0,paid=0,revenue=0,margin=0;const pubMap={},advMap={};for(const c of calls){raw++;const s=isSent(c),p=isPaid(c);if(s)sent++;if(p)paid++;revenue+=c.advertiser_payin||0;margin+=(c.advertiser_payin||0)-(c.publisher_payout||0);const pub=c.publisher_name||'(unknown)';if(!pubMap[pub])pubMap[pub]={name:pub,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};pubMap[pub].raw_calls++;if(s)pubMap[pub].sent_calls++;if(p)pubMap[pub].paid_calls++;pubMap[pub].revenue+=c.advertiser_payin||0;const adv=c.advertiser_name||'(unknown)';if(!advMap[adv])advMap[adv]={name:adv,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};advMap[adv].raw_calls++;if(s)advMap[adv].sent_calls++;if(p)advMap[adv].paid_calls++;advMap[adv].revenue+=c.advertiser_payin||0;}agent.raw_calls=raw;agent.sent_calls=sent;agent.paid_calls=paid;agent.revenue=revenue;agent.margin=margin;agent.conversion=raw>0?paid/raw:0;agent.pubBreakdown=Object.values(pubMap).sort((a,b)=>b.raw_calls-a.raw_calls);agent.advBreakdown=Object.values(advMap).sort((a,b)=>b.revenue-a.revenue);}
 
 let metricsLoading = false;
+// Cards + breakdowns are only shown on the Agents tab. A landing on another tab (digest links go to
+// Calls/Scores) skips them, so they don't compete with that tab's queries; switchTab loads them later.
+let agentsMetricsDeferred = false;
 async function refreshMetrics(){
   if(metricsLoading) return;
   if(!activeRange.start||!activeRange.end||!AGENTS.length)return;
+  if(currentTab!=='agents'){ agentsMetricsDeferred=true; updateDataWindowLabels(); return; }
+  agentsMetricsDeferred=false;
   metricsLoading = true;
   try {
     const fromTs=activeRange.start.toISOString();
@@ -1884,19 +1945,14 @@ async function refreshMetrics(){
     const ivrToAgent={};
     AGENTS.forEach(a=>{ivrToAgent[a.ivrName]=a;aliasesForAgent(a.ivrName).forEach(alias=>{ivrToAgent[alias]=a;});});
     try{
-      // Per-agent totals (agent_metrics, rollup 030) + the freshness date, in parallel.
-      // Publisher/advertiser breakdowns are prefetched separately (loadAllBreakdowns).
-      const [rows,latest]=await Promise.all([
-        sbFetch('rpc/agent_metrics',{method:'POST',body:JSON.stringify({from_ts:fromTs,to_ts:toTs})}),
-        sbFetch('canoe_calls?select=created_at&order=created_at.desc&limit=1&is_test=not.is.true'),
-      ]);
+      // Per-agent totals (agent_metrics, rollup 030). Publisher/advertiser breakdowns are
+      // prefetched separately (loadAllBreakdowns); the freshness date loads at boot (loadFreshness).
+      const rows=await sbFetch('rpc/agent_metrics',{method:'POST',body:JSON.stringify({from_ts:fromTs,to_ts:toTs})});
       for(const r of rows||[]){
         const a=ivrToAgent[resolveIvrName(r.ivr_name)];if(!a)continue;
         a.raw_calls+=Number(r.raw);a.sent_calls+=Number(r.sent);a.paid_calls+=Number(r.paid);a.revenue+=Number(r.revenue);a._payout+=Number(r.payout);
       }
       AGENTS.forEach(a=>{a.margin=(a.revenue||0)-(a._payout||0);a.conversion=a.raw_calls>0?a.paid_calls/a.raw_calls:0;});
-      if(latest&&latest.length){const d=new Date(latest[0].created_at);document.getElementById('freshness-label').textContent='Data current through '+fmtDate(d);}
-      else document.getElementById('freshness-label').textContent='No data yet';
     } catch(e){
       console.warn('Metric load failed:',e.message);
       document.getElementById('freshness-label').textContent='Could not load data: '+e.message;
@@ -1905,6 +1961,16 @@ async function refreshMetrics(){
   } finally {
     metricsLoading = false;
   }
+}
+
+// Header pill "Data current through …": shown on every tab, so it loads at boot even when the
+// Agents data is deferred (refreshMetrics).
+async function loadFreshness(){
+  const el=document.getElementById('freshness-label');
+  try{
+    const latest=await sbFetch('canoe_calls?select=created_at&order=created_at.desc&limit=1&is_test=not.is.true');
+    el.textContent=latest&&latest.length?'Data current through '+fmtDate(new Date(latest[0].created_at)):'No data yet';
+  }catch(e){ console.warn('freshness:',e.message); el.textContent='Could not load data: '+e.message; }
 }
 
 function recomputeStats(){document.getElementById('stat-agents').textContent=AGENTS.length;document.getElementById('stat-calls').textContent=AGENTS.reduce((s,a)=>s+(a.raw_calls||0),0).toLocaleString();document.getElementById('stat-revenue').textContent='$'+(AGENTS.reduce((s,a)=>s+(a.revenue||0),0)/1000).toFixed(1)+'k';document.getElementById('stat-margin').textContent='$'+(AGENTS.reduce((s,a)=>s+(a.margin||0),0)/1000).toFixed(1)+'k';}
@@ -1916,9 +1982,9 @@ async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?sel
 let testCallMap={};
 async function loadTestCalls(){try{const rows=await sbFetch('agent_test_calls?select=ivr_name,url');if(rows)rows.forEach(r=>{if(r.ivr_name&&r.url)testCallMap[r.ivr_name]=r.url;});}catch(e){console.warn('test calls:',e.message);}}
 async function saveTestCall(ivrName,url){await sbFetch('agent_test_calls?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,url:url||null,updated_at:new Date().toISOString()})});testCallMap[ivrName]=url;}
-function renderTestCallRow(ivrName,cardId){const url=testCallMap[ivrName]||'';if(url)return`<div class="card-test-call" id="tc-row-${cardId}"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--brand-navy)"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg><a class="card-test-link" href="${url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a><button class="card-test-edit-btn" onclick="event.stopPropagation();tcShowEdit('${cardId}','${ivrName.replace(/'/g,"\\'")}')">✎</button></div>`;
-return`<div class="card-test-call" id="tc-row-${cardId}"><span class="card-test-empty">No test call</span><button class="card-test-edit-btn" onclick="event.stopPropagation();tcShowEdit('${cardId}','${ivrName.replace(/'/g,"\\'")}')">+ add</button></div>`;}
-function tcShowEdit(cardId,ivrName){const row=document.getElementById('tc-row-'+cardId);if(!row)return;row.innerHTML=`<div class="card-test-input-row"><input class="card-test-input" id="tc-input-${cardId}" type="url" placeholder="https://..." value="${testCallMap[ivrName]||''}" onclick="event.stopPropagation()"><button class="card-test-save-btn" onclick="event.stopPropagation();tcSave('${cardId}','${ivrName.replace(/'/g,"\\'")}')">Save</button><button class="card-test-cancel-btn" onclick="event.stopPropagation();tcCancel('${cardId}','${ivrName.replace(/'/g,"\\'")}')">✕</button></div>`;document.getElementById('tc-input-'+cardId)?.focus();}
+function renderTestCallRow(ivrName,cardId){const url=httpUrl(testCallMap[ivrName]);if(url)return`<div class="card-test-call" id="tc-row-${cardId}"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--brand-navy)"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg><a class="card-test-link" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a><button class="card-test-edit-btn" onclick="event.stopPropagation();tcShowEdit('${cardId}','${jsStr(ivrName)}')">✎</button></div>`;
+return`<div class="card-test-call" id="tc-row-${cardId}"><span class="card-test-empty">No test call</span><button class="card-test-edit-btn" onclick="event.stopPropagation();tcShowEdit('${cardId}','${jsStr(ivrName)}')">+ add</button></div>`;}
+function tcShowEdit(cardId,ivrName){const row=document.getElementById('tc-row-'+cardId);if(!row)return;row.innerHTML=`<div class="card-test-input-row"><input class="card-test-input" id="tc-input-${cardId}" type="url" placeholder="https://..." value="${esc(testCallMap[ivrName]||'')}" onclick="event.stopPropagation()"><button class="card-test-save-btn" onclick="event.stopPropagation();tcSave('${cardId}','${jsStr(ivrName)}')">Save</button><button class="card-test-cancel-btn" onclick="event.stopPropagation();tcCancel('${cardId}','${jsStr(ivrName)}')">✕</button></div>`;document.getElementById('tc-input-'+cardId)?.focus();}
 async function tcSave(cardId,ivrName){const inp=document.getElementById('tc-input-'+cardId);if(!inp)return;try{await saveTestCall(ivrName,inp.value.trim());}catch(e){alert('Could not save: '+e.message);}document.getElementById('tc-row-'+cardId).outerHTML=renderTestCallRow(ivrName,cardId);}
 function tcCancel(cardId,ivrName){document.getElementById('tc-row-'+cardId).outerHTML=renderTestCallRow(ivrName,cardId);}
 
@@ -1926,11 +1992,11 @@ function tcCancel(cardId,ivrName){document.getElementById('tc-row-'+cardId).oute
 function vClass(v){return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other';}
 function rtLabel(t){return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown';}
 function getEffectiveStatus(a){if(a.status==='test')return'test';if(a.raw_calls>0)return'live';return'inactive';}
-function renderCard(a,idx){const isOpen=openAgent===idx,es=getEffectiveStatus(a),cardId='c'+idx,conv=fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${a.vertical||''}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':'Inactive'}</span></div><div class="card-name">${a.name}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}<div class="card-metrics"><div><div class="metric-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
-function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${p.campaign}</td><td class="${p.publisher?'':'muted'}">${p.publisher||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${t.publisher||'—'}</td><td class="${t.advertiser?'':'muted'}">${t.advertiser||'—'}</td><td class="${t.vertical?'':'muted'}">${t.vertical||'—'}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${q}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${a.disqualify}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
-const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
+function renderCard(a,idx){const isOpen=openAgent===idx,es=getEffectiveStatus(a),cardId='c'+idx,conv=fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}<div class="card-metrics"><div><div class="metric-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
+function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${esc(p.campaign)}</td><td class="${p.publisher?'':'muted'}">${esc(p.publisher||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${esc(t.publisher||'—')}</td><td class="${t.advertiser?'':'muted'}">${esc(t.advertiser||'—')}</td><td class="${t.vertical?'':'muted'}">${esc(t.vertical||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
+const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
-return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${a.name}</div><div class="drawer-meta">${a.vertical||''} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${a.notes}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
+return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${esc(a.notes)}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
 
 function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);return 0;});}
 function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim();if(!keepOpen){document.getElementById('drawer-container').innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered);document.getElementById('agents-grid').innerHTML=sorted.length?sorted.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):'<div class="empty">No agents match.</div>';}
@@ -2099,7 +2165,7 @@ async function insFetchPeriod(startISO, endISO) {
   const pubs={},advs={},agents={};
   const PAGE=1000,CONCURRENT_DAYS=3;
   const verticalQuery = insVerticalFilter.length > 0
-    ? `&or=(${insVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`
+    ? `&vertical_name=in.(${encodeURIComponent(insVerticalFilter.map(pgQuote).join(','))})`
     : '';
   function add(c){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
     function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw++;if(s)r.sent++;if(p)r.paid++;r.rev+=rev;r.margin+=margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw++;if(p)r.byAgent[ag].paid++;r.byAgent[ag].rev+=rev;}
@@ -2210,7 +2276,7 @@ function insRenderSection(sect,title,movers,pA,pB){
     const dRevPctStr=r.a.rev>0?insFmtDelta(r.dRevPct,'%'):(r.b.rev>0?'new':'—');
     const expand=insExpandContent(r,pA,pB);
     return`<tr class="ins-expand-trigger" data-key="${r.key.replace(/"/g,'&quot;')}" data-sect="${sect}">
-      <td><div class="name-cell"><div class="name-primary">${r.key}</div><div class="name-secondary">${r.a.raw.toLocaleString()} → ${r.b.raw.toLocaleString()} raw calls</div></div></td>
+      <td><div class="name-cell"><div class="name-primary">${esc(r.key)}</div><div class="name-secondary">${r.a.raw.toLocaleString()} → ${r.b.raw.toLocaleString()} raw calls</div></div></td>
       <td class="ins-mono">${insFmtRev(r.a.rev)}</td>
       <td class="ins-mono">${insFmtRev(r.b.rev)}</td>
       <td class="delta-cell"><span class="${dc(r.dRev)}">${insFmtDelta(r.dRev,'$')}</span> <span class="delta-pill ${pc(r.dRevPct)}">${dRevPctStr}</span></td>
@@ -2241,7 +2307,7 @@ function insRenderSection(sect,title,movers,pA,pB){
 function insExpandContent(r,pA,pB){
   const allAgents=new Set([...Object.keys(r.a.byAgent||{}),...Object.keys(r.b.byAgent||{})]);
   const agRows=[...allAgents].map(ag=>{const aa=r.a.byAgent[ag]||{raw:0,paid:0,rev:0},ab=r.b.byAgent[ag]||{raw:0,paid:0,rev:0};return{ag,aa,ab,dRev:ab.rev-aa.rev};}).sort((x,y)=>Math.abs(y.dRev)-Math.abs(x.dRev)).slice(0,10);
-  const agTable=agRows.length?`<table class="mini-table"><tr style="font-size:10px;color:var(--text-3)"><td>Agent</td><td>Raw A</td><td>Raw B</td><td>Rev A</td><td>Rev B</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.ag}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td style="color:${a.dRev>=0?'var(--teal)':'var(--coral)'};font-weight:500">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div style="font-size:12px;color:var(--text-3);font-style:italic">No agent breakdown available.</div>';
+  const agTable=agRows.length?`<table class="mini-table"><tr style="font-size:10px;color:var(--text-3)"><td>Agent</td><td>Raw A</td><td>Raw B</td><td>Rev A</td><td>Rev B</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.ag)}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td style="color:${a.dRev>=0?'var(--teal)':'var(--coral)'};font-weight:500">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div style="font-size:12px;color:var(--text-3);font-style:italic">No agent breakdown available.</div>';
   return`<div class="expand-inner"><div class="expand-grid">
     <div>
       <div class="expand-col-title">Period A — ${insPeriodLabel(pA)}</div>
@@ -2402,7 +2468,8 @@ function crApplyPendingVerticals() {
 // the two flag drill-downs (Flagged-only, flag-type) so the metric strip stays a
 // meaningful ratio (flag rate over the scope, not forced to 100% when drilling in).
 function crBuildFilters(includeFlagFilters = true) {
-  let q = `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
+  const [from, to] = localDayRange(crDrpPickStart, crDrpPickEnd);
+  let q = `&created_at=gte.${encodeURIComponent(from)}&created_at=lt.${encodeURIComponent(to)}`;
   // recording_id, not recording_url: sync never fills recording_url (NULL on every row), so
   // "Has recording" matched nothing and walked the whole range into the 8s statement timeout.
   const rec = document.getElementById('cr-rec-filter').value;
@@ -2421,7 +2488,9 @@ function crBuildFilters(includeFlagFilters = true) {
     q += members.length ? `&our_outcome=in.(${encodeURIComponent(members.join(','))})` : `&our_outcome=eq.${encodeURIComponent('__no_match__')}`;
   }
   const verticals = crSelectedVerticals();
-  if (verticals.length) q += `&vertical_name=in.(${encodeURIComponent(verticals.map(v => '"' + v.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"').join(','))})`;
+  if (verticals.length) q += `&vertical_name=in.(${encodeURIComponent(verticals.map(pgQuote).join(','))})`;
+  const search = document.getElementById('cr-search')?.value.trim();
+  if (search) q += crSearchFilter(search);
   if (includeFlagFilters) {
     if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
     const flag = document.getElementById('cr-flag-filter')?.value;
@@ -2430,12 +2499,30 @@ function crBuildFilters(includeFlagFilters = true) {
   return q;
 }
 
+// Search runs server-side over the whole filtered range (it used to filter only the loaded page,
+// then say "No calls found"). Agent display names match here and go to the server as IVR names.
+function crSearchFilter(text) {
+  const like = pgQuote('*' + text.replace(/[\\%_]/g, '\\$&') + '*');   // \ % _ are LIKE escape/wildcards
+  const terms = ['ivr_name', 'called_from', 'publisher_name', 'advertiser_name', 'disposition_description'].map(c => `${c}.ilike.${like}`);
+  const digits = text.replace(/\D/g, '');
+  if (digits.length >= 3 && digits !== text && /^[\d\s().+-]+$/.test(text)) terms.push(`called_from.ilike.${pgQuote('*' + digits + '*')}`);   // typed "(385) 555-…", stored digits
+  const lower = text.toLowerCase();
+  const ivrs = AGENTS.filter(a => (a.name || '').toLowerCase().includes(lower)).flatMap(a => [a.ivrName, ...aliasesForAgent(a.ivrName)]);
+  if (ivrs.length) terms.push(`ivr_name.in.(${ivrs.map(pgQuote).join(',')})`);
+  return `&or=(${encodeURIComponent(terms.join(','))})`;
+}
+
 // Build query
 function crBuildQuery(offset) {
   const select = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,publisher_score,advertiser_score,our_summary,canoe_summary,flags,compliance_reviewed`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
   const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
-  return select + crBuildFilters() + `&order=${sortCol}.${sortDir}`;
+  // Unscored/empty values sort last. created_at is never null inside the date filter, and nullslast
+  // there would stop Postgres reading the created_at index in order (full sort of the range).
+  const nulls = sortCol === 'created_at' ? '' : '.nullslast';
+  // id breaks ties: OFFSET paging (Load more, CSV export) over a non-unique sort repeated and dropped rows.
+  const tiebreak = sortCol === 'id' ? '' : ',id.asc';
+  return select + crBuildFilters() + `&order=${sortCol}.${sortDir}${nulls}${tiebreak}`;
 }
 
 async function crLoad(append=false) {
@@ -2447,40 +2534,19 @@ async function crLoad(append=false) {
   await Promise.all([loadOutcomeWeights(), ensureVerticals()]);   // group + vertical filters need both
   if (!append) document.getElementById('cr-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>`;
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/${crBuildQuery(crOffset)}`, {
-      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${getAuthToken() || SB_KEY}`, 'Content-Type':'application/json', 'Range-Unit':'items', 'Range':`${crOffset}-${crOffset+crPageSize-1}` }
-    });
-    if (!res.ok) { const err = await res.text(); throw new Error(`Supabase ${res.status}: ${err}`); }
-    const txt = await res.text();
-    const newRows = txt ? JSON.parse(txt) : [];
+    const offset = crOffset;
+    const newRows = await sbFetch(crBuildQuery(offset), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+crPageSize-1}` } }) || [];
+    if (seq !== crLoadSeq) return;   // a newer load (filter change, search keystroke) owns the table now
     crRows = append ? [...crRows, ...newRows] : newRows;
     crOffset += newRows.length;
     crHasMore = crTotal == null ? newRows.length === crPageSize : crOffset < crTotal;
     crRender();
-    if (!append) { crLoadTotal(seq); callsLoadStats(); }   // exact count + summary strip load in the background
+    if (!append) callsLoadSummary(seq);   // total + summary strip load in the background
   } catch(e) {
-    document.getElementById('cr-output').innerHTML = `<div class="ins-loading" style="color:var(--coral)">Error: ${e.message}</div>`;
+    if (seq !== crLoadSeq) return;
+    document.getElementById('cr-output').innerHTML = `<div class="ins-loading" style="color:var(--coral)">Error: ${esc(e.message)}</div>`;
   }
   btn.disabled = false; btn.textContent = 'Load calls';
-}
-
-// The exact row count is the slow part of a Calls load (a scan over the wide table), while a
-// page of rows is fast. Rows render first; this fills the exact total in once it arrives.
-async function crLoadTotal(seq) {
-  try {
-    const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${crBuildFilters()}`, {
-      headers: { 'apikey':SB_KEY, 'Authorization':`Bearer ${getAuthToken() || SB_KEY}`, 'Prefer':'count=exact', 'Range-Unit':'items', 'Range':'0-0' }
-    });
-    if (!res.ok) throw new Error(`Supabase ${res.status}`);
-    const n = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
-    if (seq !== crLoadSeq || isNaN(n)) return;   // superseded by a newer load, or no count returned
-    crTotal = n;
-    crHasMore = crOffset < crTotal;
-    crRender();
-  } catch(e) {
-    console.warn('calls total:', e.message);
-    if (seq === crLoadSeq) { crTotal = undefined; crRender(); }   // undefined = count failed; footer says so
-  }
 }
 
 async function crExportAll() {
@@ -2519,22 +2585,16 @@ async function crExportAll() {
     URL.revokeObjectURL(url);
   } catch(e) {
     alert('Export failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Export CSV'; }
   }
-  if (btn) { btn.disabled = false; btn.textContent = 'Export CSV'; }
 }
 
 function crRender() {
-  const search = document.getElementById('cr-search').value.toLowerCase().trim();
   const agentMap = {};
   AGENTS.forEach(a => { agentMap[a.ivrName] = a; aliasesForAgent(a.ivrName).forEach(alias => agentMap[alias] = a); });
 
-  let rows = crRows;
-  if (search) {
-    rows = rows.filter(r => {
-      const agentName = agentMap[r.ivr_name]?.name || r.ivr_name || '';
-      return [agentName, r.ivr_name, r.phone, r.publisher_name, r.advertiser_name, r.disposition_description].filter(Boolean).join(' ').toLowerCase().includes(search);
-    });
-  }
+  const rows = crRows;
 
   if (!rows.length) {
     document.getElementById('cr-output').innerHTML = `<div class="ins-empty">No calls found for the selected filters.</div>`;
@@ -2555,36 +2615,36 @@ function crRender() {
     const vertical = r.vertical || (agent ? agent.vertical : '') || '—';
     switch (c.key) {
       case 'id':
-        return `<td class="cr-mono" style="font-size:10px;color:var(--text-3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.id||''}">${r.id||'—'}</td>`;
+        return `<td class="cr-mono" style="font-size:10px;color:var(--text-3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.id||'')}">${esc(r.id||'—')}</td>`;
       case 'created_at':
         return `<td class="cr-mono">${crFmtDateTime(r.created_at)}</td>`;
       case 'recording':
-        return `<td>${r.recording_url ? `<a class="cr-link" href="${r.recording_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : '<span class="cr-null">—</span>'}</td>`;
+        return `<td>${httpUrl(r.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(r.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : '<span class="cr-null">—</span>'}</td>`;
       case 'sent':
         return `<td><span style="font-size:11px;font-weight:500;color:${(r.connect_duration||0)>0?'var(--teal)':'var(--text-3)'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
       case 'vertical':
-        return `<td><span class="card-vtag ${vClass(vertical)}" style="font-size:10px">${vertical}</span></td>`;
+        return `<td><span class="card-vtag ${vClass(vertical)}" style="font-size:10px">${esc(vertical)}</span></td>`;
       case 'ivr_name':
-        return `<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${agentName}">${agentName}</td>`;
+        return `<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(agentName)}">${esc(agentName)}</td>`;
       case 'publisher_name':
-        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.publisher_name||''}">${r.publisher_name||'—'}</td>`;
+        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.publisher_name||'')}">${esc(r.publisher_name||'—')}</td>`;
       case 'advertiser_name':
-        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.advertiser_name||''}">${r.advertiser_name||'—'}</td>`;
+        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.advertiser_name||'')}">${esc(r.advertiser_name||'—')}</td>`;
       case 'phone':
-        return `<td class="cr-mono">${r.phone||'—'}</td>`;
+        return `<td class="cr-mono">${esc(r.phone||'—')}</td>`;
       case 'ivr_duration':
         return `<td class="cr-mono">${crFmtDuration(r.ivr_duration)}</td>`;
       case 'disposition':
-        return `<td><span class="${crDispoClass(r.disposition)}">${r.disposition||'—'}</span></td>`;
+        return `<td><span class="${crDispoClass(r.disposition)}">${esc(r.disposition||'—')}</span></td>`;
       case 'disposition_description':
-        return `<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${r.disposition_description||''}">${r.disposition_description||'<span class="cr-null">—</span>'}</td>`;
+        return `<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${esc(r.disposition_description||'')}">${r.disposition_description ? esc(r.disposition_description) : '<span class="cr-null">—</span>'}</td>`;
       case 'advertiser_payin':
         return `<td class="cr-mono" style="text-align:right">${crFmtRev(r.advertiser_payin)}</td>`;
       case 'outcome': {
         const reg = r.our_outcome
           ? outcomeBadge(r.our_outcome)
           : '<span style="font-size:10px;color:var(--text-3)">Registry: —</span>';
-        const canoe = `<span style="font-size:10px;color:var(--text-3)">Canoe: ${r.canoe_outcome || '—'}</span>`;
+        const canoe = `<span style="font-size:10px;color:var(--text-3)">Canoe: ${esc(r.canoe_outcome || '—')}</span>`;
         return `<td><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start">${reg}${canoe}</div></td>`;
       }
       // 0 is a real score (e.g. `other`, `not_interested`) — only null means unscored,
@@ -2606,13 +2666,11 @@ function crRender() {
     }
   }
 
-  const tbody = rows.map(r => `<tr class="cr-row" style="cursor:pointer" onclick="crOpenDrawer('${r.id}')">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
+  const tbody = rows.map(r => `<tr class="cr-row" style="cursor:pointer" data-id="${esc(r.id)}" onclick="crOpenDrawer(this.dataset.id)">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
 
   const totalLabel = crTotal == null ? (crTotal === null ? 'counting…' : 'unknown') : crTotal.toLocaleString();
-  const footerText = search
-    ? `Showing ${rows.length.toLocaleString()} of ${crRows.length.toLocaleString()} loaded (${totalLabel} total match filters)`
-    : `Showing ${rows.length.toLocaleString()} of ${totalLabel} rows`;
-  const loadMoreBtn = (!search && crHasMore) ? `<button class="cr-load-more" onclick="crLoad(true)">Load more</button>` : '';
+  const footerText = `Showing ${rows.length.toLocaleString()} of ${totalLabel} rows`;
+  const loadMoreBtn = crHasMore ? `<button class="cr-load-more" onclick="crLoad(true)">Load more</button>` : '';
 
   document.getElementById('cr-output').innerHTML = `
     <div class="cr-table-wrap">
@@ -2657,78 +2715,61 @@ function crOpenDrawer(id) {
 
 function crToggleFlagged(btn) { btn.classList.toggle('active'); crLoad(false); }
 
-// Compliance summary strip at the top of the Calls tab. Scoped to the SAME time
-// period + filters as the table (via crBuildFilters), counting AI-processed calls.
-// Exact count queries (Prefer: count=exact) so the totals are uncapped and current.
-async function callsLoadStats() {
-  if (!crDrpPickStart || !crDrpPickEnd) return;  // needs a selected date range
-  flagBreakdownKey = null;  // scope may have changed — recompute the hover breakdown on next hover
-  try {
-    const filters = crBuildFilters(false);  // ignore flag drill-downs so flag rate stays a real ratio
-    const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
-    const countOf = async (extra) => {
-      const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${filters}${extra}`, {
-        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' }
-      });
-      if (!res.ok) throw new Error(`Supabase ${res.status}`);
-      const cr = res.headers.get('Content-Range') || '';
-      return parseInt(cr.split('/')[1], 10) || 0;
-    };
-    // Revenue sum matches the TABLE scope (flag drill-downs included), not the AI-processed
-    // strip scope — it's a business total for exactly the rows the table is showing. One
-    // parallel aggregate request returning a single number, so no added page latency.
-    // Requires the project's aggregate functions to be enabled; if not, this rejects and
-    // the card falls back to "—" without breaking the strip.
-    const sumRevenue = async () => {
-      const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=advertiser_payin.sum()${crBuildFilters(true)}`, {
-        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-      });
-      if (!res.ok) throw new Error(`Supabase ${res.status}`);
-      const rows = await res.json();
-      const row = rows && rows[0];
-      return row ? Number(Object.values(row)[0]) || 0 : 0;
-    };
-    const [total, flagged, revenue] = await Promise.all([
-      countOf('&ai_processed_at=not.is.null'),
-      countOf(`&ai_processed_at=not.is.null&flags=neq.${encodeURIComponent('[]')}`),
-      sumRevenue().catch(e => { console.warn('revenue sum:', e.message); return null; }),
-    ]);
-    const rate = total > 0 ? ((flagged/total)*100).toFixed(1)+'%' : '—';
-    const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('calls-stat-total',   total.toLocaleString());
-    set('calls-stat-flagged', flagged.toLocaleString());
-    set('calls-stat-rate',    rate);
-    set('calls-stat-revenue', revenue == null ? '—' : '$' + Math.round(revenue).toLocaleString());
-  } catch(e) { console.warn('callsLoadStats:', e.message); }
+// Calls-tab totals: the table footer's total + revenue (table scope) and the compliance strip
+// (same filters minus the two flag drill-downs, so flag rate stays a real ratio; AI-processed calls
+// only). One aggregate request per scope; the strip's flags histogram also yields the hover
+// breakdown. This replaced 4 exact counts + 8 per-flag counts (4-20 scans, 7.6 s for 7 days).
+const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller','coached_call','quoted_abandoned'];
+let callsFlagCounts = null;   // {flag: n} for the current scope; null = loading, false = failed
+async function callsLoadSummary(seq) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  ['calls-stat-total', 'calls-stat-flagged', 'calls-stat-rate', 'calls-stat-revenue'].forEach(id => set(id, '…'));
+  callsFlagCounts = null; callsFlagBreakdownRender();
+  const [table, strip] = await Promise.allSettled([
+    sbFetch(`canoe_calls?select=n:count(),revenue:advertiser_payin.sum()${crBuildFilters()}`),
+    sbFetch(`canoe_calls?select=flags,n:count()${crBuildFilters(false)}&ai_processed_at=not.is.null`),
+  ]);
+  if (seq !== crLoadSeq) return;   // superseded by a newer load
+  const t = table.status === 'fulfilled' && table.value && table.value[0];
+  if (t) { crTotal = Number(t.n); crHasMore = crOffset < crTotal; }
+  else { crTotal = undefined; console.warn('calls total:', table.reason?.message); }   // undefined = count failed; footer says so
+  set('calls-stat-revenue', t ? '$' + Math.round(Number(t.revenue) || 0).toLocaleString() : '—');
+  crRender();
+  if (strip.status !== 'fulfilled') {
+    console.warn('calls summary:', strip.reason?.message);
+    ['calls-stat-total', 'calls-stat-flagged', 'calls-stat-rate'].forEach(id => set(id, '—'));   // not stale numbers from the last scope
+    callsFlagCounts = false; callsFlagBreakdownRender();
+    return;
+  }
+  let total = 0, flagged = 0;
+  const counts = Object.fromEntries(CALLS_FLAG_TYPES.map(f => [f, 0]));
+  for (const r of strip.value || []) {
+    const n = Number(r.n), flags = Array.isArray(r.flags) ? r.flags : [];
+    total += n;
+    if (flags.length) flagged += n;
+    for (const f of new Set(flags)) if (f in counts) counts[f] += n;
+  }
+  set('calls-stat-total', total.toLocaleString());
+  set('calls-stat-flagged', flagged.toLocaleString());
+  set('calls-stat-rate', total > 0 ? ((flagged / total) * 100).toFixed(1) + '%' : '—');
+  callsFlagCounts = counts; callsFlagBreakdownRender();
 }
 
-// Hover breakdown on the "flagged" metric: count of calls per flag type, scoped to the
-// same date range + business filters as the strip (flag drill-downs ignored). Lazy —
-// computed on first hover per scope; each count is a GIN-indexed containment query.
-const CALLS_FLAG_TYPES = ['outbound_dial','facebook_marketplace','angry_caller','wrong_business','geo_mismatch','duplicate_caller','coached_call','quoted_abandoned'];
-let flagBreakdownKey = null;
-async function callsFlagBreakdown() {
+// Hover breakdown on the "flagged" metric: calls per flag type for the strip's scope.
+function callsFlagBreakdown() {
   const tip = document.getElementById('calls-flag-breakdown');
   if (!tip) return;
   tip.style.display = 'block';
+  callsFlagBreakdownRender();
+}
+function callsFlagBreakdownRender() {
+  const tip = document.getElementById('calls-flag-breakdown');
+  if (!tip || tip.style.display === 'none') return;
   if (!crDrpPickStart || !crDrpPickEnd) { tip.innerHTML = '<div class="fb-row">Load calls first</div>'; return; }
-  const filters = crBuildFilters(false);
-  if (flagBreakdownKey === filters && tip.dataset.filled === '1') return;  // cached for this scope
-  flagBreakdownKey = filters; tip.dataset.filled = '0';
-  tip.innerHTML = '<div class="fb-row">Loading…</div>';
-  try {
-    const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
-    const rows = await Promise.all(CALLS_FLAG_TYPES.map(async f => {
-      const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id${filters}&ai_processed_at=not.is.null&flags=cs.${encodeURIComponent(JSON.stringify([f]))}`, {
-        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' }
-      });
-      const cr = res.headers.get('Content-Range') || '';
-      return { flag: f, n: parseInt(cr.split('/')[1], 10) || 0 };
-    }));
-    rows.sort((a,b) => b.n - a.n);
-    tip.innerHTML = rows.map(r => `<div class="fb-row"><span>${r.flag}</span><span class="fb-n">${r.n.toLocaleString()}</span></div>`).join('');
-    tip.dataset.filled = '1';
-  } catch(e) { tip.innerHTML = '<div class="fb-row">—</div>'; flagBreakdownKey = null; }
+  if (callsFlagCounts === null) { tip.innerHTML = '<div class="fb-row">Loading…</div>'; return; }
+  if (callsFlagCounts === false) { tip.innerHTML = '<div class="fb-row">—</div>'; return; }
+  tip.innerHTML = Object.entries(callsFlagCounts).sort((a, b) => b[1] - a[1])
+    .map(([flag, n]) => `<div class="fb-row"><span>${flag}</span><span class="fb-n">${n.toLocaleString()}</span></div>`).join('');
 }
 function callsFlagBreakdownHide() { const t = document.getElementById('calls-flag-breakdown'); if (t) t.style.display = 'none'; }
 
@@ -2748,7 +2789,9 @@ function toggleUpdatePanel(){document.getElementById('update-panel').classList.t
 let RV = null;   // current review session ({agent, ivrs, calls, windowStart, ...}) or null at the picker
 
 function cssId(s){ return String(s||'').replace(/[^a-z0-9]/gi,'_'); }
-function jsStr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+// A JS string literal body for an inline handler attribute: JS-escaped, then HTML-escaped (a " in a
+// name used to end the onclick attribute).
+function jsStr(s){ return esc(String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029')); }
 function fmtDateTime(iso){ const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
 function ivrQuery(ivrs){ const list='in.('+ivrs.map(v=>'"'+String(v).replace(/"/g,'\\"')+'"').join(',')+')'; return 'ivr_name='+encodeURIComponent(list); }
 
@@ -3010,7 +3053,11 @@ async function loadReviewMetrics(){
       for(const c of batch){ raw++; const pay=Number(c.advertiser_payin||0); if(pay>0) paid++; revenue+=pay; }
       if(batch.length<PAGE) break; offset+=PAGE;
     }
-  }catch(e){ console.warn('review metrics:',e.message); }
+  }catch(e){
+    console.warn('review metrics:',e.message);
+    if(RV===rv&&seq===rv.mseq){ rv.metrics=null; updateReviewPerf(); }   // "—", not partial counts shown as real KPIs
+    return;
+  }
   if(RV!==rv||seq!==rv.mseq) return;   // superseded (scope/window changed, or left the agent)
   rv.metrics={raw,paid,revenue};
   updateReviewPerf();
@@ -3268,8 +3315,7 @@ async function toggleCallReviewed(callId,el){
   const on=RV.reviewedSet.has(callId);
   try{
     if(on){
-      const res=await fetch(`${SB_URL}/rest/v1/call_reviews?call_id=eq.${encodeURIComponent(callId)}&reviewed_by=eq.${encodeURIComponent(by)}`,{method:'DELETE',headers:authHeaders()});
-      if(!res.ok) throw new Error(`${res.status}`);
+      await sbFetch(`call_reviews?call_id=eq.${encodeURIComponent(callId)}&reviewed_by=eq.${encodeURIComponent(by)}`,{method:'DELETE'});
       RV.reviewedSet.delete(callId);
     } else {
       await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,reviewed_at:new Date().toISOString()})});
@@ -3282,12 +3328,12 @@ async function toggleCallReviewed(callId,el){
 
 function updateReviewPerf(){
   const box=document.getElementById('rv-perf'); if(!box||!RV) return;
-  const m=RV.metrics||{raw:0,paid:0,revenue:0};
+  const m=RV.metrics;   // null until loaded, or after a failed load
   const tiles=[
-    ['Calls',(m.raw||0).toLocaleString()],
-    ['Paid',(m.paid||0).toLocaleString()],
-    ['Conv.',m.raw>0?fmtPct(m.paid,m.raw):'—'],
-    ['Revenue','$'+Math.round(m.revenue||0).toLocaleString()],
+    ['Calls',m?(m.raw||0).toLocaleString():'—'],
+    ['Paid',m?(m.paid||0).toLocaleString():'—'],
+    ['Conv.',m&&m.raw>0?fmtPct(m.paid,m.raw):'—'],
+    ['Revenue',m?'$'+Math.round(m.revenue||0).toLocaleString():'—'],
   ];
   box.innerHTML=tiles.map(t=>`<div class="rv-perf-item"><div class="rv-perf-val">${t[1]}</div><div class="rv-perf-lbl">${t[0]}</div></div>`).join('');
 }
@@ -3403,10 +3449,14 @@ function showIntakeFullForm(ni){document.getElementById('intake-full-'+ni).class
 async function saveIntakeAlias(ni,incomingIvrName){const sel=document.getElementById('intake-alias-sel-'+ni),canonicalIvrName=sel.value;if(!canonicalIvrName){showIntakeFullForm(ni);return;}const btn=document.querySelector(`#intake-card-${ni} .intake-alias-save-btn`);btn.disabled=true;btn.textContent='Saving…';try{await saveAlias(incomingIvrName,canonicalIvrName);const card=document.getElementById('intake-card-'+ni),agentName=AGENTS.find(a=>a.ivrName===canonicalIvrName)?.name||canonicalIvrName;card.innerHTML=`<div style="padding:14px 16px;background:var(--teal-bg);border:1px solid #5DCAA5;border-radius:var(--radius-sm);font-size:13px;color:var(--teal);">✓ <strong>"${incomingIvrName}"</strong> is now an alias for <strong>${agentName}</strong>. Future uploads will automatically roll up.</div>`;await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save alias: '+e.message);btn.disabled=false;btn.textContent='Save alias & finish';}}
 async function saveNewAgent(ni,ivrName){const btn=document.getElementById('intake-save-'+ni),name=document.getElementById('intake-name-'+ni).value.trim()||ivrName,vertical=document.getElementById('intake-vertical-'+ni).value,routing=document.getElementById('intake-routing-'+ni).value,qualText=document.getElementById('intake-qual-'+ni).value.trim(),qualifying=qualText?qualText.split('\n').map(l=>l.trim()).filter(Boolean):[],disqualify=document.getElementById('intake-dq-'+ni).value.trim()||null,pcText=document.getElementById('intake-pc-'+ni).value.trim(),publisherCampaigns=pcText?pcText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('—').map(s=>s.trim());return{campaign:p[0]||line,publisher:p[1]||''};}):[],ivrText=document.getElementById('intake-ivr-'+ni).value.trim(),ivrTargets=ivrText?ivrText.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const p=line.split('|').map(s=>s.trim());return{publisher:p[0]||'',advertiser:p[1]||'',vertical:p[2]||'',campaign:''};}):[],notes=document.getElementById('intake-notes-'+ni).value.trim()||null;btn.disabled=true;btn.textContent='Saving…';try{await sbFetch('agents?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,name,vertical,status:'live',routing_type:routing,qualifying,disqualify,publisher_campaigns:publisherCampaigns,ivr_targets:ivrTargets,notes,updated_at:new Date().toISOString()})});btn.textContent='✓ Added';btn.style.background='var(--teal)';await loadAgentsFromSupabase();await refreshMetrics();}catch(e){alert('Could not save: '+e.message);btn.disabled=false;btn.textContent='Add to registry';}}
 
-// ─── CR SEARCH RE-RENDER ──────────────────────────────────────────────────────
+// ─── CR SEARCH (server-side; reloads the table once typing pauses) ────────────
 document.addEventListener('DOMContentLoaded', () => {
   const srch = document.getElementById('cr-search');
-  if (srch) srch.addEventListener('input', () => { if (crRows.length) crRender(); });
+  let timer = null;
+  if (srch) srch.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { if (crDrpPickStart && crDrpPickEnd) crLoad(false); }, 400);
+  });
 });
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
@@ -3434,9 +3484,9 @@ async function checkForUnregisteredAgents() {
 let agentsLoadedPromise = null;
 async function bootDashboard() {
   agentDrpInit();
+  loadFreshness();
   agentsLoadedPromise = Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
   await agentsLoadedPromise;
-  ensureVerticals();
   crVisibleCols = {}; CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();
   recomputeStats();
@@ -3519,7 +3569,7 @@ async function doLogin() {
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
     await applyRoute();
-    refreshMetrics();
+    refreshMetrics(); loadFreshness();
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -3640,7 +3690,7 @@ async function doSetPassword() {
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
     await applyRoute();
-    refreshMetrics();
+    refreshMetrics(); loadFreshness();
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -3656,51 +3706,36 @@ window.addEventListener('popstate', applyRoute);
 
 // ── COMPLIANCE HELPERS ────────────────────────────────────────
 
-function authHeaders() {
-  return {
-    'apikey':        SB_KEY,
-    'Authorization': `Bearer ${getAuthToken()}`,
-    'Content-Type':  'application/json',
-  };
-}
-
 let authExpired = false;
 
-async function compFetch(path) {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: authHeaders() });
+// Settings/compliance requests go through sbRequest (refresh a due token, retry once on 401).
+// A 401 that survives that means the session is gone: show the login.
+async function compRequest(path, init) {
+  const res = await sbRequest(path, init);
   if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
+  return res;
+}
+
+async function compFetch(path) {
+  const res = await compRequest(path);
   if (!res.ok) throw new Error(`Supabase error ${res.status}`);
   return res.json();
 }
 
 async function compPost(path, body, prefer = 'return=minimal') {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    method: 'POST',
-    headers: { ...authHeaders(), 'Prefer': prefer },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
+  const res = await compRequest(path, { method: 'POST', headers: { 'Prefer': prefer }, body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
 async function compPatch(path, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    method: 'PATCH',
-    headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
+  const res = await compRequest(path, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
 }
 
 async function compDelete(path) {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
+  const res = await compRequest(path, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
 }
 
@@ -3715,7 +3750,7 @@ let compDrawerFlags = [];
 async function compInit() {
   // The Settings tab needs only Team stats + account assignments now; the call log
   // (and its stats/filters) moved to the merged Calls tab.
-  await Promise.all([compLoadAssignments(), compLoadTeam()]);
+  await Promise.all([ensureAssignments(), compLoadTeam()]);
 }
 
 // Apply the filters carried in a digest deep link, now on the merged Calls tab, e.g.
@@ -3770,12 +3805,12 @@ const NEGATIVE_OUTCOMES = new Set(['outside_geo','advertiser_service_mismatch','
 function outcomeBadge(outcome) {
   if (!outcome) return '<span class="outcome-badge">—</span>';
   const cls = POSITIVE_OUTCOMES.has(outcome) ? 'outcome-positive' : NEGATIVE_OUTCOMES.has(outcome) ? 'outcome-negative' : '';
-  return `<span class="outcome-badge ${cls}">${outcome}</span>`;
+  return `<span class="outcome-badge ${cls}">${esc(outcome)}</span>`;
 }
 
 function flagBadges(flags) {
   if (!flags || flags.length === 0) return '';
-  return flags.map(f => `<span class="flag-badge flag-${f}">${f.replace(/_/g,' ')}</span>`).join(' ');
+  return flags.map(f => `<span class="flag-badge flag-${esc(f)}">${esc(String(f).replace(/_/g,' '))}</span>`).join(' ');
 }
 
 // ── CALL DRAWER ───────────────────────────────────────────────
@@ -3785,7 +3820,7 @@ function openCallDrawer(call) {
   compDrawerFlags = [...(call.flags || [])];
 
   const drawerIdEl = document.getElementById('drawer-call-id');
-  drawerIdEl.innerHTML = `Recording: ${call.id || '—'}${call.lead_id ? ` &nbsp;·&nbsp; Lead: ${call.lead_id}` : ''}`;
+  drawerIdEl.innerHTML = `Recording: ${esc(call.id || '—')}${call.lead_id ? ` &nbsp;·&nbsp; Lead: ${esc(call.lead_id)}` : ''}`;
   drawerIdEl.onclick = () => copyId(null, call.id, drawerIdEl);
   document.getElementById('drawer-names').textContent   = [call.publisher_name, call.advertiser_name].filter(Boolean).join(' → ') || '—';
 
@@ -3794,12 +3829,12 @@ function openCallDrawer(call) {
     call.duration ? call.duration + 's' : null,
     [call.city, call.state].filter(Boolean).join(', ') || null,
     call.account_manager ? 'AM: ' + call.account_manager : null,
-  ].filter(Boolean).map(m => `<span class="drawer-meta-item">${m}</span>`).join('');
+  ].filter(Boolean).map(m => `<span class="drawer-meta-item">${esc(m)}</span>`).join('');
   document.getElementById('drawer-meta-row').innerHTML = meta;
 
   document.getElementById('drawer-outcome-row').innerHTML =
     (call.our_outcome ? outcomeBadge(call.our_outcome) + '<span style="font-size:11px;color:var(--text-3);margin-left:4px">our AI</span>' : '<span style="font-size:12px;color:var(--text-3)">Not yet processed</span>') +
-    (call.canoe_outcome ? `<span class="drawer-canoe-outcome" style="margin-left:12px">Canoe: ${call.canoe_outcome}</span>` : '');
+    (call.canoe_outcome ? `<span class="drawer-canoe-outcome" style="margin-left:12px">Canoe: ${esc(call.canoe_outcome)}</span>` : '');
 
   const flagsEl = document.getElementById('drawer-flags');
   flagsEl.innerHTML = compDrawerFlags.length
@@ -3914,9 +3949,9 @@ async function saveCorrection() {
     await compPost('call_corrections', correction);
 
     // mark call as reviewed in canoe_calls
-    await fetch(`${SB_URL}/rest/v1/canoe_calls?id=eq.${compDrawerCall.id}`, {
+    await sbRequest(`canoe_calls?id=eq.${encodeURIComponent(compDrawerCall.id)}`, {
       method: 'PATCH',
-      headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
+      headers: { 'Prefer': 'return=minimal' },
       body: JSON.stringify({ compliance_reviewed: true }),
     });
 
@@ -3967,7 +4002,7 @@ async function compLoadTeam() {
 
     grid.innerHTML = managers.map(m => `
       <div class="comp-team-card">
-        <div class="comp-team-name">${m.name}</div>
+        <div class="comp-team-name">${esc(m.name)}</div>
         <div class="comp-team-stats">
           <div>
             <div class="comp-team-stat-val">${m.total.toLocaleString()}</div>
@@ -3991,6 +4026,13 @@ async function compLoadTeam() {
 
 let compManagers    = [];
 let compAssignments = [];
+// Managers + assignments are read by Team, Admin, Training and the CSV export; load them once
+// (Admin and Training each fetched them again). Also settles window.isAdmin before Admin renders.
+let _assignmentsPromise = null;
+function ensureAssignments() {
+  if (!_assignmentsPromise) _assignmentsPromise = compLoadAssignments();
+  return _assignmentsPromise;
+}
 
 async function compLoadAssignments() {
   try {
@@ -4022,8 +4064,9 @@ function resolveManager(call) {
 // ── SETTINGS ──────────────────────────────────────────────────
 
 async function settingsInit() {
-  await Promise.all([settingsLoadManagers(), settingsLoadAssignments()]);
-  await settingsLoadAccountsTable();
+  await ensureAssignments();
+  if (compManagers.length) settingsRenderManagers(); else await settingsLoadManagers();   // empty = the shared load failed; retry shows the error
+  settingsLoadAccountsTable();   // renders its own result/error; the admin sections below no longer wait on it
   if (window.isAdmin) {
     document.getElementById('settings-users-section').style.display = 'block';
     document.getElementById('settings-prompts-section').style.display = 'block';
@@ -4038,8 +4081,7 @@ async function settingsInit() {
     }
     const savedPat = sessionStorage.getItem('gh_pat');
     if (savedPat) document.getElementById('ab-github-pat').value = savedPat;
-    await promptsInit();
-    await weightsInit();
+    await Promise.all([promptsInit(), weightsInit()]);
   }
 }
 
@@ -4048,27 +4090,32 @@ async function settingsInit() {
 async function settingsLoadManagers() {
   const el = document.getElementById('settings-managers-table');
   try {
-    const rows = await compFetch('account_managers?select=id,manager_name,manager_email,is_admin,created_at&order=manager_name.asc');
-    compManagers = rows || [];
-    settingsRefreshManagerSelect();
-    if (!rows.length) {
-      el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
-      return;
-    }
-    const showAdmin = window.isAdmin;
-    el.innerHTML = `<table class="settings-table">
-      <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th style="text-align:center">Admin</th>' : ''}<th></th></tr></thead>
-      <tbody>${rows.map(m => `
-        <tr>
-          <td style="font-weight:500">${esc(m.manager_name)}</td>
-          <td style="color:var(--text-2)">${esc(m.manager_email || '—')}</td>
-          ${showAdmin ? `<td style="text-align:center"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer"></td>` : ''}
-          <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button></td>
-        </tr>`).join('')}
-      </tbody></table>`;
+    compManagers = await compFetch('account_managers?select=id,manager_name,manager_email,is_admin,created_at&order=manager_name.asc') || [];
+    settingsRenderManagers();
   } catch(e) {
     el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
   }
+}
+
+function settingsRenderManagers() {
+  const el = document.getElementById('settings-managers-table');
+  const rows = compManagers;
+  settingsRefreshManagerSelect();
+  if (!rows.length) {
+    el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
+    return;
+  }
+  const showAdmin = window.isAdmin;
+  el.innerHTML = `<table class="settings-table">
+    <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th style="text-align:center">Admin</th>' : ''}<th></th></tr></thead>
+    <tbody>${rows.map(m => `
+      <tr>
+        <td style="font-weight:500">${esc(m.manager_name)}</td>
+        <td style="color:var(--text-2)">${esc(m.manager_email || '—')}</td>
+        ${showAdmin ? `<td style="text-align:center"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer"></td>` : ''}
+        <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
 }
 
 function settingsRefreshManagerSelect() {
@@ -4136,13 +4183,7 @@ let accountsTab  = 'unassigned';
 async function settingsLoadAccountsTable() {
   const el = document.getElementById('settings-accounts-table');
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/rpc/get_distinct_accounts`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({}),
-    });
-    if (!res.ok) throw new Error(`RPC error ${res.status}: ${await res.text()}`);
-    allAccounts = await res.json();
+    allAccounts = await sbFetch('rpc/get_distinct_accounts', { method: 'POST', body: '{}' }) || [];
     settingsRenderAccountsTable();
   } catch(e) {
     el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
@@ -4219,13 +4260,7 @@ async function assignAccount(accountName, accountType, managerId, selectEl) {
       await compDelete(`account_manager_assignments?account_name=eq.${encodeURIComponent(accountName)}&account_type=eq.${accountType}`);
     } else {
       // upsert: insert or update on unique(account_name, account_type)
-      const res = await fetch(`${SB_URL}/rest/v1/account_manager_assignments`, {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ manager_id: managerId, account_name: accountName, account_type: accountType }),
-      });
-      if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
-      if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
+      await compPost('account_manager_assignments', { manager_id: managerId, account_name: accountName, account_type: accountType }, 'resolution=merge-duplicates,return=minimal');
     }
     await compLoadAssignments();
     if (savedEl) { savedEl.style.display = 'inline'; setTimeout(() => { savedEl.style.display = 'none'; }, 2000); }
@@ -4279,7 +4314,7 @@ async function settingsLoadUsers() {
               <td>${esc(u.email || '—')}</td>
               <td style="color:var(--text-2)">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '—'}</td>
               <td style="color:var(--text-2)">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
-              <td style="text-align:right">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${u.id}','${esc(u.email)}')">Remove</button>` : '<span style="font-size:11px;color:var(--text-3)">you</span>'}</td>
+              <td style="text-align:right">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${jsStr(u.id)}','${jsStr(u.email)}')">Remove</button>` : '<span style="font-size:11px;color:var(--text-3)">you</span>'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -4336,20 +4371,19 @@ const WEIGHT_GROUPS = [
 ];
 
 let weightsData = {};         // outcome -> { pub_score, adv_score }
-let weightsProcessedCount = 0;
+let weightsProcessedCount = null;   // null = unknown (the count failed)
+let weightsCountApprox = true;      // planner estimate, until an execute returns the exact number
 
+// An exact count of our_outcome rows (~120k) timed out (500 after ~10 s) and the button read
+// "will update 0 calls". The planner's estimate is ~1 ms and within a few percent.
 async function weightsLoadCount() {
-  try {
-    const res = await fetch(`${SB_URL}/rest/v1/canoe_calls?select=id&our_outcome=not.is.null`, {
-      headers: { ...authHeaders(), 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' }
-    });
-    const contentRange = res.headers.get('Content-Range');
-    if (contentRange) {
-      const match = contentRange.match(/\/(\d+)$/);
-      if (match) return parseInt(match[1], 10);
-    }
-  } catch(e) {}
-  return null;
+  try { return await sbCount('canoe_calls?select=id&our_outcome=not.is.null', 'planned'); }
+  catch(e) { console.warn('weights count:', e.message); return null; }
+}
+function weightsButtonLabel() {
+  return weightsProcessedCount == null
+    ? 'Execute changes — call count unavailable'
+    : `Execute changes — will update ${weightsCountApprox ? 'about ' : ''}${weightsProcessedCount.toLocaleString()} calls`;
 }
 
 async function weightsInit() {
@@ -4360,15 +4394,15 @@ async function weightsInit() {
   } catch(e) {
     console.warn('Could not load outcome weights:', e.message);
   }
-  const count = await weightsLoadCount();
-  weightsProcessedCount = count ?? 0;
+  weightsProcessedCount = await weightsLoadCount();
+  weightsCountApprox = true;
   weightsRender();
   const btn = document.getElementById('weights-execute-btn');
   if (btn) {
     btn.disabled = false;
     btn.style.opacity = '';
     btn.style.cursor = '';
-    btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
+    btn.textContent = weightsButtonLabel();
   }
 }
 
@@ -4415,7 +4449,7 @@ function weightsDirty() {
   const status = document.getElementById('weights-execute-status');
   if (btn) {
     btn.style.background = 'var(--coral)';
-    btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
+    btn.textContent = weightsButtonLabel();
   }
   if (status) status.textContent = 'Unsaved changes';
 }
@@ -4444,13 +4478,7 @@ async function weightsExecute() {
   }));
 
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/outcome_weights`, {
-      method: 'POST',
-      headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(payload),
-    });
-    if (res.status === 401) { if (!authExpired) { authExpired = true; onAuthError(); } throw new Error('Session expired'); }
-    if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
+    await compPost('outcome_weights', payload, 'resolution=merge-duplicates,return=minimal');
   } catch(e) {
     status.textContent = 'Failed to save weights: ' + e.message;
     btn.disabled = false; btn.style.opacity = '';
@@ -4461,15 +4489,10 @@ async function weightsExecute() {
 
   // Call the RPC to bulk-update all processed calls
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/rpc/recalculate_call_scores`, {
-      method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    if (!res.ok) throw new Error(`RPC error ${res.status}: ${await res.text()}`);
-    const updated = await res.json();
+    const updated = await sbFetch('rpc/recalculate_call_scores', { method: 'POST', body: '{}' });
     status.textContent = `✓ Done — ${Number(updated).toLocaleString()} calls updated.`;
     weightsProcessedCount = Number(updated);
+    weightsCountApprox = false;
   } catch(e) {
     status.textContent = 'Weights saved but recalculation failed: ' + e.message;
   }
@@ -4477,7 +4500,7 @@ async function weightsExecute() {
   btn.disabled = false;
   btn.style.opacity = '';
   btn.style.background = '';
-  btn.textContent = `Execute changes — will update ${weightsProcessedCount.toLocaleString()} calls`;
+  btn.textContent = weightsButtonLabel();
 }
 
 // ── MODEL CALIBRATION RUN ─────────────────────────────────────
@@ -4492,33 +4515,31 @@ const MODEL_CATALOG = [
   { id: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 550B',   provider: 'NVIDIA',    inPer1M: 0.41, outPer1M: 1.20  },
 ];
 let calibQueueCount = 0;
+let calibQueuePromise = null;   // the queue count scan (mean 1.4 s) ran on every Admin and Training open
 
 async function calibInit() {
   // Resolve admin status if not known yet (sets window.isAdmin).
-  if (window.isAdmin === undefined) { try { await compLoadAssignments(); } catch(e) {} }
+  if (window.isAdmin === undefined) await ensureAssignments();
   // Run controls (launching calibration) are admin-only; Recent Tests + review are for everyone.
   const runControls = document.getElementById('calib-run-controls');
   if (runControls) runControls.style.display = window.isAdmin ? 'block' : 'none';
 
   if (window.isAdmin) {
     // Unprocessed queue count for cost extrapolation
-    try {
-      const token = (typeof getAuthToken === 'function' && getAuthToken()) || SB_KEY;
-      const res = await fetch(
-        `${SB_URL}/rest/v1/canoe_calls?ai_processed_at=is.null&transcription=not.is.null&transcription=neq.&select=id`,
-        { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact', 'Range': '0-0' } }
-      );
-      const range = res.headers.get('Content-Range') || '';
-      calibQueueCount = parseInt((range.split('/')[1] || '0'), 10) || 0;
+    if (!calibQueuePromise) calibQueuePromise = sbCount('canoe_calls?ai_processed_at=is.null&transcription=not.is.null&transcription=neq.&select=id', 'exact')
+      .catch(e => { console.warn('calib queue:', e.message); calibQueuePromise = null; return null; });   // non-critical; retried next open
+    const queued = await calibQueuePromise;
+    if (queued != null) {
+      calibQueueCount = queued;
       const noteEl = document.getElementById('calib-queue-note');
       if (noteEl) noteEl.textContent = ` Your unprocessed queue: ${calibQueueCount.toLocaleString()} calls.`;
-    } catch(e) { /* non-critical */ }
+    }
 
     const wrap = document.getElementById('modeltest-checkboxes');
     if (wrap) {
       wrap.innerHTML = MODEL_CATALOG.map(m => {
         const providerColor = m.provider === 'NVIDIA' ? 'var(--blue)' : 'var(--purple)';
-        return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
+        return `<label style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
           <input type="checkbox" value="${m.id}" class="modeltest-checkbox" style="accent-color:var(--brand-navy);width:14px;height:14px">
           <span style="min-width:180px">${m.label}</span>
           <span style="font-size:11px;color:${providerColor};background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px">${m.provider}</span>
@@ -4934,24 +4955,21 @@ async function promptsInit() {
 async function promptsLoad() {
   const el = document.getElementById('settings-prompts-list');
   el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3)">Loading…</div>';
+  let prompts;
   try {
-    const [prompts, counts] = await Promise.all([
-      compFetch('ai_prompts?select=*&order=created_at.asc'),
-      compFetch('canoe_calls?select=prompt_id&prompt_id=not.is.null'),
-    ]);
-    allPrompts = prompts || [];
-
-    // tally call counts per prompt
-    const countMap = {};
-    (counts || []).forEach(r => {
-      countMap[r.prompt_id] = (countMap[r.prompt_id] || 0) + 1;
-    });
-
-    promptsRender(allPrompts, countMap);
-    promptsRefreshABSelect(allPrompts);
+    prompts = await compFetch('ai_prompts?select=*&order=created_at.asc') || [];
   } catch(e) {
     el.innerHTML = `<div style="padding:12px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
+    return;
   }
+  allPrompts = prompts;
+  promptsRender(prompts, {});
+  promptsRefreshABSelect(prompts);
+  // Calls per prompt are optional: one planner estimate per prompt, filled in after the list shows.
+  // (This used to download every prompt_id row, ~120k, and the timeout took the whole list down.)
+  const counts = await Promise.all(prompts.map(p => sbCount(`canoe_calls?select=id&prompt_id=eq.${encodeURIComponent(p.id)}`, 'planned').catch(() => null)));
+  if (allPrompts !== prompts) return;   // reloaded meanwhile
+  promptsRender(prompts, Object.fromEntries(prompts.map((p, i) => [p.id, counts[i]])));
 }
 
 function promptsRender(prompts, countMap) {
@@ -4967,7 +4985,7 @@ function promptsRender(prompts, countMap) {
         <td style="font-weight:500">${esc(p.name)}</td>
         <td style="color:var(--text-2);font-size:12px">${esc(p.description || '—')}</td>
         <td style="text-align:center">${p.is_active ? '<span style="font-size:11px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.04em">Active</span>' : `<button class="settings-save-btn" style="font-size:11px;padding:3px 10px" onclick="promptsSetActive('${p.id}')">Set active</button>`}</td>
-        <td style="text-align:right;color:var(--text-2)">${(countMap[p.id] || 0).toLocaleString()}</td>
+        <td style="text-align:right;color:var(--text-2)" title="${countMap[p.id] != null ? 'Planner estimate' : ''}">${!(p.id in countMap) ? '…' : countMap[p.id] == null ? '—' : '≈ ' + countMap[p.id].toLocaleString()}</td>
         <td style="text-align:right;white-space:nowrap">
           <button class="settings-save-btn" style="font-size:11px;padding:3px 10px;margin-right:6px" onclick="promptsShowEditor('${p.id}')">Edit</button>
           ${!p.is_active ? `<button class="settings-delete-btn" onclick="promptsDelete('${p.id}')">Delete</button>` : ''}
@@ -5088,7 +5106,7 @@ function copyId(event, id, el) {
 
 function esc(str) {
   if (str == null) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // init compliance if already authenticated (e.g. page refresh with active session)
