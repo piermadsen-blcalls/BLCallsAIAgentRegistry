@@ -18,7 +18,7 @@
 const SUPABASE_URL  = process.env.SUPABASE_URL;
 const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_KEY;
 const WEBHOOK_URL   = process.env.ASCND_ALERT_WEBHOOK_URL;
-const DRY_RUN       = process.env.DRY_RUN === 'true';      // skip webhook POSTs
+const DRY_RUN       = process.env.DRY_RUN === 'true';      // log only: no webhook POST, no alert_log / last_sent_at writes
 const MANAGER_ID     = process.env.ALERT_MANAGER_ID || '';     // limit to one manager by id (testing)
 const MANAGER_NAME   = process.env.ALERT_MANAGER_NAME || '';    // limit to one manager by name (testing)
 const OVERRIDE_EMAIL = process.env.ALERT_OVERRIDE_EMAIL || '';  // send ALL output here instead of the manager (preview)
@@ -42,6 +42,12 @@ const FLAG_LABELS = {
 const AI_FLAGS = ['outbound_dial', 'facebook_marketplace', 'angry_caller', 'wrong_business', 'duplicate_caller', 'geo_mismatch', 'coached_call'];
 
 const BOOTSTRAP_DAYS = 7;  // first-ever digest window when there's no last_sent_at
+// The window is on ai_processed_at, not created_at: a call only gets flags once it is scored,
+// usually a day or more after it happened (daily sync, then the Gemini batch). Windowing on
+// created_at dropped every call scored after the send it fell into (~1/3 of flags). Each call
+// is scored once, so (last send, this send] windows tile: every flag lands in exactly one digest.
+// The window stops SETTLE_MS short of now so a score being written as we read is not skipped.
+const SETTLE_MS = 10 * 60000;
 
 // ── Outliers: an account's flag rate vs the baseline for the verticals its calls are in ──
 const OUTLIER_Z = 3;              // z-score at or above which a flag makes the account an outlier
@@ -112,7 +118,7 @@ function tallyAccounts(calls, advSet, pubSet, base) {
     const isAdv = advSet.has(c.advertiser_name);
     const name  = isAdv ? c.advertiser_name : c.publisher_name;
     if (!name || !isScored(c)) continue;
-    if (!curr[name]) curr[name] = { type: isAdv ? 'advertiser' : 'publisher', flagCounts: {}, flaggedCalls: 0, scored: 0, expected: {}, variance: {} };
+    if (!curr[name]) curr[name] = { type: isAdv ? 'advertiser' : 'publisher', flagCounts: {}, flaggedCalls: 0, scored: 0, expected: {}, variance: {}, firstFlaggedAt: null };
     const a = curr[name];
     a.scored++;
     for (const f of flagList) {
@@ -123,6 +129,7 @@ function tallyAccounts(calls, advSet, pubSet, base) {
     const fl = callFlags(c);
     if (!fl.length) continue;
     a.flaggedCalls++;
+    if (c.created_at && (!a.firstFlaggedAt || c.created_at < a.firstFlaggedAt)) a.firstFlaggedAt = c.created_at;
     for (const f of fl) a.flagCounts[f] = (a.flagCounts[f] || 0) + 1;
   }
   // Compliance-only: accounts with no flagged calls are left out.
@@ -154,9 +161,12 @@ function rankAccounts(curr) {
 }
 
 // Deep link into the merged Calls tab, pre-filtered to this account's flagged calls for the period.
-function deepLink(account, type, fromDate, toISO) {
+// The Calls tab filters on created_at (UTC days), and a call scored this period can have been made
+// before the last digest, so the link starts at the oldest flagged call's day when that is earlier.
+function deepLink(a, fromDate, toISO) {
   if (!DASHBOARD_URL) return '';
-  const q = new URLSearchParams({ tab: 'calls', account, type, from: fromDate, to: toISO, flagged: '1' });
+  const first = a.curr.firstFlaggedAt ? new Date(a.curr.firstFlaggedAt).toISOString().slice(0, 10) : fromDate;
+  const q = new URLSearchParams({ tab: 'calls', account: a.name, type: a.type, from: first < fromDate ? first : fromDate, to: toISO, flagged: '1' });
   return `${DASHBOARD_URL}/?${q.toString()}`;  // query string, not #fragment — email clients strip fragments
 }
 
@@ -207,8 +217,8 @@ async function main() {
     }
     const advSet = accounts.advertisers, pubSet = accounts.publishers;
 
-    // Window = since the last digest for this manager; first-ever send bootstraps to last 7 days.
-    const to   = WINDOW_TO ? new Date(WINDOW_TO) : new Date();
+    // Window = scored since the last digest for this manager; first-ever send bootstraps to last 7 days.
+    const to   = WINDOW_TO ? new Date(WINDOW_TO) : new Date(Date.now() - SETTLE_MS);
     const from = WINDOW_FROM ? new Date(WINDOW_FROM)
       : WINDOW_DAYS > 0 ? new Date(to.getTime() - WINDOW_DAYS * 86400000)
       : (s.last_sent_at ? new Date(s.last_sent_at) : new Date(to.getTime() - BOOTSTRAP_DAYS * 86400000));
@@ -216,12 +226,13 @@ async function main() {
     const fromDate = toDate(from), toDate_ = toDate(to);
     console.log(`\n${mgr.manager_name} (${fromDate} → ${toDate_})`);
 
-    // Returns this manager's calls plus the baseline built from every call in the window.
+    // Returns this manager's calls plus the baseline built from every call scored in the window.
+    // Ordered so Range pages are stable.
     async function fetchWindow(fromTs, toTs) {
       const PAGE = 1000; let results = [], all = [], offset = 0;
       while (true) {
-        const q = `canoe_calls?select=id,publisher_name,advertiser_name,vertical_name,flags,suspicious_call,ai_processed_at` +
-          `&created_at=gte.${fromTs.toISOString()}&created_at=lte.${toTs.toISOString()}&is_test=eq.false`;
+        const q = `canoe_calls?select=id,created_at,publisher_name,advertiser_name,vertical_name,flags,suspicious_call,ai_processed_at` +
+          `&ai_processed_at=gt.${fromTs.toISOString()}&ai_processed_at=lte.${toTs.toISOString()}&is_test=eq.false&order=ai_processed_at.asc,id.asc`;
         const batch = await sb(q, { headers: { 'Range-Unit': 'items', 'Range': `${offset}-${offset + PAGE - 1}` } });
         if (!batch || !batch.length) break;
         all = all.concat(batch);
@@ -233,7 +244,7 @@ async function main() {
     }
 
     const { calls: currCalls, baseline } = await fetchWindow(from, to);
-    console.log(`  ${currCalls.length} calls in window`);
+    console.log(`  ${currCalls.length} calls scored in window`);
     if (!currCalls.length) continue;
 
     const alerted = rankAccounts(tallyAccounts(currCalls, advSet, pubSet, baseline));
@@ -247,8 +258,9 @@ async function main() {
     if (!recipient) { console.log(`  ${mgr.manager_name}: no email on file → skip.`); continue; }
 
     // Dedup on (manager, period) — skipped for override-email previews so you can re-send.
+    // Only real sends count: a dry-run row must never block the real digest.
     if (!OVERRIDE_EMAIL) {
-      const dup = await sb(`alert_log?manager_id=eq.${s.manager_id}&period_start=eq.${fromDate}&select=id&limit=1`).catch(() => null);
+      const dup = await sb(`alert_log?manager_id=eq.${s.manager_id}&period_start=eq.${fromDate}&dry_run=eq.false&select=id&limit=1`).catch(() => null);
       if (dup && dup.length) { console.log('  Already sent for this period → skip.'); continue; }
     }
 
@@ -268,7 +280,7 @@ async function main() {
         scored_calls: a.curr.scored, outlier: a.outlier,
         flags: a.curr.flagCounts,
         reasons: a.reasons.map(r => r.label),
-        link: deepLink(a.name, a.type, fromDate, toISOFull),
+        link: deepLink(a, fromDate, toISOFull),
       })),
       email_body_html: emailHtml,
     };
@@ -281,18 +293,18 @@ async function main() {
       console.log(`  ✓ Sent to ${payload.to_email}${OVERRIDE_EMAIL ? ` (preview of ${mgr.manager_name})` : ''}`);
     }
 
-    // Don't record state (alert_log / last_sent_at) for override-email previews.
-    if (!OVERRIDE_EMAIL) {
+    // Don't record state (alert_log / last_sent_at) for override-email previews or dry runs.
+    if (!OVERRIDE_EMAIL && !DRY_RUN) {
       await sb('alert_log', {
         method: 'POST', prefer: 'return=minimal',
         body: JSON.stringify({
           manager_id: s.manager_id, manager_email: mgr.manager_email,
           period_start: fromDate, period_end: toDate_,
-          total_calls: currCalls.length, flagged_count: alerted.length, dry_run: DRY_RUN
+          total_calls: currCalls.length, flagged_count: alerted.length, dry_run: false
         })
       }).catch(e => console.warn('  Could not write alert_log:', e.message));
 
-      if (!DRY_RUN) await sb(`manager_alert_settings?manager_id=eq.${s.manager_id}`, {
+      await sb(`manager_alert_settings?manager_id=eq.${s.manager_id}`, {
         method: 'PATCH', body: JSON.stringify({ last_sent_at: to.toISOString() })
       }).catch(e => console.warn('  Could not update last_sent_at:', e.message));
     }
@@ -318,7 +330,7 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
     const rows = a.reasons.map(r =>
       `<tr><td style="${S}padding:5px 0;font-size:13px;color:${r.outlier ? coral : muted}${r.outlier ? ';font-weight:600' : ''}">⚑ ${r.label}</td></tr>`
     ).join('');
-    const link = deepLink(a.name, a.type, fromDate, toISOFull);
+    const link = deepLink(a, fromDate, toISOFull);
     const linkHtml = link
       ? `<div style="padding:8px 14px;border-top:1px solid ${border}"><a href="${link}" style="${S}font-size:12px;color:${mint};text-decoration:none;font-weight:600">View flagged calls →</a></div>`
       : '';
@@ -334,7 +346,7 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
 
   // Everyone else: one line each.
   const restRows = rest.map(a => {
-    const link = deepLink(a.name, a.type, fromDate, toISOFull);
+    const link = deepLink(a, fromDate, toISOFull);
     const name = link ? `<a href="${link}" style="color:${navy};text-decoration:none;font-weight:600">${a.name}</a>` : `<span style="font-weight:600;color:${navy}">${a.name}</span>`;
     return `<tr><td style="${S}padding:7px 0;border-bottom:1px solid ${border};font-size:13px">${name}
       <div style="${S}font-size:12px;color:${muted};margin-top:2px">${a.type === 'advertiser' ? 'Advertiser' : 'Publisher'} · ${a.reasons.map(r => r.label).join(', ')}</div></td></tr>`;

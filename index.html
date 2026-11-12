@@ -2533,7 +2533,7 @@ function crSearchFilter(text) {
 
 // Build query
 function crBuildQuery(offset) {
-  const select = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,publisher_score,advertiser_score,our_summary,canoe_summary,flags,compliance_reviewed`;
+  const select = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,ascnd_recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,publisher_score,advertiser_score,our_summary,canoe_summary,flags,compliance_reviewed`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
   const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
   // Unscored/empty values sort last. created_at is never null inside the date filter, and nullslast
@@ -2638,7 +2638,11 @@ function crRender() {
       case 'created_at':
         return `<td class="cr-mono">${crFmtDateTime(r.created_at)}</td>`;
       case 'recording':
-        return `<td>${httpUrl(r.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(r.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>` : '<span class="cr-null">—</span>'}</td>`;
+        // Canoe call recording when stored; otherwise the ASCND AI-agent recording (paired from
+        // hl_call_data), labelled as such, the same fallback the Review tab uses.
+        return `<td>${httpUrl(r.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(r.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a>`
+          : httpUrl(r.ascnd_recording_url) ? `<a class="cr-link" href="${esc(httpUrl(r.ascnd_recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="ASCND AI-agent recording">Listen (AI agent)</a>`
+          : '<span class="cr-null">—</span>'}</td>`;
       case 'sent':
         return `<td><span style="font-size:11px;font-weight:500;color:${(r.connect_duration||0)>0?'var(--teal)':'var(--text-3)'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
       case 'vertical':

@@ -2,8 +2,16 @@ name: Ingest Gemini Batch
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # every 6h — drains finished jobs the same day
+    # Every 2h, off the top of the hour. GitHub drops some scheduled runs (the every-6h
+    # schedule ran 2-3 times a day, not 4); ingest is idempotent and drains every finished
+    # job, so a dropped run now costs 2h instead of 6-12h. An idle run takes ~10s.
+    - cron: '17 */2 * * *'
   workflow_dispatch:
+
+# One ingest at a time, so two runs never write the same job's results.
+concurrency:
+  group: gemini-ingest
+  cancel-in-progress: false
 
 jobs:
   ingest:

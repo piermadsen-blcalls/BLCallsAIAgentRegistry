@@ -2,11 +2,14 @@ name: Sync Canoe Calls
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # daily at midnight UTC
+    # Daily, off the top of the hour (GitHub delays top-of-hour schedules most; this has
+    # started 2.5-5h late). Lateness or a dropped run is safe: the next run catches up from
+    # the last full sync (sync_state), and the rollups refresh when it lands.
+    - cron: '23 0 * * *'
   workflow_dispatch:
     inputs:
       sync_from:
-        description: 'Start of window (ISO, e.g. 2026-06-01T00:00:00.000Z). Leave blank for yesterday.'
+        description: 'Start of window (ISO, e.g. 2026-06-01T00:00:00.000Z). Leave blank for the default (last 2 days, or back to the last full sync).'
         default: ''
       sync_to:
         description: 'End of window (ISO). Leave blank for today midnight.'
@@ -17,6 +20,11 @@ on:
       skip_pass1:
         description: 'Set to any value to skip Pass 1 (calls) and only patch transcriptions.'
         default: ''
+
+# One sync at a time: two overlapping runs would race on the high-water mark.
+concurrency:
+  group: sync-canoe-calls
+  cancel-in-progress: false
 
 jobs:
   sync:

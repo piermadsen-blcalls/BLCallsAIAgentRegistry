@@ -5,6 +5,12 @@
  *   Pass 2 — recordings: patches transcription/duration/outcome onto rows
  *             where recording_id is set but transcription is still null
  *             (looks back TRANSCRIPTION_LOOKBACK_DAYS to catch delayed transcriptions)
+ *   Pass 3 — pairs ASCND data (hl_call_data) onto canoe_calls
+ *
+ * Catch-up: a fully successful Pass 1 records how far it synced in sync_state (migration 052).
+ * The next run starts at whichever is earlier, the usual 2-day window or that mark, so a failed
+ * or skipped run leaves no gap. A failing pass does not stop the others; the run still exits 1.
+ * At the end it asks pg_cron to refresh the rollups for the synced days.
  *
  * Required env vars:
  *   CANOE_API_URL        - https://exchange-gateway.ringpartner.com
@@ -43,31 +49,49 @@ const UPSERT_BATCH            = 100;
 const TRANSCRIPTION_LOOKBACK_DAYS = 3;
 // Cap transcription scans per run (bounded, resumes next run). Override for backfill via PATCH_MAX.
 const PATCH_MAX_PER_RUN       = parseInt(process.env.PATCH_MAX || '6000', 10);
+// Catch-up: resume this far before the last fully synced point, but never reach back further
+// than CATCHUP_MAX_DAYS (an older gap needs a deliberate SYNC_FROM backfill).
+const SYNC_STATE_NAME         = 'canoe_pass1';
+const RESUME_MARGIN_MS        = 3600000;
+const CATCHUP_MAX_DAYS        = 30;
+const DAY_MS                  = 86400000;
+
+// Canoe transport + sleep, swappable in tests.
+const io = {
+  post:  (...args) => httpsPostRaw(...args),
+  sleep: (ms) => new Promise(r => setTimeout(r, ms)),
+};
 
 // ── Windows ───────────────────────────────────────────────────────────────────
 
-function getSyncWindow() {
+// syncedThrough: end of the last fully successful Pass 1 (ms), or null if unknown.
+function getSyncWindow(syncedThrough, now = new Date()) {
   if (process.env.SYNC_FROM) {
-    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO || new Date().toISOString() };
+    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO || now.toISOString() };
   }
-  const now = new Date();
   const twoDaysAgo = new Date(now);
   twoDaysAgo.setUTCDate(twoDaysAgo.getUTCDate() - 2);
   twoDaysAgo.setUTCHours(0, 0, 0, 0);
-  return { from: twoDaysAgo.toISOString(), to: now.toISOString() };
+  let from = twoDaysAgo.getTime();
+  if (syncedThrough != null && syncedThrough - RESUME_MARGIN_MS < from) {
+    const floor = now.getTime() - CATCHUP_MAX_DAYS * DAY_MS;
+    from = Math.max(syncedThrough - RESUME_MARGIN_MS, floor);
+    console.log(`Catching up: last full sync reached ${new Date(syncedThrough).toISOString()}.`);
+    if (syncedThrough - RESUME_MARGIN_MS < floor) {
+      console.warn(`  Gap is older than ${CATCHUP_MAX_DAYS} days; only the last ${CATCHUP_MAX_DAYS} are synced. Backfill the rest with SYNC_FROM.`);
+    }
+  }
+  return { from: new Date(from).toISOString(), to: now.toISOString() };
 }
 
-function getTranscriptionWindow() {
-  // During a backfill (SYNC_FROM set), patch transcriptions across the whole
-  // synced window — not just the default 3-day lookback.
-  if (process.env.SYNC_FROM) {
-    return { from: process.env.SYNC_FROM, to: process.env.SYNC_TO || new Date().toISOString() };
-  }
-  const now = new Date();
-  const lookback = new Date(now);
+// Pass 2 start. During a backfill (SYNC_FROM set), patch transcriptions across the whole synced
+// window; otherwise the 3-day lookback, or earlier when Pass 1 is catching up (syncFrom).
+function getTranscriptionFrom(syncFrom) {
+  if (process.env.SYNC_FROM) return process.env.SYNC_FROM;
+  const lookback = new Date();
   lookback.setUTCDate(lookback.getUTCDate() - TRANSCRIPTION_LOOKBACK_DAYS);
   lookback.setUTCHours(0, 0, 0, 0);
-  return { from: lookback.toISOString(), to: now.toISOString() };
+  return syncFrom && Date.parse(syncFrom) < lookback.getTime() ? syncFrom : lookback.toISOString();
 }
 
 // ── Canoe API ─────────────────────────────────────────────────────────────────
@@ -116,14 +140,16 @@ function httpsPostRaw(urlStr, bodyStr, headers) {
   });
 }
 
-async function canoePost(path, body, retries = 4) {
+// Retries with exponential backoff (5s, 10s, 20s, 40s, 60s): the gateway's 504 "upstream request
+// timeout" comes in bursts, and the old 2/4/6s retries gave up inside one (Oct 25 and 26).
+async function canoePost(path, body, retries = 6) {
   const url     = `${CANOE_API_URL}/${path}`;
   const bodyStr = JSON.stringify(body);
   const headers = { 'Content-Type': 'application/json', 'x-apikey': CANOE_API_KEY };
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const { status, text } = await httpsPostRaw(url, bodyStr, headers);
+      const { status, text } = await io.post(url, bodyStr, headers);
       if (status < 200 || status >= 300) {
         throw new Error(`Canoe ${path} HTTP ${status}: ${text.slice(0, 300)}`);
       }
@@ -135,9 +161,9 @@ async function canoePost(path, body, retries = 4) {
       }
     } catch (e) {
       if (attempt === retries) throw e;
-      const wait = attempt * 2000;
+      const wait = Math.min(5000 * 2 ** (attempt - 1), 60000);
       console.warn(`  Attempt ${attempt}/${retries} failed: ${e.message} — retrying in ${wait}ms`);
-      await new Promise(r => setTimeout(r, wait));
+      await io.sleep(wait);
     }
   }
 }
@@ -172,6 +198,8 @@ async function fetchRecordingsByIds(ids) {
 
 // ── Row mappers ───────────────────────────────────────────────────────────────
 
+// Only fields phone-lead-transactions actually returns. recording_type comes from Pass 2 and
+// recording_url is not a PLT field: listing either here made every re-sync upsert null over them.
 function mapPLT(r) {
   return {
     id:                        r.id,
@@ -205,8 +233,6 @@ function mapPLT(r) {
     publisher_payout:          r.publisher_payout,
     publisher_bid:             r.publisher_bid,
     recording_id:              r.recording_id || null,
-    recording_url:             r.recording_url || null,
-    recording_type:            null,
     is_test:                   !!r.is_test,
     created_at:                r.created_at,
     synced_at:                 new Date().toISOString(),
@@ -244,10 +270,45 @@ async function upsertBatch(rows) {
   });
 }
 
+// Catch-up mark (sync_state, migration 052). Until 052 is applied the table is missing: warn and
+// run the plain 2-day window, as before.
+async function readSyncedThrough() {
+  try {
+    const rows = await sbFetch(`sync_state?name=eq.${SYNC_STATE_NAME}&select=synced_through`);
+    return rows && rows.length ? Date.parse(rows[0].synced_through) : null;
+  } catch (e) {
+    console.warn(`Could not read the sync high-water mark, using the default window: ${e.message.slice(0, 200)}`);
+    return null;
+  }
+}
+
+async function writeSyncedThrough(iso) {
+  try {
+    await sbFetch('sync_state', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: JSON.stringify({ name: SYNC_STATE_NAME, synced_through: iso, updated_at: new Date().toISOString() }),
+    });
+  } catch (e) {
+    console.warn(`Could not record the sync high-water mark: ${e.message.slice(0, 200)}`);
+  }
+}
+
+// Ask pg_cron to rebuild rollups from the day of from_ts (migration 052). Only queues the work:
+// a refresh takes 20-90s, past the 8s statement timeout every PostgREST call runs under.
+// Non-fatal: the nightly pg_cron refresh still catches up if this fails.
+async function requestRollupRefresh(fromTs, rollups) {
+  try {
+    await sbFetch('rpc/request_rollup_refresh', { method: 'POST', body: JSON.stringify({ from_ts: fromTs, rollups }) });
+    console.log(`\nRequested ${rollups.join(', ')} rollup refresh from ${fromTs}.`);
+  } catch (e) {
+    console.warn(`\nRollup refresh request failed (nightly refresh will catch up): ${e.message.slice(0, 200)}`);
+  }
+}
+
 // ── Pass 1: phone-lead-transactions ──────────────────────────────────────────
 
-async function syncCalls() {
-  const { from, to } = getSyncWindow();
+async function syncCalls({ from, to }) {
   console.log(`\nPass 1: phone-lead-transactions — ${from} → ${to}`);
 
   let page = 1, total = 0;
@@ -276,15 +337,15 @@ async function syncCalls() {
 
 // ── Pass 2: patch transcriptions ─────────────────────────────────────────────
 
-async function patchTranscriptions() {
-  const { from } = getTranscriptionWindow();
+async function patchTranscriptions(syncFrom) {
+  const from = getTranscriptionFrom(syncFrom);
   console.log(`\nPass 2: transcription patch — from ${from}`);
 
   const FETCH = 1000;                 // rows pulled from Supabase per page
   const MAX_PER_RUN = PATCH_MAX_PER_RUN;
   // Keyset (cursor) pagination on created_at — stays fast at any depth, unlike
   // OFFSET which re-scans from 0 every page and blows the statement timeout.
-  let cursor = null, scanned = 0, patched = 0, failedBatches = 0;
+  let cursor = null, scanned = 0, patched = 0, failedBatches = 0, loggedFields = false;
 
   while (scanned < MAX_PER_RUN) {
     // Rows with a recording but no transcription yet (newest first).
@@ -309,6 +370,9 @@ async function patchTranscriptions() {
         continue;
       }
       if (!recordings || !recordings.length) continue;
+      // Field names only (never values: the Actions log is public). recording_url is not stored
+      // until the field Canoe uses for a playable link is confirmed from this line.
+      if (!loggedFields) { console.log(`  recordings/get fields: ${Object.keys(recordings[0]).sort().join(', ')}`); loggedFields = true; }
 
       const recMap = {};
       for (const rec of recordings) recMap[rec.id] = rec;
@@ -349,13 +413,15 @@ async function patchTranscriptions() {
 
 // ── Pass 3: pair ASCND data (hl_call_data) onto canoe_calls ───────────────────
 
-async function pairAscndData() {
+async function pairAscndData(syncFrom) {
   // Bounded window: full sync window during a backfill, else a rolling 4 days
-  // (enough to catch late-arriving ASCND data without rescanning old history).
+  // (enough to catch late-arriving ASCND data without rescanning old history),
+  // reaching back further when Pass 1 is catching up.
   const to   = process.env.SYNC_TO ? new Date(process.env.SYNC_TO) : new Date();
+  const rolling = new Date(to.getTime() - 4 * DAY_MS);
   const from = process.env.SYNC_FROM
     ? new Date(process.env.SYNC_FROM)
-    : new Date(to.getTime() - 4 * 86400000);
+    : (syncFrom && Date.parse(syncFrom) < rolling.getTime() ? new Date(syncFrom) : rolling);
   console.log(`\nPass 3: pairing ASCND data — ${from.toISOString()} → ${to.toISOString()}`);
 
   const CHUNK_MS = 2 * 86400000;   // 2-day chunks keep each RPC call under the timeout
@@ -386,15 +452,50 @@ async function pairAscndData() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+// Each pass runs even if an earlier one failed (Pass 2/3 work on rows already in the table);
+// any failure still fails the run.
 async function run() {
-  if (process.env.SKIP_PASS1) console.log('SKIP_PASS1 set — skipping phone-lead-transactions sync.');
-  else await syncCalls();
-  await patchTranscriptions();
-  await pairAscndData();
-  console.log('\nSync complete.');
+  const failures = [];
+  let window = null;
+
+  if (process.env.SKIP_PASS1) {
+    console.log('SKIP_PASS1 set — skipping phone-lead-transactions sync.');
+  } else {
+    const syncedThrough = await readSyncedThrough();
+    window = getSyncWindow(syncedThrough);
+    try {
+      await syncCalls(window);
+      // Advance the mark only when this window joins up with it (a manual SYNC_FROM backfill of an
+      // older, detached range must not hide the gap after it).
+      const joins = syncedThrough != null ? Date.parse(window.from) <= syncedThrough : !process.env.SYNC_FROM;
+      if (joins && (syncedThrough == null || Date.parse(window.to) > syncedThrough)) await writeSyncedThrough(window.to);
+    } catch (e) {
+      failures.push(`Pass 1: ${e.message}`);
+      console.error(`Pass 1 failed: ${e.message}\n  Rows already upserted are kept; the next run resumes from the last full sync.`);
+    }
+  }
+
+  const syncFrom = window && window.from;
+  try { await patchTranscriptions(syncFrom); } catch (e) { failures.push(`Pass 2: ${e.message}`); console.error(`Pass 2 failed: ${e.message}`); }
+  try { await pairAscndData(syncFrom); } catch (e) { failures.push(`Pass 3: ${e.message}`); console.error(`Pass 3 failed: ${e.message}`); }
+
+  // Agents, counterparty and Scores rollups for every day Pass 1 touched (also after a partial
+  // Pass 1: whatever landed is real). Scores too, since a re-sync can rename a publisher/vertical.
+  if (window) await requestRollupRefresh(window.from, ['agent_metrics', 'agent_counterparty', 'outcome_score']);
+
+  if (failures.length) {
+    console.error(`\nSync finished with ${failures.length} failed pass(es):\n  ${failures.join('\n  ')}`);
+    process.exitCode = 1;
+  } else {
+    console.log('\nSync complete.');
+  }
 }
 
-run().catch(err => {
-  console.error('Sync failed:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch(err => {
+    console.error('Sync failed:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { mapPLT, getSyncWindow, canoePost, run, io };

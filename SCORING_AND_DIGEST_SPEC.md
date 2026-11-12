@@ -27,7 +27,7 @@ _From a grill-me session with Pier, 2026-08-06. Decisions are locked unless list
 
 ### Compliance + performance digest
 - **Cadence: twice weekly, Mon + Thu**, one global cron.
-- **Window = since the last digest sent to that manager** (`[prev period_end → now]`); first-ever send bootstraps to **last 7 days**. Stamp `alert_log` on each send.
+- **Window = calls scored since the last digest sent to that manager** (`ai_processed_at` in `(last_sent_at → now − 10 min]`, so a call scored after a send lands in the next one, exactly once); first-ever send bootstraps to **last 7 days**. Stamp `alert_log` on each real send (dry runs write nothing).
 - **Structure: AM → each assigned account → the flags that account's calls got** this period.
 - **All compliance flags listed, no tiers.** Real vocabulary: `outbound_dial, facebook_marketplace, angry_caller, wrong_business, duplicate_caller, geo_mismatch`, plus `suspicious_call`.
 - **Include performance flags** (volume, revenue, conversion), **bidirectional** (drops AND surges), mirrored thresholds (±30% volume, ±20% revenue, ±10pp conversion).

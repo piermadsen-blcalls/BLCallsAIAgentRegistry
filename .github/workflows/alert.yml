@@ -27,7 +27,7 @@ on:
         description: 'Explicit window end (ISO/date) (testing)'
         default: ''
       dry_run:
-        description: 'true to log without sending webhook'
+        description: 'true to log only: no email, and no alert_log / last_sent_at writes'
         default: 'false'
 
 jobs:
