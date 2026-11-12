@@ -2084,22 +2084,36 @@ function toggleThr(which) {
   ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.disabled=!on;el.style.opacity=on?'':'0.4';});
 }
 
+// One [start, endExclusive) UTC-day window per day of the period (end day inclusive).
+function insDayWindows(startISO, endISO) {
+  const out=[];
+  for(let t=Date.parse(startISO+'T00:00:00Z'),end=Date.parse(endISO+'T00:00:00Z');t<=end;t+=86400000)
+    out.push([new Date(t).toISOString().slice(0,10),new Date(t+86400000).toISOString().slice(0,10)]);
+  return out;
+}
+
+// Fetched one day at a time: a single OFFSET page re-reads every row before it, so paging a
+// whole month (100k+ rows) pushed late pages past the 8s statement timeout (57014). Per-day
+// windows keep each page's scan to one day; order=id keeps the pages stable.
 async function insFetchPeriod(startISO, endISO) {
   const pubs={},advs={},agents={};
-  const PAGE=1000;let offset=0;
+  const PAGE=1000,CONCURRENT_DAYS=3;
   const verticalQuery = insVerticalFilter.length > 0
     ? `&or=(${insVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`
     : '';
-  // created_at is a timestamp; make the end bound inclusive of the whole end day
-  const endExclusive = new Date(new Date(endISO+'T00:00:00Z').getTime() + 86400000).toISOString().slice(0,10);
-  while(true){
-    const batch=await sbFetch(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical_name&created_at=gte.${startISO}&created_at=lt.${endExclusive}&is_test=eq.false${verticalQuery}`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
-    if(!batch||!batch.length)break;
-    for(const c of batch){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
+  function add(c){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
     function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw++;if(s)r.sent++;if(p)r.paid++;r.rev+=rev;r.margin+=margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw++;if(p)r.byAgent[ag].paid++;r.byAgent[ag].rev+=rev;}
     acc(pubs,pub);acc(advs,adv);acc(agents,ag);}
-    if(batch.length<PAGE)break;offset+=PAGE;
+  async function fetchDay([dayStart,dayEnd]){
+    for(let offset=0;;offset+=PAGE){
+      const batch=await sbFetch(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical_name&created_at=gte.${dayStart}&created_at=lt.${dayEnd}&is_test=eq.false${verticalQuery}&order=id.asc`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
+      if(!batch||!batch.length)break;
+      batch.forEach(add);
+      if(batch.length<PAGE)break;
+    }
   }
+  const days=insDayWindows(startISO,endISO);
+  await Promise.all(Array.from({length:Math.min(CONCURRENT_DAYS,days.length)},async()=>{while(days.length)await fetchDay(days.shift()).catch(e=>{days.length=0;throw e;});}));
   return{pubs,advs,agents};
 }
 
@@ -2389,9 +2403,11 @@ function crApplyPendingVerticals() {
 // meaningful ratio (flag rate over the scope, not forced to 100% when drilling in).
 function crBuildFilters(includeFlagFilters = true) {
   let q = `&created_at=gte.${crDrpPickStart}&created_at=lte.${crDrpPickEnd}T23:59:59`;
+  // recording_id, not recording_url: sync never fills recording_url (NULL on every row), so
+  // "Has recording" matched nothing and walked the whole range into the 8s statement timeout.
   const rec = document.getElementById('cr-rec-filter').value;
-  if (rec === 'yes') q += `&recording_url=not.is.null`;
-  else if (rec === 'no') q += `&recording_url=is.null`;
+  if (rec === 'yes') q += `&recording_id=not.is.null`;
+  else if (rec === 'no') q += `&recording_id=is.null`;
   const pub = document.getElementById('cr-pub-filter').value.trim();
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
