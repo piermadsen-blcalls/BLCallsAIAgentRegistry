@@ -2092,23 +2092,42 @@ function insDayWindows(startISO, endISO) {
   return out;
 }
 
-// Fetched one day at a time: a single OFFSET page re-reads every row before it, so paging a
-// whole month (100k+ rows) pushed late pages past the 8s statement timeout (57014). Per-day
-// windows keep each page's scan to one day; order=id keeps the pages stable.
+// A statement timeout (57014) is retried with backoff: these are reads, and the retry runs on
+// pages the timed-out attempt already pulled into cache.
+async function insFetchRetry(path, options, tries=3) {
+  for(let i=1;;i++){
+    try{return await sbFetch(path,options);}
+    catch(e){if(i>=tries||!e.message.includes('"57014"'))throw e;await new Promise(r=>setTimeout(r,1000*i));}
+  }
+}
+
+// Period totals come from insights_period (rollup 051): one request per period, already grouped
+// by agent/publisher/advertiser. Paging raw calls into the browser, even one day at a time,
+// failed on long periods: the first page of a cold day costs 1-9s here, and the first one past
+// the 8s statement timeout (57014) failed the whole run.
+// Until 051 is applied the RPC is missing (PGRST202) and raw calls are fetched per day instead.
 async function insFetchPeriod(startISO, endISO) {
   const pubs={},advs={},agents={};
+  function add(ag,pub,adv,t){
+    function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw+=t.raw;r.sent+=t.sent;r.paid+=t.paid;r.rev+=t.rev;r.margin+=t.margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw+=t.raw;r.byAgent[ag].paid+=t.paid;r.byAgent[ag].rev+=t.rev;}
+    acc(pubs,pub);acc(advs,adv);acc(agents,ag);}
+  try{
+    const rows=await insFetchRetry('rpc/insights_period',{method:'POST',body:JSON.stringify({from_day:startISO,to_day:endISO,verticals:insVerticalFilter.length?insVerticalFilter:null})});
+    for(const r of rows||[]){const rev=Number(r.revenue);add(r.ivr_name,r.publisher_name,r.advertiser_name,{raw:Number(r.raw),sent:Number(r.sent),paid:Number(r.paid),rev,margin:rev-Number(r.payout)});}
+    return{pubs,advs,agents};
+  }catch(e){if(!e.message.includes('PGRST202'))throw e;}
+  // Per-day fallback: a single OFFSET page re-reads every row before it, so windows keep each
+  // page's scan to one day; order=id keeps the pages stable.
   const PAGE=1000,CONCURRENT_DAYS=3;
   const verticalQuery = insVerticalFilter.length > 0
     ? `&or=(${insVerticalFilter.map(v=>`vertical_name.eq.${encodeURIComponent(v)}`).join(',')})`
     : '';
-  function add(c){const s=isSent(c),p=isPaid(c),rev=c.advertiser_payin||0,margin=rev-(c.publisher_payout||0),pub=c.publisher_name||'(unknown)',adv=c.advertiser_name||'(unknown)',ag=c.ivr_name||'(unknown)';
-    function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw++;if(s)r.sent++;if(p)r.paid++;r.rev+=rev;r.margin+=margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw++;if(p)r.byAgent[ag].paid++;r.byAgent[ag].rev+=rev;}
-    acc(pubs,pub);acc(advs,adv);acc(agents,ag);}
+  function addCall(c){const rev=c.advertiser_payin||0;add(c.ivr_name||'(unknown)',c.publisher_name||'(unknown)',c.advertiser_name||'(unknown)',{raw:1,sent:isSent(c)?1:0,paid:isPaid(c)?1:0,rev,margin:rev-(c.publisher_payout||0)});}
   async function fetchDay([dayStart,dayEnd]){
     for(let offset=0;;offset+=PAGE){
-      const batch=await sbFetch(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical_name&created_at=gte.${dayStart}&created_at=lt.${dayEnd}&is_test=eq.false${verticalQuery}&order=id.asc`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
+      const batch=await insFetchRetry(`canoe_calls?select=ivr_name,publisher_name,advertiser_name,ivr_duration,connect_duration,advertiser_payin,publisher_payout,result,vertical_name&created_at=gte.${dayStart}&created_at=lt.${dayEnd}&is_test=eq.false${verticalQuery}&order=id.asc`,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}});
       if(!batch||!batch.length)break;
-      batch.forEach(add);
+      batch.forEach(addCall);
       if(batch.length<PAGE)break;
     }
   }
