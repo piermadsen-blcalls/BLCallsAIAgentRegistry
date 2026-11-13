@@ -22,8 +22,16 @@ function lift(decl) {
   }
   return html.slice(start, i + 1);
 }
+// The flag-severity block (consts + helpers) can't be lifted by brace matching; load() adds it
+// whenever a lifted function uses it.
+function severityBlock() {
+  const s = html.indexOf('const FLAG_SEVERITY = {'), e = html.indexOf('\n', html.indexOf('function callFlags(', s));
+  return html.slice(s, e);
+}
 function load(ctx, decls, exportNames) {
-  vm.runInNewContext(decls.map(lift).join(';\n') + ';\n' + exportNames.map(n => `this.${n} = ${n};`).join(' '), ctx);
+  const src = decls.map(lift).join(';\n');
+  const sev = /\b(bySeverity|flagSeverity|callFlags|HIGH_FLAGS|SEVERITY_ORDER|FLAG_SEVERITY)\b/.test(src) ? severityBlock() + ';\n' : '';
+  vm.runInNewContext(sev + src + ';\n' + exportNames.map(n => `this.${n} = ${n};`).join(' '), ctx);
   return ctx;
 }
 const unhtml = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
@@ -172,17 +180,17 @@ test('Export CSV: a zero-row export re-enables the button', async () => {
 // ── Calls summary strip ─────────────────────────────────────────────────────
 function summaryCtx(sbFetch) {
   const els = {};
-  const el = id => (els[id] ??= { textContent: '', style: { display: 'none' }, innerHTML: '' });
+  const el = id => (els[id] ??= { textContent: '', style: { display: 'none' }, innerHTML: '', classList: { toggle() {} }, setAttribute() {} });
   return load({
     els, sbFetch, crLoadSeq: 1, crOffset: 25, crTotal: null, crHasMore: true, crRender() {}, callsFlagCounts: null,
     crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', console: { warn() {} },
     CALLS_FLAG_TYPES: ['outbound_dial', 'angry_caller', 'geo_mismatch'],
     crApplied: { table: '&scope=table', strip: '&scope=strip' },
     document: { getElementById: el },
-  }, ['function nullMark(', 'function labelOf(', 'async function callsLoadSummary(', 'function callsFlagBreakdown(', 'function callsFlagBreakdownRender('], ['callsLoadSummary', 'callsFlagBreakdown']);
+  }, ['function nullMark(', 'function labelOf(', 'async function callsLoadSummary(', 'function callsStripTotals(', 'function callsHighLine(', 'function callsFlagBreakdownToggle(', 'function callsFlagBreakdownRender('], ['callsLoadSummary', 'callsFlagBreakdownToggle']);
 }
 
-test('Calls summary: two aggregate requests fill the footer total, strip and hover breakdown', async () => {
+test('Calls summary: two aggregate requests fill the footer total, strip and flag breakdown', async () => {
   const urls = [];
   const ctx = summaryCtx(async url => {
     urls.push(url);
@@ -195,13 +203,14 @@ test('Calls summary: two aggregate requests fill the footer total, strip and hov
   const v = id => ctx.els[id].textContent;
   assert.deepEqual([v('calls-stat-total'), v('calls-stat-flagged'), v('calls-stat-rate'), v('calls-stat-revenue')], ['103', '20', '19.4%', '$457']);
   assert.equal(ctx.crTotal, 120);
-  ctx.callsFlagBreakdown();   // hover: no request, already loaded
+  ctx.callsFlagBreakdownToggle();   // click/tap: no request, already loaded
   assert.equal(urls.length, 2);
-  assert.match(ctx.els['calls-flag-breakdown'].innerHTML, /geo mismatch<\/span><span class="fb-n">20<.*angry caller<\/span><span class="fb-n">5</);
+  // Grouped by severity: Medium (angry caller) before Info (geo mismatch).
+  assert.match(ctx.els['calls-flag-breakdown'].innerHTML, /Medium<\/div><div class="fb-row"><span>angry caller<\/span><span class="fb-n">5<.*Info<\/div><div class="fb-row"><span>geo mismatch<\/span><span class="fb-n">20</);
 });
 
 test('Calls summary: a failed or superseded load never shows stale numbers', async () => {
-  const ctx = summaryCtx(async url => { if (url.includes('flags,n:count()')) throw new Error('Supabase 500'); return [{ n: 7, revenue: 0 }]; });
+  const ctx = summaryCtx(async url => { if (url.includes('select=flags')) throw new Error('Supabase 500'); return [{ n: 7, revenue: 0 }]; });
   ctx.els['calls-stat-total'] = { textContent: '9,999' };
   await ctx.callsLoadSummary(1);
   assert.equal(ctx.els['calls-stat-total'].textContent, '-');

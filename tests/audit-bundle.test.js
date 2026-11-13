@@ -24,8 +24,16 @@ function lift(decl) {
   }
   return html.slice(start, i + 1);
 }
+// The flag-severity block (consts + helpers) can't be lifted by brace matching; load() adds it
+// whenever a lifted function uses it.
+function severityBlock() {
+  const s = html.indexOf('const FLAG_SEVERITY = {'), e = html.indexOf('\n', html.indexOf('function callFlags(', s));
+  return html.slice(s, e);
+}
 function load(ctx, decls, exportNames) {
-  vm.runInNewContext(decls.map(lift).join(';\n') + ';\n' + exportNames.map(n => `this.${n} = ${n};`).join(' '), ctx);
+  const src = decls.map(lift).join(';\n');
+  const sev = /\b(bySeverity|flagSeverity|callFlags|HIGH_FLAGS|SEVERITY_ORDER|FLAG_SEVERITY)\b/.test(src) ? severityBlock() + ';\n' : '';
+  vm.runInNewContext(sev + src + ';\n' + exportNames.map(n => `this.${n} = ${n};`).join(' '), ctx);
   return ctx;
 }
 const unhtml = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
