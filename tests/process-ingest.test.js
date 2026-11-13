@@ -1,6 +1,6 @@
 // Gemini batch ingest writes: scoring is write-once (a call submitted twice keeps its first score,
 // so ai_processed_at never moves and the digest reports it once), and each ingested job asks for
-// an outcome-score rollup refresh from its oldest call. Run: node --test tests/
+// outcome-score and dashboard rollup refreshes from its oldest call. Run: node --test tests/
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -38,9 +38,9 @@ test('ingest only writes calls that are not scored yet, and requests a rollup re
   for (const w of writes) assert.match(w.url, /&ai_processed_at=is\.null$/, `unguarded score write: ${w.url}`);
 
   const refresh = log.filter(r => r.url.endsWith('/rpc/request_rollup_refresh'));
-  assert.equal(refresh.length, 1, 'one refresh request per ingested job');
-  assert.equal(new Date(refresh[0].body.from_ts).toISOString(), '2026-11-08T23:30:00.000Z');
-  assert.deepEqual(refresh[0].body.rollups, ['outcome_score']);
+  assert.equal(refresh.length, 2, 'one request per rollup per ingested job');
+  for (const r of refresh) assert.equal(new Date(r.body.from_ts).toISOString(), '2026-11-08T23:30:00.000Z');
+  assert.deepEqual(refresh.map(r => r.body.rollups), [['outcome_score'], ['dashboard']]);
 });
 
 test('a job with no usable answers requests no refresh', async () => {
