@@ -1017,5 +1017,7 @@ Continued from the 8/7 Scores work; large session. What moved:
   7 days); deleting the deployed copy is a dashboard step.
 - Tested in local PGlite rebuilt from prod's catalog (test fails before, passes after; rollback
   restores the catalog exactly). `scripts/check_anon_access.js` is the after-apply proof.
-  Not applied to prod. Next: deploy the page, apply 063, turn off sign-ups, run the check.
+  Page deployed first, then 063 applied to prod (Nov 13, 20:46 UTC, captain approved). On prod:
+  the 063 SQL test passes (its reports_ro step became a catalog check: postgres can't SET ROLE
+  to reports_ro there) and `check_anon_access.js` is all PASS, sign-ups off.
 - External sources (Wispr/Jira) not pulled this session.
