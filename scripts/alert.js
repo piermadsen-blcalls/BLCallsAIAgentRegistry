@@ -29,6 +29,10 @@ const WINDOW_FROM    = process.env.ALERT_WINDOW_FROM || '';    // explicit windo
 const WINDOW_TO      = process.env.ALERT_WINDOW_TO   || '';    // explicit window end, ISO/date (testing)
 const DASHBOARD_URL  = (process.env.DASHBOARD_URL || '').replace(/\/$/, ''); // base URL for deep links
 const MODE           = process.env.ALERT_MODE || 'digest';     // 'new_ivrs': new-IVR emails (migration 060) instead of the digest
+// Who gets the "New AI IVR needs setup" emails. A fixed list, not "every admin": admins who don't
+// set up agents shouldn't get them. NEW_IVR_RECIPIENTS (comma-separated) overrides it for tests.
+const NEW_IVR_RECIPIENTS = (process.env.NEW_IVR_RECIPIENTS || 'pier.madsen@buyerlink.com,luke.byrne@buyerlink.com,james.teasdale@buyerlink.com')
+  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 // ── Compliance flag taxonomy (must match scripts/process.js + the active ai_prompts row) ──
 const FLAG_LABELS = {
@@ -393,10 +397,11 @@ function buildEmail(mgr, alerted, periodLabel, fromISO, toISO) {
 }
 
 // ── New IVRs (migration 060) ─────────────────────────────────────────────────
-// One email per IVR that check_new_ivrs registered as needs_setup, to each admin who gets the
-// digest (is_admin + alerts enabled): the people who finish agent setup. new_ivr_detections
-// records who has it, so a failed send retries only the missing recipients and nobody gets an
-// IVR twice. An IVR set up (or removed) before its email went out is not emailed.
+// One email per IVR that check_new_ivrs registered as needs_setup, to each NEW_IVR_RECIPIENTS
+// address (no digest/alert-settings row needed). new_ivr_detections.emailed_to records who has
+// it (account_managers id, or the email for an address with no manager row), so a failed send
+// retries only the missing recipients and nobody gets an IVR twice. An IVR set up (or removed)
+// before its email went out is not emailed.
 async function newIvrAlerts() {
   if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
   if (!WEBHOOK_URL && !DRY_RUN)       throw new Error('Missing ASCND_ALERT_WEBHOOK_URL (set DRY_RUN=true to skip)');
@@ -404,15 +409,17 @@ async function newIvrAlerts() {
   const pending = await sb('new_ivr_detections?emailed_at=is.null&select=ivr_name,emailed_to&order=detected_at.asc,ivr_name.asc');
   if (!pending || !pending.length) { console.log('No new IVRs to announce. Done.'); return; }
 
-  const [admins, alertRows] = await Promise.all([
-    sb('account_managers?is_admin=eq.true&select=id,manager_name,manager_email'),
-    sb('manager_alert_settings?enabled=eq.true&select=manager_id'),
-  ]);
-  const enabled = new Set((alertRows || []).map(s => s.manager_id));
+  const managers = (await sb('account_managers?select=id,manager_name,manager_email')) || [];
+  const byEmail = new Map(managers.filter(m => m.manager_email).map(m => [m.manager_email.trim().toLowerCase(), m]));
   const recipients = OVERRIDE_EMAIL
-    ? [{ id: null, manager_name: 'Preview', manager_email: OVERRIDE_EMAIL }]
-    : (admins || []).filter(m => enabled.has(m.id) && m.manager_email);
-  if (!recipients.length) { console.log('No admin has the digest enabled, so no new-IVR emails. Done.'); return; }
+    ? [{ key: null, manager_name: 'Preview', manager_email: OVERRIDE_EMAIL }]
+    : NEW_IVR_RECIPIENTS.map(email => {
+        const m = byEmail.get(email);
+        if (m) return { key: m.id, manager_name: m.manager_name || email, manager_email: m.manager_email };
+        const local = email.split('@')[0].split('.')[0];
+        return { key: email, manager_name: local.charAt(0).toUpperCase() + local.slice(1), manager_email: email };
+      });
+  if (!recipients.length) { console.log('No new-IVR recipients configured. Done.'); return; }
   const recordState = !DRY_RUN && !OVERRIDE_EMAIL;   // previews and dry runs never mark anything sent
 
   let sentCount = 0;
@@ -431,7 +438,7 @@ async function newIvrAlerts() {
     const sent = new Set(d.emailed_to || []);
     let failed = 0;
     for (const m of recipients) {
-      if (m.id && sent.has(m.id)) continue;
+      if (m.key && sent.has(m.key)) continue;
       const firstName = m.manager_name.split(' ')[0];
       const payload = {
         to_email: m.manager_email, to_name: m.manager_name, first_name: firstName, subject,
@@ -442,7 +449,7 @@ async function newIvrAlerts() {
       if (DRY_RUN) { console.log(`  DRY RUN — would email ${m.manager_email}: ${subject}`); continue; }
       const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { failed++; console.error(`  Webhook failed for ${m.manager_email} ${res.status}: ${await res.text()}`); continue; }
-      if (m.id) sent.add(m.id);
+      if (m.key) sent.add(m.key);
       sentCount++;
       console.log(`  ✓ Sent to ${m.manager_email}`);
     }

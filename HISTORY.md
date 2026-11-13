@@ -977,3 +977,12 @@ Continued from the 8/7 Scores work; large session. What moved:
   then the higher flag rate; each account's flags list high severity first.
 - Tests: `tests/flag-severity.test.js` (7); 159/159 pass.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - New-IVR emails go to a fixed list (branch `fm/ivr-newivr-recips`)
+- Lydia started getting "New AI IVR needs setup" emails because she is an admin. They now go to
+  `NEW_IVR_RECIPIENTS` at the top of `scripts/alert.js` (Pier, Luke, James), not every admin with
+  the digest on. No digest/alert-settings row needed; admin flags and digests unchanged.
+- `emailed_to` still holds account_managers ids (email for a listed address with no manager row),
+  so IVRs already sent are not re-sent. No migration.
+- Tests: `tests/new-ivr.test.js` updated + 2 new; 164/164 pass.
+- External sources (Wispr/Jira) not pulled this session.

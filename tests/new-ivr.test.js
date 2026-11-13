@@ -95,7 +95,8 @@ function runAlert(base, env = {}) {
   return new Promise((resolve, reject) => {
     execFile(process.execPath, [SCRIPT], {
       env: { PATH: process.env.PATH, SUPABASE_URL: base, SUPABASE_SERVICE_KEY: 'test-key', ALERT_MODE: 'new_ivrs',
-        ASCND_ALERT_WEBHOOK_URL: `${base}/webhook`, DASHBOARD_URL: 'https://example.invalid/', ...env },
+        ASCND_ALERT_WEBHOOK_URL: `${base}/webhook`, DASHBOARD_URL: 'https://example.invalid/',
+        NEW_IVR_RECIPIENTS: 'pat@example.invalid, VAL@example.invalid', ...env },
     }, (err, stdout, stderr) => (err ? reject(new Error(`${err.message}\n${stdout}\n${stderr}`)) : resolve(stdout)));
   });
 }
@@ -103,23 +104,24 @@ function freshDb() {
   return {
     account_managers: [
       { id: 'pier', manager_name: 'Pat Admin', manager_email: 'pat@example.invalid', is_admin: true },
-      { id: 'vick', manager_name: 'Val Admin', manager_email: 'val@example.invalid', is_admin: true },
-      { id: 'off', manager_name: 'Off Admin', manager_email: 'off@example.invalid', is_admin: true },    // digest disabled
+      { id: 'vick', manager_name: 'Val Admin', manager_email: 'val@example.invalid', is_admin: true },   // no alert-settings row
+      { id: 'off', manager_name: 'Off Admin', manager_email: 'off@example.invalid', is_admin: true },    // admin with digest on, not a recipient
       { id: 'am', manager_name: 'Acct Manager', manager_email: 'am@example.invalid', is_admin: false },  // not an admin
     ],
-    manager_alert_settings: [{ manager_id: 'pier', enabled: true }, { manager_id: 'vick', enabled: true }, { manager_id: 'off', enabled: false }, { manager_id: 'am', enabled: true }],
+    manager_alert_settings: [{ manager_id: 'pier', enabled: false }, { manager_id: 'off', enabled: true }, { manager_id: 'am', enabled: true }],
     agents: [{ ivr_name: IVR, name: 'Roof (Check for Transfers)', status: 'needs_setup', first_seen_at: '2026-11-04T15:00:00Z', seen_calls: 12 }],
     new_ivr_detections: [{ ivr_name: IVR, emailed_to: [], emailed_at: null }],
     webhook: [], failFor: new Set(),
   };
 }
 
-test('new_ivrs: one email per new IVR to each admin on the digest, then never again', async () => {
+test('new_ivrs: one email per new IVR to each listed recipient, then never again', async () => {
   const db = freshDb();
   await withServer(db, async base => {
     await runAlert(base);
     assert.deepEqual(db.webhook.map(p => p.to_email).sort(), ['pat@example.invalid', 'val@example.invalid'],
-      'admins with the digest enabled only');
+      'the recipient list only, whatever the admin flag or digest settings');
+    assert.equal(db.webhook.find(p => p.to_email === 'val@example.invalid').first_name, 'Val');
     const p = db.webhook[0];
     assert.equal(p.subject, 'New AI IVR needs setup: Roof (Check for Transfers)');
     assert.equal(p.alert_type, 'new_ivr');
@@ -137,6 +139,26 @@ test('new_ivrs: one email per new IVR to each admin on the digest, then never ag
 
     await runAlert(base);
     assert.equal(db.webhook.length, 2, 'second run sends nothing');
+  });
+});
+
+test('new_ivrs: a listed address with no manager row is still emailed and tracked by email', async () => {
+  const db = freshDb();
+  await withServer(db, async base => {
+    await runAlert(base, { NEW_IVR_RECIPIENTS: 'pat@example.invalid,jo.new@example.invalid' });
+    const jo = db.webhook.find(p => p.to_email === 'jo.new@example.invalid');
+    assert.equal(jo.first_name, 'Jo');
+    assert.deepEqual([...db.new_ivr_detections[0].emailed_to].sort(), ['jo.new@example.invalid', 'pier']);
+    assert.ok(db.new_ivr_detections[0].emailed_at);
+  });
+});
+
+test('new_ivrs: a recipient already in emailed_to (pre-change id) is not re-sent', async () => {
+  const db = freshDb();
+  db.new_ivr_detections[0].emailed_to = ['pier'];
+  await withServer(db, async base => {
+    await runAlert(base);
+    assert.deepEqual(db.webhook.map(p => p.to_email), ['val@example.invalid']);
   });
 });
 
