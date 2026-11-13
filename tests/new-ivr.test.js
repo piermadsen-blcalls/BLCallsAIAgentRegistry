@@ -213,9 +213,10 @@ function fakeDoc(values = {}) {
 }
 const BANNER = ['function needsSetup(', 'function getEffectiveStatus(', 'function renderNewIvrBanner(', 'function newIvrMeta(',
   'function renderIvrSetupForm(', 'function openIvrSetup(', 'function closeIvrSetup(', 'async function saveIvrSetup(',
-  'function openSetupFromUrl(', 'function esc(', 'function fmtDate('];
+  'function openSetupFromUrl(', 'function canSetUpIvrs(', 'function esc(', 'function fmtDate('];
+// Admin by default: the banner and setup form are admin-only (window.isAdmin === true).
 function pageCtx(extra) {
-  const ctx = { console, URLSearchParams, location: { search: '' }, applyFilters() { ctx.filtered = (ctx.filtered || 0) + 1; }, ...extra };
+  const ctx = { console, URLSearchParams, location: { search: '' }, window: { isAdmin: true }, applyFilters() { ctx.filtered = (ctx.filtered || 0) + 1; }, ...extra };
   vm.runInNewContext('var ivrSetupOpen = null;\n' + page.match(/const SETUP_VERTICALS=.*;/)[0] + '\n' + BANNER.map(lift).join(';\n') + ';\n' +
     ['needsSetup', 'getEffectiveStatus', 'renderNewIvrBanner', 'openIvrSetup', 'saveIvrSetup', 'openSetupFromUrl'].map(n => `this.${n} = ${n};`).join(' '), ctx);
   return ctx;
@@ -337,12 +338,12 @@ test('Review board: agents waiting for setup are off the board and out of Needs 
   const reviewBoard = { managers: [], lastReview: { Done: new Date().toISOString() }, counts: {}, issues: {}, filter: 'all', myId: null,
     acctAssign: [], links: {}, draft: { side: 'advertiser', mgr: '', accts: [] }, applied: { side: 'advertiser', mgr: '', accts: [] },
     scopeInit: true, acctSearch: '' };
-  const ctx = { console, URLSearchParams, reviewBoard, resolveIvrName: n => n, rvSideOf: () => ({}), agentLastCall: null,
+  const ctx = { console, URLSearchParams, reviewBoard, resolveIvrName: n => n, rvSideOf: () => ({}), agentLastCall: null, window: { isAdmin: true },
     AGENTS: [agent('Done', { name: 'Done agent' }), agent('Due', { name: 'Due agent' }),
       agent('New1', { name: 'New agent', status: 'needs_setup' }), agent('T', { name: 'Test agent', status: 'test' })],
     document: { getElementById: id => (id === 'review-root' ? { set innerHTML(v) { rootHtml = v; } } : null) } };
   vm.runInNewContext(['function needsSetup(', 'function isInactive(', 'function byLastCall(', 'function getEffectiveStatus(', 'function renderReviewBoard(', 'function reviewBoardStatus(',
-    'function rvScopeSet(', 'function rvAcctLabel(', 'function esc(', 'function nullMark(', 'function fmtDate(', 'function jsStr('].map(lift).join(';\n') +
+    'function rvScopeSet(', 'function rvAcctLabel(', 'function canSetUpIvrs(', 'function esc(', 'function nullMark(', 'function fmtDate(', 'function jsStr('].map(lift).join(';\n') +
     ';\nthis.renderReviewBoard = renderReviewBoard;', ctx);
   ctx.renderReviewBoard();
   const out = unhtml(rootHtml);
@@ -350,4 +351,68 @@ test('Review board: agents waiting for setup are off the board and out of Needs 
   assert.match(out, /Needs review <span style="opacity:.65">1<\/span>/);
   assert.doesNotMatch(out, /New agent|Test agent/);
   assert.match(out, /1 new IVR is waiting for setup and not counted here/);
+});
+
+// ── Admin-only (captain, 2026-11-13): banner, setup form and the Review note ──
+test('admin-only: a non-admin (or unknown yet) sees no banner, no setup form, and a ?setup= link only finds the card', () => {
+  for (const isAdmin of [false, undefined]) {
+    const doc = fakeDoc();
+    const ctx = pageCtx({ document: doc, window: { isAdmin }, location: { search: '?tab=agents&setup=' + encodeURIComponent('IVR New') },
+      AGENTS: [agent('IVR Live'), agent('IVR New', { status: 'needs_setup', firstSeenAt: '2026-11-11T15:00:00Z', seenCalls: 3 })] });
+    ctx.renderNewIvrBanner();
+    assert.equal(doc.els['new-ivr-banner'].hidden, true, `hidden for isAdmin=${isAdmin}`);
+    assert.equal(doc.els['new-ivr-banner'].innerHTML, '');
+    ctx.openIvrSetup(1);   // even a direct call renders nothing
+    assert.equal(doc.els['new-ivr-banner'].innerHTML, '', 'no setup form');
+    ctx.openSetupFromUrl();
+    assert.equal(doc.els['search-input'].value, 'New', 'the link just finds the card');
+  }
+});
+
+test('admin-only: the Review board note and its button show for admins only', () => {
+  const render = isAdmin => {
+    let rootHtml = '';
+    const reviewBoard = { managers: [], lastReview: {}, counts: {}, issues: {}, filter: 'all', myId: null, acctAssign: [], links: {},
+      draft: { side: 'advertiser', mgr: '', accts: [] }, applied: { side: 'advertiser', mgr: '', accts: [] }, scopeInit: true, acctSearch: '' };
+    const ctx = { console, URLSearchParams, reviewBoard, resolveIvrName: n => n, rvSideOf: () => ({}), agentLastCall: null, window: { isAdmin },
+      AGENTS: [agent('Due', { name: 'Due agent' }), agent('New1', { name: 'New agent', status: 'needs_setup' })],
+      document: { getElementById: id => (id === 'review-root' ? { set innerHTML(v) { rootHtml = v; } } : null) } };
+    vm.runInNewContext(['function needsSetup(', 'function isInactive(', 'function byLastCall(', 'function getEffectiveStatus(', 'function renderReviewBoard(', 'function reviewBoardStatus(',
+      'function rvScopeSet(', 'function rvAcctLabel(', 'function canSetUpIvrs(', 'function esc(', 'function nullMark(', 'function fmtDate(', 'function jsStr('].map(lift).join(';\n') +
+      ';\nthis.renderReviewBoard = renderReviewBoard;', ctx);
+    ctx.renderReviewBoard();
+    return unhtml(rootHtml);
+  };
+  assert.match(render(true), /1 new IVR is waiting for setup and not counted here\. <button onclick="switchTab\('agents'\)">Finish setup on the Agents tab/);
+  for (const isAdmin of [false, undefined]) {
+    const out = render(isAdmin);
+    assert.doesNotMatch(out, /waiting for setup|Finish setup/, `no note for isAdmin=${isAdmin}`);
+    assert.doesNotMatch(out, /New agent/, 'still off the board and out of Needs review');
+  }
+});
+
+test('admin-only: status settles before anything draws; a sign-in re-reads it; the ?setup= link opens once', async () => {
+  const calls = [];
+  const make = token => {
+    const ctx = { window: {}, agentsLoadedPromise: Promise.resolve(), _assignmentsPromise: 'cached', setupLinkHandled: false,
+      getAuthToken: () => token,
+      ensureAssignments: async () => { calls.push(['ensure', ctx._assignmentsPromise]); ctx.window.isAdmin = true; },
+      renderNewIvrBanner: () => calls.push(['render', ctx.window.isAdmin]), openSetupFromUrl: () => calls.push(['link']) };
+    vm.runInNewContext(lift('async function showNewIvrsForAdmins(') + ';\nthis.showNewIvrsForAdmins = showNewIvrsForAdmins;', ctx);   // its globals live on ctx
+    return ctx;
+  };
+  await make(null).showNewIvrsForAdmins(true);
+  assert.deepEqual(calls, [], 'signed out: nothing is read or drawn (the empty managers list would cache "not an admin")');
+  const ctx = make('token');
+  await ctx.showNewIvrsForAdmins();
+  assert.deepEqual(calls, [['ensure', 'cached'], ['render', true], ['link']], 'admin status settles before the banner draws');
+  await ctx.showNewIvrsForAdmins(true);
+  assert.deepEqual(calls.slice(3), [['ensure', null], ['render', true]], 'a sign-in drops the cached status; the link is not reopened');
+  // Every sign-in path re-reads it, and the boot draws through it instead of rendering directly.
+  assert.equal((page.match(/refreshMetrics\(\); loadFreshness\(\); showNewIvrsForAdmins\(true\);/g) || []).length, 2, 'password sign-in and set-password');
+  assert.match(page, /await applyRoute\(\); showNewIvrsForAdmins\(true\); \}/, 'session restored on load');
+  assert.match(lift('async function bootDashboard('), /showNewIvrsForAdmins\(\);/);
+  assert.doesNotMatch(lift('async function bootDashboard('), /renderNewIvrBanner\(\)|openSetupFromUrl\(\)/);
+  assert.match(lift('async function renderReviewPicker('), /await Promise\.all\(\[loadReviewBoardData\(\), ensureAssignments\(\)\]\)/);
+  assert.match(page, /<div id="new-ivr-banner" hidden><\/div>/, 'starts hidden in the markup');
 });
