@@ -904,8 +904,13 @@ async function ingestSucceededJob(job, data) {
     error:        errors ? `${errors} item error(s)` : null,
   });
   console.log(`  Ingested ${job.job_name}: processed ${processed}, errors ${errors}`);
-  // New scores change the Scores tab rollup for the days these calls were made.
-  if (oldest) await requestRollupRefresh(oldest, ['outcome_score']);
+  // New scores change the Scores tab and Dashboard rollups for the days these calls were made.
+  // Two requests: until 064 is applied the queue rejects 'dashboard', and that must not drop
+  // the outcome_score request with it.
+  if (oldest) {
+    await requestRollupRefresh(oldest, ['outcome_score']);
+    await requestRollupRefresh(oldest, ['dashboard']);
+  }
 }
 
 // ── Main ──────────────────────────────────────────────────────

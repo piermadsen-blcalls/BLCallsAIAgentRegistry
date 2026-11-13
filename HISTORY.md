@@ -1021,3 +1021,18 @@ Continued from the 8/7 Scores work; large session. What moved:
   the 063 SQL test passes (its reports_ro step became a catalog check: postgres can't SET ROLE
   to reports_ro there) and `check_anon_access.js` is all PASS, sign-ups off.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - MK-176 Dashboard, PR 1 of 4: data layer, migration 064 (branch `fm/ivr-mk176`)
+- Building MK-176 ("Dashboard Enhancements - visualizations") now, using the board round 2
+  definitions (Q1-Q8). Plan: data layer, then the overview tab, then outcomes/CPA/quality, then
+  flag/outcome trendlines, one PR each.
+- **064:** two new daily rollups next to `insights_daily`: `caller_daily` (one row per caller per
+  day and filter keys, caller stored as a hash, for unique calls) and `outcome_daily` (calls,
+  billable calls, revenue per AI outcome; unscored = ''). Read-only, signed-in query functions
+  encode the definitions: `dashboard_summary`, `_outcomes`, `_quality`, `_trend`, `_cpa`.
+  Nightly refresh at 07:45 UTC; the Gemini ingest also queues it through 052's queue because
+  outcomes land late. History is built by the queue right after apply, not inside the migration.
+- `check_anon_access.js` now covers the new tables and RPCs.
+- Tested in local PGlite (test fails before, passes after, re-runnable, rollback restores the
+  catalog exactly, mutated expectations fail). Not applied to prod yet (firstmate applies after merge).
+- External sources (Wispr/Jira) not pulled this session.

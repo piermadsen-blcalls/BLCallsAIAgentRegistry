@@ -1,6 +1,6 @@
 // check_anon_access.js — What can someone do with only the publishable key from index.html (no
 // login)? Run after migration 063 and the sign-up toggle; every line should say PASS.
-// Read-only and count-only: tables get a HEAD request (row count in a header, never rows), two
+// Read-only and count-only: tables get a HEAD request (row count in a header, never rows), the
 // read-only RPCs get a HEAD request, and Auth's public settings are read. Nothing is written and
 // no function that writes is called (063's SQL test checks those grants instead).
 // Usage: node scripts/check_anon_access.js   (exit code 1 if anything is still open)
@@ -25,9 +25,15 @@ const TABLES = [
   'model_tests', 'new_ivr_detections', 'insights_daily', 'agent_metrics_daily', 'agent_counterparty_daily',
   'outcome_score_daily', 'rollup_refresh_requests', 'sync_state', 'ascnd_pairing_backfill_058',
   'ivr_development', 'ivr_recordings', 'ivr_signoffs',
+  'caller_daily', 'outcome_daily',   // 064
 ];
-// Read-only, argument-free RPCs that bypass RLS (SECURITY DEFINER). HEAD runs them without a body.
-const RPCS = ['get_distinct_verticals', 'get_distinct_accounts'];
+// Read-only RPCs, as [name, query-string arguments]. HEAD runs them without a body. The two
+// argument-free ones bypass RLS (SECURITY DEFINER); 064's dashboard reads get a one-day range.
+const RPCS = [
+  ['get_distinct_verticals', ''], ['get_distinct_accounts', ''],
+  ...['dashboard_summary', 'dashboard_outcomes', 'dashboard_quality', 'dashboard_trend', 'dashboard_cpa']
+    .map(fn => [fn, 'from_day=2026-11-01&to_day=2026-11-01']),
+];
 
 // PASS = no access (401/403), or a table/RPC that doesn't exist (404). A 200 is only a PASS for a
 // table that returns 0 rows; any row count means the key can read data.
@@ -49,8 +55,8 @@ async function main() {
     const total = (res.headers.get('content-range') || '').split('/')[1];
     report(`table ${t}`, verdict(res.status, total && total !== '*' ? Number(total) : null));
   }
-  for (const fn of RPCS) {
-    const res = await fetch(`${url}/rest/v1/rpc/${fn}`, { method: 'HEAD', headers });
+  for (const [fn, args] of RPCS) {
+    const res = await fetch(`${url}/rest/v1/rpc/${fn}${args ? `?${args}` : ''}`, { method: 'HEAD', headers });
     report(`rpc ${fn}`, res.ok ? ['FAIL', `${res.status} (anon can run it)`] : verdict(res.status, null));
   }
   const settings = await (await fetch(`${url}/auth/v1/settings`, { headers })).json();
