@@ -242,8 +242,8 @@ test('banner: lists only needs_setup agents, newest first, with first-seen date 
 });
 
 test('card badge: a new IVR says it needs setup, even when the metrics failed to load', () => {
-  const ctx = { vClass: () => '', rtLabel: () => 'unknown', fmtPct: () => '—', renderTestCallRow: () => '', aeCardLine: () => '', openAgent: null };
-  vm.runInNewContext(['function esc(', 'function needsSetup(', 'function getEffectiveStatus(', 'function renderCard('].map(lift).join(';\n') +
+  const ctx = { vClass: () => '', rtLabel: () => 'unknown', fmtPct: () => '—', renderTestCallRow: () => '', aeCardLine: () => '', openAgent: null, agentLastCall: null };
+  vm.runInNewContext(['function esc(', 'function needsSetup(', 'function isInactive(', 'function getEffectiveStatus(', 'function renderCard('].map(lift).join(';\n') +
     ';\nthis.renderCard = renderCard;', ctx);
   const a = agent('IVR New', { status: 'needs_setup', raw_calls: 0, paid_calls: 0, revenue: 0 });
   for (const failed of [false, true]) {
@@ -332,11 +332,11 @@ test('Review board: agents waiting for setup are off the board and out of Needs 
   const reviewBoard = { managers: [], lastReview: { Done: new Date().toISOString() }, counts: {}, issues: {}, filter: 'all', myId: null,
     acctAssign: [], links: {}, draft: { side: 'advertiser', mgr: '', accts: [] }, applied: { side: 'advertiser', mgr: '', accts: [] },
     scopeInit: true, acctSearch: '' };
-  const ctx = { console, URLSearchParams, reviewBoard, resolveIvrName: n => n, rvSideOf: () => ({}),
+  const ctx = { console, URLSearchParams, reviewBoard, resolveIvrName: n => n, rvSideOf: () => ({}), agentLastCall: null,
     AGENTS: [agent('Done', { name: 'Done agent' }), agent('Due', { name: 'Due agent' }),
       agent('New1', { name: 'New agent', status: 'needs_setup' }), agent('T', { name: 'Test agent', status: 'test' })],
     document: { getElementById: id => (id === 'review-root' ? { set innerHTML(v) { rootHtml = v; } } : null) } };
-  vm.runInNewContext(['function needsSetup(', 'function getEffectiveStatus(', 'function renderReviewBoard(', 'function reviewBoardStatus(',
+  vm.runInNewContext(['function needsSetup(', 'function isInactive(', 'function byLastCall(', 'function getEffectiveStatus(', 'function renderReviewBoard(', 'function reviewBoardStatus(',
     'function rvScopeSet(', 'function rvAcctLabel(', 'function esc(', 'function fmtDate(', 'function jsStr('].map(lift).join(';\n') +
     ';\nthis.renderReviewBoard = renderReviewBoard;', ctx);
   ctx.renderReviewBoard();
