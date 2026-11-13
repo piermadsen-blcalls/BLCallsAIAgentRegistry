@@ -816,3 +816,31 @@ Continued from the 8/7 Scores work; large session. What moved:
   Checked at 1440/375 on a local stub harness; the captain's Chrome was not connected, so no signed-in check.
 - Next: merge, then a signed-in look at Review (un-mark keeps note) and a digest link.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - AI agent performance scoring goes live (branch `fm/ivr-agent-scoring`)
+- **Why:** scoring only ever read the buyer leg (`transcription`); the AI agent's own side
+  (`ascnd_transcript`) was graded on 0% of calls, and ~70% of agent calls (no Canoe transcript) got
+  no score at all.
+- **Scorer:** `scripts/agent_eval.js`, separate from `process.js` (writes only `agent_call_evals`,
+  never `our_outcome`/scores/flags). Approved agent-v1.1 prompt on Gemini 3.6 Flash batch, low
+  thinking, token usage (incl. thinking) logged per job. Verdict decided in code; calls with no
+  caller line are `no_conversation` with no model call (462 of 3,605 in 30 days). Agents with no
+  registered rules are not judged on rules. Runs as an extra step in `process-submit.yml` /
+  `process-ingest.yml` (500 calls per submit, 30-day window, newest first); own job table
+  `agent_eval_jobs` so the call scorer's ingest can never pick up an agent job.
+- **Migration `056`** (applied to prod, captain's standing OK; test passes in prod + PGlite,
+  rollback `supabase/rollbacks/056_agent_call_evals_down.sql`): `agent_call_evals`,
+  `agent_eval_jobs`, `call_reviews.eval_disagree`, `agent_eval_pending()`, `agent_eval_metrics()`.
+- **UI:** Review rows show verdict/decision/finding chips + the AI summary and fix; filters (Needs a
+  look, Over-rejects, Over-transfers, Caller drop-offs, Not scored); AI KPI strip; rule checklist,
+  evidence and "AI got this wrong" in the expanded row; AI tallies beside the review form; Issues
+  (30d) on the board. Agents: quality line on cards, quality strip + latest fixes in the drawer,
+  Defect rate sort.
+- Verified: code verdicts match all 22 model replies in the design test; tests
+  `tests/agent-eval.test.js`, `tests/agent-quality-page.test.js`; UI checked locally at desktop and
+  390px with fixture data.
+- **Not done here:** a live Gemini dry run of the 24 design calls and the 30-day backfill (dispatching
+  the workflow from the unmerged branch was blocked). After merge the scheduled submit backfills
+  ~500 calls per run, or dispatch `process-submit.yml` with `target=agent` for a same-day backfill.
+- Draft rules for the 9 rule-less live agents are with the captain for review (not in `agents`).
+- External sources (Wispr/Jira) not pulled this session.

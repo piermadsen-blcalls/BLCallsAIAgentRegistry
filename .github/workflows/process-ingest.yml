@@ -7,6 +7,10 @@ on:
     # job, so a dropped run now costs 2h instead of 6-12h. An idle run takes ~10s.
     - cron: '17 */2 * * *'
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which scorer: both, call (process.js jobs) or agent (agent_eval.js jobs)'
+        default: 'both'
 
 # One ingest at a time, so two runs never write the same job's results.
 concurrency:
@@ -24,6 +28,7 @@ jobs:
           node-version: '24'
 
       - name: Ingest finished Gemini batch jobs
+        if: ${{ github.event.inputs.target != 'agent' }}
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -31,3 +36,14 @@ jobs:
           AI_MODEL:             'gemini-3.6-flash'
           BATCH_ACTION:         'ingest'
         run: node scripts/process.js
+
+      # AI agent quality jobs (agent_eval_jobs -> agent_call_evals). Never writes canoe_calls.
+      - name: Ingest finished AI agent scoring jobs
+        if: ${{ !cancelled() && github.event.inputs.target != 'call' }}
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
+          AI_MODEL:             'gemini-3.6-flash'
+          BATCH_ACTION:         'ingest'
+        run: node scripts/agent_eval.js

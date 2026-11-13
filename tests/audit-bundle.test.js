@@ -42,6 +42,7 @@ function reviewCtx(over = {}) {
     getAuthUser: () => over.me ?? 'me@example.com',
     RV: { agent: { ivrName: 'ASCND - Roofing' }, ivrs: ['ASCND - Roofing'], windowStart: new Date('2026-10-13T06:00:00Z'), reviewedSet: new Set(), reviewers: {}, notesByCall: {}, calls: [] },
     ivrQuery: () => 'ivr_name=in.(x)', renderReviewCalls() {},
+    aeRowHtml: () => '', aeDetailHtml: () => '', aeMarkQuotes: t => t,   // agent quality (056), tested in agent-quality-page.test.js
     sbFetch: async (url, opts = {}) => { sent.push({ url, method: opts.method || 'GET', body: opts.body ? JSON.parse(opts.body) : null }); return over.sbFetch ? over.sbFetch(url, opts) : [{ call_id: 'c1' }]; },
   }, [...HELPERS, 'async function loadReviewedSet(', 'function reviewCallRow(', 'function rvCheckState(', 'function rvSetReviewed(', 'async function toggleCallReviewed(', 'async function rvSaveNote('],
   ['loadReviewedSet', 'reviewCallRow', 'toggleCallReviewed', 'rvSaveNote']);
@@ -122,7 +123,7 @@ test('B3: saving a note marks the call reviewed by you', async () => {
 // ── UI9: Review date picker ─────────────────────────────────────────────────
 test('UI9: picking Nov 1 reviews from local midnight Nov 1 and says so (it said Oct 31)', () => {
   const els = { 'rv-window-label': {}, 'rv-window-date': {} };
-  const ctx = load({ RV: { windowStart: new Date() }, document: { getElementById: id => els[id] }, loadReviewMetrics() {}, loadReviewedSet() {}, loadReviewCalls() {} },
+  const ctx = load({ RV: { windowStart: new Date() }, document: { getElementById: id => els[id] }, loadReviewMetrics() {}, loadReviewedSet() {}, loadReviewCalls() {}, loadEvalDisagree() {} },
     ['function toISO(', 'function fmtDate(', 'function updateReviewWindowLabel(', 'function reviewSetWindow('], ['reviewSetWindow', 'updateReviewWindowLabel']);
   ctx.reviewSetWindow('2026-11-01');
   assert.equal(els['rv-window-label'].textContent, 'Nov 1, 2026');
@@ -357,7 +358,7 @@ test('N5: a range change during a load is not dropped, and the older reply does 
   const ctx = load({
     currentTab: 'agents', metricsSeq: 0, metricsFailed: false, agentsMetricsDeferred: false, AGENTS: [{ ivrName: 'A', status: 'live' }],
     activeRange: { start: new Date('2026-10-13T06:00:00Z'), end: new Date('2026-11-11T07:00:00Z'), label: '30d' },
-    updateDataWindowLabels() {}, loadAllBreakdowns: () => Promise.resolve({}), aliasesForAgent: () => [], resolveIvrName: n => n,
+    updateDataWindowLabels() {}, loadAllBreakdowns: () => Promise.resolve({}), loadAgentQuality() {}, aliasesForAgent: () => [], resolveIvrName: n => n,
     recomputeStats() {}, applyFilters() { ctx.drawn = (ctx.drawn || 0) + 1; }, loadFreshness() { ctx.fresh = true; }, console: { warn() {} },
     document: { getElementById: id => els[id] },
     sbFetch: () => { const d = deferred(); replies.push(d); return d.promise; },
@@ -386,7 +387,7 @@ test('N5: a range change during a load is not dropped, and the older reply does 
 });
 
 test('N5: after a failed load the cards say "No data" with dashes, not 0 and Inactive', () => {
-  const ctx = load({ metricsFailed: true, openAgent: null, testCallMap: {}, vClass: () => '', rtLabel: () => 'Publisher-led', fmtPct: (a, b) => (b ? Math.round(a / b * 100) + '%' : '—'), renderTestCallRow: () => '' },
+  const ctx = load({ metricsFailed: true, openAgent: null, testCallMap: {}, vClass: () => '', rtLabel: () => 'Publisher-led', fmtPct: (a, b) => (b ? Math.round(a / b * 100) + '%' : '—'), renderTestCallRow: () => '', aeCardLine: () => '' },
     ['function esc(', 'function getEffectiveStatus(', 'function renderCard('], ['renderCard']);
   const a = { name: 'Roofing', vertical: 'Home Services', status: 'live', raw_calls: 0, paid_calls: 0, revenue: 0, routingType: 'publisher-led', ivrName: 'A' };
   const card = ctx.renderCard(a, 0);

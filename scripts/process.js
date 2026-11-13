@@ -1065,4 +1065,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { ingestSucceededJob };
+module.exports = { ingestSucceededJob, parseModelJson, chunk };

@@ -696,6 +696,49 @@
   .rv-save-msg { font-size:11.5px; }
   .rv-history { margin-top:18px; font-size:11px; color:var(--text-3); }
   .rv-history-item { padding:8px 0; border-top:1px solid var(--border); }
+
+  /* Agent quality (agent_call_evals, migration 056) */
+  .card-quality { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; font-size:11px; color:var(--text-2); margin:-2px 0 10px; }
+  .card-quality-lbl { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; }
+  .card-quality b { font-family:var(--mono); font-weight:500; color:var(--text); }
+  .card-quality b.neg { color:var(--coral); }
+  .ae-note { font-size:12px; color:var(--amber); background:var(--amber-bg); border-radius:var(--radius-sm); padding:7px 10px; margin-top:12px; }
+  .ae-issues { margin-top:12px; }
+  .ae-issues-t { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+  .ae-issue { font-size:12.5px; color:var(--text); line-height:1.5; padding:4px 0; border-top:1px solid var(--border); overflow-wrap:anywhere; }
+  .ae-issue span { font-family:var(--mono); font-size:10.5px; color:var(--text-3); white-space:nowrap; }
+  .rv-board-issues { color:var(--coral); font-weight:600; }
+  .rv-ae-perf-head { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--text-3); margin:-6px 0 6px; }
+  .rv-perf-ae { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  @media (max-width:640px){ .rv-perf-ae { grid-template-columns:repeat(2,minmax(0,1fr)); } .rv-perf-ae .rv-perf-item:last-child { grid-column:span 2; } }
+  .rv-ae-lbl { font-size:9.5px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:var(--brand-navy); }
+  .rv-ae-filters { display:flex; gap:6px; flex-wrap:wrap; padding:10px 16px; border-bottom:1px solid var(--border); }
+  .rv-ae-filters .rv-board-filter { font-size:11px; padding:4px 10px; }
+  .rv-ae-verdict { font-weight:600; }
+  .rv-ae-none { color:var(--text-3); font-style:italic; }
+  .rv-ae-sum { font-size:12px; color:var(--text); margin-top:7px; line-height:1.5; overflow-wrap:anywhere; }
+  .rv-ae-fix { color:var(--text-2); font-style:italic; }
+  .rv-ae-hint { display:block; font-size:11px; color:var(--text-3); margin:-3px 0 7px; font-family:var(--mono); }
+  .rv-ae-detail { margin-top:9px; border:1px solid var(--border); border-left:3px solid var(--brand-navy); border-radius:var(--radius-sm); padding:10px 13px; font-size:12px; color:var(--text); }
+  .rv-ae-head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .rv-ae-disagree { margin-left:0; }
+  .rv-ae-disagree.on { color:var(--coral); }
+  .rv-ae-grid { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:5px 12px; margin:0; }
+  .rv-ae-grid dt { font-size:11px; color:var(--text-3); }
+  .rv-ae-grid dd { margin:0; line-height:1.45; overflow-wrap:anywhere; }
+  @media (max-width:640px){ .rv-ae-grid { grid-template-columns:minmax(0,1fr); gap:1px 0; } .rv-ae-grid dd { margin-bottom:6px; } }
+  .rv-ae-why { color:var(--text-2); font-size:11.5px; margin-top:2px; }
+  .rv-ae-bad { color:var(--coral); font-weight:500; }
+  .rv-ae-sub { font-size:10px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:var(--text-3); margin:11px 0 5px; }
+  .rv-ae-rules, .rv-ae-ev { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; }
+  .rv-ae-rules li { display:flex; gap:8px; align-items:baseline; line-height:1.4; overflow-wrap:anywhere; }
+  .rv-ae-rules .rv-chip { flex-shrink:0; }
+  .rv-ae-rules.is-muted li { color:var(--text-2); }
+  .rv-ae-rules.is-muted li::before { content:'·'; color:var(--text-3); }
+  .rv-ae-ev li { font-style:italic; line-height:1.45; overflow-wrap:anywhere; }
+  .rv-ae-ev li span { font-style:normal; color:var(--text-3); font-size:11px; }
+  .rv-ae-note { font-size:11.5px; color:var(--amber); }
+  .rv-transcript mark { background:var(--amber-bg); color:var(--text); border-radius:2px; padding:0 1px; }
 </style>
 </head>
 <body>
@@ -952,6 +995,7 @@
           <option value="margin">Direct margin</option>
           <option value="calls">Raw calls</option>
           <option value="conversion">Conversion rate</option>
+          <option value="defects">Defect rate (agent quality)</option>
         </select>
       </div>
     </div>
@@ -1962,6 +2006,7 @@ async function refreshMetrics(){
   const endEx=new Date(activeRange.end);endEx.setDate(endEx.getDate()+1);const toTs=endEx.toISOString();
   AGENTS.forEach(a=>{a.pubBreakdown=[];a.advBreakdown=[];a._bdKey=null;a._bdErr=null;});
   loadAllBreakdowns().catch(()=>{});   // background prefetch; a drawer that needs it awaits the same promise
+  loadAgentQuality(fromTs,toTs);   // agent quality rows (migration 056), loaded alongside
   let rows=null, err=null;
   try{
     // Per-agent totals (agent_metrics, rollup 030). Publisher/advertiser breakdowns are
@@ -2017,18 +2062,18 @@ function tcCancel(cardId,ivrName){document.getElementById('tc-row-'+cardId).oute
 function vClass(v){return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other';}
 function rtLabel(t){return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown';}
 function getEffectiveStatus(a){if(a.status==='test')return'test';if(a.raw_calls>0)return'live';return'inactive';}
-function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
+function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}${aeCardLine(a)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
 function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${esc(p.campaign)}</td><td class="${p.publisher?'':'muted'}">${esc(p.publisher||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${esc(t.publisher||'—')}</td><td class="${t.advertiser?'':'muted'}">${esc(t.advertiser||'—')}</td><td class="${t.vertical?'':'muted'}">${esc(t.vertical||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
 const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
-return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${esc(a.notes)}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div></div></div>`;}
+return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${esc(a.notes)}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div>${aeDrawerHtml(a)}</div></div>`;}
 
-function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);return 0;});}
+function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);if(s==='defects')return aeDefectRate(b)-aeDefectRate(a)||(b.raw_calls||0)-(a.raw_calls||0);return 0;});}
 function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim();if(!keepOpen){document.getElementById('drawer-container').innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered);document.getElementById('agents-grid').innerHTML=sorted.length?sorted.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):'<div class="empty">No agents match.</div>';}
 function setFilter(v,el){activeFilter=v;document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');applyFilters();}
 // Opening passes applyFilters(true) so openAgent survives the grid re-render; otherwise the
 // post-load re-render below (if(openAgent===idx)) never fired and the drawer stuck on "Loading…".
-async function toggleAgent(idx){const drawer=document.getElementById('drawer-container');if(openAgent===idx){openAgent=null;drawer.innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});return;}savedScrollY=window.scrollY;openAgent=idx;applyFilters(true);const a=AGENTS[idx];if(bdAll.byIvr&&bdAll.key===(activeRange.label||''))fillAgentBreakdown(a,bdAll.byIvr);drawer.innerHTML=renderDrawer(a);requestAnimationFrame(()=>{const gap=drawer.getBoundingClientRect().bottom-window.innerHeight;if(gap>0)window.scrollBy({top:gap+24,behavior:'smooth'});});await loadAgentBreakdown(a);if(openAgent===idx)drawer.innerHTML=renderDrawer(a);}
+async function toggleAgent(idx){const drawer=document.getElementById('drawer-container');if(openAgent===idx){openAgent=null;drawer.innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});return;}savedScrollY=window.scrollY;openAgent=idx;applyFilters(true);const a=AGENTS[idx];if(bdAll.byIvr&&bdAll.key===(activeRange.label||''))fillAgentBreakdown(a,bdAll.byIvr);drawer.innerHTML=renderDrawer(a);requestAnimationFrame(()=>{const gap=drawer.getBoundingClientRect().bottom-window.innerHeight;if(gap>0)window.scrollBy({top:gap+24,behavior:'smooth'});});await Promise.all([loadAgentBreakdown(a),loadAgentTopIssues(a)]);if(openAgent===idx)drawer.innerHTML=renderDrawer(a);}
 // Every agent's publisher/advertiser breakdown for the active range, fetched ONCE alongside
 // the card metrics (agent_breakdown_all, rollup 045) so opening a drawer needs no request.
 let bdAll={key:null,promise:null,byIvr:null};
@@ -2861,6 +2906,189 @@ function copySQL(btn){navigator.clipboard.writeText(document.getElementById('bq-
 function toggleUpdatePanel(){document.getElementById('update-panel').classList.toggle('open');}
 
 
+// ─── AGENT QUALITY (agent_call_evals, migration 056) ─────────────────────────
+// A second scorer (scripts/agent_eval.js) grades the AI agent's own side of every ASCND call,
+// sent to a buyer or not: its transfer/reject decision and whether it was right, its qualifying
+// rules, where and why the caller left, understanding, script, agent-side flags. It is separate
+// from our_outcome/flags (the buyer leg). Shown in the Review workspace and on the Agents tab;
+// hidden if the table or RPC is missing (e.g. after the 056 rollback).
+let aeAvailable = true;
+const AE_COLS = 'verdict,decision,decision_verdict,dropoff_stage,drop_reason,understanding,script,agent_flags,summary,top_issue,eval';
+const aeMissing = e => { const m=String(e&&e.message||''); return /agent_call_evals|agent_eval_metrics|eval_disagree/.test(m) && /PGRST20[0-5]|42P01|42703|42883/.test(m); };
+// The embedded eval of a canoe_calls row (one-to-one: PostgREST returns an object or null).
+const aeOf = c => { const e=c&&c.agent_call_evals; return Array.isArray(e) ? (e[0]||null) : (e||null); };
+const AE_VERDICT = { good:{l:'Handled well',tone:'pos'}, minor:{l:'Minor issue',tone:'amb'}, major:{l:'Major issue',tone:'neg'},
+  no_conversation:{l:'No conversation',tone:''}, unclear:{l:'Unclear',tone:''} };
+const AE_STAGE = { intro:'at intro', mid_qualification:'mid-qualification', at_transfer:'at transfer' };
+const AE_DV = { correct:'right call', over_transfer:'over-transferred', over_reject:'over-rejected', not_applicable:'nothing to judge', unclear:"can't tell" };
+const AE_ANS = { pass:{l:'Pass',tone:'pos'}, fail:{l:'Fail',tone:'neg'}, ambiguous:{l:'Ambiguous',tone:'amb'}, no_answer:{l:'No answer',tone:''}, not_asked:{l:'Not asked',tone:'amb'} };
+const AE_UNDERSTANDING = { smooth:'Smooth', mishears:'Mishears / repeats', pauses:'Pauses / talks over', stuck:'Gets stuck' };
+const AE_SCRIPT = { good:'Good', too_long:'Too long / redundant', late_dq:'Disqualifiers too late', missing_question:'Missing a question' };
+const AE_FLAG = { transferred_non_initiator:'Transferred a non-initiator', transferred_disqualified_source:'Transferred a disqualified source',
+  claimed_to_be_requested_company:'Claimed to be the requested company', rude_or_dismissive:'Rude or dismissive',
+  off_script_advice:'Off-script advice', promised_outcome:'Promised an outcome' };
+
+function aeDecisionLabel(ev){
+  if(ev.decision==='transferred') return 'Transferred';
+  if(ev.decision==='rejected') return 'Rejected';
+  if(ev.decision==='stalled') return 'Stalled';
+  if(ev.decision==='caller_left') return 'Caller left'+(AE_STAGE[ev.dropoff_stage]?' '+AE_STAGE[ev.dropoff_stage]:'');
+  return '';
+}
+// The one finding worth a chip, most serious first.
+function aeFinding(ev){
+  const x=ev.eval||{};
+  if(ev.decision_verdict==='over_reject') return 'Over-rejected';
+  if(ev.decision_verdict==='over_transfer') return 'Over-transferred';
+  const f=(ev.agent_flags||[])[0]; if(f) return AE_FLAG[f]||f;
+  if(ev.understanding==='stuck') return 'Got stuck';
+  if(ev.understanding==='mishears') return 'Misheard';
+  if(ev.understanding==='pauses') return 'Paused / talked over';
+  if(x.intent_match==='mismatch') return 'Intent wrong';
+  if(x.disposition_matches_transcript==='no') return 'Stated reason wrong';
+  if(ev.script&&ev.script!=='good') return AE_SCRIPT[ev.script]||ev.script;
+  return '';
+}
+
+// Review call row: verdict + decision + finding chips and the one-line summary.
+function aeRowHtml(c){
+  if(!aeAvailable) return '';
+  const ev=aeOf(c);
+  if(!ev) return '<div class="rv-meta"><span class="rv-chip rv-ae-none">AI agent review: not scored yet</span></div>';
+  const v=AE_VERDICT[ev.verdict]||{l:ev.verdict,tone:''}, d=aeDecisionLabel(ev), f=ev.verdict==='good'?'':aeFinding(ev);
+  return `<div class="rv-meta"><span class="rv-chip ${v.tone} rv-ae-verdict" title="AI review of how the agent handled this call">${esc(v.l)}</span>${d?`<span class="rv-chip">${esc(d)}</span>`:''}${f?`<span class="rv-chip ${v.tone}">${esc(f)}</span>`:''}</div>
+    ${ev.summary?`<div class="rv-ae-sum"><span class="rv-ae-lbl">AI agent review</span> ${esc(ev.summary)}${ev.top_issue?` <span class="rv-ae-fix">Fix: ${esc(ev.top_issue)}</span>`:''}</div>`:''}`;
+}
+
+// Expanded row: the full assessment above the transcript, with the "AI got this wrong" toggle.
+function aeDetailHtml(c,i,disagreeOn){
+  const ev=aeOf(c); if(!aeAvailable||!ev) return '';
+  const x=ev.eval||{}, rules=x.rules||[];
+  const ruleHtml = x.rules_registered===false
+    ? `<div class="rv-ae-note">No registered qualifying rules: this agent is not judged on rules until rules are added.${rules.length?' Questions it asked:':''}</div>${rules.length?`<ul class="rv-ae-rules is-muted">${rules.map(r=>`<li>${esc(r.rule)}</li>`).join('')}</ul>`:''}`
+    : rules.length ? `<ul class="rv-ae-rules">${rules.map(r=>{ const a=AE_ANS[r.answer]||{l:r.answer,tone:''}; return `<li><span class="rv-chip ${a.tone}">${esc(a.l)}</span><span>${esc(r.rule)}</span></li>`; }).join('')}</ul>` : '';
+  const bad=s=>`<span class="rv-ae-bad">${s}</span>`;
+  const rows=[
+    ['Decision', `${esc(aeDecisionLabel(ev)||'—')}${ev.decision_verdict?`, ${ev.decision_verdict==='over_reject'||ev.decision_verdict==='over_transfer'?bad(esc(AE_DV[ev.decision_verdict])):esc(AE_DV[ev.decision_verdict]||ev.decision_verdict)}`:''}${x.decision_reason?`<div class="rv-ae-why">${esc(x.decision_reason)}</div>`:''}`],
+    ['Caller wanted', esc(x.caller_need||'—')],
+    ['Recorded intent', x.intent_match==='mismatch'?bad("Doesn't match the caller"):x.intent_match==='match'?'Matches the caller':'None recorded'],
+    ['Stated reason', x.disposition_matches_transcript==='no'?bad('Not supported by the transcript'):x.disposition_matches_transcript==='yes'?'Supported by the transcript':'—'],
+    ['Drop-off', ev.dropoff_stage&&ev.dropoff_stage!=='none'?esc((AE_STAGE[ev.dropoff_stage]||ev.dropoff_stage)+(ev.drop_reason&&ev.drop_reason!=='none'?' · '+ev.drop_reason.replace(/_/g,' '):'')):'None'],
+    ['Understanding', ev.understanding&&ev.understanding!=='smooth'?bad(esc(AE_UNDERSTANDING[ev.understanding]||ev.understanding)):esc(AE_UNDERSTANDING[ev.understanding]||'—')],
+    ['Script', ev.script&&ev.script!=='good'?bad(esc(AE_SCRIPT[ev.script]||ev.script)):esc(AE_SCRIPT[ev.script]||'—')],
+  ];
+  if((ev.agent_flags||[]).length) rows.push(['Agent flags', bad(esc(ev.agent_flags.map(f=>AE_FLAG[f]||f).join(', ')))]);
+  const evidence=(x.evidence||[]).filter(q=>q&&q.quote);
+  return `<div class="rv-ae-detail" id="rv-ae-${i}" style="display:none">
+    <div class="rv-ae-head"><span class="rv-ae-lbl">AI agent review</span>
+      <span class="rv-check rv-ae-disagree${disagreeOn?' on':''}" onclick="rvToggleDisagree('${jsStr(c.id)}',this)" title="Mark this AI assessment as wrong (calibration)">${disagreeOn?'☑':'☐'} AI got this wrong</span></div>
+    <dl class="rv-ae-grid">${rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl>
+    ${ruleHtml?`<div class="rv-ae-sub">Qualifying rules</div>${ruleHtml}`:''}
+    ${evidence.length?`<div class="rv-ae-sub">Evidence</div><ul class="rv-ae-ev">${evidence.map(q=>`<li>"${esc(q.quote)}"${q.finding?` <span>${esc(q.finding)}</span>`:''}</li>`).join('')}</ul>`:''}
+  </div>`;
+}
+// Highlight the evidence quotes in an already-escaped transcript (best effort: exact matches only).
+function aeMarkQuotes(escTx,c){
+  const ev=aeOf(c); if(!aeAvailable||!ev) return escTx;
+  let out=escTx;
+  for(const q of ((ev.eval||{}).evidence||[])){
+    const needle=esc(String(q&&q.quote||'').trim()); if(needle.length<4) continue;
+    const at=out.indexOf(needle); if(at<0) continue;
+    out=out.slice(0,at)+'<mark>'+needle+'</mark>'+out.slice(at+needle.length);
+  }
+  return out;
+}
+
+// Window tallies from the evals embedded in a page of canoe_calls rows (Review KPIs + filters + form hints).
+function aeTallyBlank(){ return {scored:0,conv:0,good:0,minor:0,major:0,over_reject:0,over_transfer:0,drop_intro:0,drop_mid:0,drop_transfer:0,
+  mishears:0,pauses:0,stuck:0,too_long:0,late_dq:0,missing:0}; }
+function aeTally(t,ev){
+  if(!ev) return;
+  t.scored++;
+  if(ev.verdict!=='no_conversation') t.conv++;
+  if(ev.verdict==='good'||ev.verdict==='minor'||ev.verdict==='major') t[ev.verdict]++;
+  if(ev.decision_verdict==='over_reject') t.over_reject++;
+  if(ev.decision_verdict==='over_transfer') t.over_transfer++;
+  if(ev.verdict==='no_conversation'||ev.dropoff_stage==='intro') t.drop_intro++;
+  else if(ev.dropoff_stage==='mid_qualification') t.drop_mid++;
+  else if(ev.dropoff_stage==='at_transfer') t.drop_transfer++;
+  if(ev.understanding==='mishears'||ev.understanding==='pauses'||ev.understanding==='stuck') t[ev.understanding]++;
+  if(ev.script==='too_long'||ev.script==='late_dq') t[ev.script]++;
+  if(ev.script==='missing_question') t.missing++;
+}
+// Review call-list filters (server-side, on the embedded eval).
+const AE_FILTERS=[
+  {k:'all',           l:'All'},
+  {k:'needs',         l:'Needs a look',     q:'&agent_call_evals.verdict=in.(major,minor)',                              n:t=>t.major+t.minor},
+  {k:'over_reject',   l:'Over-rejects',     q:'&agent_call_evals.decision_verdict=eq.over_reject',                       n:t=>t.over_reject},
+  {k:'over_transfer', l:'Over-transfers',   q:'&agent_call_evals.decision_verdict=eq.over_transfer',                     n:t=>t.over_transfer},
+  {k:'dropoff',       l:'Caller drop-offs', q:'&agent_call_evals.dropoff_stage=in.(intro,mid_qualification,at_transfer)', n:t=>t.drop_intro+t.drop_mid+t.drop_transfer},
+  {k:'unscored',      l:'Not scored',       q:'&agent_call_evals=is.null', left:true,                                    n:(t,raw)=>Math.max(0,raw-t.scored)},
+];
+// select + filter fragments for the Review call list under the current AI filter.
+function aeCallQuery(filterKey){
+  if(!aeAvailable) return {sel:'',q:''};
+  const f=AE_FILTERS.find(x=>x.k===filterKey)||AE_FILTERS[0];
+  return { sel:`,agent_call_evals${f.q&&!f.left?'!inner':''}(${AE_COLS})`, q:f.q||'' };
+}
+
+// Agents tab: per-agent rollup from agent_eval_metrics (raw IVR rows summed into their agent).
+function aeAdd(q,r){ for(const k of ['scored','conversations','good','minor','major','over_transfer','over_reject','drop_intro','drop_mid','drop_transfer','disagree']) q[k]=(q[k]||0)+Number(r[k]||0); return q; }
+const aeDefectRate = a => a.q&&a.q.conversations>0 ? a.q.major/a.q.conversations : -1;
+function aeCardLine(a){
+  const q=a.q; if(!aeAvailable||!q||!q.scored) return '';
+  return `<div class="card-quality" title="AI review of the agent's own handling, ${esc(activeRange.label||'')}: ${q.scored} calls scored"><span class="card-quality-lbl">Agent quality</span><span><b>${fmtPct(q.good,q.conversations)}</b> handled well</span><span><b class="${q.conversations&&q.major/q.conversations>=0.2?'neg':''}">${fmtPct(q.major,q.conversations)}</b> defects</span></div>`;
+}
+function aeDrawerHtml(a){
+  if(!aeAvailable) return '';
+  const q=a.q, noRules=!(a.qualifying||[]).length;
+  const head=`<div class="dsec-title" style="margin:22px 0 0">Agent quality · AI review of the agent's own handling · ${esc(activeRange.label||'')}</div>`;
+  if(!q||!q.scored) return head+'<div class="canoe-none" style="margin-top:10px">No calls scored in this period yet.</div>';
+  const tile=(v,l,zero)=>`<div class="perf-item"><div class="perf-val${zero?' zero':''}">${v}</div><div class="perf-lbl">${l}</div></div>`;
+  const pctS=(n)=>fmtPct(n,q.scored);
+  const issues=a._tiKey===(activeRange.label||'')&&(a._topIssues||[]).length
+    ? `<div class="ae-issues"><div class="ae-issues-t">Latest fixes suggested on major calls</div>${a._topIssues.map(r=>`<div class="ae-issue">${esc(r.top_issue)} <span>${fmtDate(new Date(r.call_at))}</span></div>`).join('')}</div>` : '';
+  return head+`<div class="perf-strip" style="margin-top:12px;padding-top:0;border-top:none">
+    ${tile(q.scored.toLocaleString(),'Calls scored')}
+    ${tile(fmtPct(q.good,q.conversations),'Handled well',!q.good)}
+    ${tile(fmtPct(q.major,q.conversations),'Defect rate',!q.major)}
+    ${tile(fmtPct(q.over_transfer,q.conversations),'Over-transfer',!q.over_transfer)}
+    ${tile(fmtPct(q.over_reject,q.conversations),'Over-reject',!q.over_reject)}
+    ${tile(pctS(q.drop_intro),`Drop-off at intro (mid ${pctS(q.drop_mid)} · transfer ${pctS(q.drop_transfer)})`,!q.drop_intro)}
+    ${tile((q.disagree||0).toLocaleString(),'Marked "AI got this wrong"',!q.disagree)}
+  </div>${noRules?'<div class="ae-note">No registered qualifying rules: calls are not judged on rules until rules are added.</div>':''}${issues}`;
+}
+// Agents tab: quality for the cards' date range, beside the card metrics (refreshMetrics). Its own
+// sequence number so a newer range wins; it redraws the cards (and an open drawer) when it lands.
+let aeQSeq=0;
+async function loadAgentQuality(fromTs,toTs){
+  const seq=++aeQSeq;
+  AGENTS.forEach(a=>{ a.q=null; a._tiKey=null; });
+  if(!aeAvailable) return;
+  let rows;
+  try{ rows=await sbFetch('rpc/agent_eval_metrics',{method:'POST',body:JSON.stringify({since_ts:fromTs,until_ts:toTs})})||[]; }
+  catch(e){ console.warn('agent quality:',e.message); if(aeMissing(e)) aeAvailable=false; return; }
+  if(seq!==aeQSeq) return;
+  const ivrToAgent={};
+  AGENTS.forEach(a=>{ ivrToAgent[a.ivrName]=a; aliasesForAgent(a.ivrName).forEach(alias=>{ ivrToAgent[alias]=a; }); });
+  for(const r of rows){ const a=ivrToAgent[resolveIvrName(r.ivr_name)]; if(a) aeAdd(a.q||(a.q={}),r); }
+  if(currentTab!=='agents') return;
+  applyFilters(true);   // keeps an open drawer
+  const a=openAgent!=null?AGENTS[openAgent]:null; if(!a) return;
+  await loadAgentTopIssues(a);
+  if(seq===aeQSeq&&openAgent!=null&&AGENTS[openAgent]===a) document.getElementById('drawer-container').innerHTML=renderDrawer(a);
+}
+async function loadAgentTopIssues(a){
+  const key=activeRange.label||'';
+  if(!aeAvailable||!a.q||!a.q.major||a._tiKey===key) return;
+  const canon=resolveIvrName(a.ivrName), ivrs=[canon,...aliasesForAgent(canon)];
+  const fromTs=activeRange.start.toISOString(), endEx=new Date(activeRange.end); endEx.setDate(endEx.getDate()+1);
+  try{
+    a._topIssues=await sbFetch(`agent_call_evals?select=top_issue,call_at&${ivrQuery(ivrs)}&verdict=eq.major&top_issue=not.is.null&call_at=gte.${encodeURIComponent(fromTs)}&call_at=lt.${encodeURIComponent(endEx.toISOString())}&order=call_at.desc&limit=3`)||[];
+    a._tiKey=key;
+  }catch(e){ console.warn('agent top issues:',e.message); }
+}
+
 // ─── REVIEW TAB ───────────────────────────────────────────────────────────────
 // Agent-by-agent review: read the calls that went through an agent, answer four
 // required questions, save a dated review. Each review is windowed to "calls since
@@ -2895,7 +3123,7 @@ async function reviewInit(){
 // (agent_counterparties, migration 044).
 const rvScopeBlank=()=>({ side:'advertiser', mgr:'', accts:[] });
 let reviewBoard = { managers:[], lastReview:{}, counts:{}, filter:'all', myId:null,
-  acctAssign:[], links:{}, draft:rvScopeBlank(), applied:rvScopeBlank(), scopeInit:false, acctSearch:'' };
+  acctAssign:[], links:{}, issues:{}, draft:rvScopeBlank(), applied:rvScopeBlank(), scopeInit:false, acctSearch:'' };
 
 async function renderReviewPicker(){
   RV=null;
@@ -2906,16 +3134,19 @@ async function renderReviewPicker(){
 
 async function loadReviewBoardData(){
   const b=reviewBoard;
-  b.managers=[]; b.lastReview={}; b.counts={}; b.acctAssign=[]; b.links={};
+  b.managers=[]; b.lastReview={}; b.counts={}; b.acctAssign=[]; b.links={}; b.issues={};
   const since=new Date(Date.now()-30*86400000).toISOString();
   const nope=e=>{console.warn('review board:',e.message);return[];};
-  const [mgrs,reviews,counts,acctAssign,links]=await Promise.all([
+  const [mgrs,reviews,counts,acctAssign,links,quality]=await Promise.all([
     sbFetch('account_managers?select=id,manager_name,manager_email&order=manager_name.asc').catch(nope),
     sbFetch('agent_reviews?select=ivr_name,created_at&order=created_at.desc&limit=3000').catch(nope),
     sbFetch('rpc/review_counts',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
     sbFetch('account_manager_assignments?select=account_name,account_type,manager_id').catch(nope),
     sbFetch('rpc/agent_counterparties',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope),
+    aeAvailable ? sbFetch('rpc/agent_eval_metrics',{method:'POST',body:JSON.stringify({since_ts:since})}).catch(nope) : [],
   ]);
+  // Agent quality issues (major AI verdicts) in the same 30 days, keyed by canonical IVR.
+  for(const r of (quality||[])){ const k=resolveIvrName(r.ivr_name); aeAdd(b.issues[k]||(b.issues[k]={}), r); }
   b.managers=mgrs||[];
   b.acctAssign=acctAssign||[];
   for(const r of (links||[])){
@@ -2968,7 +3199,9 @@ function renderReviewBoard(){
   const counts={ all:withStatus.length, needs:withStatus.filter(x=>x.st.status==='needs').length };
   let rows=withStatus;
   if(b.filter==='needs') rows=rows.filter(x=>x.st.status==='needs');
-  rows.sort((x,y)=>{ const xn=x.st.status==='needs', yn=y.st.status==='needs'; if(xn!==yn) return xn?-1:1; return x.a.name.localeCompare(y.a.name); });
+  // Within each status group, the agent with the most AI-flagged major calls first.
+  const issuesOf=x=>(b.issues[x.key]||{}).major||0;
+  rows.sort((x,y)=>{ const xn=x.st.status==='needs', yn=y.st.status==='needs'; if(xn!==yn) return xn?-1:1; return issuesOf(y)-issuesOf(x) || x.a.name.localeCompare(y.a.name); });
 
   // Draft controls (filter bar): options follow the DRAFT side + manager.
   const drAdv=dr.side==='advertiser', drNoun=drAdv?'advertisers':'publishers';
@@ -3007,19 +3240,22 @@ function renderReviewBoard(){
      <div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}
        <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Click a row to review its calls.</span></div>
      <div class="rv-board-wrap"><table class="rv-board">
-       <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th>Last reviewed</th><th></th></tr></thead>
+       <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th title="Calls the AI agent review graded a major issue">Issues (30d)</th><th>Last reviewed</th><th></th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
          const cnt=b.counts[x.key]||{reviewable:0,reviewed:0};
          const cells=cnt.reviewable ? cnt.reviewable.toLocaleString() : '<span style="color:var(--text-3)">—</span>';
+         const iq=b.issues[x.key];
+         const issues=iq&&iq.scored ? `<span class="${iq.major?'rv-board-issues':''}" title="${iq.major} major of ${iq.conversations} scored conversations">${iq.major.toLocaleString()}</span>` : '<span style="color:var(--text-3)">—</span>';
          return `
          <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
            <td class="rv-board-name">${esc(x.a.name)}</td>
            <td style="color:var(--text-2)">${esc(x.a.vertical||'—')}</td>
            ${scopeSet?acctCell(x):''}
            <td class="rv-board-calls">${cells}</td>
+           <td class="rv-board-calls">${issues}</td>
            <td class="rv-board-calls">${b.lastReview[x.key]?fmtDate(new Date(b.lastReview[x.key])):'<span style="color:var(--text-3)">—</span>'}</td>
            <td class="rv-board-open">Review →</td>
-         </tr>`; }).join('') : `<tr><td colspan="${scopeSet?6:5}" class="rv-board-empty">${esc(emptyMsg)}</td></tr>` }</tbody>
+         </tr>`; }).join('') : `<tr><td colspan="${scopeSet?7:6}" class="rv-board-empty">${esc(emptyMsg)}</td></tr>` }</tbody>
      </table></div>`;
   if(b.acctSearch) rvAcctSearch(b.acctSearch);
 }
@@ -3096,7 +3332,7 @@ async function openReview(ivrName){
        windowStart:resolveReviewWindow(), reviewedSet:new Set(), reviewers:{}, notesByCall:{}, metrics:null, answers:{},
        history:[], notes:[], scope: accts.length ? {side:ap.side, accts, on:true} : null };
   renderReviewWorkspace();
-  await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true), loadReviewHistory(), loadAgentNotes() ]);
+  await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true), loadReviewHistory(), loadAgentNotes(), loadEvalDisagree() ]);
 }
 
 // Fixed trailing-30-day window (overridable via the date input).
@@ -3128,21 +3364,24 @@ function rvToggleScope(){
 async function loadReviewMetrics(){
   const rv=RV, seq=++rv.mseq;
   let raw=0,paid=0,revenue=0;
+  const ai=aeTallyBlank();   // agent-quality tallies over the same calls (agent_call_evals)
   try{
-    const path=`canoe_calls?select=advertiser_payin&${ivrQuery(rv.ivrs)}${rvScopeQuery()}&created_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null`;
+    const aeSel=aeAvailable?`,agent_call_evals(verdict,decision_verdict,dropoff_stage,understanding,script)`:'';
+    const path=`canoe_calls?select=advertiser_payin${aeSel}&${ivrQuery(rv.ivrs)}${rvScopeQuery()}&created_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null`;
     let offset=0; const PAGE=1000;
     while(true){
       const batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${offset}-${offset+PAGE-1}`}})||[];
-      for(const c of batch){ raw++; const pay=Number(c.advertiser_payin||0); if(pay>0) paid++; revenue+=pay; }
+      for(const c of batch){ raw++; const pay=Number(c.advertiser_payin||0); if(pay>0) paid++; revenue+=pay; aeTally(ai,aeOf(c)); }
       if(batch.length<PAGE) break; offset+=PAGE;
     }
   }catch(e){
+    if(aeAvailable&&aeMissing(e)){ aeAvailable=false; return loadReviewMetrics(); }   // 056 not applied: KPIs without the AI tiles
     console.warn('review metrics:',e.message);
     if(RV===rv&&seq===rv.mseq){ rv.metrics=null; updateReviewPerf(); }   // "—", not partial counts shown as real KPIs
     return;
   }
   if(RV!==rv||seq!==rv.mseq) return;   // superseded (scope/window changed, or left the agent)
-  rv.metrics={raw,paid,revenue};
+  rv.metrics={raw,paid,revenue,ai};
   updateReviewPerf();
 }
 
@@ -3166,14 +3405,16 @@ async function loadReviewCalls(reset){
   const rv=RV, seq=rv.seq;
   rv.loading=true;
   const PAGE=100;
-  const sel='id,created_at,publisher_name,advertiser_name,ivr_name,vertical_name,ivr_duration,disposition,disposition_description,intent,ai_agent_phone_number,our_outcome,our_summary,flags,recording_url,ascnd_recording_url,ascnd_transcript,called_from';
+  const ae=aeCallQuery(rv.aiFilter);   // embedded agent eval + the AI filter (Needs a look, Over-rejects, ...)
+  const sel='id,created_at,publisher_name,advertiser_name,ivr_name,vertical_name,ivr_duration,disposition,disposition_description,intent,ai_agent_phone_number,our_outcome,our_summary,flags,recording_url,ascnd_recording_url,ascnd_transcript,called_from'+ae.sel;
   // Review is ASCND-only: show a call only when it has an AI-agent (ASCND) transcript.
-  const path=`canoe_calls?select=${sel}&${ivrQuery(rv.ivrs)}${rvScopeQuery()}&created_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null&order=created_at.desc`;
+  const path=`canoe_calls?select=${sel}&${ivrQuery(rv.ivrs)}${rvScopeQuery()}&created_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&is_test=not.is.true&ascnd_transcript=not.is.null${ae.q}&order=created_at.desc`;
   let batch;
   try{
     batch=await sbFetch(path,{headers:{'Range-Unit':'items','Range':`${rv.offset}-${rv.offset+PAGE-1}`}})||[];
   }catch(e){
     if(RV!==rv||seq!==rv.seq) return;
+    if(aeAvailable&&aeMissing(e)){ aeAvailable=false; rv.aiFilter='all'; renderAeFilters(); rv.loading=false; return loadReviewCalls(true); }
     console.warn('review calls:',e.message);
     const box=document.getElementById('rv-calls'); if(box) box.innerHTML=`<div class="empty" style="padding:24px">Could not load calls: ${esc(e.message)}</div>`;
     rv.loading=false; return;
@@ -3205,9 +3446,11 @@ function renderReviewWorkspace(){
     <div class="rv-objective" id="rv-objective"></div>
     <div class="rv-scope-note" id="rv-scope-note"></div>
     <div class="rv-perf" id="rv-perf"></div>
+    <div id="rv-perf-ae"></div>
     <div class="rv-cols">
       <div class="rv-panel">
         <div class="rv-panel-head"><span class="t">AI calls · ASCND transcript</span><span class="n" id="rv-count">loading…</span></div>
+        <div class="rv-ae-filters" id="rv-ae-filters"></div>
         <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
       </div>
       <div class="rv-side">
@@ -3329,7 +3572,7 @@ function renderReviewHistory(){
 
 function reviewFormHtml(){
   return `<div class="rv-form">
-    ${RV_QUESTIONS.map((q,i)=>`<div><span class="rv-q-label">${i+1} · ${esc(q.q)}</span>
+    ${RV_QUESTIONS.map((q,i)=>`<div><span class="rv-q-label">${i+1} · ${esc(q.q)}</span><span class="rv-ae-hint" id="rv-ae-hint-${q.key}"></span>
       <div class="rv-opts">${q.opts.map(o=>`<button data-key="${q.key}" data-val="${o.v}" data-tone="${o.tone}" onclick="rvSeg('${q.key}','${o.v}',this)">${o.l}</button>`).join('')}</div></div>`).join('')}
     <div><span class="rv-q-label">The #1 change to make to this agent</span>
       <textarea class="rv-ta" id="rv-top-change" placeholder="The single highest-impact fix…"></textarea></div>
@@ -3349,7 +3592,7 @@ function rvSeg(key,val,btn){
 
 function renderReviewCalls(){
   const box=document.getElementById('rv-calls'); if(!box) return;
-  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
+  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':RV.aiFilter&&RV.aiFilter!=='all'?'No calls match this filter in this window.':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
   else {
     box.innerHTML=RV.calls.map((c,i)=>reviewCallRow(c,i)).join('')+
       (RV.done?'':`<div style="padding:12px 16px"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
@@ -3373,6 +3616,7 @@ function reviewCallRow(c,i){
     <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${c.our_outcome?`<span title="AI outcome">${outcomeBadge(c.our_outcome)}</span>`:''}${disp}${flags}</div>
     ${aiSum}
     ${desc}
+    ${aeRowHtml(c)}
     ${noteShown}
     <div class="rv-actions">
       <button class="rv-btn" onclick="rvToggleTx(${i})">▸ Transcript</button>
@@ -3380,12 +3624,18 @@ function reviewCallRow(c,i){
       <button class="rv-btn" onclick="rvShowNote(${i})">✎ ${saved?'Edit note':'Note'}</button>
       <button type="button" class="rv-check${chk.on?' on':''}" id="rv-chk-${i}" aria-pressed="${chk.on}" title="${esc(chk.title)}"${chk.locked?' disabled':''} onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${esc(chk.label)}</button>
     </div>
-    <div class="rv-transcript" id="rv-tx-${i}" style="display:none">${tx?esc(tx):'No transcript available.'}</div>
+    ${aeDetailHtml(c,i,((RV.disagreeBy||{})[c.id]||[]).includes(getAuthUser()))}
+    <div class="rv-transcript" id="rv-tx-${i}" style="display:none">${tx?aeMarkQuotes(esc(tx),c):'No transcript available.'}</div>
     <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
   </div>`;
 }
 
-function rvToggleTx(i){ const el=document.getElementById('rv-tx-'+i); if(el) el.style.display=el.style.display==='none'?'block':'none'; }
+function rvToggleTx(i){
+  const el=document.getElementById('rv-tx-'+i); if(!el) return;
+  const show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  const ai=document.getElementById('rv-ae-'+i); if(ai) ai.style.display=show?'block':'none';   // AI assessment above it
+}
 function rvShowNote(i){ const w=document.getElementById('rv-note-wrap-'+i); if(w){ w.style.display=w.style.display==='none'?'block':'none'; if(w.style.display==='block'){ const t=document.getElementById('rv-note-in-'+i); if(t) t.focus(); } } }
 
 async function rvSaveNote(callId,i){
@@ -3442,6 +3692,67 @@ function updateReviewPerf(){
     ['Revenue',m?'$'+Math.round(m.revenue||0).toLocaleString():'—'],
   ];
   box.innerHTML=tiles.map(t=>`<div class="rv-perf-item"><div class="rv-perf-val">${t[1]}</div><div class="rv-perf-lbl">${t[0]}</div></div>`).join('');
+  updateReviewAiPerf();
+}
+
+// Agent-quality KPIs, the call-list filter counts and the review-form hints (same calls as the list).
+function updateReviewAiPerf(){
+  const box=document.getElementById('rv-perf-ae'); if(!box||!RV) return;
+  const m=RV.metrics, t=m&&m.ai;
+  if(!aeAvailable){ box.innerHTML=''; renderAeFilters(); return; }
+  const tiles=[
+    ['Handled well', t&&t.conv?fmtPct(t.good,t.conv):'—'],
+    ['Defect rate',  t&&t.conv?fmtPct(t.major,t.conv):'—'],
+    ['Over-rejects', t?t.over_reject.toLocaleString():'—'],
+    ['Over-transfers', t?t.over_transfer.toLocaleString():'—'],
+    ['Intro drop-off', t&&t.scored?fmtPct(t.drop_intro,t.scored):'—'],
+  ];
+  box.innerHTML=`<div class="rv-ae-perf-head"><span class="rv-ae-lbl">AI agent review</span><span>${t?`${t.scored.toLocaleString()} of ${m.raw.toLocaleString()} calls scored`:'loading…'}</span></div>
+    <div class="rv-perf rv-perf-ae">${tiles.map(x=>`<div class="rv-perf-item"><div class="rv-perf-val">${x[1]}</div><div class="rv-perf-lbl">${x[0]}</div></div>`).join('')}</div>`;
+  const hints={
+    qualifying:    t=>`AI: ${t.over_reject} over-rejects, ${t.over_transfer} over-transfers in ${t.conv} calls`,
+    dropoff:       t=>`AI: ${t.drop_intro} at intro, ${t.drop_mid} mid-qualification, ${t.drop_transfer} at transfer, of ${t.scored} calls`,
+    understanding: t=>`AI: ${t.mishears} mishears, ${t.pauses} pauses, ${t.stuck} stuck in ${t.conv} calls`,
+    script:        t=>`AI: ${t.too_long} too long, ${t.late_dq} late disqualifiers, ${t.missing} missing a question in ${t.conv} calls`,
+  };
+  for(const k of Object.keys(hints)){ const el=document.getElementById('rv-ae-hint-'+k); if(el) el.textContent=t&&t.scored?hints[k](t):''; }
+  renderAeFilters();
+}
+function renderAeFilters(){
+  const box=document.getElementById('rv-ae-filters'); if(!box||!RV) return;
+  if(!aeAvailable){ box.innerHTML=''; box.style.display='none'; return; }
+  box.style.display='';
+  const t=RV.metrics&&RV.metrics.ai, raw=RV.metrics?RV.metrics.raw:0;
+  box.innerHTML=AE_FILTERS.map(f=>`<button class="rv-board-filter${(RV.aiFilter||'all')===f.k?' active':''}" onclick="rvSetAeFilter('${f.k}')">${f.l}${t&&f.n?` <span style="opacity:.65">${f.n(t,raw)}</span>`:''}</button>`).join('');
+}
+function rvSetAeFilter(k){
+  if(!RV||(RV.aiFilter||'all')===k) return;
+  RV.aiFilter=k;
+  renderAeFilters();
+  loadReviewCalls(true);
+  renderReviewCalls();   // show "Loading calls…" right away
+}
+
+// "AI got this wrong" marks (call_reviews.eval_disagree), per reviewer: call id → reviewers.
+async function loadEvalDisagree(){
+  const rv=RV; if(!rv||!aeAvailable) return;
+  try{
+    const rows=await sbFetch(`call_reviews?select=call_id,reviewed_by&eval_disagree=is.true&${ivrQuery(rv.ivrs)}&reviewed_at=gte.${encodeURIComponent(rv.windowStart.toISOString())}&limit=5000`)||[];
+    if(RV!==rv) return;
+    rv.disagreeBy={};   // RV.aiFilter / RV.disagreeBy are created lazily (undefined = All / none)
+    for(const r of rows) (rv.disagreeBy[r.call_id]||(rv.disagreeBy[r.call_id]=[])).push(r.reviewed_by);
+    renderReviewCalls();
+  }catch(e){ console.warn('eval_disagree:',e.message); }
+}
+async function rvToggleDisagree(callId,el){
+  const by=getAuthUser(); if(!by){ alert('Log in to flag the AI assessment.'); return; }
+  const rv=RV, dis=rv.disagreeBy||(rv.disagreeBy={}), list=dis[callId]||[], on=!list.includes(by);
+  try{
+    // Upsert only these columns: a note or reviewed mark on the same review row is kept.
+    await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:rv.agent.ivrName,reviewed_by:by,eval_disagree:on,reviewed_at:new Date().toISOString()})});
+    dis[callId]=on?[...list,by]:list.filter(x=>x!==by);
+    if(el){ el.classList.toggle('on',on); el.innerHTML=(on?'☑':'☐')+' AI got this wrong'; }
+  }catch(e){ alert('Could not save: '+e.message); }
 }
 
 function updateReviewWindowLabel(){
@@ -3457,7 +3768,7 @@ function reviewSetWindow(v){
   const d=new Date(v+'T00:00:00'); if(isNaN(d.getTime())) return;
   RV.windowStart=d;
   updateReviewWindowLabel();
-  Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
+  Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true), loadEvalDisagree() ]);
 }
 
 function reviewFieldVal(id){ const el=document.getElementById(id); const v=el?(el.value||'').trim():''; return v||null; }

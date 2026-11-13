@@ -337,20 +337,21 @@ test('Agents cards + breakdowns are deferred when the page lands on another tab'
     updateDataWindowLabels() { ctx.labelled = true; }, sbFetch: async p => { fetched.push(p); return []; },
     loadAllBreakdowns: () => { fetched.push('breakdowns'); return Promise.resolve({}); },
     aliasesForAgent: () => [], resolveIvrName: n => n, recomputeStats() {}, applyFilters() {}, console: { warn() {} },
+    loadAgentQuality: () => { fetched.push('quality'); },
   }, ['async function refreshMetrics('], ['refreshMetrics']);
   await ctx.refreshMetrics();
-  assert.deepEqual(fetched, [], 'no agent_metrics / agent_breakdown_all on a Scores landing');
+  assert.deepEqual(fetched, [], 'no agent_metrics / agent_breakdown_all / agent quality on a Scores landing');
   assert.equal(ctx.agentsMetricsDeferred, true);
   assert.equal(ctx.labelled, true, 'the footer window label still renders');
   ctx.currentTab = 'agents';
   await ctx.refreshMetrics();
-  assert.deepEqual(fetched, ['breakdowns', 'rpc/agent_metrics']);
+  assert.deepEqual(fetched, ['breakdowns', 'quality', 'rpc/agent_metrics']);
   assert.equal(ctx.agentsMetricsDeferred, false);
 });
 
 test('Review KPIs show "—" when their load failed, not zeros', () => {
   const box = { innerHTML: '' };
-  const ctx = load({ RV: { metrics: null }, document: { getElementById: () => box }, fmtPct: () => 'x' }, ['function updateReviewPerf('], ['updateReviewPerf']);
+  const ctx = load({ RV: { metrics: null }, document: { getElementById: () => box }, fmtPct: () => 'x', updateReviewAiPerf() {} }, ['function updateReviewPerf('], ['updateReviewPerf']);
   ctx.updateReviewPerf();
   assert.equal((box.innerHTML.match(/rv-perf-val">—</g) || []).length, 4);
   ctx.RV.metrics = { raw: 10, paid: 2, revenue: 99.6 };
