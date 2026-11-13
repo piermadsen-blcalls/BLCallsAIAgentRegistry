@@ -1254,7 +1254,7 @@
       <div class="settings-section">
         <div class="settings-section-header">
           <div class="settings-section-title">Account Managers</div>
-          <button class="settings-add-btn" onclick="settingsShowAddManager(true)">+ Add Manager</button>
+          <button class="settings-add-btn" id="settings-add-mgr-btn" style="display:none" onclick="settingsShowAddManager(true)">+ Add Manager</button>
         </div>
         <div id="settings-add-manager" class="settings-add-form" style="display:none">
           <input class="settings-input" id="s-mgr-name" placeholder="Full name" style="flex:1">
@@ -3775,7 +3775,7 @@ function renderObjective(editing){
     ? `<div class="rv-obj-lbl">IVR objective</div>
        <textarea class="rv-ta" id="rv-obj-in" placeholder="What is this IVR trying to achieve?">${esc(obj)}</textarea>
        <div class="rv-obj-actions"><button class="rv-save" id="rv-obj-save" onclick="saveObjective()">Save</button><button class="rv-btn" onclick="renderObjective(false)">Cancel</button><span class="rv-save-msg" id="rv-obj-msg"></span></div>`
-    : `<div class="rv-obj-top"><div class="rv-obj-lbl">IVR objective</div><button class="rv-btn" onclick="renderObjective(true)">${obj?'Edit':'Add objective'}</button></div>
+    : `<div class="rv-obj-top"><div class="rv-obj-lbl">IVR objective</div>${window.isAdmin===true?`<button class="rv-btn" onclick="renderObjective(true)">${obj?'Edit':'Add objective'}</button>`:''}</div>
        <div class="rv-obj-text${obj?'':' is-empty'}">${obj?esc(obj):'No objective set yet.'}</div>`;
   if(editing) document.getElementById('rv-obj-in')?.focus();
 }
@@ -4115,10 +4115,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 let agentsLoadedPromise = null;
+function loadAgentsData() { return Promise.all([loadAliases().then(loadAgentActivity), loadAgentsFromSupabase(), loadTestCalls()]); }
+// Signed out there is nothing to read (migration 063: no access without a login), so the boot
+// skips the agent loads and every sign-in runs them (reloadAgentsData) before the tabs use them.
+function reloadAgentsData() { agentsLoadedPromise = loadAgentsData(); return agentsLoadedPromise.then(() => { recomputeStats(); applyFilters(); }); }
 async function bootDashboard() {
   agentDrpInit();
   loadFreshness();
-  agentsLoadedPromise = Promise.all([loadAliases().then(loadAgentActivity), loadAgentsFromSupabase(), loadTestCalls()]);
+  agentsLoadedPromise = getAuthToken() ? loadAgentsData() : Promise.resolve();
   await agentsLoadedPromise;
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();   // columns: defaults + saved choices (crLoadColPrefs)
   recomputeStats();
@@ -4201,7 +4205,9 @@ async function doLogin() {
     document.getElementById('login-overlay').classList.add('hidden');
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
+    const agentsReady = reloadAgentsData();
     await applyRoute();
+    await agentsReady;
     refreshMetrics(); loadFreshness(); showNewIvrsForAdmins(true);
   } catch(e) {
     errEl.textContent = e.message;
@@ -4322,7 +4328,9 @@ async function doSetPassword() {
     document.getElementById('setpassword-overlay').classList.add('hidden');
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
+    const agentsReady = reloadAgentsData();
     await applyRoute();
+    await agentsReady;
     refreshMetrics(); loadFreshness(); showNewIvrsForAdmins(true);
   } catch(e) {
     errEl.textContent = e.message;
@@ -4774,6 +4782,7 @@ async function settingsInit() {
   if (compManagers.length) settingsRenderManagers(); else await settingsLoadManagers();   // empty = the shared load failed; retry shows the error
   settingsLoadAccountsTable();   // renders its own result/error; the admin sections below no longer wait on it
   if (window.isAdmin) {
+    document.getElementById('settings-add-mgr-btn').style.display = '';
     document.getElementById('settings-users-section').style.display = 'block';
     document.getElementById('settings-prompts-section').style.display = 'block';
     document.getElementById('settings-weights-section').style.display = 'block';
@@ -4820,7 +4829,7 @@ function settingsRenderManagers() {
         <td style="font-weight:500">${esc(m.manager_name)}</td>
         <td style="color:var(--text-2)">${esc(m.manager_email || '')}</td>
         ${showAdmin ? `<td style="text-align:center"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer"></td>` : ''}
-        <td style="text-align:right"><button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button></td>
+        <td style="text-align:right">${showAdmin ? `<button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button>` : ''}</td>
       </tr>`).join('')}
     </tbody></table>`;
 }
@@ -4940,7 +4949,7 @@ function settingsRenderAccountsTable() {
         <td><span class="flag-badge" style="${typeColor}">${r.account_type}</span></td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
-            <select class="settings-select assign-mgr-select" style="min-width:160px"
+            <select class="settings-select assign-mgr-select" style="min-width:160px"${window.isAdmin ? '' : ' disabled'}
               data-account="${esc(r.account_name)}" data-type="${r.account_type}">
               ${opts}
             </select>

@@ -999,3 +999,23 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Tested in local PGlite (migration, test, rollback, re-apply); real-agent check via read-only SELECTs.
   Not applied to prod yet (firstmate applies after merge). Tests: 170/170 pass.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - Security lockdown, migration 063 (branch `fm/ivr-security`)
+- Bug bash items 1-3. Inventoried every database consumer first (code, 7 days of API and
+  function logs, n8n): the page (publishable key + session), the scripts and the
+  hl-call-webhook (service role), pg_cron (postgres), and `reports_ro` (direct login, external).
+  Nothing needs access without a login.
+- **063:** anon gets no table, sequence or function access in public; RLS on for the two import
+  tables; anon/"allow all" policies dropped; default privileges stop re-granting anon.
+  `public.is_admin()` gates writes on account_managers, assignments, alert settings, ai_prompts,
+  outcome_weights, agents and agent_review_assignments. Signed-in users update only
+  `canoe_calls.compliance_reviewed`; no signed-in writes on hl_call_data/agent_calls_raw;
+  rollup/pairing RPCs are service-only; `recalculate_call_scores` refuses non-admins.
+- **Page:** a signed-out boot no longer reads agents (it relied on anon access); every sign-in
+  loads them. Add/Remove manager, account assignment and the IVR objective Edit are admin-only.
+- Removed the unused `admin-users` edge function source (deployed as `quick-responder`, 0 calls in
+  7 days); deleting the deployed copy is a dashboard step.
+- Tested in local PGlite rebuilt from prod's catalog (test fails before, passes after; rollback
+  restores the catalog exactly). `scripts/check_anon_access.js` is the after-apply proof.
+  Not applied to prod. Next: deploy the page, apply 063, turn off sign-ups, run the check.
+- External sources (Wispr/Jira) not pulled this session.
