@@ -202,14 +202,13 @@ begin
   end;
 end $$;
 
--- ── reports_ro (direct login) ──
-set local role reports_ro;
+-- ── reports_ro (direct login): checked in the catalog; postgres can't SET ROLE to it in prod ──
+set local role postgres;
 do $$
 begin
-  perform 1 from public.canoe_calls limit 1;
-  perform 1 from public.outcome_weights limit 1;
+  assert exists (select 1 from pg_policies where tablename = 'canoe_calls' and 'reports_ro' = any(roles) and cmd = 'SELECT'), 'reports_ro policy on canoe_calls';
+  assert exists (select 1 from pg_policies where tablename = 'outcome_weights' and 'reports_ro' = any(roles) and cmd = 'SELECT'), 'reports_ro policy on outcome_weights';
 end $$;
 
-set local role postgres;
 select 'ALL 063 TESTS PASSED' as result;
 rollback;
