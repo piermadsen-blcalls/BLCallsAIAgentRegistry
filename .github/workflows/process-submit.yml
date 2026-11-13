@@ -22,8 +22,14 @@ on:
         description: 'Max calls to pull this run (fanned into GEMINI_CHUNK-sized jobs). Raise for backfill.'
         default: '1000'
       dry_run:
-        description: 'true = build + log the batch without submitting'
+        description: 'true = build + log the batch without submitting (agent scorer: score synchronously and print each reply; writes nothing)'
         default: 'false'
+      target:
+        description: 'Which scorer: both, call (buyer-leg outcome + flags, process.js) or agent (AI agent quality, agent_eval.js)'
+        default: 'both'
+      test_call_ids:
+        description: 'Agent scorer only: comma-separated call ids to score instead of the queue (pair with dry_run=true to preview)'
+        default: ''
 
 # One submit at a time: overlapping runs could both pass the in-flight check and pay twice.
 concurrency:
@@ -41,6 +47,7 @@ jobs:
           node-version: '24'
 
       - name: Submit Gemini batch jobs
+        if: ${{ github.event.inputs.target != 'agent' }}
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -51,3 +58,20 @@ jobs:
           BATCH_SIZE:           ${{ github.event.inputs.batch_size || '1000' }}
           DRY_RUN:              ${{ github.event.inputs.dry_run || 'false' }}
         run: node scripts/process.js
+
+      # AI agent quality (migration 056): grades the agent leg (ascnd_transcript) of every ASCND
+      # call, sent to a buyer or not, into agent_call_evals. Runs even if the call submit failed.
+      # ~120 calls/day; the 30-day window drains any backlog BATCH_SIZE at a time, newest first.
+      - name: Submit AI agent scoring jobs
+        if: ${{ !cancelled() && github.event.inputs.target != 'call' }}
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
+          AI_MODEL:             'gemini-3.6-flash'
+          BATCH_ACTION:         'submit'
+          BACKFILL_DAYS:        ${{ github.event.inputs.backfill_days || '30' }}
+          BATCH_SIZE:           ${{ github.event.inputs.batch_size || '500' }}
+          DRY_RUN:              ${{ github.event.inputs.dry_run || 'false' }}
+          TEST_CALL_IDS:        ${{ github.event.inputs.test_call_ids || '' }}
+        run: node scripts/agent_eval.js
