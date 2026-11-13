@@ -2209,10 +2209,26 @@ function closeDrawer(e){e.stopPropagation();openAgent=null;document.getElementBy
 // ─── NEW IVRs (check_new_ivrs, migration 060) ────────────────────────────────
 // AI IVRs the post-sync check registered as needs_setup. Their calls count from the first one;
 // the banner lists them until someone sets the vertical and screening rules (the setup form).
+// Admins only (captain, 2026-11-13): the banner, the setup form and the Review board's setup note.
+// window.isAdmin is undefined until the managers list loads (signed in), then true or false; nothing
+// renders until it is true, so a non-admin never sees the banner flash in while it loads.
 let ivrSetupOpen=null;   // AGENTS index whose setup form is open
 const SETUP_VERTICALS=['Home Services','Insurance','Legal','Financial','Other'];
+function canSetUpIvrs(){ return window.isAdmin===true; }
+// Settle admin status, then draw the admin-only new-IVR UI: at boot, and again after a sign-in.
+// Signed out the managers list reads as empty (RLS), which would cache "not an admin" past the
+// sign-in, so a signed-out page skips this and a sign-in (refresh) re-reads it. ?setup= is handled once.
+let setupLinkHandled=false;
+async function showNewIvrsForAdmins(refresh){
+  if(!getAuthToken()) return;
+  if(refresh) _assignmentsPromise=null;
+  await ensureAssignments(); await agentsLoadedPromise;
+  renderNewIvrBanner();
+  if(!setupLinkHandled&&window.isAdmin!==undefined){ setupLinkHandled=true; openSetupFromUrl(); }
+}
 function renderNewIvrBanner(doneMsg){
   const el=document.getElementById('new-ivr-banner');
+  if(!canSetUpIvrs()){ ivrSetupOpen=null; el.hidden=true; el.innerHTML=''; return; }
   const list=AGENTS.map((a,i)=>({a,i})).filter(x=>needsSetup(x.a))
     .sort((x,y)=>(y.a.firstSeenAt||'').localeCompare(x.a.firstSeenAt||'')||x.a.name.localeCompare(y.a.name));
   if(!list.length){ ivrSetupOpen=null; el.className='new-ivr-banner done'; el.hidden=!doneMsg; el.innerHTML=doneMsg?esc(doneMsg):''; return; }
@@ -2279,7 +2295,7 @@ async function saveIvrSetup(i){
 function openSetupFromUrl(){
   const ivr=new URLSearchParams(location.search).get('setup'); if(!ivr) return;
   const idx=AGENTS.findIndex(a=>a.ivrName===ivr); if(idx<0) return;
-  if(needsSetup(AGENTS[idx])) openIvrSetup(idx,true);
+  if(needsSetup(AGENTS[idx])&&canSetUpIvrs()) openIvrSetup(idx,true);
   else { document.getElementById('search-input').value=AGENTS[idx].name; applyFilters(); }
 }
 
@@ -3313,7 +3329,7 @@ let reviewBoard = { managers:[], lastReview:{}, counts:{}, filter:'all', myId:nu
 async function renderReviewPicker(){
   RV=null;
   document.getElementById('review-root').innerHTML='<div class="empty">Loading review board…</div>';
-  await loadReviewBoardData();
+  await Promise.all([loadReviewBoardData(), ensureAssignments()]);   // admin status gates the setup note
   renderReviewBoard();
 }
 
@@ -3429,7 +3445,7 @@ function renderReviewBoard(){
        <button class="run-btn rv-scope-apply" ${dirty?'':'disabled'} onclick="rvApplyScope()">Apply</button>
        <button class="rv-btn rv-refresh" onclick="rvRefreshBoard(this)" title="Reload board data">Refresh</button></div>
      <div class="rv-board-bar"><div class="seg">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}</div></div>
-     ${setupCount?`<div class="rv-setup-note">${setupCount} new IVR${setupCount===1?' is':'s are'} waiting for setup and not counted here. <button onclick="switchTab('agents')">Finish setup on the Agents tab</button></div>`:''}
+     ${setupCount&&canSetUpIvrs()?`<div class="rv-setup-note">${setupCount} new IVR${setupCount===1?' is':'s are'} waiting for setup and not counted here. <button onclick="switchTab('agents')">Finish setup on the Agents tab</button></div>`:''}
      <div class="rv-board-wrap"><table class="rv-board">
        <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th title="Calls the AI agent review graded a major issue">Issues (30d)</th><th>Last reviewed</th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
@@ -4041,8 +4057,7 @@ async function bootDashboard() {
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();   // columns: defaults + saved choices (crLoadColPrefs)
   recomputeStats();
   applyFilters();
-  renderNewIvrBanner();
-  openSetupFromUrl();
+  showNewIvrsForAdmins();   // admin-only; draws once admin status is known
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
 }
 bootDashboard();
@@ -4121,7 +4136,7 @@ async function doLogin() {
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
     await applyRoute();
-    refreshMetrics(); loadFreshness();
+    refreshMetrics(); loadFreshness(); showNewIvrsForAdmins(true);
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -4242,7 +4257,7 @@ async function doSetPassword() {
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
     await applyRoute();
-    refreshMetrics(); loadFreshness();
+    refreshMetrics(); loadFreshness(); showNewIvrsForAdmins(true);
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -4251,7 +4266,7 @@ async function doSetPassword() {
 
 // check auth on load — refresh the session if possible so users sign in once, not every visit
 (async () => {
-  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); await applyRoute(); }
+  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); await applyRoute(); showNewIvrsForAdmins(true); }
   else { clearAuth(); checkAuth(); }
 })();
 window.addEventListener('popstate', applyRoute);
