@@ -47,3 +47,15 @@ jobs:
           PATCH_MAX:             ${{ github.event.inputs.patch_max }}
           SKIP_PASS1:            ${{ github.event.inputs.skip_pass1 }}
         run: node scripts/sync.js
+
+      # One email per AI IVR the sync's check registered for setup (or the 07:15 UTC pg_cron check
+      # found since the last run). Also after a failed pass: the check runs regardless.
+      - name: Email new IVRs
+        if: ${{ !cancelled() }}
+        env:
+          SUPABASE_URL:            ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY:    ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ASCND_ALERT_WEBHOOK_URL: ${{ secrets.ASCND_ALERT_WEBHOOK_URL }}
+          DASHBOARD_URL:           ${{ vars.DASHBOARD_URL }}
+          ALERT_MODE:              new_ivrs
+        run: node scripts/alert.js

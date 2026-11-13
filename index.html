@@ -116,6 +116,39 @@
   .status-live { background: var(--teal-bg); color: var(--teal); }
   .status-test { background: var(--amber-bg); color: var(--amber); }
   .status-inactive { background: var(--gray-bg); color: var(--text-3); }
+  .status-setup { background: var(--blue-bg); color: var(--blue); }
+  /* New IVRs registered by check_new_ivrs (migration 060): banner on the Agents tab + setup form. */
+  .new-ivr-banner { background: var(--amber-bg); border: 1px solid #E8C97A; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; }
+  .new-ivr-banner.done { background: var(--teal-bg); border-color: #5DCAA5; padding: 12px 20px; font-size: 13px; color: var(--teal); }
+  .nib-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .nib-title { font-family: var(--serif); font-size: 20px; color: var(--text); }
+  .nib-count { font-family: var(--mono); font-size: 12px; color: var(--amber); background: var(--surface); border-radius: 100px; padding: 1px 8px; }
+  .nib-note { flex-basis: 100%; font-size: 13px; color: var(--amber); line-height: 1.5; }
+  .nib-done { font-size: 13px; color: var(--teal); margin-top: 8px; }
+  .nib-list { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .nib-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; }
+  .nib-row { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+  .nib-main { flex: 1 1 260px; min-width: 0; }
+  .nib-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .nib-ivr { font-family: var(--mono); font-size: 11px; color: var(--text-3); overflow-wrap: anywhere; margin-top: 2px; }
+  .nib-meta { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+  .nib-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 14px; min-height: 36px; border-radius: var(--radius-sm); background: var(--brand-navy); color: #fff; border: none; cursor: pointer; }
+  .nib-btn:disabled { opacity: .6; cursor: default; }
+  .nib-cancel { font-family: var(--sans); font-size: 13px; padding: 8px 14px; min-height: 36px; border-radius: var(--radius-sm); background: transparent; color: var(--text-2); border: 1px solid var(--border-strong); cursor: pointer; }
+  .nib-form { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border-strong); }
+  .nib-form-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 16px; }
+  .nib-hint { font-weight: 400; color: var(--text-3); }
+  .nib-kind { display: flex; gap: 8px 18px; flex-wrap: wrap; font-size: 13px; color: var(--text); }
+  .nib-kind label { display: flex; align-items: center; gap: 6px; cursor: pointer; min-height: 32px; }
+  .nib-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .nib-err { font-size: 12.5px; color: var(--coral); }
+  .rv-setup-note { font-size: 12px; color: var(--text-2); margin: -4px 0 12px; }
+  .rv-setup-note button { background: none; border: none; padding: 0; font: inherit; color: var(--brand-navy); font-weight: 500; text-decoration: underline; cursor: pointer; }
+  @media (max-width: 640px) {
+    .new-ivr-banner { padding: 14px; }
+    .nib-form-grid { grid-template-columns: minmax(0,1fr); }
+    .nib-row > .nib-btn { width: 100%; }
+  }
   .card-name { font-family: var(--serif); font-size: 17px; font-weight: 400; color: var(--text); line-height: 1.3; margin-bottom: 5px; }
   .card-routing { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
   .card-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border); }
@@ -962,6 +995,7 @@
       <div class="stat"><div class="stat-num" id="stat-revenue">—</div><div class="stat-label" id="stat-revenue-label">revenue / 30d</div></div>
       <div class="stat"><div class="stat-num" id="stat-margin">—</div><div class="stat-label" id="stat-margin-label">margin / 30d</div></div>
     </div>
+    <div id="new-ivr-banner" hidden></div>
     <div class="toolbar">
       <div class="toolbar-left">
         <div class="search-wrap">
@@ -2046,7 +2080,7 @@ async function loadFreshness(){
 function recomputeStats(){const nd=metricsFailed;document.getElementById('stat-agents').textContent=AGENTS.length;document.getElementById('stat-calls').textContent=nd?'—':AGENTS.reduce((s,a)=>s+(a.raw_calls||0),0).toLocaleString();document.getElementById('stat-revenue').textContent=nd?'—':'$'+(AGENTS.reduce((s,a)=>s+(a.revenue||0),0)/1000).toFixed(1)+'k';document.getElementById('stat-margin').textContent=nd?'—':'$'+(AGENTS.reduce((s,a)=>s+(a.margin||0),0)/1000).toFixed(1)+'k';}
 
 // ─── AGENTS METADATA ──────────────────────────────────────────────────────────
-async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?select=*&order=name.asc');if(!rows||!rows.length){AGENTS=[];return;}AGENTS=rows.map(r=>({ivrName:r.ivr_name,name:r.name,vertical:r.vertical||'Other',status:r.status||'live',routingType:r.routing_type||'unknown',qualifying:Array.isArray(r.qualifying)?r.qualifying:[],disqualify:r.disqualify,publisherCampaigns:Array.isArray(r.publisher_campaigns)?r.publisher_campaigns:[],ivrTargets:Array.isArray(r.ivr_targets)?r.ivr_targets:[],notes:r.notes,objective:r.objective||'',canoeUrl:r.canoe_url||null,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0,margin:0,conversion:0,pubBreakdown:[],advBreakdown:[]}));}catch(e){console.error('Could not load agents:',e.message);AGENTS=[];document.getElementById('agents-grid').innerHTML=`<div class="empty">Could not load agents: ${e.message}</div>`;}}
+async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?select=*&order=name.asc');if(!rows||!rows.length){AGENTS=[];return;}AGENTS=rows.map(r=>({ivrName:r.ivr_name,name:r.name,vertical:r.vertical||'Other',status:r.status||'live',routingType:r.routing_type||'unknown',qualifying:Array.isArray(r.qualifying)?r.qualifying:[],disqualify:r.disqualify,publisherCampaigns:Array.isArray(r.publisher_campaigns)?r.publisher_campaigns:[],ivrTargets:Array.isArray(r.ivr_targets)?r.ivr_targets:[],notes:r.notes,objective:r.objective||'',canoeUrl:r.canoe_url||null,firstSeenAt:r.first_seen_at||null,seenCalls:r.seen_calls||0,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0,margin:0,conversion:0,pubBreakdown:[],advBreakdown:[]}));}catch(e){console.error('Could not load agents:',e.message);AGENTS=[];document.getElementById('agents-grid').innerHTML=`<div class="empty">Could not load agents: ${e.message}</div>`;}}
 
 // ─── TEST CALL LINKS ──────────────────────────────────────────────────────────
 let testCallMap={};
@@ -2061,8 +2095,9 @@ function tcCancel(cardId,ivrName){document.getElementById('tc-row-'+cardId).oute
 // ─── AGENTS RENDER ────────────────────────────────────────────────────────────
 function vClass(v){return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other';}
 function rtLabel(t){return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown';}
-function getEffectiveStatus(a){if(a.status==='test')return'test';if(a.raw_calls>0)return'live';return'inactive';}
-function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}${aeCardLine(a)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
+function needsSetup(a){return a.status==='needs_setup';}
+function getEffectiveStatus(a){if(needsSetup(a))return'setup';if(a.status==='test')return'test';if(a.raw_calls>0)return'live';return'inactive';}
+function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'&&!needsSetup(a)?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':es==='setup'?'New · needs setup':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}${aeCardLine(a)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
 function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${esc(p.campaign)}</td><td class="${p.publisher?'':'muted'}">${esc(p.publisher||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${esc(t.publisher||'—')}</td><td class="${t.advertiser?'':'muted'}">${esc(t.advertiser||'—')}</td><td class="${t.vertical?'':'muted'}">${esc(t.vertical||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
 const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
@@ -2123,6 +2158,83 @@ async function retryAgentBreakdown(){
   if(openAgent===idx) drawer.innerHTML=renderDrawer(a);
 }
 function closeDrawer(e){e.stopPropagation();openAgent=null;document.getElementById('drawer-container').innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});}
+
+// ─── NEW IVRs (check_new_ivrs, migration 060) ────────────────────────────────
+// AI IVRs the post-sync check registered as needs_setup. Their calls count from the first one;
+// the banner lists them until someone sets the vertical and screening rules (the setup form).
+let ivrSetupOpen=null;   // AGENTS index whose setup form is open
+const SETUP_VERTICALS=['Home Services','Insurance','Legal','Financial','Other'];
+function renderNewIvrBanner(doneMsg){
+  const el=document.getElementById('new-ivr-banner');
+  const list=AGENTS.map((a,i)=>({a,i})).filter(x=>needsSetup(x.a))
+    .sort((x,y)=>(y.a.firstSeenAt||'').localeCompare(x.a.firstSeenAt||'')||x.a.name.localeCompare(y.a.name));
+  if(!list.length){ ivrSetupOpen=null; el.className='new-ivr-banner done'; el.hidden=!doneMsg; el.innerHTML=doneMsg?`✓ ${esc(doneMsg)}`:''; return; }
+  if(!list.some(x=>x.i===ivrSetupOpen)) ivrSetupOpen=null;
+  el.className='new-ivr-banner'; el.hidden=false;
+  el.innerHTML=`<div class="nib-head"><span class="nib-title">New IVRs</span><span class="nib-count">${list.length}</span>
+      <span class="nib-note">Found in the Canoe sync and added automatically, so their calls already count. Add the vertical and screening rules to finish setup. Until then they stay out of Needs review.</span></div>
+    ${doneMsg?`<div class="nib-done">✓ ${esc(doneMsg)}</div>`:''}
+    <ul class="nib-list">${list.map(({a,i})=>`<li class="nib-item" id="nib-item-${i}">
+      <div class="nib-row"><div class="nib-main"><div class="nib-name">${esc(a.name)}</div><div class="nib-ivr">${esc(a.ivrName)}</div></div>
+        <div class="nib-meta">${newIvrMeta(a)}</div>
+        ${ivrSetupOpen===i?'':`<button class="nib-btn" onclick="openIvrSetup(${i})">Finish setup</button>`}</div>
+      ${ivrSetupOpen===i?renderIvrSetupForm(a,i):''}</li>`).join('')}</ul>`;
+}
+function newIvrMeta(a){const n=a.seenCalls||0;return(a.firstSeenAt?'First seen '+fmtDate(new Date(a.firstSeenAt))+' · ':'')+n.toLocaleString()+' call'+(n===1?'':'s');}
+function renderIvrSetupForm(a,i){
+  const opt=(v,label,sel)=>`<option value="${esc(v)}"${sel?' selected':''}>${esc(label)}</option>`;
+  const routing=[['unknown','Not sure yet'],['publisher-led','Publisher-led'],['advertiser-led','Advertiser-led'],['both','Both'],['test-only','Internal / test']];
+  const field=(id,label,input)=>`<div class="intake-field"><label class="intake-label" for="nib-${id}-${i}">${label}</label>${input}</div>`;
+  return `<div class="nib-form">
+    <div class="nib-form-grid">
+      ${field('name','Display name',`<input class="intake-input" id="nib-name-${i}" type="text" value="${esc(a.name)}">`)}
+      ${field('vertical','Vertical',`<select class="intake-select" id="nib-vertical-${i}">${opt('','Choose a vertical…',true)}${SETUP_VERTICALS.map(v=>opt(v,v,false)).join('')}</select>`)}
+      ${field('routing','Routing type',`<select class="intake-select" id="nib-routing-${i}">${routing.map(([v,l])=>opt(v,l,v===a.routingType)).join('')}</select>`)}
+      ${field('dq','Disqualify keywords <span class="nib-hint">(optional)</span>',`<input class="intake-input" id="nib-dq-${i}" type="text" value="${esc(a.disqualify||'')}">`)}
+    </div>
+    ${field('qual','Screening rules <span class="nib-hint">(what the agent must confirm before it transfers, one per line)</span>',`<textarea class="intake-textarea" id="nib-qual-${i}">${esc((a.qualifying||[]).join('\n'))}</textarea>`)}
+    ${field('notes','Notes <span class="nib-hint">(optional)</span>',`<input class="intake-input" id="nib-notes-${i}" type="text" value="${esc(a.notes||'')}">`)}
+    <div class="intake-field"><span class="intake-label">This IVR is</span><div class="nib-kind">
+      <label><input type="radio" name="nib-kind-${i}" value="live" checked> a live AI agent</label>
+      <label><input type="radio" name="nib-kind-${i}" value="test"> internal or a test (kept off the boards)</label></div></div>
+    <div class="nib-actions"><button class="nib-btn" id="nib-save-${i}" onclick="saveIvrSetup(${i})">Save and finish setup</button>
+      <button class="nib-cancel" onclick="closeIvrSetup()">Cancel</button><span class="nib-err" id="nib-err-${i}" role="alert"></span></div>
+  </div>`;
+}
+function openIvrSetup(i,scroll){
+  ivrSetupOpen=i; renderNewIvrBanner();
+  const item=document.getElementById('nib-item-'+i); if(!item) return;
+  if(scroll) item.scrollIntoView({block:'start',behavior:'smooth'});
+  document.getElementById('nib-vertical-'+i).focus({preventScroll:true});
+}
+function closeIvrSetup(){ ivrSetupOpen=null; renderNewIvrBanner(); }
+async function saveIvrSetup(i){
+  const a=AGENTS[i], val=id=>document.getElementById(`nib-${id}-${i}`).value.trim();
+  const err=document.getElementById('nib-err-'+i), btn=document.getElementById('nib-save-'+i);
+  const kind=(document.querySelector(`input[name="nib-kind-${i}"]:checked`)||{}).value||'live', vertical=val('vertical');
+  if(kind==='live'&&!vertical){ err.textContent='Choose a vertical first.'; return; }
+  const patch={name:val('name')||a.name, vertical:vertical||null, routing_type:val('routing'),
+    qualifying:val('qual').split('\n').map(s=>s.trim()).filter(Boolean), disqualify:val('dq')||null, notes:val('notes')||null,
+    status:kind==='test'?'test':'live', updated_at:new Date().toISOString()};
+  err.textContent=''; btn.disabled=true; btn.textContent='Saving…';
+  try{
+    // RLS lets only signed-in users update agents; anything else matches no row.
+    const rows=await sbFetch(`agents?ivr_name=eq.${encodeURIComponent(a.ivrName)}`,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify(patch)});
+    if(!rows||!rows.length) throw new Error('nothing was saved. Sign in and try again.');
+    Object.assign(a,{name:patch.name, vertical:patch.vertical||'Other', routingType:patch.routing_type, qualifying:patch.qualifying,
+      disqualify:patch.disqualify, notes:patch.notes, status:patch.status});
+    renderNewIvrBanner(`${a.name} is set up${kind==='test'?' as internal / test':''}.`);
+    applyFilters();
+  }catch(e){ err.textContent='Could not save: '+e.message; btn.disabled=false; btn.textContent='Save and finish setup'; }
+}
+// The new-IVR email links to ?tab=agents&setup=<IVR name>: open that agent's setup form, or once
+// it is set up, search the grid for it.
+function openSetupFromUrl(){
+  const ivr=new URLSearchParams(location.search).get('setup'); if(!ivr) return;
+  const idx=AGENTS.findIndex(a=>a.ivrName===ivr); if(idx<0) return;
+  if(needsSetup(AGENTS[idx])) openIvrSetup(idx,true);
+  else { document.getElementById('search-input').value=AGENTS[idx].name; applyFilters(); }
+}
 
 // ─── INSIGHTS TAB ─────────────────────────────────────────────────────────────
 const insPeriods = { a:{start:null,end:null}, b:{start:null,end:null} };
@@ -3187,7 +3299,9 @@ function renderReviewBoard(){
   // counts/lastReview are keyed by the CANONICAL name, so resolve
   // before looking up — an agents row registered under an aliased name would
   // otherwise miss its own bucket and read "—" / "Never reviewed".
-  const boardAgents=[...AGENTS].filter(a=>getEffectiveStatus(a)!=='test')
+  // New IVRs waiting for setup (migration 060) are not reviewable yet: off the board and its counts.
+  const setupCount=AGENTS.filter(needsSetup).length;
+  const boardAgents=[...AGENTS].filter(a=>!['test','setup'].includes(getEffectiveStatus(a)))
     .map(a=>{ const k=resolveIvrName(a.ivrName); return {a, key:k, st:reviewBoardStatus(k)}; });
   // Applied scope: an agent is in scope when it touched one of the scoped accounts in 30d.
   const scopeSet=rvScopeSet(ap), apAdv=ap.side==='advertiser';
@@ -3239,6 +3353,7 @@ function renderReviewBoard(){
        <button class="rv-btn rv-refresh" onclick="rvRefreshBoard(this)" title="Reload board data">↻ Refresh</button></div>
      <div class="rv-board-bar">${fbtn('all','All',counts.all)}${fbtn('needs','Needs review',counts.needs)}
        <span style="margin-left:auto;font-size:11px;color:var(--text-3)">Click a row to review its calls.</span></div>
+     ${setupCount?`<div class="rv-setup-note">${setupCount} new IVR${setupCount===1?' is':'s are'} waiting for setup and not counted here. <button onclick="switchTab('agents')">Finish setup on the Agents tab</button></div>`:''}
      <div class="rv-board-wrap"><table class="rv-board">
        <thead><tr><th>Agent</th><th>Vertical</th>${scopeSet?`<th>${apAdv?'Advertisers':'Publishers'}</th>`:''}<th>AI calls (30d)</th><th title="Calls the AI agent review graded a major issue">Issues (30d)</th><th>Last reviewed</th><th></th></tr></thead>
        <tbody>${ rows.length ? rows.map(x=>{
@@ -3909,6 +4024,8 @@ async function bootDashboard() {
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();   // columns: defaults + saved choices (crLoadColPrefs)
   recomputeStats();
   applyFilters();
+  renderNewIvrBanner();
+  openSetupFromUrl();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
 }
 bootDashboard();

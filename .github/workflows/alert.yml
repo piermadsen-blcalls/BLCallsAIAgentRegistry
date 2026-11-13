@@ -29,6 +29,9 @@ on:
       dry_run:
         description: 'true to log only: no email, and no alert_log / last_sent_at writes'
         default: 'false'
+      mode:
+        description: 'digest, or new_ivrs to send the pending new-IVR emails (the sync sends these itself; use with override_email to preview)'
+        default: 'digest'
 
 jobs:
   alert:
@@ -54,4 +57,5 @@ jobs:
           ALERT_WINDOW_TO:          ${{ github.event.inputs.window_to || '' }}
           DRY_RUN:                  ${{ github.event.inputs.dry_run || 'false' }}
           DASHBOARD_URL:            ${{ vars.DASHBOARD_URL }}
+          ALERT_MODE:               ${{ github.event.inputs.mode || 'digest' }}
         run: node scripts/alert.js
