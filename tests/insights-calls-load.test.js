@@ -73,7 +73,7 @@ function fakePostgrest(log, { rpc = true, timeouts = {} } = {}) {
 }
 
 function insightsContext(log, opts) {
-  const ctx = { sbFetch: fakePostgrest(log, opts), insVerticalFilter: [], setTimeout: fn => setImmediate(fn) };
+  const ctx = { sbFetch: fakePostgrest(log, opts), insVerticalFilter: [], setTimeout: fn => setImmediate(fn), resolveIvrName: n => n };
   const fns = ['function isSent(', 'function isPaid(', 'function insDayWindows(', 'async function insFetchRetry(', 'async function insFetchPeriod('];
   vm.runInNewContext(fns.map(lift).join(';\n') + ';\nthis.insFetchPeriod = insFetchPeriod;', ctx);
   return ctx;
@@ -146,7 +146,7 @@ test('Insights fallback: a page that keeps timing out fails the run after 3 trie
 test('Calls: "Has recording" filters on recording_id (recording_url is never populated)', () => {
   const values = { 'cr-rec-filter': 'yes', 'cr-pub-filter': '', 'cr-adv-filter': '' };
   const ctx = {
-    crDrpPickStart: '2026-11-01', crDrpPickEnd: '2026-11-11',
+    crDrpPickStart: '2026-11-01', crDrpPickEnd: '2026-11-11', crLinkScope: null,
     crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [],
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: () => false } }) },
   };

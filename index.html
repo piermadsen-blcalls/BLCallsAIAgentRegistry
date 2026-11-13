@@ -266,6 +266,9 @@
     .summary-item { padding:12px 14px; }
     .summary-item:nth-child(odd) { border-left:none; }
     .summary-item:nth-child(n+3) { border-top:1px solid var(--border); }
+    /* The flagged card sits in the right column: open its breakdown leftward so it stays on
+       screen (tapping it widened the page from 375 to 415px). */
+    .summary-item:nth-child(2n) .flag-tip { left:auto; right:8px; }
   }
   .flag-tip .fb-row .fb-n { color:var(--text); font-variant-numeric:tabular-nums; }
   .summary-sub { font-size:11px; margin-top:4px; font-family:var(--mono); }
@@ -342,6 +345,7 @@
   .cr-link:hover { text-decoration:underline; }
   .cr-null { color:var(--text-3); font-style:italic; font-size:11px; }
   .cr-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg); font-size:12px; color:var(--text-3); }
+  .cr-link-scope { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; margin:-8px 0 12px; padding:8px 12px; background:var(--amber-bg); border-radius:var(--radius-sm); font-size:12px; color:var(--text); }
   .cr-load-more { font-family:var(--sans); font-size:12px; font-weight:500; padding:6px 16px; border-radius:var(--radius-sm); background:var(--brand-navy); color:white; border:none; cursor:pointer; }
   .cr-load-more:disabled { opacity:0.4; cursor:not-allowed; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
@@ -655,8 +659,12 @@
   .rv-actions { display:flex; gap:8px; margin-top:9px; flex-wrap:wrap; align-items:center; }
   .rv-btn { font-size:10.5px; font-weight:500; color:var(--brand-navy); border:1px solid var(--border-strong); background:var(--surface); border-radius:var(--radius-sm); padding:3px 9px; cursor:pointer; font-family:var(--sans); }
   .rv-btn:hover { border-color:var(--brand-navy); }
-  .rv-check { font-size:10.5px; color:var(--text-2); display:inline-flex; align-items:center; gap:5px; margin-left:auto; cursor:pointer; user-select:none; }
+  .rv-check { font-size:10.5px; color:var(--text-2); display:inline-flex; align-items:center; gap:5px; margin-left:auto; cursor:pointer; user-select:none; background:none; border:none; padding:7px 4px; font-family:inherit; border-radius:var(--radius-sm); }
   .rv-check.on { color:var(--teal); font-weight:600; }
+  .rv-check:disabled { cursor:default; }
+  .rv-check:focus-visible { outline:2px solid var(--brand-navy); outline-offset:2px; }
+  .rv-call-sum { font-size:12px; color:var(--text); margin-top:7px; line-height:1.5; }
+  .rv-ai-lbl { font-size:10px; font-weight:600; letter-spacing:.4px; text-transform:uppercase; color:var(--text-3); margin-right:4px; }
   .rv-transcript { margin-top:9px; background:var(--bg); border-radius:var(--radius-sm); padding:11px 13px; font-size:11.5px; line-height:1.7; color:var(--text-2); white-space:pre-wrap; max-height:280px; overflow-y:auto; }
   .rv-note-in { width:100%; margin-top:8px; border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; font-family:var(--sans); font-size:12px; background:var(--bg); resize:vertical; min-height:38px; }
 
@@ -1028,10 +1036,10 @@
   <!-- CALL REPORTING TAB -->
   <div id="tab-calls" class="tab-pane">
     <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
-      <div class="summary-item"><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
+      <div class="summary-item" title="AI-processed calls in this scope. Ignores the Flagged only and flag-type filters, so the flag rate stays a real ratio."><div class="summary-val" id="calls-stat-total">—</div><div class="summary-lbl">processed by AI</div></div>
       <div class="summary-item" style="position:relative" onmouseenter="callsFlagBreakdown()" onmouseleave="callsFlagBreakdownHide()"><div class="summary-val neg" id="calls-stat-flagged">—</div><div class="summary-lbl">flagged</div><div id="calls-flag-breakdown" class="flag-tip" style="display:none"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate">—</div><div class="summary-lbl">flag rate</div></div>
-      <div class="summary-item"><div class="summary-val" id="calls-stat-revenue">—</div><div class="summary-lbl">revenue</div></div>
+      <div class="summary-item" title="Advertiser payin on every call the table matches, including the Flagged only and flag-type filters."><div class="summary-val" id="calls-stat-revenue">—</div><div class="summary-lbl">revenue · all table rows</div></div>
     </div>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left">
@@ -1101,6 +1109,7 @@
         <button class="run-btn" id="cr-run-btn" onclick="crLoad()">Load calls</button>
       </div>
     </div>
+    <div class="cr-link-scope" id="cr-link-scope" style="display:none"></div>
     <div id="cr-output">
       <div class="ins-loading">Select a date range and click <strong>Load calls</strong>.</div>
     </div>
@@ -1500,14 +1509,15 @@ let scoresOpenKey = null;          // pairing expanded in the WHY panel
 let scoresExcluded = new Set();    // outcomes deselected in the what-if
 let scoresSearch  = '';            // filters the ranked table by name / vertical
 
-// Shared by the Scores tab and the Calls-tab outcome-group filter.
+// Shared by the Scores tab and the Calls-tab outcome-group filter. A failed load throws and is
+// not kept: it used to cache {} for the session, so every pairing read +0.0 / Tier 4 with no error.
+// Settings > Admin weightsExecute replaces it with the saved weights.
 async function loadOutcomeWeights() {
   if (!scoresWeights) {
-    try {
-      const rows = await sbFetch('outcome_weights?select=outcome,pub_score,adv_score');
-      scoresWeights = {};
-      (rows || []).forEach(r => { scoresWeights[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
-    } catch(e) { scoresWeights = {}; console.warn('scores weights:', e.message); }
+    const rows = await sbFetch('outcome_weights?select=outcome,pub_score,adv_score');
+    const w = {};
+    (rows || []).forEach(r => { w[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
+    scoresWeights = w;
   }
   return scoresWeights;
 }
@@ -1539,7 +1549,9 @@ function scoresWindowRange() {
   return { from: from.toISOString(), to: now.toISOString(), label: 'trailing 90 days' };
 }
 
+let scoresLoadSeq = 0;   // a Publisher/Advertiser or window switch supersedes the load in flight
 async function scoresLoad() {
+  const seq = ++scoresLoadSeq;
   const out = document.getElementById('scores-output');
   if (out) out.innerHTML = `<div class="ins-loading">Loading scores…</div>`;
   scoresOpenKey = null; scoresExcluded.clear();
@@ -1551,9 +1563,11 @@ async function scoresLoad() {
     // Weights and vectors in parallel (weights used to be awaited first: one extra round trip).
     [pairs] = await Promise.all([scoresFetchPairs(from, to), loadOutcomeWeights()]);
   } catch(e) {
+    if (seq !== scoresLoadSeq) return;
     if (out) out.innerHTML = `<div class="ins-loading">Could not load scores: ${esc(e.message)}</div>`;
     return;
   }
+  if (seq !== scoresLoadSeq) return;
   scoresRows = scoresComputeRows(pairs);
   scoresRenderTable();
 }
@@ -1639,17 +1653,20 @@ function scoresTierOf(avg, defect, conv, entity) {
   return t ? t.tier : 4;
 }
 
+// Score columns sort low-volume rows (score hidden, under SCORES_MIN_CALLS) last: the default
+// gap sort opened on 50 of 50 low-volume rows showing only dashes.
 function scoresSortRows() {
   const { key, dir } = scoresSort;
+  const low = r => r.n < SCORES_MIN_CALLS;
   const val = r => key === 'entity'   ? r.entity.toLowerCase()
                  : key === 'vertical' ? r.vertical.toLowerCase()
-                 : key === 'canoe'    ? (r.canoeScore ?? -999)
-                 : key === 'ours'     ? (r.oursScore ?? -999)
+                 : key === 'canoe'    ? (low(r) || r.canoeScore == null ? -Infinity : r.canoeScore)
+                 : key === 'ours'     ? (low(r) || r.oursScore == null ? -Infinity : r.oursScore)
                  : key === 'n'        ? r.n
                  : key === 'defect'   ? (r.n < SCORES_MIN_CALLS || r.defect == null ? -Infinity : r.defect)
                  : key === 'conv'     ? (r.n < SCORES_MIN_CALLS || r.conv == null ? -Infinity : r.conv)
                  : key === 'tier'     ? (r.tier == null ? -Infinity : -r.tier) // first click: Tier 1 on top
-                 : (r.gap == null ? -Infinity : Math.abs(r.gap)); // 'gap' sorts by magnitude
+                 : (low(r) || r.gap == null ? -Infinity : Math.abs(r.gap)); // 'gap' sorts by magnitude
   return [...scoresRows].sort((a, b) => { const x = val(a), y = val(b); return x < y ? -dir : x > y ? dir : 0; });
 }
 function scoresSetSort(key) {
@@ -1791,7 +1808,8 @@ function scoresRenderDetail(r) {
       <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Registry n</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
-    <div class="scores-detail-headline" style="margin-top:16px">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}</div>
+    <div class="scores-detail-headline" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}
+      <button class="rv-btn" data-entity="${esc(r.entity)}" data-vertical="${esc(r.vertical)}" onclick="event.stopPropagation();scoresViewCalls(this.dataset.entity,this.dataset.vertical)">View all calls in Calls →</button></div>
     ${disHtml}
   </div>`;
 }
@@ -1802,15 +1820,16 @@ function scoresToggleOutcome(key, outcome) {
   scoresRenderTable();
 }
 
-// Hand off to the Compliance tab (canoe_calls, with flags + both outcomes),
-// filtered to this account over the master 90d window.
+// Hand off to the Calls tab (canoe_calls, with flags + both outcomes): this pairing's account
+// (exact name) and vertical over the window Scores shows, as local days like the Calls picker.
 function scoresViewCalls(entity, vertical) {
-  const now = new Date(), from = new Date(now); from.setDate(from.getDate() - 90);
+  const { from, to } = scoresWindowRange();
   const q = new URLSearchParams({
-    tab: 'calls',
+    tab: 'calls', exact: '1',
     account: entity, type: scoresEntity === 'advertiser' ? 'advertiser' : 'publisher',
-    from: from.toISOString().slice(0, 10), to: now.toISOString().slice(0, 19),
+    from: toISO(new Date(from)), to: toISO(new Date(Date.parse(to) - 1)),
   });
+  if (vertical && vertical !== '(unknown)') q.set('vertical', vertical);
   history.pushState({ tab: 'calls' }, '', '?' + q.toString());
   applyRoute();
 }
@@ -1927,40 +1946,46 @@ function isSent(c) {
 function isPaid(c){return(c.advertiser_payin||0)>0;}
 function aggregateForAgent(agent,calls){let raw=0,sent=0,paid=0,revenue=0,margin=0;const pubMap={},advMap={};for(const c of calls){raw++;const s=isSent(c),p=isPaid(c);if(s)sent++;if(p)paid++;revenue+=c.advertiser_payin||0;margin+=(c.advertiser_payin||0)-(c.publisher_payout||0);const pub=c.publisher_name||'(unknown)';if(!pubMap[pub])pubMap[pub]={name:pub,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};pubMap[pub].raw_calls++;if(s)pubMap[pub].sent_calls++;if(p)pubMap[pub].paid_calls++;pubMap[pub].revenue+=c.advertiser_payin||0;const adv=c.advertiser_name||'(unknown)';if(!advMap[adv])advMap[adv]={name:adv,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0};advMap[adv].raw_calls++;if(s)advMap[adv].sent_calls++;if(p)advMap[adv].paid_calls++;advMap[adv].revenue+=c.advertiser_payin||0;}agent.raw_calls=raw;agent.sent_calls=sent;agent.paid_calls=paid;agent.revenue=revenue;agent.margin=margin;agent.conversion=raw>0?paid/raw:0;agent.pubBreakdown=Object.values(pubMap).sort((a,b)=>b.raw_calls-a.raw_calls);agent.advBreakdown=Object.values(advMap).sort((a,b)=>b.revenue-a.revenue);}
 
-let metricsLoading = false;
+// A range change while a load is in flight starts a newer load; only the newest one draws (the
+// change used to be dropped, leaving the old range's numbers under the new label).
+let metricsSeq = 0;
+let metricsFailed = false;   // the last load failed: cards show "—", not zeros and "Inactive"
 // Cards + breakdowns are only shown on the Agents tab. A landing on another tab (digest links go to
 // Calls/Scores) skips them, so they don't compete with that tab's queries; switchTab loads them later.
 let agentsMetricsDeferred = false;
 async function refreshMetrics(){
-  if(metricsLoading) return;
   if(!activeRange.start||!activeRange.end||!AGENTS.length)return;
   if(currentTab!=='agents'){ agentsMetricsDeferred=true; updateDataWindowLabels(); return; }
   agentsMetricsDeferred=false;
-  metricsLoading = true;
-  try {
-    const fromTs=activeRange.start.toISOString();
-    const endEx=new Date(activeRange.end);endEx.setDate(endEx.getDate()+1);const toTs=endEx.toISOString();
-    AGENTS.forEach(a=>{a.raw_calls=0;a.sent_calls=0;a.paid_calls=0;a.revenue=0;a.margin=0;a.conversion=0;a.pubBreakdown=[];a.advBreakdown=[];a._payout=0;a._bdKey=null;a._bdErr=null;});
-    loadAllBreakdowns().catch(()=>{});   // background prefetch; a drawer that needs it awaits the same promise
+  const seq=++metricsSeq;
+  const fromTs=activeRange.start.toISOString();
+  const endEx=new Date(activeRange.end);endEx.setDate(endEx.getDate()+1);const toTs=endEx.toISOString();
+  AGENTS.forEach(a=>{a.pubBreakdown=[];a.advBreakdown=[];a._bdKey=null;a._bdErr=null;});
+  loadAllBreakdowns().catch(()=>{});   // background prefetch; a drawer that needs it awaits the same promise
+  let rows=null, err=null;
+  try{
+    // Per-agent totals (agent_metrics, rollup 030). Publisher/advertiser breakdowns are
+    // prefetched separately (loadAllBreakdowns); the freshness date loads at boot (loadFreshness).
+    rows=await sbFetch('rpc/agent_metrics',{method:'POST',body:JSON.stringify({from_ts:fromTs,to_ts:toTs})});
+  }catch(e){ err=e; }
+  if(seq!==metricsSeq) return;   // a newer range owns the cards
+  AGENTS.forEach(a=>{a.raw_calls=0;a.sent_calls=0;a.paid_calls=0;a.revenue=0;a.margin=0;a.conversion=0;a._payout=0;});
+  const wasFailed=metricsFailed;
+  metricsFailed=!!err;
+  if(err){
+    console.warn('Metric load failed:',err.message);
+    document.getElementById('freshness-label').textContent='Could not load data: '+err.message;
+  } else {
+    if(wasFailed) loadFreshness();   // replace the error left in the header pill
     const ivrToAgent={};
     AGENTS.forEach(a=>{ivrToAgent[a.ivrName]=a;aliasesForAgent(a.ivrName).forEach(alias=>{ivrToAgent[alias]=a;});});
-    try{
-      // Per-agent totals (agent_metrics, rollup 030). Publisher/advertiser breakdowns are
-      // prefetched separately (loadAllBreakdowns); the freshness date loads at boot (loadFreshness).
-      const rows=await sbFetch('rpc/agent_metrics',{method:'POST',body:JSON.stringify({from_ts:fromTs,to_ts:toTs})});
-      for(const r of rows||[]){
-        const a=ivrToAgent[resolveIvrName(r.ivr_name)];if(!a)continue;
-        a.raw_calls+=Number(r.raw);a.sent_calls+=Number(r.sent);a.paid_calls+=Number(r.paid);a.revenue+=Number(r.revenue);a._payout+=Number(r.payout);
-      }
-      AGENTS.forEach(a=>{a.margin=(a.revenue||0)-(a._payout||0);a.conversion=a.raw_calls>0?a.paid_calls/a.raw_calls:0;});
-    } catch(e){
-      console.warn('Metric load failed:',e.message);
-      document.getElementById('freshness-label').textContent='Could not load data: '+e.message;
+    for(const r of rows||[]){
+      const a=ivrToAgent[resolveIvrName(r.ivr_name)];if(!a)continue;
+      a.raw_calls+=Number(r.raw);a.sent_calls+=Number(r.sent);a.paid_calls+=Number(r.paid);a.revenue+=Number(r.revenue);a._payout+=Number(r.payout);
     }
-    recomputeStats();updateDataWindowLabels();applyFilters();
-  } finally {
-    metricsLoading = false;
+    AGENTS.forEach(a=>{a.margin=(a.revenue||0)-(a._payout||0);a.conversion=a.raw_calls>0?a.paid_calls/a.raw_calls:0;});
   }
+  recomputeStats();updateDataWindowLabels();applyFilters();
 }
 
 // Header pill "Data current through …": shown on every tab, so it loads at boot even when the
@@ -1973,7 +1998,7 @@ async function loadFreshness(){
   }catch(e){ console.warn('freshness:',e.message); el.textContent='Could not load data: '+e.message; }
 }
 
-function recomputeStats(){document.getElementById('stat-agents').textContent=AGENTS.length;document.getElementById('stat-calls').textContent=AGENTS.reduce((s,a)=>s+(a.raw_calls||0),0).toLocaleString();document.getElementById('stat-revenue').textContent='$'+(AGENTS.reduce((s,a)=>s+(a.revenue||0),0)/1000).toFixed(1)+'k';document.getElementById('stat-margin').textContent='$'+(AGENTS.reduce((s,a)=>s+(a.margin||0),0)/1000).toFixed(1)+'k';}
+function recomputeStats(){const nd=metricsFailed;document.getElementById('stat-agents').textContent=AGENTS.length;document.getElementById('stat-calls').textContent=nd?'—':AGENTS.reduce((s,a)=>s+(a.raw_calls||0),0).toLocaleString();document.getElementById('stat-revenue').textContent=nd?'—':'$'+(AGENTS.reduce((s,a)=>s+(a.revenue||0),0)/1000).toFixed(1)+'k';document.getElementById('stat-margin').textContent=nd?'—':'$'+(AGENTS.reduce((s,a)=>s+(a.margin||0),0)/1000).toFixed(1)+'k';}
 
 // ─── AGENTS METADATA ──────────────────────────────────────────────────────────
 async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?select=*&order=name.asc');if(!rows||!rows.length){AGENTS=[];return;}AGENTS=rows.map(r=>({ivrName:r.ivr_name,name:r.name,vertical:r.vertical||'Other',status:r.status||'live',routingType:r.routing_type||'unknown',qualifying:Array.isArray(r.qualifying)?r.qualifying:[],disqualify:r.disqualify,publisherCampaigns:Array.isArray(r.publisher_campaigns)?r.publisher_campaigns:[],ivrTargets:Array.isArray(r.ivr_targets)?r.ivr_targets:[],notes:r.notes,objective:r.objective||'',canoeUrl:r.canoe_url||null,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0,margin:0,conversion:0,pubBreakdown:[],advBreakdown:[]}));}catch(e){console.error('Could not load agents:',e.message);AGENTS=[];document.getElementById('agents-grid').innerHTML=`<div class="empty">Could not load agents: ${e.message}</div>`;}}
@@ -1992,7 +2017,7 @@ function tcCancel(cardId,ivrName){document.getElementById('tc-row-'+cardId).oute
 function vClass(v){return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other';}
 function rtLabel(t){return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown';}
 function getEffectiveStatus(a){if(a.status==='test')return'test';if(a.raw_calls>0)return'live';return'inactive';}
-function renderCard(a,idx){const isOpen=openAgent===idx,es=getEffectiveStatus(a),cardId='c'+idx,conv=fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}<div class="card-metrics"><div><div class="metric-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
+function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
 function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${esc(p.campaign)}</td><td class="${p.publisher?'':'muted'}">${esc(p.publisher||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${esc(t.publisher||'—')}</td><td class="${t.advertiser?'':'muted'}">${esc(t.advertiser||'—')}</td><td class="${t.vertical?'':'muted'}">${esc(t.vertical||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
 const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
@@ -2174,7 +2199,9 @@ async function insFetchRetry(path, options, tries=3) {
 // Until 051 is applied the RPC is missing (PGRST202) and raw calls are fetched per day instead.
 async function insFetchPeriod(startISO, endISO) {
   const pubs={},advs={},agents={};
-  function add(ag,pub,adv,t){
+  // Agents are keyed by canonical IVR name: a renamed IVR read as a new agent next to its old
+  // name at -100% when comparing across the rename.
+  function add(ivr,pub,adv,t){const ag=resolveIvrName(ivr);
     function acc(map,key){if(!map[key])map[key]={raw:0,sent:0,paid:0,rev:0,margin:0,byAgent:{}};const r=map[key];r.raw+=t.raw;r.sent+=t.sent;r.paid+=t.paid;r.rev+=t.rev;r.margin+=t.margin;if(!r.byAgent[ag])r.byAgent[ag]={raw:0,paid:0,rev:0};r.byAgent[ag].raw+=t.raw;r.byAgent[ag].paid+=t.paid;r.byAgent[ag].rev+=t.rev;}
     acc(pubs,pub);acc(advs,adv);acc(agents,ag);}
   try{
@@ -2225,7 +2252,8 @@ function runInsights(){
   const thrConv=convOn?(parseFloat(document.getElementById('thr-conv').value)||0):Infinity;
   const btn=document.getElementById('run-btn');btn.disabled=true;btn.textContent='Loading…';
   document.getElementById('ins-output').innerHTML=`<div class="ins-loading"><span class="spinner"></span>Fetching call data for both periods…</div>`;
-  Promise.all([insFetchPeriod(pA.start,pA.end),insFetchPeriod(pB.start,pB.end)]).then(([dA,dB])=>{
+  // Aliases first: agents are grouped by canonical name (loadAliases runs at boot).
+  Promise.resolve(agentsLoadedPromise).catch(()=>{}).then(()=>Promise.all([insFetchPeriod(pA.start,pA.end),insFetchPeriod(pB.start,pB.end)])).then(([dA,dB])=>{
     insLastResults={dA,dB,thrCalls,thrRevPct,thrConv,pA,pB};
     insRenderResults(insLastResults);btn.disabled=false;btn.textContent='Run analysis';
   }).catch(e=>{document.getElementById('ins-output').innerHTML=`<div class="ins-loading" style="color:var(--coral)">Error: ${e.message}</div>`;btn.disabled=false;btn.textContent='Run analysis';});
@@ -2253,37 +2281,37 @@ function insRenderResults({dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}){
     ${insRenderSection('adv','Advertisers',advM,pA,pB)}
     ${insRenderSection('agent','AI agents',agM,pA,pB)}
   </div>`;
-  insAttachListeners();
+  document.getElementById('ins-output').onclick=insOutputClick;
 }
 
-function insAttachListeners(){
-  document.querySelectorAll('.ins-expand-trigger').forEach(tr=>{
-    tr.addEventListener('click',()=>{
-      const key=tr.dataset.key,sect=tr.dataset.sect,safeKey=key.replace(/[^a-zA-Z0-9]/g,'_');
-      const expRow=document.getElementById('ins-exp-'+sect+'-'+safeKey);
-      const chev=tr.querySelector('.ins-chevron');
-      if(!expRow)return;
-      const isOpen=expRow.classList.contains('open');
-      expRow.classList.toggle('open',!isOpen);
-      if(chev)chev.classList.toggle('open',!isOpen);
-      tr.classList.toggle('expanded',!isOpen);
-    });
-  });
-  document.querySelectorAll('.ins-sort-th').forEach(th=>{
-    th.addEventListener('click',()=>{
-      const sect=th.dataset.sect,col=th.dataset.col;
-      if(insSortState[sect].col===col)insSortState[sect].dir*=-1;else{insSortState[sect].col=col;insSortState[sect].dir=-1;}
-      if(!insLastResults)return;
-      const{dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}=insLastResults;
-      const mapA=sect==='pub'?dA.pubs:sect==='adv'?dA.advs:dA.agents;
-      const mapB=sect==='pub'?dB.pubs:sect==='adv'?dB.advs:dB.agents;
-      const title=sect==='pub'?'Publishers':sect==='adv'?'Advertisers':'AI agents';
-      const movers=insBuildMovers(mapA,mapB,thrCalls,thrRevPct,thrConv);
-      const sec=document.getElementById('ins-section-'+sect);
-      if(sec)sec.outerHTML=insRenderSection(sect,title,movers,pA,pB);
-      insAttachListeners();
-    });
-  });
+// One delegated handler for every section. Sorting re-renders one section, and re-binding
+// per-row handlers after it stacked a second toggle on the other sections' rows, so they
+// opened and closed on the same click.
+function insOutputClick(e){
+  const th=e.target.closest('.ins-sort-th');
+  if(th){
+    const sect=th.dataset.sect,col=th.dataset.col;
+    if(insSortState[sect].col===col)insSortState[sect].dir*=-1;else{insSortState[sect].col=col;insSortState[sect].dir=-1;}
+    if(!insLastResults)return;
+    const{dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}=insLastResults;
+    const mapA=sect==='pub'?dA.pubs:sect==='adv'?dA.advs:dA.agents;
+    const mapB=sect==='pub'?dB.pubs:sect==='adv'?dB.advs:dB.agents;
+    const title=sect==='pub'?'Publishers':sect==='adv'?'Advertisers':'AI agents';
+    const movers=insBuildMovers(mapA,mapB,thrCalls,thrRevPct,thrConv);
+    const sec=document.getElementById('ins-section-'+sect);
+    if(sec)sec.outerHTML=insRenderSection(sect,title,movers,pA,pB);
+    return;
+  }
+  const tr=e.target.closest('.ins-expand-trigger');
+  if(!tr)return;
+  const key=tr.dataset.key,sect=tr.dataset.sect,safeKey=key.replace(/[^a-zA-Z0-9]/g,'_');
+  const expRow=document.getElementById('ins-exp-'+sect+'-'+safeKey);
+  const chev=tr.querySelector('.ins-chevron');
+  if(!expRow)return;
+  const isOpen=expRow.classList.contains('open');
+  expRow.classList.toggle('open',!isOpen);
+  if(chev)chev.classList.toggle('open',!isOpen);
+  tr.classList.toggle('expanded',!isOpen);
 }
 
 function insRenderSection(sect,title,movers,pA,pB){
@@ -2351,12 +2379,17 @@ function insExpandContent(r,pA,pB){
 let crDrpViewYear, crDrpViewMonth, crDrpPickStart=null, crDrpPickEnd=null, crDrpSelecting=false;
 let crRows = [], crOffset = 0, crPageSize = 25, crHasMore = false, crTotal = null, crLoadSeq = 0;   // crTotal null = exact count still loading
 let crSortCol = 'created_at', crSortDir = -1;
+// Exact scope from a deep link: the digest's "View flagged calls" (the calls that account's entry
+// counted: scored in the digest window, with one of its flags) or Scores' "View calls". The
+// account matches exactly, not as a substring of the Publisher/Advertiser box. Cleared from the
+// note above the table.
+let crLinkScope = null;   // { account, type, flags?, scoredFrom?, scoredTo? }
 
 // Column definitions: key, label, sortable, default-visible
 const CR_COLUMNS = [
   { key:'id',          label:'Call ID',     sortable:true,  def:false },
   { key:'created_at',  label:'Date & Time', sortable:true,  def:true  },
-  { key:'recording',   label:'Recording',   sortable:false, def:true  },
+  { key:'recording',   label:'Recording',   sortable:false, def:false },
   { key:'sent',        label:'Sent',        sortable:false, def:true  },
   { key:'vertical',    label:'Vertical',    sortable:false, def:true  },
   { key:'ivr_name',    label:'Agent',       sortable:true,  def:false  },
@@ -2364,8 +2397,8 @@ const CR_COLUMNS = [
   { key:'advertiser_name',label:'Advertiser',sortable:true, def:true  },
   { key:'phone',       label:'Caller',      sortable:false, def:true  },
   { key:'ivr_duration',label:'Duration',    sortable:true,  def:true  },
-  { key:'disposition', label:'Disposition', sortable:true,  def:true  },
-  { key:'disposition_description', label:'Reason', sortable:false, def:true },
+  { key:'disposition', label:'Disposition', sortable:true,  def:false },
+  { key:'disposition_description', label:'Reason', sortable:false, def:false },
   { key:'advertiser_payin', label:'Revenue', sortable:true, def:true  },
   { key:'outcome',     label:'Outcome (Registry · Canoe)', sortable:false, def:true },
   // Per-call outcome scores, stamped by process.js from our_outcome (001, 005).
@@ -2374,17 +2407,21 @@ const CR_COLUMNS = [
   { key:'flags',       label:'Flags',      sortable:false, def:true  },
   { key:'reviewed',    label:'Reviewed',   sortable:false, def:false }
 ];
+// Recording / Disposition / Reason start off: mostly empty, and with them on the Flags column
+// started off-screen at 1440px. Choices persist per browser (they called a window.storage API
+// that does not exist here, and the load was never called).
 let crVisibleCols = {};
 CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
+crLoadColPrefs();
 
-async function crLoadColPrefs() {
+function crLoadColPrefs() {
   try {
-    const r = await window.storage.get('cr_visible_cols');
-    if (r && r.value) { const saved = JSON.parse(r.value); CR_COLUMNS.forEach(c => { if (saved[c.key] !== undefined) crVisibleCols[c.key] = saved[c.key]; }); }
-  } catch(e) { /* no saved prefs yet */ }
+    const saved = JSON.parse(localStorage.getItem('cr_visible_cols') || 'null');
+    if (saved) CR_COLUMNS.forEach(c => { if (typeof saved[c.key] === 'boolean') crVisibleCols[c.key] = saved[c.key]; });
+  } catch(e) { /* no saved prefs, or storage blocked */ }
 }
-async function crSaveColPrefs() {
-  try { await window.storage.set('cr_visible_cols', JSON.stringify(crVisibleCols), false); } catch(e) { console.warn('save col prefs:', e.message); }
+function crSaveColPrefs() {
+  try { localStorage.setItem('cr_visible_cols', JSON.stringify(crVisibleCols)); } catch(e) { console.warn('save col prefs:', e.message); }
 }
 function crColPickerToggle(e) { e.stopPropagation(); document.getElementById('cr-colpicker-popover').classList.toggle('open'); }
 function crColToggle(key) { crVisibleCols[key] = !crVisibleCols[key]; crSaveColPrefs(); crRender(); }
@@ -2498,6 +2535,11 @@ function crBuildFilters(includeFlagFilters = true) {
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
   if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
+  const ls = crLinkScope;
+  if (ls) {
+    q += `&${ls.type === 'advertiser' ? 'advertiser_name' : 'publisher_name'}=eq.${encodeURIComponent(ls.account)}`;
+    if (ls.scoredFrom && ls.scoredTo) q += `&is_test=eq.false&ai_processed_at=gt.${encodeURIComponent(ls.scoredFrom)}&ai_processed_at=lte.${encodeURIComponent(ls.scoredTo)}`;
+  }
   const outcome = document.getElementById('cr-outcome-filter')?.value;
   if (outcome) q += `&our_outcome=eq.${encodeURIComponent(outcome)}`;
   const group = document.getElementById('cr-outcome-group-filter')?.value;
@@ -2508,18 +2550,24 @@ function crBuildFilters(includeFlagFilters = true) {
   }
   const verticals = crSelectedVerticals();
   if (verticals.length) q += `&vertical_name=in.(${encodeURIComponent(verticals.map(pgQuote).join(','))})`;
+  const ors = [];   // or=() groups; two of them AND as and=(or(…),or(…))
   const search = document.getElementById('cr-search')?.value.trim();
-  if (search) q += crSearchFilter(search);
+  if (search) ors.push(crSearchFilter(search));
   if (includeFlagFilters) {
     if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
     const flag = document.getElementById('cr-flag-filter')?.value;
     if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
+    // A digest link's flag set: what the email counted (suspicious_call is a column, not a flag).
+    if (ls && ls.flags && ls.flags.length) ors.push(ls.flags.map(f => f === 'suspicious_call' ? 'suspicious_call.is.true' : `flags.cs.${JSON.stringify([f])}`));
   }
+  if (ors.length === 1) q += `&or=(${encodeURIComponent(ors[0].join(','))})`;
+  else if (ors.length) q += `&and=(${encodeURIComponent(ors.map(t => `or(${t.join(',')})`).join(','))})`;
   return q;
 }
 
 // Search runs server-side over the whole filtered range (it used to filter only the loaded page,
 // then say "No calls found"). Agent display names match here and go to the server as IVR names.
+// Returns the or=() terms.
 function crSearchFilter(text) {
   const like = pgQuote('*' + text.replace(/[\\%_]/g, '\\$&') + '*');   // \ % _ are LIKE escape/wildcards
   const terms = ['ivr_name', 'called_from', 'publisher_name', 'advertiser_name', 'disposition_description'].map(c => `${c}.ilike.${like}`);
@@ -2528,11 +2576,12 @@ function crSearchFilter(text) {
   const lower = text.toLowerCase();
   const ivrs = AGENTS.filter(a => (a.name || '').toLowerCase().includes(lower)).flatMap(a => [a.ivrName, ...aliasesForAgent(a.ivrName)]);
   if (ivrs.length) terms.push(`ivr_name.in.(${ivrs.map(pgQuote).join(',')})`);
-  return `&or=(${encodeURIComponent(terms.join(','))})`;
+  return terms;
 }
 
-// Build query
-function crBuildQuery(offset) {
+// Build query. filters defaults to the live inputs; the table, Load more and Export pass the
+// snapshot taken when the table was loaded (crApplied).
+function crBuildQuery(offset, filters = crBuildFilters()) {
   const select = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,ascnd_recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,publisher_score,advertiser_score,our_summary,canoe_summary,flags,compliance_reviewed`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
   const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
@@ -2541,20 +2590,29 @@ function crBuildQuery(offset) {
   const nulls = sortCol === 'created_at' ? '' : '.nullslast';
   // id breaks ties: OFFSET paging (Load more, CSV export) over a non-unique sort repeated and dropped rows.
   const tiebreak = sortCol === 'id' ? '' : ',id.asc';
-  return select + crBuildFilters() + `&order=${sortCol}.${sortDir}${nulls}${tiebreak}`;
+  return select + filters + `&order=${sortCol}.${sortDir}${nulls}${tiebreak}`;
 }
 
+// Filters of the loaded table. Load more, the summary strip and Export reuse them: reading the
+// inputs again appended rows from edits not yet applied under the old total.
+let crApplied = null;   // { table, strip, start, end }
 async function crLoad(append=false) {
   if (!crDrpPickStart || !crDrpPickEnd) { alert('Select a date range first.'); return; }
+  if (append && !crApplied) return;
   if (!append) { crRows = []; crOffset = 0; crTotal = null; }
   const seq = append ? crLoadSeq : ++crLoadSeq;   // load-more must not orphan the in-flight count
   const btn = document.getElementById('cr-run-btn');
   btn.disabled = true; btn.textContent = 'Loading…';
-  await Promise.all([loadOutcomeWeights(), ensureVerticals()]);   // group + vertical filters need both
-  if (!append) document.getElementById('cr-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>`;
+  // Group + vertical filters need both. Without weights an outcome group matches nothing.
+  await Promise.all([loadOutcomeWeights().catch(e => console.warn('outcome weights:', e.message)), ensureVerticals()]);
+  if (!append) {
+    if (seq !== crLoadSeq) return;
+    crApplied = { table: crBuildFilters(), strip: crBuildFilters(false), start: crDrpPickStart, end: crDrpPickEnd };
+    document.getElementById('cr-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>`;
+  }
   try {
     const offset = crOffset;
-    const newRows = await sbFetch(crBuildQuery(offset), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+crPageSize-1}` } }) || [];
+    const newRows = await sbFetch(crBuildQuery(offset, crApplied.table), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+crPageSize-1}` } }) || [];
     if (seq !== crLoadSeq) return;   // a newer load (filter change, search keystroke) owns the table now
     crRows = append ? [...crRows, ...newRows] : newRows;
     crOffset += newRows.length;
@@ -2570,6 +2628,7 @@ async function crLoad(append=false) {
 
 async function crExportAll() {
   if (!crDrpPickStart || !crDrpPickEnd) { alert('Select a date range first.'); return; }
+  const scope = crApplied || { table: crBuildFilters(), start: crDrpPickStart, end: crDrpPickEnd };   // what the table shows
   const btn = document.getElementById('cr-export-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Exporting…'; }
   try {
@@ -2579,7 +2638,7 @@ async function crExportAll() {
     const all = [];
     const PAGE = 1000; let offset = 0;
     while (true) {
-      const batch = await sbFetch(crBuildQuery(offset), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+PAGE-1}` } });
+      const batch = await sbFetch(crBuildQuery(offset, scope.table), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+PAGE-1}` } });
       if (!batch || !batch.length) break;
       all.push(...batch);
       if (batch.length < PAGE) break;
@@ -2599,7 +2658,7 @@ async function crExportAll() {
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `call_report_${crDrpPickStart}_to_${crDrpPickEnd}.csv`;
+    a.href = url; a.download = `call_report_${scope.start}_to_${scope.end}.csv`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } catch(e) {
@@ -2749,8 +2808,8 @@ async function callsLoadSummary(seq) {
   ['calls-stat-total', 'calls-stat-flagged', 'calls-stat-rate', 'calls-stat-revenue'].forEach(id => set(id, '…'));
   callsFlagCounts = null; callsFlagBreakdownRender();
   const [table, strip] = await Promise.allSettled([
-    sbFetch(`canoe_calls?select=n:count(),revenue:advertiser_payin.sum()${crBuildFilters()}`),
-    sbFetch(`canoe_calls?select=flags,n:count()${crBuildFilters(false)}&ai_processed_at=not.is.null`),
+    sbFetch(`canoe_calls?select=n:count(),revenue:advertiser_payin.sum()${crApplied.table}`),
+    sbFetch(`canoe_calls?select=flags,n:count()${crApplied.strip}&ai_processed_at=not.is.null`),
   ]);
   if (seq !== crLoadSeq) return;   // superseded by a newer load
   const t = table.status === 'fulfilled' && table.value && table.value[0];
@@ -3008,6 +3067,7 @@ function rvApplyScope(){ const b=reviewBoard; b.applied={...b.draft, accts:[...b
 async function rvRefreshBoard(btn){
   if(btn){ btn.disabled=true; btn.textContent='Refreshing…'; }
   await loadReviewBoardData();
+  if(RV) return;   // an agent was opened meanwhile: don't draw the board over its review
   renderReviewBoard();
 }
 
@@ -3033,7 +3093,7 @@ async function openReview(ivrName){
   const ap=reviewBoard.applied, set=rvScopeSet(ap);
   const accts=set ? Object.keys(rvSideOf(canon,ap.side)).filter(n=>set.has(n)).sort((p,q)=>p.localeCompare(q)) : [];
   RV={ agent, ivrs:[canon,...aliasesForAgent(canon)], calls:[], offset:0, done:false, loading:false, seq:0, mseq:0,
-       windowStart:resolveReviewWindow(), reviewedSet:new Set(), notesByCall:{}, metrics:null, answers:{},
+       windowStart:resolveReviewWindow(), reviewedSet:new Set(), reviewers:{}, notesByCall:{}, metrics:null, answers:{},
        history:[], notes:[], scope: accts.length ? {side:ap.side, accts, on:true} : null };
   renderReviewWorkspace();
   await Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true), loadReviewHistory(), loadAgentNotes() ]);
@@ -3086,11 +3146,16 @@ async function loadReviewMetrics(){
   updateReviewPerf();
 }
 
+// reviewers = call → who marked it reviewed. A row un-marked by its reviewer stays (reviewed=false,
+// migration 058) because the reviewer's note on the call lives on the same row.
 async function loadReviewedSet(){
-  RV.reviewedSet=new Set(); RV.notesByCall={};
+  RV.reviewedSet=new Set(); RV.reviewers={}; RV.notesByCall={};
   try{
-    const rows=await sbFetch(`call_reviews?select=call_id,note,reviewed_by,reviewed_at&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&order=reviewed_at.desc&limit=5000`)||[];
-    for(const r of rows){ RV.reviewedSet.add(r.call_id); if(r.note&&!RV.notesByCall[r.call_id]) RV.notesByCall[r.call_id]={note:r.note,by:r.reviewed_by,at:r.reviewed_at}; }
+    const rows=await sbFetch(`call_reviews?select=call_id,note,reviewed_by,reviewed_at,reviewed&${ivrQuery(RV.ivrs)}&reviewed_at=gte.${encodeURIComponent(RV.windowStart.toISOString())}&order=reviewed_at.desc&limit=5000`)||[];
+    for(const r of rows){
+      if(r.reviewed){ RV.reviewedSet.add(r.call_id); (RV.reviewers[r.call_id]||(RV.reviewers[r.call_id]=[])).push(r.reviewed_by); }
+      if(r.note&&!RV.notesByCall[r.call_id]) RV.notesByCall[r.call_id]={note:r.note,by:r.reviewed_by,at:r.reviewed_at};
+    }
   }catch(e){ console.warn('call_reviews:',e.message); }
   renderReviewCalls();
 }
@@ -3297,21 +3362,23 @@ function reviewCallRow(c,i){
   const disp=c.disposition?`<span class="rv-chip disp" title="${esc(c.disposition)}">${esc(c.disposition)}</span>`:'';
   const flags=flagBadges(c.flags||[]);
   const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:'';
-  const rec=c.recording_url||c.ascnd_recording_url;
-  const reviewed=RV.reviewedSet.has(c.id);
+  const aiSum=c.our_summary?`<div class="rv-call-sum"><span class="rv-ai-lbl">AI summary</span> ${esc(c.our_summary)}</div>`:'';
+  const rec=httpUrl(c.recording_url)||httpUrl(c.ascnd_recording_url);
+  const chk=rvCheckState(c.id);
   const tx=(c.ascnd_transcript||'').trim();
   const saved=RV.notesByCall&&RV.notesByCall[c.id];
   const noteShown=saved?`<div class="rv-callnote">📝 ${esc(saved.note)}<span class="rv-callnote-by"> — ${esc(saved.by||'—')} · ${fmtDate(new Date(saved.at))}</span></div>`:'';
   return `<div class="rv-call">
     <div class="rv-call-top"><span class="rv-route" title="${esc(route)}">${esc(route)}</span><span class="rv-date">${fmtDateTime(c.created_at)}</span></div>
-    <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${disp}${flags}</div>
+    <div class="rv-meta"><span class="rv-chip">${crFmtDuration(c.ivr_duration)}</span>${c.our_outcome?`<span title="AI outcome">${outcomeBadge(c.our_outcome)}</span>`:''}${disp}${flags}</div>
+    ${aiSum}
     ${desc}
     ${noteShown}
     <div class="rv-actions">
       <button class="rv-btn" onclick="rvToggleTx(${i})">▸ Transcript</button>
       ${rec?`<a class="rv-btn" href="${esc(rec)}" target="_blank" rel="noopener">▶ Recording</a>`:''}
       <button class="rv-btn" onclick="rvShowNote(${i})">✎ ${saved?'Edit note':'Note'}</button>
-      <span class="rv-check${reviewed?' on':''}" id="rv-chk-${i}" onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${reviewed?'☑ Reviewed':'☐ Mark reviewed'}</span>
+      <button type="button" class="rv-check${chk.on?' on':''}" id="rv-chk-${i}" aria-pressed="${chk.on}" title="${esc(chk.title)}"${chk.locked?' disabled':''} onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${esc(chk.label)}</button>
     </div>
     <div class="rv-transcript" id="rv-tx-${i}" style="display:none">${tx?esc(tx):'No transcript available.'}</div>
     <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
@@ -3326,26 +3393,42 @@ async function rvSaveNote(callId,i){
   const ta=document.getElementById('rv-note-in-'+i); const note=ta?ta.value.trim():'';
   const nowISO=new Date().toISOString();
   try{
-    await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,note:note||null,reviewed_at:nowISO})});
-    RV.reviewedSet.add(callId);
+    await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,note:note||null,reviewed:true,reviewed_at:nowISO})});
+    rvSetReviewed(RV,callId,by,true);
     if(note) RV.notesByCall[callId]={note,by,at:nowISO}; else delete RV.notesByCall[callId];
     renderReviewCalls();
   }catch(e){ alert('Could not save note: '+e.message); }
 }
 
+// The reviewed toggle. You can un-mark only your own review; a call only a colleague reviewed
+// shows who did it (it used to flip to "unreviewed" on screen while the database kept their row).
+function rvCheckState(callId){
+  const by=getAuthUser()||'', who=RV.reviewers[callId]||[], others=who.filter(x=>x!==by);
+  if(who.includes(by)) return {on:true, locked:false, label:'☑ Reviewed', title:'Un-mark (your note stays)'};
+  if(others.length) return {on:true, locked:true, label:'☑ Reviewed · '+others[0].split('@')[0], title:'Marked reviewed by '+others.join(', ')};
+  return {on:false, locked:false, label:'☐ Mark reviewed', title:''};
+}
+function rvSetReviewed(rv,callId,by,on){
+  const who=(rv.reviewers[callId]||[]).filter(x=>x!==by);
+  rv.reviewers[callId]=on?[...who,by]:who;
+  if(rv.reviewers[callId].length) rv.reviewedSet.add(callId); else rv.reviewedSet.delete(callId);
+}
+
 async function toggleCallReviewed(callId,el){
   const by=getAuthUser(); if(!by){ alert('Log in to mark calls reviewed.'); return; }
-  const on=RV.reviewedSet.has(callId);
+  const rv=RV, who=rv.reviewers[callId]||[];
+  if(who.length&&!who.includes(by)) return;   // a colleague's review: only they can un-mark it
   try{
-    if(on){
-      await sbFetch(`call_reviews?call_id=eq.${encodeURIComponent(callId)}&reviewed_by=eq.${encodeURIComponent(by)}`,{method:'DELETE'});
-      RV.reviewedSet.delete(callId);
+    if(who.includes(by)){
+      // Un-mark keeps the row, and the note on it (migration 058). It used to DELETE the row.
+      const rows=await sbFetch(`call_reviews?call_id=eq.${encodeURIComponent(callId)}&reviewed_by=eq.${encodeURIComponent(by)}&select=call_id`,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({reviewed:false})});
+      if(!rows||!rows.length) throw new Error('no review row was updated');
+      rvSetReviewed(rv,callId,by,false);
     } else {
-      await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:RV.agent.ivrName,reviewed_by:by,reviewed_at:new Date().toISOString()})});
-      RV.reviewedSet.add(callId);
+      await sbFetch('call_reviews?on_conflict=call_id,reviewed_by',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({call_id:callId,ivr_name:rv.agent.ivrName,reviewed_by:by,reviewed:true,reviewed_at:new Date().toISOString()})});
+      rvSetReviewed(rv,callId,by,true);
     }
-    const now=RV.reviewedSet.has(callId);
-    if(el){ el.classList.toggle('on',now); el.innerHTML=now?'☑ Reviewed':'☐ Mark reviewed'; }
+    if(el&&RV===rv){ const s=rvCheckState(callId); el.classList.toggle('on',s.on); el.setAttribute('aria-pressed',String(s.on)); el.title=s.title; el.disabled=s.locked; el.textContent=s.label; }
   }catch(e){ alert('Could not update reviewed: '+e.message); }
 }
 
@@ -3364,12 +3447,14 @@ function updateReviewPerf(){
 function updateReviewWindowLabel(){
   if(!RV) return;
   const el=document.getElementById('rv-window-label'); if(el) el.textContent=fmtDate(RV.windowStart);
-  const inp=document.getElementById('rv-window-date'); if(inp) inp.value=RV.windowStart.toISOString().slice(0,10);
+  const inp=document.getElementById('rv-window-date'); if(inp) inp.value=toISO(RV.windowStart);
 }
 
+// The picked day starts at local midnight. It was parsed as UTC midnight, the evening before in
+// the US, so the label read a day early (pick Nov 1, "since Oct 31").
 function reviewSetWindow(v){
   if(!RV||!v) return;
-  const d=new Date(v+'T00:00:00Z'); if(isNaN(d.getTime())) return;
+  const d=new Date(v+'T00:00:00'); if(isNaN(d.getTime())) return;
   RV.windowStart=d;
   updateReviewWindowLabel();
   Promise.all([ loadReviewMetrics(), loadReviewedSet(), loadReviewCalls(true) ]);
@@ -3510,8 +3595,7 @@ async function bootDashboard() {
   loadFreshness();
   agentsLoadedPromise = Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
   await agentsLoadedPromise;
-  crVisibleCols = {}; CR_COLUMNS.forEach(c => crVisibleCols[c.key] = c.def);
-  document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();
+  document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();   // columns: defaults + saved choices (crLoadColPrefs)
   recomputeStats();
   applyFilters();
   setPreset(30, document.querySelector('.preset-btn[onclick*="30"]'));
@@ -3764,7 +3848,6 @@ async function compDelete(path) {
 
 // ── COMPLIANCE STATE ──────────────────────────────────────────
 
-let compCalls      = [];   // still read by saveCorrection's local-state update
 let compDrawerCall = null;
 let compDrawerFlags = [];
 
@@ -3787,10 +3870,23 @@ function applyCallsFilters(params) {
     const lbl = document.getElementById('cr-drp-label');
     if (lbl) lbl.textContent = fmtShortD(crDrpPickStart) + ' – ' + fmtShortD(crDrpPickEnd);
   }
+  const type = params.get('type') === 'advertiser' ? 'advertiser' : 'publisher';
+  const digest = params.get('digest') === '1';
+  crLinkScope = null;
   if (account) {
-    const el = document.getElementById(params.get('type') === 'advertiser' ? 'cr-adv-filter' : 'cr-pub-filter');
-    if (el) el.value = account;
+    const el = document.getElementById(type === 'advertiser' ? 'cr-adv-filter' : 'cr-pub-filter');
+    if (digest || params.get('exact') === '1') {
+      if (el) el.value = '';
+      crLinkScope = { account, type };
+      if (digest) {
+        const flags = (params.get('flags') || '').split(',').map(f => f.trim()).filter(Boolean);
+        const sf = params.get('scored_from'), st = params.get('scored_to');
+        if (flags.length) crLinkScope.flags = flags;
+        if (sf && st && !isNaN(Date.parse(sf)) && !isNaN(Date.parse(st))) Object.assign(crLinkScope, { scoredFrom: sf, scoredTo: st });
+      }
+    } else if (el) el.value = account;   // older digest links: substring match, as before
   }
+  crRenderLinkScope();
   const group = params.get('outcomeGroup');
   if (group && CR_OUTCOME_GROUPS.some(g => g.key === group)) document.getElementById('cr-outcome-group-filter').value = group;
   const verts = params.get('vertical');
@@ -3802,6 +3898,18 @@ function applyCallsFilters(params) {
   crAutoLoaded = true;      // window is set explicitly; skip the default 7-day autoload
   crLoad(false);
 }
+
+function crRenderLinkScope() {
+  const box = document.getElementById('cr-link-scope'), s = crLinkScope;
+  if (!box) return;
+  if (!s) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const what = s.flags
+    ? `Digest view: calls for <strong>${esc(s.account)}</strong> (${s.type})${s.scoredFrom ? ` scored ${esc(fmtDateTime(s.scoredFrom))} to ${esc(fmtDateTime(s.scoredTo))}` : ''} with a flag the digest counts`
+    : `Calls for <strong>${esc(s.account)}</strong> (${s.type}, exact name)`;
+  box.innerHTML = `<span>${what}.</span><button class="rv-btn" onclick="crClearLinkScope()">Show all calls</button>`;
+  box.style.display = '';
+}
+function crClearLinkScope() { crLinkScope = null; crRenderLinkScope(); crLoad(false); }
 
 let settingsLoaded = false;
 function switchCompTab(id, btn) {
@@ -3878,9 +3986,10 @@ function openCallDrawer(call) {
     txEl.textContent = call.transcription || 'No transcript available.';
   } else {
     txEl.textContent = 'Loading transcript…';
+    // Drop a reply for a call the drawer has moved on from (it overwrote the newer call's transcript).
     compFetch(`canoe_calls?id=eq.${encodeURIComponent(call.id)}&select=transcription`)
-      .then(r => { txEl.textContent = (r && r[0] && r[0].transcription) || 'No transcript available.'; })
-      .catch(() => { txEl.textContent = 'Could not load transcript.'; });
+      .then(r => { if (compDrawerCall === call) txEl.textContent = (r && r[0] && r[0].transcription) || 'No transcript available.'; })
+      .catch(() => { if (compDrawerCall === call) txEl.textContent = 'Could not load transcript.'; });
   }
 
   loadCorrectionHistory(call.id);
@@ -3968,27 +4077,32 @@ async function saveCorrection() {
     corrected_at:   new Date().toISOString(),
   };
 
+  const call = compDrawerCall;
   try {
     await compPost('call_corrections', correction);
-
-    // mark call as reviewed in canoe_calls
-    await sbRequest(`canoe_calls?id=eq.${encodeURIComponent(compDrawerCall.id)}`, {
+    document.getElementById('correction-note').value = '';
+    loadCorrectionHistory(call.id);
+  } catch(e) {
+    alert('Could not save correction: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Save correction';
+    return;
+  }
+  // Mark the call reviewed. "Saved" used to show without checking this: a failed or no-match
+  // PATCH (still 2xx) left the call pending.
+  try {
+    const rows = await sbFetch(`canoe_calls?id=eq.${encodeURIComponent(call.id)}&select=id`, {
       method: 'PATCH',
-      headers: { 'Prefer': 'return=minimal' },
+      headers: { 'Prefer': 'return=representation' },
       body: JSON.stringify({ compliance_reviewed: true }),
     });
-
-    // update local state
-    compDrawerCall.compliance_reviewed = true;
-    const local = compCalls.find(c => c.id === compDrawerCall.id);
-    if (local) local.compliance_reviewed = true;
-
-    document.getElementById('correction-note').value = '';
-    loadCorrectionHistory(compDrawerCall.id);
+    if (!rows || !rows.length) throw new Error('no call was updated');
+    call.compliance_reviewed = true;
+    const row = crRows.find(r => r.id === call.id);   // the Calls table's Reviewed column
+    if (row) { row.compliance_reviewed = true; crRender(); }
     document.getElementById('correction-saved').style.display = 'inline';
     setTimeout(() => { document.getElementById('correction-saved').style.display = 'none'; }, 3000);
   } catch(e) {
-    alert('Could not save correction: ' + e.message);
+    alert('Correction saved, but the call could not be marked reviewed: ' + e.message);
   }
 
   btn.disabled = false; btn.textContent = 'Save correction';
@@ -4051,12 +4165,15 @@ let compManagers    = [];
 let compAssignments = [];
 // Managers + assignments are read by Team, Admin, Training and the CSV export; load them once
 // (Admin and Training each fetched them again). Also settles window.isAdmin before Admin renders.
+// A failed load is not kept: one transient error used to leave window.isAdmin unset, hiding the
+// Admin sections and Training controls until a reload.
 let _assignmentsPromise = null;
 function ensureAssignments() {
-  if (!_assignmentsPromise) _assignmentsPromise = compLoadAssignments();
+  if (!_assignmentsPromise) _assignmentsPromise = compLoadAssignments().then(ok => { if (!ok) _assignmentsPromise = null; });
   return _assignmentsPromise;
 }
 
+// true = loaded.
 async function compLoadAssignments() {
   try {
     const [managers, assignments] = await Promise.all([
@@ -4072,7 +4189,8 @@ async function compLoadAssignments() {
       account_name: a.account_name,
       account_type: a.account_type,
     }));
-  } catch(e) { console.warn('compLoadAssignments:', e.message); }
+    return true;
+  } catch(e) { console.warn('compLoadAssignments:', e.message); return false; }
 }
 
 function resolveManager(call) {
@@ -4114,6 +4232,7 @@ async function settingsLoadManagers() {
   const el = document.getElementById('settings-managers-table');
   try {
     compManagers = await compFetch('account_managers?select=id,manager_name,manager_email,is_admin,created_at&order=manager_name.asc') || [];
+    window.isAdmin = compManagers.some(m => m.is_admin && m.manager_email === getAuthUser());   // settingsInit's retry after a failed shared load
     settingsRenderManagers();
   } catch(e) {
     el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">${esc(e.message)}</div>`;
@@ -4393,7 +4512,8 @@ const WEIGHT_GROUPS = [
   { label: 'Technical / Excluded', outcomes: ['other','test'] },
 ];
 
-let weightsData = {};         // outcome -> { pub_score, adv_score }
+let weightsData = {};         // outcome -> { pub_score, adv_score }, as loaded (or last saved)
+let weightsLoadError = null;  // set = the load failed: no editable zeros, nothing can be saved
 let weightsProcessedCount = null;   // null = unknown (the count failed)
 let weightsCountApprox = true;      // planner estimate, until an execute returns the exact number
 
@@ -4409,29 +4529,36 @@ function weightsButtonLabel() {
     : `Execute changes — will update ${weightsCountApprox ? 'about ' : ''}${weightsProcessedCount.toLocaleString()} calls`;
 }
 
+// A failed load used to render every box as 0, and saving any edit then wrote 0 for every
+// outcome and re-scored ~120k calls. Now it shows the error and Execute stays off.
 async function weightsInit() {
+  weightsData = {}; weightsLoadError = null;
   try {
     const rows = await compFetch('outcome_weights?select=outcome,pub_score,adv_score');
-    weightsData = {};
-    rows.forEach(r => { weightsData[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
+    (rows || []).forEach(r => { weightsData[r.outcome] = { pub_score: r.pub_score, adv_score: r.adv_score }; });
   } catch(e) {
     console.warn('Could not load outcome weights:', e.message);
+    weightsLoadError = e.message;
   }
-  weightsProcessedCount = await weightsLoadCount();
+  weightsProcessedCount = weightsLoadError ? null : await weightsLoadCount();
   weightsCountApprox = true;
   weightsRender();
   const btn = document.getElementById('weights-execute-btn');
   if (btn) {
-    btn.disabled = false;
-    btn.style.opacity = '';
-    btn.style.cursor = '';
-    btn.textContent = weightsButtonLabel();
+    btn.disabled = !!weightsLoadError;
+    btn.style.opacity = weightsLoadError ? '.6' : '';
+    btn.style.cursor = weightsLoadError ? 'not-allowed' : '';
+    btn.textContent = weightsLoadError ? 'Execute changes (weights did not load)' : weightsButtonLabel();
   }
 }
 
 function weightsRender() {
   const el = document.getElementById('settings-weights-table');
   if (!el) return;
+  if (weightsLoadError) {
+    el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--coral)">Could not load the current weights: ${esc(weightsLoadError)}. Nothing can be saved until they load. <button class="rv-btn" onclick="weightsInit()">Retry</button></div>`;
+    return;
+  }
 
   const rows = WEIGHT_GROUPS.map(group => {
     const groupRows = group.outcomes.map(outcome => {
@@ -4480,26 +4607,23 @@ function weightsDirty() {
 async function weightsExecute() {
   const btn = document.getElementById('weights-execute-btn');
   const status = document.getElementById('weights-execute-status');
+  if (weightsLoadError) { status.textContent = 'The current weights did not load, so nothing was saved.'; return; }
+
+  // Send only the outcomes whose boxes differ from what was loaded (it upserted every row).
+  const edited = {};
+  document.querySelectorAll('#settings-weights-table input[data-outcome]').forEach(input => {
+    const outcome = input.dataset.outcome;
+    edited[outcome] = edited[outcome] || { ...(weightsData[outcome] || { pub_score: 0, adv_score: 0 }) };
+    edited[outcome][input.dataset.field] = parseInt(input.value, 10) || 0;
+  });
+  const payload = Object.entries(edited)
+    .filter(([outcome, w]) => { const was = weightsData[outcome] || { pub_score: 0, adv_score: 0 }; return Number(was.pub_score) !== w.pub_score || Number(was.adv_score) !== w.adv_score; })
+    .map(([outcome, w]) => ({ outcome, pub_score: w.pub_score, adv_score: w.adv_score }));
+  if (!payload.length) { status.textContent = 'No changes to save.'; btn.style.background = ''; return; }
+
   btn.disabled = true;
   btn.style.opacity = '.6';
   status.textContent = 'Saving weights…';
-
-  // Collect current values from inputs
-  const updates = [];
-  document.querySelectorAll('#settings-weights-table input[data-outcome]').forEach(input => {
-    const outcome = input.dataset.outcome;
-    const field   = input.dataset.field;
-    if (!weightsData[outcome]) weightsData[outcome] = { pub_score: 0, adv_score: 0 };
-    weightsData[outcome][field] = parseInt(input.value, 10) || 0;
-  });
-
-  // Upsert all weights
-  const payload = Object.entries(weightsData).map(([outcome, w]) => ({
-    outcome,
-    pub_score: w.pub_score,
-    adv_score: w.adv_score,
-  }));
-
   try {
     await compPost('outcome_weights', payload, 'resolution=merge-duplicates,return=minimal');
   } catch(e) {
@@ -4507,6 +4631,9 @@ async function weightsExecute() {
     btn.disabled = false; btn.style.opacity = '';
     return;
   }
+  payload.forEach(w => { weightsData[w.outcome] = { pub_score: w.pub_score, adv_score: w.adv_score }; });
+  // Scores and the Calls outcome groups read the saved weights now, not the copy cached before.
+  scoresWeights = Object.fromEntries(Object.entries(weightsData).map(([o, w]) => [o, { ...w }]));
 
   status.textContent = 'Weights saved. Recalculating call scores…';
 
@@ -4534,8 +4661,8 @@ const MODEL_CATALOG = [
   { id: 'anthropic/claude-haiku-4.5',    label: 'Claude Haiku 4.5',      provider: 'Anthropic', inPer1M: 1.00, outPer1M: 5.00  },
   { id: 'google/gemini-3.5-flash',       label: 'Gemini 3.5 Flash',      provider: 'Google',    inPer1M: 1.50, outPer1M: 9.00  },
   { id: 'nvidia/llama-3.3-70b-instruct', label: 'Llama 3.3 70B',         provider: 'NVIDIA',    inPer1M: 0.10, outPer1M: 0.32  },
-  { id: 'nvidia/nemotron-super-49b-v1',  label: 'Nemotron Super 120B',   provider: 'NVIDIA',    inPer1M: 0.09, outPer1M: 0.40  },
-  { id: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 550B',   provider: 'NVIDIA',    inPer1M: 0.41, outPer1M: 1.20  },
+  { id: 'nvidia/nemotron-super-49b-v1',  label: 'Nemotron Super 49B',    provider: 'NVIDIA',    inPer1M: 0.09, outPer1M: 0.40  },
+  { id: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 253B',   provider: 'NVIDIA',    inPer1M: 0.41, outPer1M: 1.20  },
 ];
 let calibQueueCount = 0;
 let calibQueuePromise = null;   // the queue count scan (mean 1.4 s) ran on every Admin and Training open
@@ -4721,10 +4848,14 @@ async function modeltestRun() {
   await modeltestLoadHistory();
 }
 
+// $ per 1M tokens [in, out]: every MODEL_CATALOG model, plus models from earlier tests. A model
+// with no price shows "price n/a" (it showed $0.00). gemini-3.6-flash is the native test path
+// (process.yml); list price from ai.google.dev (the 2026 intro rate is half, Batch half again).
 const MT_PRICES = {
-  'anthropic/claude-opus-4.8':[5,25], 'anthropic/claude-sonnet-4.6':[3,15], 'anthropic/claude-haiku-4.5':[1,5],
+  ...Object.fromEntries(MODEL_CATALOG.map(m => [m.id, [m.inPer1M, m.outPer1M]])),
+  'gemini-3.6-flash':[1.5,7.5],
   'openai/gpt-4.1-mini':[0.4,1.6], 'openai/gpt-5-nano':[0.05,0.4], 'meta-llama/llama-3.3-70b-instruct':[0.1,0.32],
-  'google/gemini-2.5-flash':[0.3,2.5], 'google/gemini-3.5-flash':[1.5,9], 'nvidia/nemotron-3-super-120b-a12b':[0.08,0.4],
+  'google/gemini-2.5-flash':[0.3,2.5], 'nvidia/nemotron-3-super-120b-a12b':[0.08,0.4],
 };
 let mtState = null;
 const mtShort = m => m.split('/').pop();
@@ -4753,7 +4884,7 @@ async function modeltestViewResults(testId) {
       rc.forEach(c => info[c.id] = c); ex.forEach(t => existing[t.call_id] = t);
     }
     mtState = { testId, models: [...models].sort(), calls: callIds.map(id => ({
-      id, tx: undefined, rec: info[id]?.recording_url || '', ascndRec: info[id]?.ascnd_recording_url || '', byModel: byCall[id],
+      id, tx: undefined, rec: httpUrl(info[id]?.recording_url), ascndRec: httpUrl(info[id]?.ascnd_recording_url), byModel: byCall[id],
       truthOutcome: existing[id]?.correct_outcome || '', truthFlags: existing[id]?.correct_flags || null,
       reason: existing[id]?.reason || '', truthModel: null,
     })) };
@@ -4768,12 +4899,12 @@ function mtRender() {
     let tin=0, tout=0, n=0, correct=0;
     for (const c of s.calls) { const d = c.byModel[m]; if (!d) continue; n++; tin += d.in; tout += d.out; }
     for (const c of labeled) { const d = c.byModel[m]; if (d && d.outcome === c.truthOutcome) correct++; }
-    const [pi,po] = MT_PRICES[m] || [0,0];
-    const cpc = n ? ((tin/n*pi/1e6) + (tout/n*po/1e6)) : 0;
+    const price = MT_PRICES[m];
+    const cost = !price ? 'price n/a' : '$' + ((n ? (tin/n*price[0]/1e6) + (tout/n*price[1]/1e6) : 0) * 1000).toFixed(2) + '/1k';
     return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;min-width:130px">
       <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);margin-bottom:2px">${esc(mtShort(m))}</div>
       <div style="font-size:13px;font-weight:600">${labeled.length ? Math.round(correct/labeled.length*100)+'% acc' : '—'}</div>
-      <div style="font-size:11px;color:var(--text-2)">$${(cpc*1000).toFixed(2)}/1k · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
+      <div style="font-size:11px;color:var(--text-2)">${cost} · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
     </div>`;
   }).join('');
   const oHdr = s.models.map(m => `<th style="padding:6px 8px;font-size:11px;font-weight:500;color:var(--text-2)">${esc(mtShort(m))}</th>`).join('');

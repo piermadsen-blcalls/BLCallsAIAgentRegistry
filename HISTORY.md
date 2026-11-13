@@ -790,3 +790,28 @@ Continued from the 8/7 Scores work; large session. What moved:
   vectors), `055` (same 354 names). Signed-in timings: Insights month-vs-month ~0.6s warm / 4.9s
   cold, Scores 90d 0.15s, Admin accounts 0.30s.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-12 (Pier) - Bug + UI bundle from the Nov 12 audit (branch `fm/ivr-bundle`)
+- **Review:** un-marking "Reviewed" no longer deletes the reviewer's note. Migration `058` adds
+  `call_reviews.reviewed` (un-mark = `reviewed=false`, row and note kept; `review_counts` counts
+  `reviewed` rows only, based on the faster definition live on prod, which was never committed).
+  A colleague's review shows as theirs and can't be flipped off. Rows show the AI outcome +
+  summary; Mark reviewed is a button. Date label no longer a day early; recording links http(s) only.
+- **Insights:** renamed IVRs group under their agent; rows in other sections expand after a sort.
+- **Settings/Scores weights:** a failed weights load can't save zeros over every outcome (Execute
+  off, error shown), Execute sends only edited outcomes, Scores no longer caches a failed load and
+  picks up saved weights. A transient managers-load error no longer hides Admin/Training.
+- **Calls:** Load more / Export use the loaded table's filters; Recording/Disposition/Reason off by
+  default (Flags fits at 1440); column choices saved per browser; correction "Saved" only when the
+  call was marked reviewed (Reviewed column updates). Digest "View flagged calls" link now carries
+  the exact account, scored window and flag set (`scripts/alert.js` + page), so it shows exactly the
+  calls the email counted; old links still work. Scores detail has a "View all calls" hand-off.
+- **Stale replies dropped:** Agents range race (and a failed load shows "No data", not 0/Inactive),
+  Scores Publisher/Advertiser toggle, call drawer transcript, Review board refresh over a review.
+- **Copy:** Calls revenue card says it follows the table filters; Nemotron labels fixed; digest's
+  "normal range" heading; model compare prices gemini-3.6-flash + NVIDIA ("price n/a" if unknown).
+- Tests: `tests/audit-bundle.test.js` (26; 25 fail on the old code, 1 keeps old digest links working), migration 058
+  tested in PGlite (+ rollback) and applied to prod, its test run there (rolled back, no rows left).
+  Checked at 1440/375 on a local stub harness; the captain's Chrome was not connected, so no signed-in check.
+- Next: merge, then a signed-in look at Review (un-mark keeps note) and a digest link.
+- External sources (Wispr/Jira) not pulled this session.
