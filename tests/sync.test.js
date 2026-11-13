@@ -82,3 +82,43 @@ test('a clean run upserts, advances the mark to the window end and requests all 
   const refresh = log.find(r => r.path === 'rpc/request_rollup_refresh');
   assert.deepEqual(refresh.body.rollups, ['agent_metrics', 'agent_counterparty', 'outcome_score']);
 });
+
+test('recording links: only http(s) provider_recording_url values are kept', () => {
+  assert.equal(sync.recordingLink({ provider_recording_url: ' https://rec.example/RE1 ' }), 'https://rec.example/RE1');
+  assert.equal(sync.recordingLink({ provider_recording_url: 'javascript:alert(1)' }), null);
+  assert.equal(sync.recordingLink({ provider_recording_url: '' }), null);
+  assert.equal(sync.recordingLink(undefined), null);
+});
+
+test('Pass 2b stores recording links as id + recording_url upserts, leaving transcription alone', async () => {
+  process.env.SKIP_PASS1 = '1';
+  const log = [];
+  global.fetch = async (url, opts = {}) => {
+    const path = url.replace('http://sb.test/rest/v1/', '');
+    log.push({ path, method: opts.method || 'GET', body: opts.body ? JSON.parse(opts.body) : null });
+    const reply = (status, data) => ({ ok: status < 300, status, text: async () => (data === undefined ? '' : JSON.stringify(data)), json: async () => data });
+    if (path.includes('recording_url=is.null')) return reply(200, [
+      { id: 'PH1', recording_id: 'RC1', created_at: '2026-11-12T10:00:00Z' },
+      { id: 'PH2', recording_id: 'RC2', created_at: '2026-11-12T09:00:00Z' },
+      { id: 'PH3', recording_id: 'RC3', created_at: '2026-11-12T08:00:00Z' },
+    ]);
+    if (path.startsWith('canoe_calls?select=')) return reply(200, []);
+    if (path === 'rpc/sync_hl_to_canoe_calls') return reply(200, 0);
+    return reply(204);
+  };
+  const asked = [];
+  sync.io.post = async (url, body) => {
+    asked.push(JSON.parse(body));
+    return { status: 200, text: JSON.stringify({ data: [
+      { id: 'RC1', provider: 'twilio', provider_recording_url: 'https://rec.example/RE1', transcription: 'hello' },
+      { id: 'RC2', provider: 'twilio', provider_recording_url: null },
+    ] }) };
+  };
+  try {
+    await sync.run();
+    assert.ok(!process.exitCode);
+    assert.deepEqual(asked[0].id, ['IN', ['RC1', 'RC2', 'RC3']]);
+    const upserts = log.filter(r => r.path === 'canoe_calls' && r.method === 'POST');
+    assert.deepEqual(upserts.map(r => r.body), [[{ id: 'PH1', recording_url: 'https://rec.example/RE1' }]], 'only rows with a link, only id + recording_url');
+  } finally { delete process.env.SKIP_PASS1; process.exitCode = 0; }
+});

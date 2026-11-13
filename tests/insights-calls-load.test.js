@@ -143,16 +143,21 @@ test('Insights fallback: a page that keeps timing out fails the run after 3 trie
   assert.equal(log.filter(r => r.day === '2026-09-04' && r.from === 0).length, 3);
 });
 
-test('Calls: "Has recording" filters on recording_id (recording_url is never populated)', () => {
-  const values = { 'cr-rec-filter': 'yes', 'cr-pub-filter': '', 'cr-adv-filter': '' };
+test('Calls: "Has recording" means a Listen link (Canoe recording_url, else the ASCND recording)', () => {
+  const values = { 'cr-rec-filter': 'yes', 'cr-pub-filter': '', 'cr-adv-filter': '', 'cr-search': 'pest' };
   const ctx = {
-    crDrpPickStart: '2026-11-01', crDrpPickEnd: '2026-11-11', crLinkScope: null,
+    crDrpPickStart: '2026-11-01', crDrpPickEnd: '2026-11-11', crLinkScope: null, AGENTS: [], aliasesForAgent: () => [],
     crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [],
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: () => false } }) },
   };
-  vm.runInNewContext(['function localDayRange(', 'function crBuildFilters('].map(lift).join(';\n') + ';\nthis.crBuildFilters = crBuildFilters;', ctx);
-  assert.match(ctx.crBuildFilters(), /&recording_id=not\.is\.null/);
+  vm.runInNewContext(['function localDayRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters('].map(lift).join(';\n') + ';\nthis.crBuildFilters = crBuildFilters;', ctx);
+  const params = () => new URLSearchParams(ctx.crBuildFilters().replace(/^&/, ''));
+  const has = 'or(recording_url.not.is.null,ascnd_recording_url.not.is.null)';
+  assert.equal(params().getAll('and').length, 1, 'search and recording filter AND together');
+  assert.ok(params().get('and').includes(has) && params().get('and').includes('ivr_name.ilike'), params().get('and'));
+  assert.ok(!params().has('recording_id'), 'a recording_id alone has no playable link');
+  values['cr-search'] = '';
+  assert.deepEqual(params().getAll('or'), ['(recording_url.not.is.null,ascnd_recording_url.not.is.null)']);
   values['cr-rec-filter'] = 'no';
-  assert.match(ctx.crBuildFilters(), /&recording_id=is\.null/);
-  assert.doesNotMatch(ctx.crBuildFilters(), /recording_url/);
+  assert.deepEqual([params().getAll('recording_url'), params().getAll('ascnd_recording_url'), params().getAll('or')], [['is.null'], ['is.null'], []]);
 });
