@@ -31,7 +31,7 @@ function load(ctx, decls, exportNames) {
 const unhtml = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 const tick = () => new Promise(r => setImmediate(r));
 function deferred() { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; }
-const HELPERS = ['function esc(', 'function jsStr(', 'function httpUrl(', 'function toISO(', 'function fmtDate(', 'function fmtDateTime(', 'function crFmtDuration(', 'function outcomeBadge(', 'function flagBadges('];
+const HELPERS = ['function esc(', 'function nullMark(', 'function labelOf(', 'function jsStr(', 'function httpUrl(', 'function toISO(', 'function fmtDate(', 'function fmtDateTime(', 'function personName(', 'function crFmtDuration(', 'function outcomeBadge(', 'function flagBadges('];
 const OUTCOME_SETS = { POSITIVE_OUTCOMES: new Set(['sale']), NEGATIVE_OUTCOMES: new Set(['misrouted']) };
 
 // ── B3 + UI6 + UI15: Review workspace call rows ────────────────────────────
@@ -42,7 +42,7 @@ function reviewCtx(over = {}) {
     getAuthUser: () => over.me ?? 'me@example.com',
     RV: { agent: { ivrName: 'ASCND - Roofing' }, ivrs: ['ASCND - Roofing'], windowStart: new Date('2026-10-13T06:00:00Z'), reviewedSet: new Set(), reviewers: {}, notesByCall: {}, calls: [] },
     ivrQuery: () => 'ivr_name=in.(x)', renderReviewCalls() {},
-    aeRowHtml: () => '', aeDetailHtml: () => '', aeMarkQuotes: t => t,   // agent quality (056), tested in agent-quality-page.test.js
+    aeRowParts: () => null, aeDetailHtml: () => '', aeMarkQuotes: t => t,   // agent quality (056), tested in agent-quality-page.test.js
     sbFetch: async (url, opts = {}) => { sent.push({ url, method: opts.method || 'GET', body: opts.body ? JSON.parse(opts.body) : null }); return over.sbFetch ? over.sbFetch(url, opts) : [{ call_id: 'c1' }]; },
   }, [...HELPERS, 'async function loadReviewedSet(', 'function reviewCallRow(', 'function rvCheckState(', 'function rvSetReviewed(', 'async function toggleCallReviewed(', 'async function rvSaveNote('],
   ['loadReviewedSet', 'reviewCallRow', 'toggleCallReviewed', 'rvSaveNote']);
@@ -69,20 +69,24 @@ test('B3: un-marking your own review keeps the row and its note (PATCH reviewed=
   assert.ok(!ctx.sent.some(r => r.method === 'DELETE'));
   assert.equal(ctx.RV.reviewedSet.has('c1'), false);
   assert.equal(ctx.RV.notesByCall.c1.note, 'asked twice for pricing', 'the note stays on screen and in the row');
-  assert.equal(el.textContent, '☐ Mark reviewed');
+  assert.equal(el.textContent, 'Mark reviewed');
+  assert.equal(el.attrs['aria-pressed'], 'false');
+  assert.equal(el.classList.on, false);
 
   await ctx.toggleCallReviewed('c1', el);   // re-mark: upsert reviewed=true, no note key (keeps the note)
   assert.equal(ctx.sent.at(-1).method, 'POST');
   assert.deepEqual(Object.keys(ctx.sent.at(-1).body).sort(), ['call_id', 'ivr_name', 'reviewed', 'reviewed_at', 'reviewed_by']);
   assert.equal(ctx.sent.at(-1).body.reviewed, true);
   assert.equal(ctx.RV.reviewedSet.has('c1'), true);
+  assert.equal(el.textContent, 'Reviewed');
+  assert.equal(el.attrs['aria-pressed'], 'true');
 });
 
 test("B3: a colleague's review is shown as theirs and can't be flipped off from your screen", async () => {
   const ctx = reviewCtx({ sbFetch: async () => [{ call_id: 'c1', note: null, reviewed_by: 'pat@example.com', reviewed_at: '2026-11-10T16:00:00Z', reviewed: true }] });
   await ctx.loadReviewedSet();
   const row = ctx.reviewCallRow({ id: 'c1', created_at: '2026-11-10T16:00:00Z', ivr_duration: 61 }, 0);
-  assert.match(row, /<button type="button" class="rv-check on"[^>]* title="Marked reviewed by pat@example\.com" disabled[^>]*>☑ Reviewed · pat</);
+  assert.match(row, /<button type="button" class="rv-check on"[^>]* title="Marked reviewed by pat@example\.com" disabled[^>]*>Reviewed by Pat</);
   const before = ctx.sent.length;
   await ctx.toggleCallReviewed('c1', fakeEl());
   assert.equal(ctx.sent.length, before, 'no request');
@@ -97,13 +101,14 @@ test('B3: un-marking fails loudly when no row was updated', async () => {
   assert.equal(ctx.RV.reviewedSet.has('c1'), true);
 });
 
-test('UI6 + UI15: call rows show the AI outcome and summary, Mark reviewed is a button, links are http(s) only', () => {
+test('UI6 + UI15: call rows show the Registry outcome and summary, Mark reviewed is a button, links are http(s) only', () => {
   const ctx = reviewCtx();
   const call = { id: "c'1", created_at: '2026-11-10T16:00:00Z', ivr_duration: 61, our_outcome: 'sale', our_summary: 'Booked <b>Tuesday</b> install.',
     recording_url: 'javascript:alert(1)', ascnd_recording_url: 'https://rec.example/a.mp3' };
   const row = ctx.reviewCallRow(call, 3);
-  assert.match(row, /<span title="AI outcome"><span class="outcome-badge outcome-positive">sale<\/span><\/span>/);
-  assert.match(row, /<div class="rv-call-sum"><span class="rv-ai-lbl">AI summary<\/span> Booked &lt;b&gt;Tuesday&lt;\/b&gt; install\.<\/div>/);
+  assert.match(row, /<span title="Registry outcome"><span class="outcome-badge outcome-positive">sale<\/span><\/span>/);
+  assert.match(row, /<div class="rv-call-sum">Booked &lt;b&gt;Tuesday&lt;\/b&gt; install\.<\/div>/);
+  assert.doesNotMatch(row, /AI summary|AI outcome/, 'no per-row "AI ..." labels (S-42)');
   assert.match(row, /<button type="button" class="rv-check" id="rv-chk-3" aria-pressed="false"/, 'a <span> was not keyboard-reachable');
   assert.match(row, /href="https:\/\/rec\.example\/a\.mp3"/, 'falls back to the ASCND recording');
   assert.doesNotMatch(row, /javascript:/);
@@ -122,11 +127,10 @@ test('B3: saving a note marks the call reviewed by you', async () => {
 
 // ── UI9: Review date picker ─────────────────────────────────────────────────
 test('UI9: picking Nov 1 reviews from local midnight Nov 1 and says so (it said Oct 31)', () => {
-  const els = { 'rv-window-label': {}, 'rv-window-date': {} };
+  const els = { 'rv-window-date': {} };   // "Calls since [date input]" (S-44): the input is the label
   const ctx = load({ RV: { windowStart: new Date() }, document: { getElementById: id => els[id] }, loadReviewMetrics() {}, loadReviewedSet() {}, loadReviewCalls() {}, loadEvalDisagree() {} },
     ['function toISO(', 'function fmtDate(', 'function updateReviewWindowLabel(', 'function reviewSetWindow('], ['reviewSetWindow', 'updateReviewWindowLabel']);
   ctx.reviewSetWindow('2026-11-01');
-  assert.equal(els['rv-window-label'].textContent, 'Nov 1, 2026');
   assert.equal(els['rv-window-date'].value, '2026-11-01');
   assert.equal(ctx.RV.windowStart.toISOString(), '2026-11-01T06:00:00.000Z');
   ctx.RV.windowStart = new Date('2026-10-14T03:30:00Z');   // 9:30 pm Oct 13 in Denver
@@ -193,7 +197,7 @@ function insightsDom() {
 
 test('B6: Insights rows in other sections still expand after you sort one section (audit repro)', () => {
   const dom = insightsDom();
-  const fns = ['function esc(', 'function fmtShortD(', 'function insConv(', 'function insFmtDelta(', 'function insFmtRev(', 'function insFmtConv(', 'function insPeriodLabel(',
+  const fns = ['function esc(', 'function nullMark(', 'function labelOf(', 'function fmtShortD(', 'function insConv(', 'function insFmtDelta(', 'function insFmtRev(', 'function insFmtConv(', 'function insPeriodLabel(',
     'function insBuildMovers(', 'function insSortRows(', 'function insRenderResults(', 'function insRenderSection(', 'function insExpandContent('];
   if (html.includes('function insOutputClick(')) fns.push('function insOutputClick('); else fns.push('function insAttachListeners(');
   const ctx = load({ document: dom.document, insSortState: { pub: { col: 'dRev', dir: -1 }, adv: { col: 'dRev', dir: -1 }, agent: { col: 'dRev', dir: -1 } }, insLastResults: null }, fns, ['insRenderResults']);
@@ -347,7 +351,7 @@ test('N6: Load more and Export reuse the filters the table was loaded with, not 
   await ctx.crExportAll();
   assert.ok(fetched.at(-1).includes('ilike.*Acme*'), 'export = what the table shows');
   assert.equal(ctx.crApplied.start, '2026-11-02');
-  await ctx.crLoad(false);   // Load calls applies the edits
+  await ctx.crLoad(false);   // the next filter apply (crApply) loads the edits
   assert.ok(fetched.at(-1).includes('Bolt'));
 });
 
@@ -378,7 +382,7 @@ test('N5: a range change during a load is not dropped, and the older reply does 
   replies[2].reject(new Error('Supabase 500'));
   await fail;
   assert.equal(ctx.metricsFailed, true);
-  assert.match(els['freshness-label'].textContent, /Could not load data/);
+  assert.match(els['freshness-label'].textContent, /Couldn't load data/);
   const ok = ctx.refreshMetrics();
   replies[3].resolve([]);
   await ok;
@@ -388,7 +392,7 @@ test('N5: a range change during a load is not dropped, and the older reply does 
 
 test('N5: after a failed load the cards say "No data" with dashes, not 0 and Inactive', () => {
   const ctx = load({ metricsFailed: true, openAgent: null, testCallMap: {}, vClass: () => '', rtLabel: () => 'Publisher-led', fmtPct: (a, b) => (b ? Math.round(a / b * 100) + '%' : '—'), renderTestCallRow: () => '', aeCardLine: () => '', agentLastCall: null },
-    ['function esc(', 'function needsSetup(', 'function isInactive(', 'function getEffectiveStatus(', 'function renderCard('], ['renderCard']);
+    ['function esc(', 'function nullMark(', 'function labelOf(', 'function needsSetup(', 'function isInactive(', 'function getEffectiveStatus(', 'function renderCard('], ['renderCard']);
   const a = { name: 'Roofing', vertical: 'Home Services', status: 'live', raw_calls: 0, paid_calls: 0, revenue: 0, routingType: 'publisher-led', ivrName: 'A' };
   const card = ctx.renderCard(a, 0);
   assert.match(card, />No data</);
@@ -406,7 +410,8 @@ test('N7: a slower Publisher reply does not overwrite the Advertiser view on Sco
     document: { getElementById: id => (id === 'scores-output' ? out : null) },
     scoresFetchPairs: () => { const d = deferred(); pending.push(d); return d.promise; }, loadOutcomeWeights: async () => ({}),
     scoresComputeRows: pairs => pairs.map(p => ({ entity: p.entity_name, entityType: ctx.scoresEntity })), scoresRenderTable() { ctx.rendered = ctx.scoresRows.map(r => r.entity); },
-  }, ['function esc(', 'function scoresWindowRange(', 'async function scoresLoad('], ['scoresLoad']);
+    scoresWindowLabel() {},
+  }, ['function esc(', 'function loadErrorHtml(', 'function scoresWindowRange(', 'async function scoresLoad('], ['scoresLoad']);
   const pub = ctx.scoresLoad();
   ctx.scoresEntity = 'advertiser';
   const adv = ctx.scoresLoad();
@@ -425,7 +430,7 @@ test('N7: the call drawer ignores a transcript that arrives after it moved to an
     ...OUTCOME_SETS, compDrawerCall: null, compDrawerFlags: [], copyId() {}, loadCorrectionHistory() {},
     document: { getElementById: el, querySelectorAll: () => [] },
     compFetch: url => { const d = deferred(); pending[decodeURIComponent(url.match(/id=eq\.([^&]*)/)[1])] = d; return d.promise; },
-  }, ['function esc(', 'function outcomeBadge(', 'function flagBadges(', 'function openCallDrawer('], ['openCallDrawer']);
+  }, ['function esc(', 'function nullMark(', 'function labelOf(', 'function outcomeBadge(', 'function flagBadges(', 'function openCallDrawer('], ['openCallDrawer']);
   ctx.openCallDrawer({ id: 'first' });
   ctx.openCallDrawer({ id: 'second' });
   pending.second.resolve([{ transcription: 'second call transcript' }]);
@@ -459,10 +464,13 @@ test('N8: a failed weights load is not kept for the session, and Scores says it 
     scoresEntity: 'publisher', scoresWindow: 'master', scoresOpenKey: null, scoresExcluded: new Set(), scoresLoadSeq: 0, activeRange: {},
     document: { getElementById: id => (id === 'scores-output' ? out : null) },
     scoresFetchPairs: async () => [{ entity_name: 'Pub A' }], loadOutcomeWeights: async () => { throw new Error('Supabase 500'); },
-    scoresComputeRows() { throw new Error('should not compute'); }, scoresRenderTable() {},
-  }, ['function esc(', 'function scoresWindowRange(', 'async function scoresLoad('], ['scoresLoad']);
+    scoresComputeRows() { throw new Error('should not compute'); }, scoresRenderTable() {}, scoresWindowLabel() {},
+    warned: [], console: { warn: (...a) => s.warned.push(a.join(' ')) },
+  }, ['function esc(', 'function loadErrorHtml(', 'function scoresWindowRange(', 'async function scoresLoad('], ['scoresLoad']);
   await s.scoresLoad();
-  assert.match(out.innerHTML, /Could not load scores: Supabase 500/);
+  assert.match(out.innerHTML, /<div class="load-error" role="alert"><span>Couldn't load scores\.<\/span><button type="button" class="rv-btn" onclick="scoresLoad\(\)">Retry<\/button><\/div>/);
+  assert.doesNotMatch(out.innerHTML, /Supabase/, 'the raw error is not shown (S-48)...');
+  assert.match(s.warned.join('\n'), /Supabase 500/, '...it goes to the console');
 });
 
 // ── N1: Settings > Admin weights ────────────────────────────────────────────
@@ -474,7 +482,7 @@ function weightsCtx(compFetch) {
     weightsData: {}, weightsLoadError: null, weightsProcessedCount: null, weightsCountApprox: true, scoresWeights: null, console: { warn() {} },
     weightsLoadCount: async () => 123730, compFetch, compPost: async (table, rows) => { posts.push({ table, rows }); }, posts,
     sbFetch: async url => { ctx.recalc = url; return 123730; }, els,
-  }, ['function esc(', 'function weightsButtonLabel(', 'async function weightsInit(', 'function weightsRender(', 'async function weightsExecute('], ['weightsInit', 'weightsExecute']);
+  }, ['function esc(', 'function nullMark(', 'function labelOf(', 'function loadErrorHtml(', 'function weightsButtonLabel(', 'async function weightsInit(', 'function weightsRender(', 'async function weightsExecute('], ['weightsInit', 'weightsExecute']);
   // Inputs as rendered by weightsRender, editable by the test.
   ctx.inputs = () => [...els['settings-weights-table'].innerHTML.matchAll(/data-outcome="([^"]*)" data-field="([^"]*)"\s+value="([^"]*)"/g)]
     .map(([, outcome, field, value]) => ({ dataset: { outcome, field }, value }));
@@ -486,8 +494,10 @@ test('N1: a failed weights load shows the error and cannot save zeros over every
   const ctx = weightsCtx(async () => { throw new Error('Supabase 503'); });
   await ctx.weightsInit();
   assert.doesNotMatch(ctx.els['settings-weights-table'].innerHTML, /<input/, 'no editable zeros');
-  assert.match(ctx.els['settings-weights-table'].innerHTML, /Could not load the current weights: Supabase 503/);
+  assert.match(ctx.els['settings-weights-table'].innerHTML, /Couldn't load the current weights\.<\/span><button type="button" class="rv-btn" onclick="weightsInit\(\)">Retry</);
+  assert.doesNotMatch(ctx.els['settings-weights-table'].innerHTML, /Supabase 503/, 'raw error to the console only (S-48)');
   assert.equal(ctx.els['weights-execute-btn'].disabled, true);
+  assert.equal(ctx.els['weights-execute-btn'].textContent, 'Save (weights did not load)');
   ctx.shown = [];
   await ctx.weightsExecute();
   assert.deepEqual(ctx.posts, [], 'nothing written');
@@ -574,9 +584,9 @@ test('UI1: Scores opens on pairings whose scores are shown; low-volume rows sort
 test('UI1: the pairing detail has a View calls button that hands off with the exact account, vertical and window', () => {
   const r = { key: "Let's Lead\u0001Roofing", entity: "Let's Lead", vertical: 'Roofing', canoe: { sale: 30 }, ours: { sale: 30 }, n: 30, _dis: [] };
   const ctx = load({ scoresEntity: 'publisher', scoresWeights: { sale: { pub_score: 10 } }, scoresExcluded: new Set(), SCORES_MIN_CALLS: 20, scoresWindow: 'master', activeRange: {}, URLSearchParams },
-    ['function esc(', 'function jsStr(', 'function httpUrl(', 'function crFmtDuration(', 'function scoresFmt(', 'function toISO(', 'function scoresRenderDetail(', 'function scoresWindowRange(', 'function scoresViewCalls('], ['scoresRenderDetail', 'scoresViewCalls']);
+    ['function esc(', 'function nullMark(', 'function labelOf(', 'function jsStr(', 'function httpUrl(', 'function crFmtDuration(', 'function scoresFmt(', 'function toISO(', 'function scoresRenderDetail(', 'function scoresWindowRange(', 'function scoresViewCalls('], ['scoresRenderDetail', 'scoresViewCalls']);
   const detail = ctx.scoresRenderDetail(r);
-  const m = detail.match(/<button class="rv-btn" data-entity="([^"]*)" data-vertical="([^"]*)" onclick="([^"]*)">View all calls in Calls →<\/button>/);
+  const m = detail.match(/<button class="rv-btn" data-entity="([^"]*)" data-vertical="([^"]*)" onclick="([^"]*)">View all calls in Calls<\/button>/);
   assert.ok(m, 'scoresViewCalls had no caller');
   let handed = null;
   new Function('event', 'scoresViewCalls', unhtml(m[3])).call({ dataset: { entity: unhtml(m[1]), vertical: unhtml(m[2]) } }, { stopPropagation() {} }, (e, v) => { handed = [e, v]; });
@@ -624,14 +634,15 @@ test('UI8: model labels match their ids, and the digest says what "other flagged
   const email = buildEmail({ manager_name: 'Pat Example' }, rankAccounts(tallyAccounts([{ publisher_name: 'A', flags: ['geo_mismatch'], ai_processed_at: 'x' }], new Set(), new Set(['A']), buildBaseline([]))), 'Nov 9 – Nov 12', '2026-11-09T16:00:00Z', '2026-11-12T16:00:00Z');
   assert.doesNotMatch(email, /normal range/);
   assert.match(email, /fewer than 3 calls with any one flag/);
-  assert.match(html, /revenue · all table rows/);
+  // S-33: the label is just "Revenue"; its tooltip still says it covers every row the table matches.
+  assert.match(html, /title="Advertiser payin on every call the table matches, including the Flagged only and flag-type filters\."><div class="summary-val" id="calls-stat-revenue">[^\n]*<div class="summary-lbl">Revenue<\/div>/);
 });
 
 test('UI9: model compare prices every catalog model and gemini-3.6-flash; an unpriced model says so instead of $0.00', () => {
   const tw = { innerHTML: '' };
   const src = html.slice(html.indexOf('const MODEL_CATALOG = ['), html.indexOf('let calibQueueCount')) + '\n' + html.slice(html.indexOf('const MT_PRICES = {'), html.indexOf('let mtState'));
   const ctx = { document: { getElementById: () => tw } };
-  vm.runInNewContext(src.replace(/^const (MODEL_CATALOG|MT_PRICES)/gm, 'var $1') + '\n' + ['function esc(', 'function mtRender('].map(lift).join('\n') + '\nthis.mtRender = mtRender; var mtShort = m => m.split("/").pop();', ctx);
+  vm.runInNewContext(src.replace(/^const (MODEL_CATALOG|MT_PRICES)/gm, 'var $1') + '\n' + ['function esc(', 'function nullMark(', 'function labelOf(', 'function mtRender('].map(lift).join('\n') + '\nthis.mtRender = mtRender; var mtShort = m => m.split("/").pop();', ctx);
   for (const m of vm.runInNewContext('MODEL_CATALOG', ctx)) assert.ok(vm.runInNewContext('MT_PRICES', ctx)[m.id], m.id);
   const call = (models) => ({ id: 'c1-aaaaaaaa', byModel: Object.fromEntries(models.map(m => [m, { outcome: 'sale', flags: [], in: 4000, out: 300 }])) });
   const models = ['gemini-3.6-flash', 'nvidia/nemotron-super-49b-v1', 'anthropic/claude-sonnet-5'];

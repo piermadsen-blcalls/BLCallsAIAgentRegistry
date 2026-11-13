@@ -179,7 +179,7 @@ function summaryCtx(sbFetch) {
     CALLS_FLAG_TYPES: ['outbound_dial', 'angry_caller', 'geo_mismatch'],
     crApplied: { table: '&scope=table', strip: '&scope=strip' },
     document: { getElementById: el },
-  }, ['async function callsLoadSummary(', 'function callsFlagBreakdown(', 'function callsFlagBreakdownRender('], ['callsLoadSummary', 'callsFlagBreakdown']);
+  }, ['function nullMark(', 'function labelOf(', 'async function callsLoadSummary(', 'function callsFlagBreakdown(', 'function callsFlagBreakdownRender('], ['callsLoadSummary', 'callsFlagBreakdown']);
 }
 
 test('Calls summary: two aggregate requests fill the footer total, strip and hover breakdown', async () => {
@@ -197,15 +197,15 @@ test('Calls summary: two aggregate requests fill the footer total, strip and hov
   assert.equal(ctx.crTotal, 120);
   ctx.callsFlagBreakdown();   // hover: no request, already loaded
   assert.equal(urls.length, 2);
-  assert.match(ctx.els['calls-flag-breakdown'].innerHTML, /geo_mismatch<\/span><span class="fb-n">20<.*angry_caller<\/span><span class="fb-n">5</);
+  assert.match(ctx.els['calls-flag-breakdown'].innerHTML, /geo mismatch<\/span><span class="fb-n">20<.*angry caller<\/span><span class="fb-n">5</);
 });
 
 test('Calls summary: a failed or superseded load never shows stale numbers', async () => {
   const ctx = summaryCtx(async url => { if (url.includes('flags,n:count()')) throw new Error('Supabase 500'); return [{ n: 7, revenue: 0 }]; });
   ctx.els['calls-stat-total'] = { textContent: '9,999' };
   await ctx.callsLoadSummary(1);
-  assert.equal(ctx.els['calls-stat-total'].textContent, '—');
-  assert.equal(ctx.els['calls-stat-flagged'].textContent, '—');
+  assert.equal(ctx.els['calls-stat-total'].textContent, '-');
+  assert.equal(ctx.els['calls-stat-flagged'].textContent, '-');
   const stale = summaryCtx(async () => [{ n: 1, revenue: 1 }]);
   stale.crLoadSeq = 2;
   await stale.callsLoadSummary(1);
@@ -220,7 +220,7 @@ function scoresCtx(rows, openKey = null) {
     scoresExcluded: new Set(), scoresWeights: { sale: { pub_score: 10 } }, SCORES_MIN_CALLS: 20,
     SCORES_TIERS: { publisher: [{ tier: 1, minAvg: 0.9, maxDefect: 0.07, minConv: 0.15 }] },
     document: { getElementById: () => out },
-  }, ['function esc(', 'function jsStr(', 'function httpUrl(', 'function crFmtDuration(', 'function scoresSortRows(', 'function scoresFmt(',
+  }, ['function esc(', 'function nullMark(', 'function labelOf(', 'function jsStr(', 'function httpUrl(', 'function crFmtDuration(', 'function scoresSortRows(', 'function scoresFmt(',
     'function scoresPct(', 'function scoresRenderTable(', 'function scoresRenderDetail('], ['scoresRenderTable']);
   ctx.scoresRenderTable();
   return out.innerHTML;
@@ -288,25 +288,25 @@ test('AI Prompts: the list renders without waiting on (or failing with) call cou
     compFetch: async p => { fetched.push(p); return [{ id: 'p1', name: 'v3', is_active: false }, { id: 'p2', name: "v4 it's", is_active: true }]; },
     sbCount: async p => { if (p.includes('p2')) throw new Error('Supabase 500'); return 100685; },
     promptsRefreshABSelect() {},
-  }, ['function esc(', 'async function promptsLoad(', 'function promptsRender('], ['promptsLoad']);
+  }, ['function esc(', 'function nullMark(', 'function labelOf(', 'async function promptsLoad(', 'function promptsRender('], ['promptsLoad']);
   await ctx.promptsLoad();
   assert.deepEqual(fetched, ['ai_prompts?select=*&order=created_at.asc'], 'no 120k-row prompt_id download');
   const out = els['settings-prompts-list'].innerHTML;
   assert.match(out, /v4 it&#39;s/);
   assert.match(out, /≈ 100,685/);
-  assert.match(out, />—<\/td>/, 'a failed count shows a dash, not 0');
+  assert.match(out, /<span class="null-mark">-<\/span><\/td>/, 'a failed count shows a dash, not 0');
 });
 
-test('Weights: a failed count says "unavailable" instead of "will update 0 calls"', async () => {
+test('Weights: a failed count says "unavailable" instead of "will update 0 calls" (S-49 labels)', async () => {
   const btn = { style: {}, textContent: '' };
   const mk = sbCount => load({
     compFetch: async () => [], weightsRender() {}, console: { warn() {} }, sbCount, weightsData: {}, weightsProcessedCount: null, weightsCountApprox: true,
     document: { getElementById: () => btn },
   }, ['async function weightsLoadCount(', 'function weightsButtonLabel(', 'async function weightsInit('], ['weightsInit']);
   await mk(async () => { throw new Error('Supabase 500'); }).weightsInit();
-  assert.equal(btn.textContent, 'Execute changes — call count unavailable');
+  assert.equal(btn.textContent, 'Save (call count unavailable)');
   await mk(async () => 123730).weightsInit();
-  assert.equal(btn.textContent, 'Execute changes — will update about 123,730 calls');
+  assert.equal(btn.textContent, 'Save and rescore ~123,730 calls');
 });
 
 test('Calls/Settings requests refresh an expired token and retry once', async () => {
@@ -349,11 +349,11 @@ test('Agents cards + breakdowns are deferred when the page lands on another tab'
   assert.equal(ctx.agentsMetricsDeferred, false);
 });
 
-test('Review KPIs show "—" when their load failed, not zeros', () => {
+test('Review KPIs show a dash when their load failed, not zeros', () => {
   const box = { innerHTML: '' };
-  const ctx = load({ RV: { metrics: null }, document: { getElementById: () => box }, fmtPct: () => 'x', updateReviewAiPerf() {} }, ['function updateReviewPerf('], ['updateReviewPerf']);
+  const ctx = load({ RV: { metrics: null }, document: { getElementById: () => box }, fmtPct: () => 'x', updateReviewAiPerf() {} }, ['function nullMark(', 'function updateReviewPerf('], ['updateReviewPerf']);
   ctx.updateReviewPerf();
-  assert.equal((box.innerHTML.match(/rv-perf-val">—</g) || []).length, 4);
+  assert.equal((box.innerHTML.match(/rv-perf-val"><span class="null-mark">-<\/span></g) || []).length, 4);
   ctx.RV.metrics = { raw: 10, paid: 2, revenue: 99.6 };
   ctx.updateReviewPerf();
   assert.match(box.innerHTML, /rv-perf-val">10<.*rv-perf-val">2<.*rv-perf-val">\$100</s);

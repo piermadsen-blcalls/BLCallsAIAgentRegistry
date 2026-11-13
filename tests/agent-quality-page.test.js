@@ -26,9 +26,9 @@ function liftConst(name) {
   return m[0].replace(/^\n(let|const)/, 'var');
 }
 const AE_CONSTS = ['aeAvailable', 'AE_COLS', 'aeMissing', 'aeOf', 'AE_VERDICT', 'AE_STAGE', 'AE_DV', 'AE_ANS', 'AE_UNDERSTANDING', 'AE_SCRIPT', 'AE_FLAG', 'AE_FILTERS', 'aeDefectRate', 'aeQSeq'];
-const AE_FUNCS = ['function aeDecisionLabel(', 'function aeFinding(', 'function aeRowHtml(', 'function aeDetailHtml(', 'function aeMarkQuotes(',
+const AE_FUNCS = ['function aeDecisionLabel(', 'function aeFinding(', 'function aeRowParts(', 'function aeDetailHtml(', 'function aeMarkQuotes(',
   'function aeTallyBlank(', 'function aeTally(', 'function aeCallQuery(', 'function aeAdd(', 'function aeCardLine(', 'function aeDrawerHtml(',
-  'function esc(', 'function fmtPct(', 'function fmtDate('];
+  'function esc(', 'function nullMark(', 'function labelOf(', 'function fmtPct(', 'function fmtDate('];
 function load(extra = {}, more = []) {
   const ctx = { console, activeRange: { label: 'Oct 14 – Nov 12' }, ...extra };
   vm.runInNewContext(AE_CONSTS.map(liftConst).join('\n') + '\n' + AE_FUNCS.concat(more).map(lift).join(';\n'), ctx);
@@ -45,20 +45,21 @@ const MAJOR = {
     evidence: [{ finding: 'over_reject', quote: 'Nope. I got it off the TV.' }] },
 };
 
-test('Review row: verdict, decision and finding chips with the summary; unscored and unavailable states', () => {
+test('Review row: verdict + one finding chip and the agent-review summary; nothing for unscored or unavailable (S-40, S-41, S-42)', () => {
   const ctx = load();
-  const row = unhtml(ctx.aeRowHtml({ id: 'c1', agent_call_evals: MAJOR }));
-  assert.match(row, /Major issue Rejected Over-rejected/);
-  assert.match(row, /AI agent review Rejected a caller who said they got it off the TV\. Fix: Treat 'I got it off the TV'/);
-  assert.match(ctx.aeRowHtml({ id: 'c1', agent_call_evals: MAJOR }), /rv-chip neg rv-ae-verdict/);
-  assert.match(unhtml(ctx.aeRowHtml({ id: 'c2', agent_call_evals: null })), /not scored yet/);
-  assert.match(unhtml(ctx.aeRowHtml({ id: 'c3', agent_call_evals: [{ ...MAJOR, verdict: 'good', decision: 'transferred', decision_verdict: 'correct' }] })),
-    /Handled well Transferred/, 'array-shaped embed works too');
-  assert.doesNotMatch(unhtml(ctx.aeRowHtml({ id: 'c3', agent_call_evals: { ...MAJOR, verdict: 'good' } })), /Over-rejected/, 'no finding chip on a good call');
-  assert.match(unhtml(ctx.aeRowHtml({ id: 'c4', agent_call_evals: { ...MAJOR, verdict: 'no_conversation', decision: 'caller_left', dropoff_stage: 'intro', decision_verdict: 'not_applicable', understanding: null } })),
-    /No conversation Caller left at intro/);
+  const p = ctx.aeRowParts({ id: 'c1', agent_call_evals: MAJOR });
+  assert.equal(unhtml(p.chips).trim(), 'Major issue Over-rejected', 'the decision chip moved to the expanded panel');
+  assert.equal((p.chips.match(/class="rv-chip/g) || []).length, 2, 'two chips at most');
+  assert.match(p.chips, /rv-chip neg rv-ae-verdict/);
+  assert.equal(p.summary, MAJOR.summary);
+  assert.doesNotMatch(p.chips + p.summary, /AI agent review|Fix:/, 'no per-row "AI ..." label; the fix is in the expanded panel');
+  assert.equal(ctx.aeRowParts({ id: 'c2', agent_call_evals: null }), null, 'unscored: no "not scored yet" chip');
+  assert.equal(unhtml(ctx.aeRowParts({ id: 'c3', agent_call_evals: [{ ...MAJOR, verdict: 'good', decision: 'transferred', decision_verdict: 'correct' }] }).chips).trim(),
+    'Handled well', 'array-shaped embed works too; a good call has no finding chip');
+  assert.equal(unhtml(ctx.aeRowParts({ id: 'c4', agent_call_evals: { ...MAJOR, verdict: 'no_conversation', decision: 'caller_left', dropoff_stage: 'intro', decision_verdict: 'not_applicable', understanding: null } }).chips).trim(),
+    'No conversation Stated reason wrong', 'verdict + the one finding (here the stated-reason check); "Caller left at intro" is in the panel');
   ctx.aeAvailable = false;
-  assert.equal(ctx.aeRowHtml({ id: 'c1', agent_call_evals: MAJOR }), '');
+  assert.equal(ctx.aeRowParts({ id: 'c1', agent_call_evals: MAJOR }), null);
 });
 
 test('Review filters are server-side embeds: inner join for a filter, anti-join for "Not scored"', () => {
@@ -92,10 +93,13 @@ test('Expanded row: rule checklist, findings, evidence and the disagree toggle; 
   assert.match(unhtml(d), /Understanding Mishears \/ repeats/);
   assert.match(unhtml(d), /Pass Caller placed this call themselves Not asked Caller age/);
   assert.match(unhtml(d), /Evidence "Nope\. I got it off the TV\."/);
-  assert.match(d, /rv-ae-disagree on" onclick="rvToggleDisagree\('PH1',this\)"/);
+  assert.match(unhtml(d), /^ Agent quality AI was wrong Suggested fix Treat 'I got it off the TV' as the caller placing the call\. Decision/, 'the fix moved here from the row');
+  assert.match(d, /<button type="button" class="rv-check rv-ae-disagree on" aria-pressed="true" onclick="rvToggleDisagree\('PH1',this\)"[^>]*>AI was wrong<\/button>/, 'a real toggle button (S-46)');
+  assert.doesNotMatch(d, /display:none|☐|☑|AI got this wrong/, 'the Details panel shows and hides it, no glyph toggle');
   const noRules = unhtml(ctx.aeDetailHtml({ id: 'PH2', agent_call_evals: { ...MAJOR, eval: { ...MAJOR.eval, rules_registered: false } } }, 4, false));
   assert.match(noRules, /No registered qualifying rules: this agent is not judged on rules until rules are added\. Questions it asked:/);
   assert.doesNotMatch(noRules, /Pass Caller placed/);
+  assert.match(ctx.aeDetailHtml({ id: 'PH2', agent_call_evals: MAJOR }, 4, false), /<button type="button" class="rv-check rv-ae-disagree" aria-pressed="false"/);
   assert.equal(ctx.aeDetailHtml({ id: 'PH3', agent_call_evals: null }, 5, false), '');
 });
 
@@ -114,9 +118,10 @@ test('Agents tab: card line, drawer strip with the rule-less note, and the Defec
   assert.match(unhtml(ctx.aeCardLine(a)), /Agent quality 70\.0% handled well 20\.0% defects/);
   assert.match(ctx.aeCardLine(a), /<b class="neg">20\.0%<\/b>/, '20%+ defects in coral');
   const d = unhtml(ctx.aeDrawerHtml(a));
-  assert.match(d, /40 Calls scored 70\.0% Handled well 20\.0% Defect rate 3\.3% Over-transfer 13\.3% Over-reject 30\.0% Drop-off at intro \(mid 7\.5% · transfer 2\.5%\) 2 Marked "AI got this wrong"/);
+  assert.match(d, /40 Calls scored 70\.0% Handled well 20\.0% Defect rate 3\.3% Over-transfer 13\.3% Over-reject 30\.0% Drop-off at intro \(mid 7\.5% · transfer 2\.5%\) 2 AI marked wrong/);
   assert.match(d, /No registered qualifying rules: calls are not judged on rules until rules are added\./);
-  assert.match(d, /Latest fixes suggested on major calls Ask one follow-up before rejecting\./);
+  assert.match(d, /Recent fixes Ask one follow-up before rejecting\./);
+  assert.match(d, /^ Agent quality 40 Calls scored/, 'heading is just "Agent quality"; the range is in the drawer meta line');
   assert.equal(ctx.aeCardLine({ q: null }), '');
   assert.match(unhtml(ctx.aeDrawerHtml({ qualifying: ['x'], q: null })), /No calls scored in this period yet\./);
 

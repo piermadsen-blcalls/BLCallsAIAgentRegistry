@@ -24,7 +24,7 @@ const unhtml = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&l
 const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 
 const ACTIVITY = ['function needsSetup(', 'function getEffectiveStatus(', 'function agentLastDay(', 'function isInactive(', 'function lastCallLabel(',
-  'function byLastCall(', 'function esc(', 'function fmtDate(', 'function jsStr('];
+  'function byLastCall(', 'function esc(', 'function nullMark(', 'function fmtDate(', 'function jsStr('];
 function ctxWith(extra, decls, names, aliasMap = {}) {
   const ctx = { console, URLSearchParams, aliasMap, resolveIvrName: n => aliasMap[n] || n, ...extra };
   vm.runInNewContext(
