@@ -914,6 +914,21 @@ Continued from the 8/7 Scores work; large session. What moved:
   of per-failure emails (live, previous version restorable); UI suggestions mockup page for review.
 - External sources (Wispr/Jira) not pulled this session.
 
+### 2026-11-13 (Pier) - DB re-measure and free canoe_calls upkeep (branch `fm/ivr-db-measure`)
+- Re-measured after 051-055: production saw 0 errors and a 2.3 s worst request after the Nov 12
+  fixes (11 timeouts and 2.5-13 s requests before). Every tab's main query is under ~2 s idle.
+  What remains: the 1.5 GB DB does not stay cached on Micro (1 GB), and the shared CPU makes the
+  same cached query 27 ms or 2.9 s. Pro plan's $10 compute credit covers Micro; Small is +$5/month,
+  same project/URL/keys. Captain approved Small; resize is a dashboard step (no CLI/MCP tool).
+- Migration `061` (not yet applied to prod): daily autovacuum + fillfactor 90 on `canoe_calls`
+  (last autovacuum Oct 30, 44k dead rows, 75% all-visible), drops 5 unused indexes (~36 MB), and
+  adds `upsert_canoe_calls` so sync Pass 1 skips rows whose Canoe fields did not change
+  (`synced_at` now means "last changed"). After applying, run `vacuum (analyze) public.canoe_calls`
+  off-peak. Rollback + SQL test in `supabase/rollbacks` / `supabase/tests`; function test passed
+  on prod in a rolled-back transaction.
+- Next: apply 061, vacuum, resize to Small, then re-time the tabs.
+- External sources (Wispr/Jira) not pulled this session.
+
 ### 2026-11-13 (Pier) - Site-wide UI cleanup and a new look (branch `fm/ivr-newivr`, second PR)
 - **Why:** the captain flagged "AI slop" across the site. Two independent audits (design review + the
   impeccable detector) found 54 issues; the captain approved all of them on a Lavish board.
@@ -932,6 +947,6 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **New look (captain's pick from a side-by-side):** DM Sans 600 for headings and agent names
   (Instrument Serif dropped) on a white page; grays retuned so the lightest text is 5.3:1.
   Project CLAUDE.md design-system line updated to match.
-- Detector findings 46 -> 1 (11px tile labels, intentional). Tests 108 -> 141, all passing.
+- Detector findings 46 -> 1 (11px tile labels, intentional). Tests 108 -> 151, all passing.
 - Repo: invited a new collaborator with write access (pending acceptance).
 - External sources (Wispr/Jira) not pulled this session.
