@@ -23,14 +23,19 @@ function lift(decl) {
   return html.slice(start, i + 1);
 }
 const SCORES_TIERS_SRC = 'var SCORES_TIERS = ' + html.match(/const SCORES_TIERS = (\{[\s\S]*?\n\});/)[1];
+// The page constants the trend picker reads.
+const CONSTANTS_SRC = ['QUALIFIED_OUTCOMES', 'REVIEW_OUTCOMES', 'CALLS_FLAG_TYPES'].map(n => `var ${n} = ` + html.match(new RegExp(`const ${n} = (\\[[^\\]]*\\]);`))[1]).join(';\n')
+  + ';\nvar CR_OUTCOME_GROUPS = ' + html.match(/const CR_OUTCOME_GROUPS = (\[[\s\S]*?\n\]);/)[1]
+  + ";\nvar HIGH_FLAGS = ['outbound_dial', 'facebook_marketplace', 'coached_call', 'suspicious_call'];";
 
 function fakeEl(id) {
   const set = new Set();
   return {
-    id, innerHTML: '', textContent: '', value: '', disabled: false, max: '', style: {}, clientWidth: 700, options: [],
+    id, innerHTML: '', textContent: '', value: '', disabled: false, max: '', style: {}, clientWidth: 700, options: [], attrs: {}, kids: {}, hidden: false,
+    setAttribute(k, v) { this.attrs[k] = v; },
     classList: { add: c => set.add(c), remove: c => set.delete(c), contains: c => set.has(c),
       toggle: (c, on = !set.has(c)) => (on ? set.add(c) : set.delete(c)) },
-    querySelector: () => null, focus() {}, scrollIntoView() { this.scrolled = true; },
+    querySelector(sel) { return this.kids[sel] || (this.kids[sel] = fakeEl(sel)); }, focus() {}, scrollIntoView() { this.scrolled = true; },
     appendChild(o) { this.options.push(o); },
   };
 }
@@ -72,9 +77,10 @@ const FLAGS = [{ flags: ['geo_mismatch'], suspicious_call: false, n: 2000 }, { f
 const ANSWERS = { dashboard_summary: SUMMARY, dashboard_outcomes: OUTCOMES, dashboard_quality: QUALITY, dashboard_trend: TREND, dashboard_cpa: CPA, dashboard_flags: FLAGS };
 
 // The overview section in a sandbox. rpc(name, body) answers the RPCs; log records every call.
-function page({ rpc = async name => ANSWERS[name], now = '2026-11-12T15:00:00Z' } = {}) {
+function page({ rpc = async name => ANSWERS[name], now = '2026-11-12T15:00:00Z', store = {} } = {}) {
   const log = [], doc = fakeDoc(), timers = [];
   const ctx = {
+    localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, store,
     document: doc, window: { addEventListener() {} }, console, log, timers, VERTICALS: ['Roofing', 'Solar'],
     crDrpPickStart: null, crDrpPickEnd: null, SCORES_MIN_CALLS: 20,
     scoresWeights: { appointment: { adv_score: 10 }, voicemail: { adv_score: -3 }, ivr_hangup: { adv_score: 0 } },
@@ -91,13 +97,15 @@ function page({ rpc = async name => ANSWERS[name], now = '2026-11-12T15:00:00Z' 
     },
   };
   ctx.Date = class extends Date { constructor(...a) { super(...(a.length ? a : [now])); } static now() { return Date.parse(now); } };
-  vm.runInNewContext(SCORES_TIERS_SRC + ';\n' + lift('function scoresTierOf(') + ';\n' + section + `
+  vm.runInNewContext(SCORES_TIERS_SRC + ';\n' + CONSTANTS_SRC + ';\n' + lift('function scoresTierOf(') + ';\n' + lift('function crOutcomeGroupMembers(') + ';\n' + section + `
     Object.assign(this, { dashMtDay, dashMtMidnight, dashMtRange, dashPresetRange, dashInit, dashApply, dashLoad, dashSetPreset,
       dashCustomChange, dashMsPick, dashMsClear, dashFilterBody, dashRpc, dashSummaryHtml, dashDelta, dashMoney, dashOutcomesHtml, dashDrill,
       dashQualityBands, dashTierOf, dashGaugeSvg, dashQualityHtml, dashTrendSvg, dashTrendIndexAt, dashCpaGroups, dashCpaHtml,
-      dashCpaSetQuoted, dashStripRows, crSelectedVerticals, dashOpts, dashSel, dashData });
+      dashCpaSetQuoted, dashStripRows, crSelectedVerticals, dashOpts, dashSel, dashData, dashTrendQuery, dashTrendFetch, dashTrendSetMetric,
+      dashTrendOptions, dashTrendRender, dashToggleOverview });
+    Object.defineProperty(this, 'overviewOpen', { get: () => dashOverviewOpen });
     Object.defineProperty(this, 'trendGeo', { get: () => dashTrendGeo });`, ctx);
-  return { ctx, doc, log };
+  return { ctx, doc, log, store };
 }
 const tick = async () => { for (let i = 0; i < 4; i++) await new Promise(r => setImmediate(r)); };
 const plain = x => JSON.parse(JSON.stringify(x));
@@ -112,7 +120,8 @@ test('Calls page: one page; nothing loads at boot; first open loads the overview
   assert.match(first, /dashInit\(\);\s*if \(crAutoLoaded\) return;\s*crAutoLoaded = true;\s*dashApply\(\);/);
   // RPCs only from the overview loader, its cache, the strip and the CPA toggle: nothing at boot.
   const callers = [...html.matchAll(/dashRpc\('dashboard_\w+'/g)].length + [...html.matchAll(/card\('dash-[a-z]+', 'dashboard_\w+'/g)].length;
-  assert.equal(callers, 4 + 5, 'strip (3) + CPA toggle (1) + five cards');
+  assert.equal(callers, 4 + 4, 'strip (3) + CPA toggle (1) + four cards');
+  assert.match(lift('async function dashLoad('), /card\('dash-trend', null, null, dashTrendRender, \(\) => dashTrendFetch\(body\)\)/, 'the trend card follows the picked metric');
   const tab = html.slice(html.indexOf('<div id="tab-calls"'), html.indexOf('<!-- SCORES TAB'));
   for (const id of ['dash-output', 'dash-outcomes', 'dash-quality', 'dash-trend', 'dash-cpa', 'dash-ms-vertical', 'dash-ms-publisher', 'dash-ms-advertiser', 'calls-list', 'calls-summary-strip', 'cr-output'])
     assert.ok(tab.includes(`id="${id}"`), id);
@@ -143,7 +152,7 @@ test('first open: five card RPCs with the same filters, the list once, every car
   for (const c of calls) assert.deepEqual({ ...c.body, include_quoted: undefined }, { from_day: '2026-10-13', to_day: '2026-11-11', verticals: null, publishers: null, advertisers: null, include_quoted: undefined });
   assert.equal(calls.find(c => c.name === 'dashboard_cpa').body.include_quoted, false);
   assert.deepEqual(log.filter(l => 'crLoad' in l), [{ crLoad: false }], 'the list loads once, fresh');
-  for (const [id, s] of [['dash-output', '55,690'], ['dash-outcomes', 'Qualified Lead'], ['dash-quality', '8.7%'], ['dash-trend', 'Call Quality Trend'], ['dash-cpa', '$250.00']])
+  for (const [id, s] of [['dash-output', '55,690'], ['dash-outcomes', 'Qualified Lead'], ['dash-quality', '8.7%'], ['dash-trend', '>Trend<'], ['dash-cpa', '$250.00']])
     assert.ok(doc.els[id].innerHTML.includes(s), `${id} shows ${s}`);
   assert.equal(doc.els['dash-period'].textContent, '2026-10-13 – 2026-11-11, compared with 2026-09-13 – 2026-10-12 (Mountain Time days)');
   assert.deepEqual(plain(ctx.dashOpts.publisher), ['Pub, A (1)']);
@@ -327,4 +336,70 @@ test('list-only filters: digest scope, outcome, recording and search; the flag d
   for (const id of ['cr-outcome-filter', 'cr-rec-filter', 'cr-search']) { vals[id] = 'x'; assert.equal(c.f(false), true, id); vals[id] = ''; }
   c.crLinkScope = { account: 'A' };
   assert.equal(c.f(false), true, 'digest scope');
+});
+
+test('trend picker: qualified (with tier lines), outcome groups by weight sign, one outcome, flags; flag days normalized', async () => {
+  const { ctx, doc, log } = page();
+  ctx.scoresWeights = { sale: { adv_score: 10, pub_score: 10 }, voicemail: { adv_score: -3, pub_score: 0 }, misrouted: { adv_score: 0, pub_score: -3 } };
+  const q = k => plain(ctx.dashTrendQuery(k));
+  assert.deepEqual(q('qualified'), { label: 'qualified leads', phrase: 'that are qualified leads', rpc: 'dashboard_trend', args: {} });
+  assert.deepEqual(q('group:adv_neg'), { label: 'negative advertiser outcomes', phrase: 'with negative advertiser outcomes', rpc: 'dashboard_trend', args: { outcomes: ['voicemail'] } });
+  assert.deepEqual(q('group:pub_neg').args, { outcomes: ['misrouted'] });
+  assert.deepEqual(q('outcome:sale'), { label: 'sale', phrase: 'with the outcome sale', rpc: 'dashboard_trend', args: { outcomes: ['sale'] } });
+  assert.deepEqual(q('flag:any'), { label: 'any flag', phrase: 'with any flag', rpc: 'dashboard_flag_trend', args: { flags: null, include_suspicious: false } });
+  assert.deepEqual(q('flag:high').args, { flags: ['outbound_dial', 'facebook_marketplace', 'coached_call'], include_suspicious: true }, 'suspicious_call is a column');
+  assert.deepEqual(q('flag:suspicious_call').args, { flags: [], include_suspicious: true });
+  assert.deepEqual(q('flag:geo_mismatch'), { label: 'geo mismatch flag', phrase: 'with the geo mismatch flag', rpc: 'dashboard_flag_trend', args: { flags: ['geo_mismatch'], include_suspicious: false } });
+  const opts = ctx.dashTrendOptions();
+  assert.match(opts, /<option value="qualified" selected>Qualified leads<\/option>/);
+  assert.ok(opts.includes('value="group:adv_pos"') && !opts.includes('group:adv_neu') && !opts.includes('group:qualified'), 'positive / negative groups only');
+  assert.ok(opts.includes('value="outcome:quoted_interested"') && opts.includes('value="flag:suspicious_call"') && opts.includes('value="flag:high"'));
+
+  // Picking a flag: one flag-trend RPC under the filter bar's scope; rate / rate_7d become the chart's fields.
+  ctx.crDrpPickStart = '2026-11-01'; ctx.crDrpPickEnd = '2026-11-03';
+  const flagDays = { days: [{ day: '2026-11-01', scored: 10, matched: 2, rate: 0.2, rate_7d: 0.15 }] };
+  ctx.sbFetch = async (url, opts) => { log.push({ name: url.replace('rpc/', ''), body: JSON.parse(opts.body) }); return flagDays; };
+  await ctx.dashTrendSetMetric('flag:geo_mismatch');
+  assert.deepEqual(log.at(-1), { name: 'dashboard_flag_trend', body: { from_day: '2026-11-01', to_day: '2026-11-03', verticals: null, publishers: null, advertisers: null, flags: ['geo_mismatch'], include_suspicious: false } });
+  assert.deepEqual(plain(ctx.dashData['dash-trend'].days[0]), { ...flagDays.days[0], scored_rate: 0.2, scored_rate_7d: 0.15 });
+  const card = doc.els['dash-trend'].innerHTML;
+  assert.ok(card.includes('<option value="flag:geo_mismatch" selected>'), 'the picker keeps the choice');
+  assert.ok(card.includes('AI-scored calls with the geo mismatch flag,') && !card.includes('Top performers'), 'tier lines only for qualified leads');
+  assert.ok(card.includes('<th class="num">With geo mismatch flag</th>'));
+  const axis = svg => [...svg.matchAll(/class="dash-axis" text-anchor="end">([^<]*)<\/text>/g)].map(m => m[1]);
+  assert.deepEqual(axis(ctx.dashTrendSvg([{ day: 'd', scored_rate: 0.004, scored_rate_7d: 0.005 }], 600, false)), ['0%', '0.25%', '0.5%', '0.75%', '1%'], 'small rates: a small round step');
+  assert.deepEqual(axis(ctx.dashTrendSvg([{ day: 'd', scored_rate: 0.09, scored_rate_7d: 0.08 }], 600, false)), ['0%', '2.5%', '5%', '7.5%', '10%']);
+  assert.deepEqual(axis(ctx.dashTrendSvg([{ day: 'd', scored_rate: 0.09, scored_rate_7d: 0.08 }], 600, true)), ['0%', '5%', '10%', '15%', '20%'], 'qualified: room above the Tier 1 line');
+});
+
+test('overview: titled and collapsible; collapsed it skips the cards (the list still loads) and is remembered', async () => {
+  const tab = html.slice(html.indexOf('<div id="tab-calls"'), html.indexOf('<!-- SCORES TAB'));
+  assert.ok(tab.indexOf('class="dash-filters"') < tab.indexOf('>Overview<'), 'the filter bar stays above the section');
+  assert.ok(tab.indexOf('>Overview<') < tab.indexOf('id="dash-overview"') && tab.indexOf('id="dash-cpa"') < tab.indexOf('>Call list<'));
+  assert.match(tab, /<button type="button" class="dash-collapse" id="dash-overview-toggle" aria-expanded="true" aria-controls="dash-overview"/);
+
+  const { ctx, doc, log, store } = page();
+  ctx.dashInit(); await tick();
+  ctx.dashToggleOverview();
+  assert.equal(doc.els['dash-overview'].hidden, true);
+  assert.equal(doc.els['dash-overview-toggle'].attrs['aria-expanded'], 'false');
+  assert.equal(doc.els['dash-overview-toggle'].kids.span.textContent, 'Show overview');
+  assert.equal(store.calls_overview_collapsed, '1', 'remembered in this browser');
+  ctx.dashApply(); await tick();
+  assert.equal(rpcs(log).length, 0, 'collapsed: no card RPCs');
+  assert.equal(log.filter(l => 'crLoad' in l).length, 1, 'the list still loads');
+  assert.equal(doc.els['dash-period'].textContent, '2026-10-13 – 2026-11-11 (Mountain Time days)', 'the range line stays current');
+  ctx.dashToggleOverview(); await tick();
+  assert.equal(rpcs(log).length, 5, 'opening it loads what it missed');
+  assert.equal(store.calls_overview_collapsed, '0');
+
+  const again = page({ store: { calls_overview_collapsed: '1' } });
+  again.ctx.dashInit();
+  assert.equal(again.ctx.overviewOpen, false, 'starts collapsed next visit');
+  const broken = page();
+  broken.ctx.localStorage = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
+  broken.ctx.dashInit();
+  assert.equal(broken.ctx.overviewOpen, true, 'no storage: open');
+  broken.ctx.dashToggleOverview();
+  assert.equal(broken.ctx.overviewOpen, false, 'still toggles');
 });

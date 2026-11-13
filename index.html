@@ -338,6 +338,12 @@
   #dash-output .dash-cards { margin-bottom:0; }
   .dash-wide { margin-bottom:20px; }
   .dash-list-head { margin-top:8px; padding-top:20px; border-top:1px solid var(--border); scroll-margin-top:12px; }
+  .dash-section-head { margin-bottom:14px; }
+  .dash-collapse { display:inline-flex; align-items:center; gap:6px; font-family:var(--sans); font-size:12px; color:var(--text-2); background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:6px 12px; min-height:32px; cursor:pointer; }
+  .dash-collapse:hover { border-color:var(--brand-navy); color:var(--brand-navy); }
+  .dash-collapse svg { transition:transform 0.15s; }
+  .dash-collapse.closed svg { transform:rotate(180deg); }
+  #dash-overview[hidden] + .dash-list-head { margin-top:0; }
   .dash-sub { font-size:12px; color:var(--text-2); margin:-4px 0 12px; line-height:1.5; }
   .dash-muted { color:var(--text-3); font-size:11px; }
   .dash-link { font-family:var(--sans); font-size:12px; color:var(--blue); background:none; border:none; padding:4px 0; cursor:pointer; }
@@ -383,6 +389,8 @@
   .dash-key { display:inline-block; width:16px; height:0; margin-right:6px; vertical-align:middle; border-top:2px solid var(--brand-navy); }
   .dash-key-day { border-top:1px solid #8FA3BC; }
   .dash-trend-plot { position:relative; }
+  .dash-trend-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; margin-bottom:10px; }
+  .dash-trend-head .dash-card-title { margin-bottom:0; }
   .dash-trend-svg { display:block; max-width:100%; outline:none; }
   .dash-trend-svg:focus-visible { outline:2px solid var(--brand-navy); outline-offset:2px; }
   .dash-grid { stroke:var(--border); stroke-width:1; }
@@ -1232,14 +1240,23 @@
       <div class="dash-ms" id="dash-ms-advertiser"></div>
     </div>
     <div class="dash-period" id="dash-period"></div>
+    <div class="section-header dash-section-head">
+      <div class="section-title">Overview</div>
+      <button type="button" class="dash-collapse" id="dash-overview-toggle" aria-expanded="true" aria-controls="dash-overview" onclick="dashToggleOverview()">
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 5l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Hide overview</span>
+      </button>
+    </div>
+    <div id="dash-overview">
     <div id="dash-output"><div class="ins-loading">Loading…</div></div>
     <div class="dash-cards">
       <section class="dash-card" id="dash-outcomes" aria-label="Call outcomes"></section>
       <section class="dash-card" id="dash-quality" aria-label="Call quality"></section>
     </div>
-    <section class="dash-card dash-wide" id="dash-trend" aria-label="Call quality trend"></section>
+    <section class="dash-card dash-wide" id="dash-trend" aria-label="Trend"></section>
     <section class="dash-card dash-wide" id="dash-cpa" aria-label="Cost per acquisition"></section>
-    <div class="section-header dash-list-head" id="calls-list"><div class="section-title">Calls</div></div>
+    </div>
+    <div class="section-header dash-list-head" id="calls-list"><div class="section-title">Call list</div></div>
     <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
       <div class="summary-item" title="AI-scored calls in this scope. Ignores the Flagged only and flag-type filters, so the flag rate stays a real ratio."><div class="summary-val" id="calls-stat-total"><span class="null-mark">-</span></div><div class="summary-lbl">AI-scored calls</div></div>
       <div class="summary-item flag-card" id="calls-flag-card" role="button" tabindex="0" aria-expanded="false" aria-controls="calls-flag-breakdown" title="Show flags by type" onclick="callsFlagBreakdownToggle(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();callsFlagBreakdownToggle(event);}"><div class="summary-val" id="calls-stat-flagged"><span class="null-mark">-</span></div><div class="summary-lbl">flagged</div><div class="summary-sub" id="calls-stat-high"></div><div id="calls-flag-breakdown" class="flag-tip" role="dialog" aria-label="Flags by type" style="display:none" onclick="event.stopPropagation()"></div></div>
@@ -2462,12 +2479,40 @@ function dashInit() {
   dashInitDone = true;
   Object.keys(DASH_MS_NOUN).forEach(dashMsRender);
   if (!crDrpPickStart || !crDrpPickEnd) ({ from: crDrpPickStart, to: crDrpPickEnd } = dashPresetRange(30));
+  dashOverviewShow(dashOverviewRead());
   dashLoadOptions();
   window.addEventListener('resize', () => { clearTimeout(dashTrendResize); dashTrendResize = setTimeout(dashTrendRender, 150); });
 }
 let dashTrendResize = null;
-// A filter-bar change: the overview and the list reload together.
-function dashApply() { clearTimeout(dashReloadTimer); dashLoad(); crLoad(false); }
+// A filter-bar change: the overview and the list reload together (the overview only while it's open).
+function dashApply() {
+  clearTimeout(dashReloadTimer);
+  document.getElementById('dash-period').textContent = `${fmtShortD(crDrpPickStart)} – ${fmtShortD(crDrpPickEnd)} (Mountain Time days)`;
+  if (dashOverviewOpen) dashLoad(); else dashOverviewStale = true;
+  crLoad(false);
+}
+
+// The overview collapses to leave the filter bar and the call list (captain, 2026-11-13); the choice
+// is kept per browser. Collapsed, its cards don't load; opening it loads them if the filters moved on.
+let dashOverviewOpen = true, dashOverviewStale = false;
+function dashOverviewRead() {
+  try { return localStorage.getItem('calls_overview_collapsed') !== '1'; } catch (e) { return true; }
+}
+function dashOverviewShow(open) {
+  dashOverviewOpen = open;
+  document.getElementById('dash-overview').hidden = !open;
+  const btn = document.getElementById('dash-overview-toggle');
+  btn.setAttribute('aria-expanded', String(open));
+  btn.classList.toggle('closed', !open);
+  btn.querySelector('span').textContent = open ? 'Hide overview' : 'Show overview';
+}
+function dashToggleOverview() {
+  dashOverviewShow(!dashOverviewOpen);
+  try { localStorage.setItem('calls_overview_collapsed', dashOverviewOpen ? '0' : '1'); } catch (e) { console.warn('save overview state:', e.message); }
+  if (!dashOverviewOpen) return;
+  if (dashOverviewStale) dashLoad();
+  else dashTrendRender();   // the trend sizes itself to its card, which was hidden
+}
 
 // Picker options: the shared vertical list and every publisher/advertiser name (055). A failed
 // list leaves its picker empty; the page loads either way.
@@ -2585,6 +2630,7 @@ function dashRpc(name, args) {
 
 async function dashLoad() {
   clearTimeout(dashReloadTimer);
+  dashOverviewStale = false;
   const seq = ++dashSeq, body = dashFilterBody();
   for (const id of DASH_CARDS) {   // keep the last render, dimmed, while the new one loads
     const el = document.getElementById(id);
@@ -2592,7 +2638,7 @@ async function dashLoad() {
   }
   // The outcome bars' +/- signs come from the outcome weights (the list loads them too).
   const weights = loadOutcomeWeights().catch(e => console.warn('outcome weights:', e.message));
-  const card = (id, name, extra, render) => dashRpc(name, { ...body, ...extra }).then(d => {
+  const card = (id, name, extra, render, fetchCard) => (fetchCard ? fetchCard() : dashRpc(name, { ...body, ...extra })).then(d => {
     if (seq !== dashSeq) return;   // a newer filter change owns the cards now
     dashData[id] = d;
     render();
@@ -2610,7 +2656,7 @@ async function dashLoad() {
     }),
     card('dash-outcomes', 'dashboard_outcomes', {}, () => weights.then(dashOutcomesRender)),
     card('dash-quality', 'dashboard_quality', {}, dashQualityRender),
-    card('dash-trend', 'dashboard_trend', {}, dashTrendRender),
+    card('dash-trend', null, null, dashTrendRender, () => dashTrendFetch(body)),
     card('dash-cpa', 'dashboard_cpa', { include_quoted: dashCpaQuoted }, dashCpaRender),
   ]);
 }
@@ -2767,44 +2813,94 @@ function dashQualityRender() {
   if (q) document.getElementById('dash-quality').innerHTML = dashQualityHtml(q, dashShowAll.verticals);
 }
 
-// ── Quality trend: daily qualified % of AI-scored calls and its 7-day rolling rate, with the
-// Tier 1 bar (top performers) and the Tier 3 bar (threshold; below it is Tier 4). Hover or arrow
-// keys move a crosshair; the daily table holds every value.
+// ── Trend: a daily share of AI-scored calls and its 7-day rolling rate. By default qualified
+// leads, with the Tier 1 bar (top performers) and the Tier 3 bar (threshold; below it is Tier 4).
+// The metric picker (MK-176 Phase 3) switches it to an outcome group, one outcome, any flag, high
+// severity or one flag, under the filter bar's scope. Hover or arrow keys move a crosshair; the
+// daily table holds every value.
 let dashTrendIdx = null, dashTrendGeo = null;   // hovered day; the plot's scale, for the crosshair
-function dashTrendSvg(days, width) {
+let dashTrendMetric = 'qualified';
+function dashTrendOptions() {
+  const opt = (v, label) => `<option value="${esc(v)}"${v === dashTrendMetric ? ' selected' : ''}>${esc(label)}</option>`;
+  return `<optgroup label="Quality">${opt('qualified', 'Qualified leads')}</optgroup>`
+    + `<optgroup label="Outcome groups">${CR_OUTCOME_GROUPS.filter(g => g.sign && !g.members).map(g => opt('group:' + g.key, g.label)).join('')}</optgroup>`
+    + `<optgroup label="Outcomes">${REVIEW_OUTCOMES.map(o => opt('outcome:' + o, labelOf(o))).join('')}</optgroup>`
+    + `<optgroup label="Flags">${opt('flag:any', 'Any flag')}${opt('flag:high', 'High severity (a high flag or suspicious)')}`
+    + `${[...CALLS_FLAG_TYPES, 'suspicious_call'].map(fl => opt('flag:' + fl, labelOf(fl))).join('')}</optgroup>`;
+}
+// A metric's label, how the card's subtitle says it, and the RPC that counts it: dashboard_trend for outcomes (a group's members come
+// from the outcome weights), dashboard_flag_trend for flags (suspicious_call is a column, not a flag).
+function dashTrendQuery(key) {
+  const [kind, value] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
+  if (kind === 'group') { const label = (CR_OUTCOME_GROUPS.find(g => g.key === value)?.label || value).toLowerCase(); return { label, phrase: 'with ' + label, rpc: 'dashboard_trend', args: { outcomes: crOutcomeGroupMembers(value) } }; }
+  if (kind === 'outcome') return { label: labelOf(value), phrase: `with the outcome ${labelOf(value)}`, rpc: 'dashboard_trend', args: { outcomes: [value] } };
+  if (key === 'flag:any') return { label: 'any flag', phrase: 'with any flag', rpc: 'dashboard_flag_trend', args: { flags: null, include_suspicious: false } };
+  if (key === 'flag:high') return { label: 'a high-severity flag', phrase: 'with a high-severity flag or marked suspicious', rpc: 'dashboard_flag_trend', args: { flags: HIGH_FLAGS.filter(x => x !== 'suspicious_call'), include_suspicious: true } };
+  if (key === 'flag:suspicious_call') return { label: 'suspicious call', phrase: 'marked suspicious', rpc: 'dashboard_flag_trend', args: { flags: [], include_suspicious: true } };
+  if (kind === 'flag') return { label: labelOf(value) + ' flag', phrase: `with the ${labelOf(value)} flag`, rpc: 'dashboard_flag_trend', args: { flags: [value], include_suspicious: false } };
+  return { label: 'qualified leads', phrase: 'that are qualified leads', rpc: 'dashboard_trend', args: {} };
+}
+// The trend card's data for a metric. dashboard_flag_trend's days carry rate / rate_7d; the chart
+// reads scored_rate / scored_rate_7d (both are shares of AI-scored calls).
+async function dashTrendFetch(body, key = dashTrendMetric) {
+  await loadOutcomeWeights().catch(e => console.warn('outcome weights:', e.message));
+  const q = dashTrendQuery(key), d = await dashRpc(q.rpc, { ...body, ...q.args });
+  const days = (d?.days || []).map(x => q.rpc === 'dashboard_flag_trend' ? { ...x, scored_rate: x.rate, scored_rate_7d: x.rate_7d } : x);
+  return { metric: key, label: q.label, phrase: q.phrase, days };
+}
+async function dashTrendSetMetric(key) {
+  dashTrendMetric = key;
+  const el = document.getElementById('dash-trend'), seq = dashSeq;
+  el.style.opacity = '0.5';
+  try {
+    const t = await dashTrendFetch(dashFilterBody(), key);
+    if (seq !== dashSeq || dashTrendMetric !== key) return;   // a filter change or a newer pick owns the card
+    dashData['dash-trend'] = t;
+    dashTrendRender();
+  } catch (e) {
+    el.innerHTML = loadErrorHtml('this card', 'dashLoad()', e);
+  } finally { el.style.opacity = ''; }
+}
+function dashTrendSvg(days, width, withTiers = true, label = 'qualified leads') {
   const bands = dashQualityBands(null), topBar = bands[bands.length - 1].min, floorBar = bands[0].min;
   const H = 220, L = 40, R = 12, T = 12, B = 26, pw = Math.max(width - L - R, 60), ph = H - T - B;
   const vals = days.flatMap(d => [d.scored_rate, d.scored_rate_7d]).filter(v => v != null);
-  const ymax = Math.max(Math.ceil(Math.max(topBar * 1.2, ...vals) * 20) / 20, 0.05);
+  const top = Math.max(withTiers ? topBar * 1.2 : 0, ...vals);
+  // Four gridline steps of a round size (0.1% to 25%), so a 0.5% line isn't flat on the floor and
+  // the axis reads 2.5 / 5 / 7.5 / 10%, not 2.3 / 4.5 / 6.8 / 9%.
+  const yStep = [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25].find(s => s * 4 >= top) || 0.25, ymax = yStep * 4;
+  const axisPct = v => +(v * 100).toFixed(2);
   dashTrendGeo = { L, pw, T, ph, ymax, n: days.length };
   const x = i => L + (days.length > 1 ? i / (days.length - 1) * pw : pw / 2), y = v => T + ph - v / ymax * ph;
   const line = key => { let d = '', pen = false; days.forEach((r, i) => { if (r[key] == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(r[key]).toFixed(1)}`; pen = true; }); return d; };
-  const grid = [0, 0.25, 0.5, 0.75, 1].map(f => { const v = ymax * f, yy = y(v).toFixed(1); return `<line x1="${L}" x2="${L + pw}" y1="${yy}" y2="${yy}" class="dash-grid"/><text x="${L - 6}" y="${(+yy + 3).toFixed(1)}" class="dash-axis" text-anchor="end">${Math.round(v * 100)}%</text>`; }).join('');
+  const grid = [0, 0.25, 0.5, 0.75, 1].map(f => { const v = ymax * f, yy = y(v).toFixed(1); return `<line x1="${L}" x2="${L + pw}" y1="${yy}" y2="${yy}" class="dash-grid"/><text x="${L - 6}" y="${(+yy + 3).toFixed(1)}" class="dash-axis" text-anchor="end">${axisPct(v)}%</text>`; }).join('');
   const step = Math.max(1, Math.ceil(days.length / Math.max(2, Math.floor(pw / 70))));
   const xt = days.map((d, i) => i % step === 0 ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="dash-axis" text-anchor="middle">${fmtShortD(d.day)}</text>` : '').join('');
   const ref = (v, cls, label) => `<line x1="${L}" x2="${L + pw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls}"/><text x="${L + pw}" y="${(y(v) - 4).toFixed(1)}" class="dash-axis dash-ref-label" text-anchor="end">${label}</text>`;
   return `<svg class="dash-trend-svg" width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" tabindex="0" role="img"
-      aria-label="Daily qualified rate with a 7-day rolling rate. Use the arrow keys to read days; the Daily values table lists them all."
+      aria-label="Daily share of AI-scored calls with ${esc(label)}, with a 7-day rolling rate. Use the arrow keys to read days; the Daily values table lists them all."
       onpointermove="dashTrendHover(event)" onpointerleave="dashTrendShow(null)" onkeydown="dashTrendKey(event)" onblur="dashTrendShow(null)">
-    ${grid}${ref(topBar, 'dash-ref-top', `Top performers (Tier 1) ${dashPct(topBar, 0)}`)}${ref(floorBar, 'dash-ref-floor', `Threshold (Tier 3) ${dashPct(floorBar, 0)}`)}
+    ${grid}${withTiers ? ref(topBar, 'dash-ref-top', `Top performers (Tier 1) ${dashPct(topBar, 0)}`) + ref(floorBar, 'dash-ref-floor', `Threshold (Tier 3) ${dashPct(floorBar, 0)}`) : ''}
     <path d="${line('scored_rate')}" class="dash-line-day"/><path d="${line('scored_rate_7d')}" class="dash-line-7d"/>
     <g class="dash-cross-g" visibility="hidden"><line y1="${T}" y2="${T + ph}" class="dash-cross"/><circle r="4" class="dash-dot7"/></g>${xt}
   </svg>`;
 }
 function dashTrendTip(d) {
   return `<strong>${d.scored_rate_7d == null ? '-' : dashPct(d.scored_rate_7d)}</strong> 7-day · <strong>${d.scored_rate == null ? '-' : dashPct(d.scored_rate)}</strong> that day`
-    + `<div class="dash-muted">${fmtShortD(d.day)}: ${dashNum(d.matched)} qualified of ${dashNum(d.scored)} AI-scored</div>`;
+    + `<div class="dash-muted">${fmtShortD(d.day)}: ${dashNum(d.matched)} of ${dashNum(d.scored)} AI-scored calls</div>`;
 }
 function dashTrendRender() {
   const t = dashData['dash-trend'], el = document.getElementById('dash-trend');
   if (!t || !el) return;
   const days = t.days || [], width = Math.max((el.clientWidth || 600) - 44, 260);
+  const label = t.label || 'qualified leads', tiers = (t.metric || 'qualified') === 'qualified';
   dashTrendIdx = null;
-  el.innerHTML = `<div class="dash-card-title">Call Quality Trend</div>
-    <div class="dash-sub">Daily qualified % of AI-scored calls, with a 7-day rolling average. Monthly 12-month averages once a year of data exists (mid-2027).</div>
+  el.innerHTML = `<div class="dash-trend-head"><div class="dash-card-title">Trend</div>
+      <select class="cr-select" aria-label="What the trend follows" onchange="dashTrendSetMetric(this.value)">${dashTrendOptions()}</select></div>
+    <div class="dash-sub">Daily share of AI-scored calls ${esc(t.phrase || 'that are qualified leads')}, with a 7-day rolling average${tiers ? ', against the Tier 1 and Tier 3 cutoffs' : ''}. Monthly 12-month averages once a year of data exists (mid-2027).</div>
     <div class="dash-legend"><span><i class="dash-key dash-key-7d"></i>7-day rolling</span><span><i class="dash-key dash-key-day"></i>Daily</span></div>
-    <div class="dash-trend-plot">${days.length ? dashTrendSvg(days, width) : '<div class="ins-empty">No days in this range.</div>'}<div class="dash-tip" id="dash-trend-tip" hidden></div></div>
-    <details class="dash-details"><summary>Daily values</summary><div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>Day</th><th class="num">AI-scored</th><th class="num">Qualified</th><th class="num">Rate</th><th class="num">7-day</th></tr></thead><tbody>
+    <div class="dash-trend-plot">${days.length ? dashTrendSvg(days, width, tiers, label) : '<div class="ins-empty">No days in this range.</div>'}<div class="dash-tip" id="dash-trend-tip" hidden></div></div>
+    <details class="dash-details"><summary>Daily values</summary><div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>Day</th><th class="num">AI-scored</th><th class="num">With ${esc(label)}</th><th class="num">Rate</th><th class="num">7-day</th></tr></thead><tbody>
       ${days.map(d => `<tr><td>${fmtShortD(d.day)}</td><td class="num">${dashNum(d.scored)}</td><td class="num">${dashNum(d.matched)}</td><td class="num">${d.scored_rate == null ? '-' : dashPct(d.scored_rate)}</td><td class="num">${d.scored_rate_7d == null ? '-' : dashPct(d.scored_rate_7d)}</td></tr>`).join('')}
     </tbody></table></div></details>`;
 }
