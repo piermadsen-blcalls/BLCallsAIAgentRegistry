@@ -55,7 +55,7 @@ const param = (url, name) => new URLSearchParams(url.split('?')[1] ?? url.replac
 function callsCtx(over = {}) {
   const values = { 'cr-rec-filter': '', 'cr-pub-filter': '', 'cr-adv-filter': '', 'cr-search': '', ...over.values };
   return load({
-    crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crSortCol: 'created_at', crSortDir: -1,
+    crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crSortCol: 'created_at', crSortDir: -1, crLinkScope: over.linkScope || null,
     AGENTS: over.AGENTS || [], aliasesForAgent: ivr => (over.aliases || {})[ivr] || [],
     crOutcomeGroupMembers: () => [], crSelectedVerticals: () => over.verticals || [],
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: () => false } }) },
@@ -159,7 +159,7 @@ test('Calls + Insights vertical filters quote verticals with parentheses and com
 test('Export CSV: a zero-row export re-enables the button', async () => {
   const btn = { disabled: false, textContent: 'Export CSV' }, alerts = [];
   const ctx = load({
-    crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', compAssignments: [{}], AGENTS: [],
+    crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crApplied: null, crBuildFilters: () => '', compAssignments: [{}], AGENTS: [],
     document: { getElementById: () => btn }, alert: m => alerts.push(m),
     sbFetch: async () => [], crBuildQuery: () => 'canoe_calls?select=id',
   }, ['async function crExportAll('], ['crExportAll']);
@@ -177,7 +177,7 @@ function summaryCtx(sbFetch) {
     els, sbFetch, crLoadSeq: 1, crOffset: 25, crTotal: null, crHasMore: true, crRender() {}, callsFlagCounts: null,
     crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', console: { warn() {} },
     CALLS_FLAG_TYPES: ['outbound_dial', 'angry_caller', 'geo_mismatch'],
-    crBuildFilters: (withFlags = true) => (withFlags ? '&scope=table' : '&scope=strip'),
+    crApplied: { table: '&scope=table', strip: '&scope=strip' },
     document: { getElementById: el },
   }, ['async function callsLoadSummary(', 'function callsFlagBreakdown(', 'function callsFlagBreakdownRender('], ['callsLoadSummary', 'callsFlagBreakdown']);
 }
@@ -332,7 +332,7 @@ test('Calls/Settings requests refresh an expired token and retry once', async ()
 test('Agents cards + breakdowns are deferred when the page lands on another tab', async () => {
   const fetched = [];
   const ctx = load({
-    currentTab: 'scores', metricsLoading: false, agentsMetricsDeferred: false, AGENTS: [{ ivrName: 'A' }],
+    currentTab: 'scores', metricsSeq: 0, metricsFailed: false, agentsMetricsDeferred: false, AGENTS: [{ ivrName: 'A' }],
     activeRange: { start: new Date('2026-10-13T06:00:00Z'), end: new Date('2026-11-11T07:00:00Z'), label: 'x' },
     updateDataWindowLabels() { ctx.labelled = true; }, sbFetch: async p => { fetched.push(p); return []; },
     loadAllBreakdowns: () => { fetched.push('breakdowns'); return Promise.resolve({}); },

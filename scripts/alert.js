@@ -160,13 +160,20 @@ function rankAccounts(curr) {
     (b.outlier - a.outlier) || (a.outlier ? b.worstZ - a.worstZ : 0) || (b.curr.flaggedCalls - a.curr.flaggedCalls));
 }
 
-// Deep link into the merged Calls tab, pre-filtered to this account's flagged calls for the period.
-// The Calls tab filters on created_at (UTC days), and a call scored this period can have been made
-// before the last digest, so the link starts at the oldest flagged call's day when that is earlier.
-function deepLink(a, fromDate, toISO) {
+// Deep link into the merged Calls tab showing exactly the calls this account's entry counted:
+// the exact account name, scored in (from, to], with one of the digest's flags (digest=1). It
+// used to send a substring account match and "any flag", so the page added quoted_abandoned and
+// look-alike accounts and missed suspicious calls. The Calls date range (viewer-local days) only
+// has to contain those calls: from the day before the oldest flagged call to the send day.
+const DIGEST_FLAGS = [...AI_FLAGS, 'suspicious_call'];
+function deepLink(a, fromISO, toISO) {
   if (!DASHBOARD_URL) return '';
-  const first = a.curr.firstFlaggedAt ? new Date(a.curr.firstFlaggedAt).toISOString().slice(0, 10) : fromDate;
-  const q = new URLSearchParams({ tab: 'calls', account: a.name, type: a.type, from: first < fromDate ? first : fromDate, to: toISO, flagged: '1' });
+  const first = Date.parse(a.curr.firstFlaggedAt || fromISO);
+  const q = new URLSearchParams({
+    tab: 'calls', digest: '1', account: a.name, type: a.type,
+    from: new Date(first - 86400000).toISOString().slice(0, 10), to: toISO.slice(0, 10),
+    flags: DIGEST_FLAGS.join(','), scored_from: fromISO, scored_to: toISO,
+  });
   return `${DASHBOARD_URL}/?${q.toString()}`;  // query string, not #fragment — email clients strip fragments
 }
 
@@ -265,12 +272,12 @@ async function main() {
     }
 
     const periodLabel = dateRangeLabel(fromDate, toDate_);
-    const toISOFull   = to.toISOString().slice(0, 19);
+    const fromISO = from.toISOString(), toISO = to.toISOString();   // the digest window, for the links
     const subject     = `Compliance digest: `
       + (outlierCount ? `${outlierCount} outlier${outlierCount !== 1 ? 's' : ''}, ` : '')
       + `${alerted.length} account${alerted.length !== 1 ? 's' : ''} flagged — ${periodLabel}`
       + (OVERRIDE_EMAIL ? ` [preview: ${mgr.manager_name}]` : '');
-    const emailHtml   = buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull);
+    const emailHtml   = buildEmail(mgr, alerted, periodLabel, fromISO, toISO);
 
     const payload = {
       to_email: recipient, to_name: mgr.manager_name, first_name: mgr.manager_name.split(' ')[0],
@@ -280,7 +287,7 @@ async function main() {
         scored_calls: a.curr.scored, outlier: a.outlier,
         flags: a.curr.flagCounts,
         reasons: a.reasons.map(r => r.label),
-        link: deepLink(a, fromDate, toISOFull),
+        link: deepLink(a, fromISO, toISO),
       })),
       email_body_html: emailHtml,
     };
@@ -316,7 +323,7 @@ async function main() {
 }
 
 // ── Email builder — AM → account → flags (+ perf), each account links to its flagged calls ──
-function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
+function buildEmail(mgr, alerted, periodLabel, fromISO, toISO) {
   const firstName = mgr.manager_name.split(' ')[0];
   const S = 'font-family:Arial,sans-serif;';
   const navy = '#1A2E4A', coral = '#993C1D', mint = '#0F6E56', muted = '#6B6760', border = '#E0DDD6', bg = '#F7F5F0';
@@ -330,7 +337,7 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
     const rows = a.reasons.map(r =>
       `<tr><td style="${S}padding:5px 0;font-size:13px;color:${r.outlier ? coral : muted}${r.outlier ? ';font-weight:600' : ''}">⚑ ${r.label}</td></tr>`
     ).join('');
-    const link = deepLink(a, fromDate, toISOFull);
+    const link = deepLink(a, fromISO, toISO);
     const linkHtml = link
       ? `<div style="padding:8px 14px;border-top:1px solid ${border}"><a href="${link}" style="${S}font-size:12px;color:${mint};text-decoration:none;font-weight:600">View flagged calls →</a></div>`
       : '';
@@ -346,7 +353,7 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
 
   // Everyone else: one line each.
   const restRows = rest.map(a => {
-    const link = deepLink(a, fromDate, toISOFull);
+    const link = deepLink(a, fromISO, toISO);
     const name = link ? `<a href="${link}" style="color:${navy};text-decoration:none;font-weight:600">${a.name}</a>` : `<span style="font-weight:600;color:${navy}">${a.name}</span>`;
     return `<tr><td style="${S}padding:7px 0;border-bottom:1px solid ${border};font-size:13px">${name}
       <div style="${S}font-size:12px;color:${muted};margin-top:2px">${a.type === 'advertiser' ? 'Advertiser' : 'Publisher'} · ${a.reasons.map(r => r.label).join(', ')}</div></td></tr>`;
@@ -358,7 +365,7 @@ function buildEmail(mgr, alerted, periodLabel, fromDate, toISOFull) {
     ? section(`Outliers (${outliers.length})`, `Flag rate well above the baseline for the verticals these calls are in (z ≥ ${OUTLIER_Z}, ${OUTLIER_MIN_FLAGS}+ calls). Start here.`) + cards
     : section('Outliers (0)', 'No account’s flag rate stands out from its vertical baseline this period.');
   const restHtml = rest.length
-    ? section(`Other flagged accounts (${rest.length})`, 'Flags within the normal range for the vertical.')
+    ? section(`Other flagged accounts (${rest.length})`, `Not outliers: flag rates near the vertical baseline, or fewer than ${OUTLIER_MIN_FLAGS} calls with any one flag.`)
       + `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${restRows}</table>`
     : '';
 
