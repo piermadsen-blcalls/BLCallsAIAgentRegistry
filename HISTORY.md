@@ -1053,3 +1053,21 @@ Continued from the 8/7 Scores work; large session. What moved:
     shared with the Calls tab).
 - Checked at 1440 and 375 px on a local preview with synthetic data. Tests: 186/186 pass.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - MK-176: one page on Mountain days, migration 065 (branch `fm/ivr-mk176`)
+- PR 30 (Dashboard tab) merged on the captain's go. Captain's decisions:
+  - fold the Dashboard into the Calls page (one filter bar for the charts and the call list);
+  - the whole page uses Mountain Time days;
+  - the quality gauge shows qualified leads as a % of AI-scored calls (the basis the Scores tier cutoffs were tuned on), with the all-calls rate under it.
+- **065 (data, ships first):**
+  - `caller_daily` and `outcome_daily` are re-keyed on America/Denver days (`dashboard_tz()`).
+  - `outcome_daily` gains publisher payout, so `dashboard_summary` no longer reads the UTC `insights_daily` (Insights is unchanged).
+  - New `flag_daily` holds the exact flag set per AI-scored call plus suspicious_call. It backs `dashboard_flags`, which serves the Calls strip without raw scans, and `dashboard_flag_trend` for PR C.
+  - The rebuild runs inline (~30 s).
+- Tested in local PGlite:
+  - the test fails before the migration and passes after;
+  - the migration is re-runnable;
+  - the rollback restores the post-064 catalog exactly, and the 064 test passes again after it;
+  - mutations (the `flags` name clash, UTC instead of Mountain) fail.
+- Not applied to prod yet.
+- External sources (Wispr/Jira) not pulled this session.

@@ -26,13 +26,15 @@ const TABLES = [
   'outcome_score_daily', 'rollup_refresh_requests', 'sync_state', 'ascnd_pairing_backfill_058',
   'ivr_development', 'ivr_recordings', 'ivr_signoffs',
   'caller_daily', 'outcome_daily',   // 064
+  'flag_daily',                      // 065
 ];
 // Read-only RPCs, as [name, query-string arguments], called with GET. HEAD is not a test here:
 // PostgREST answers HEAD on an RPC with arguments 200 without running it (2026-11-13). The two
-// argument-free ones bypass RLS (SECURITY DEFINER); 064's dashboard reads get a one-day range.
+// argument-free ones bypass RLS (SECURITY DEFINER); the 064/065 dashboard reads get a one-day range.
 const RPCS = [
   ['get_distinct_verticals', ''], ['get_distinct_accounts', ''],
-  ...['dashboard_summary', 'dashboard_outcomes', 'dashboard_quality', 'dashboard_trend', 'dashboard_cpa']
+  ...['dashboard_summary', 'dashboard_outcomes', 'dashboard_quality', 'dashboard_trend', 'dashboard_cpa',
+     'dashboard_flags', 'dashboard_flag_trend']
     .map(fn => [fn, 'from_day=2026-11-01&to_day=2026-11-01']),
 ];
 
