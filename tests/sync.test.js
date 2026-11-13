@@ -38,7 +38,7 @@ test('Canoe errors are retried with growing backoff', async () => {
 });
 
 // Fake Supabase for run(): records every request.
-function stubSupabase(syncedThrough) {
+function stubSupabase(syncedThrough, { upsertRpc = true } = {}) {
   const log = [];
   global.fetch = async (url, opts = {}) => {
     const path = url.replace('http://sb.test/rest/v1/', '');
@@ -47,10 +47,15 @@ function stubSupabase(syncedThrough) {
     if (path.startsWith('sync_state') && (opts.method || 'GET') === 'GET') return reply(200, syncedThrough ? [{ synced_through: syncedThrough }] : []);
     if (path.startsWith('canoe_calls?select=')) return reply(200, []);
     if (path === 'rpc/sync_hl_to_canoe_calls') return reply(200, 0);
+    if (path === 'rpc/upsert_canoe_calls') return upsertRpc ? reply(200, 0) : reply(404, { code: 'PGRST202' });
     return reply(204);
   };
   return log;
 }
+
+const onePLTPage = (url) => (url.includes('phone-lead-transactions')
+  ? { status: 200, text: JSON.stringify({ data: [{ id: 'PH1', recording_id: 'RC1', created_at: '2026-11-11T10:00:00Z' }], pagination: { pageCount: 1 } }) }
+  : { status: 200, text: '{"data":[]}' });
 
 test('a Canoe outage in Pass 1 still runs Pass 2 and 3, keeps the mark, and fails the run', async () => {
   const mark = new Date(Date.now() - 3 * 86400000);  // three days ago: two missed nightly runs
@@ -70,13 +75,12 @@ test('a Canoe outage in Pass 1 still runs Pass 2 and 3, keeps the mark, and fail
 
 test('a clean run upserts, advances the mark to the window end and requests all rollups', async () => {
   const log = stubSupabase(new Date(Date.now() - 86400000).toISOString());
-  sync.io.post = async (url) => (url.includes('phone-lead-transactions')
-    ? { status: 200, text: JSON.stringify({ data: [{ id: 'PH1', recording_id: 'RC1', created_at: '2026-11-11T10:00:00Z' }], pagination: { pageCount: 1 } }) }
-    : { status: 200, text: '{"data":[]}' });
+  sync.io.post = onePLTPage;
   await sync.run();
   assert.ok(!process.exitCode);
-  const upsert = log.find(r => r.path === 'canoe_calls' && r.method === 'POST');
-  assert.deepEqual(upsert.body.map(r => r.id), ['PH1']);
+  const upsert = log.find(r => r.path === 'rpc/upsert_canoe_calls');
+  assert.deepEqual(upsert.body.rows.map(r => r.id), ['PH1'], 'Pass 1 upserts through the no-op-skipping RPC');
+  assert.ok(!log.some(r => r.path === 'canoe_calls' && r.method === 'POST'), 'no plain upsert when the RPC exists');
   const mark = log.find(r => r.path.startsWith('sync_state') && r.method === 'POST');
   assert.ok(Date.now() - Date.parse(mark.body.synced_through) < 60000, 'mark = this run\'s window end');
   const refresh = log.find(r => r.path === 'rpc/request_rollup_refresh');
@@ -121,4 +125,15 @@ test('Pass 2b stores recording links as id + recording_url upserts, leaving tran
     const upserts = log.filter(r => r.path === 'canoe_calls' && r.method === 'POST');
     assert.deepEqual(upserts.map(r => r.body), [[{ id: 'PH1', recording_url: 'https://rec.example/RE1' }]], 'only rows with a link, only id + recording_url');
   } finally { delete process.env.SKIP_PASS1; process.exitCode = 0; }
+});
+
+// Keep last: the fallback is sticky for the rest of the process.
+test('before migration 061 (RPC 404s) Pass 1 falls back to the plain upsert and still succeeds', async () => {
+  const log = stubSupabase(new Date(Date.now() - 86400000).toISOString(), { upsertRpc: false });
+  sync.io.post = onePLTPage;
+  await sync.run();
+  assert.ok(!process.exitCode);
+  const upsert = log.find(r => r.path === 'canoe_calls' && r.method === 'POST');
+  assert.deepEqual(upsert.body.map(r => r.id), ['PH1']);
+  assert.ok(log.some(r => r.path.startsWith('sync_state') && r.method === 'POST'), 'mark still advances');
 });

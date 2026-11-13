@@ -273,6 +273,25 @@ async function upsertBatch(rows) {
   });
 }
 
+// Pass 1 only (full mapPLT rows): upsert_canoe_calls (migration 061) skips rows whose Canoe fields
+// are unchanged, since each day is re-synced 2-3 times and the plain upsert rewrote every row each
+// time. Partial rows (Pass 2b's id + recording_url) must keep using upsertBatch: the RPC sets every
+// mapPLT column. Returns how many rows were new or changed. Until 061 is applied (404), plain upsert.
+let upsertRpc = true;
+async function upsertPLTBatch(rows) {
+  if (upsertRpc) {
+    try {
+      return await sbFetch('rpc/upsert_canoe_calls', { method: 'POST', body: JSON.stringify({ rows }) });
+    } catch (e) {
+      if (!e.message.includes(' error 404:')) throw e;
+      console.warn('upsert_canoe_calls missing (migration 061 not applied), using the plain upsert.');
+      upsertRpc = false;
+    }
+  }
+  await upsertBatch(rows);
+  return rows.length;
+}
+
 // Catch-up mark (sync_state, migration 052). Until 052 is applied the table is missing: warn and
 // run the plain 2-day window, as before.
 async function readSyncedThrough() {
@@ -328,7 +347,7 @@ async function checkNewIvrs() {
 async function syncCalls({ from, to }) {
   console.log(`\nPass 1: phone-lead-transactions — ${from} → ${to}`);
 
-  let page = 1, total = 0;
+  let page = 1, total = 0, written = 0;
 
   while (true) {
     const { data, pagination } = await fetchPLTPage(page, from, to);
@@ -336,7 +355,7 @@ async function syncCalls({ from, to }) {
 
     for (let i = 0; i < data.length; i += UPSERT_BATCH) {
       const batch = data.slice(i, i + UPSERT_BATCH).map(mapPLT);
-      await upsertBatch(batch);
+      written += (await upsertPLTBatch(batch)) ?? batch.length;
       total += batch.length;
     }
 
@@ -348,7 +367,7 @@ async function syncCalls({ from, to }) {
     page++;
   }
 
-  console.log(`Pass 1 complete. ${total} calls upserted.`);
+  console.log(`Pass 1 complete. ${total} calls upserted, ${written} new or changed.`);
   return total;
 }
 
