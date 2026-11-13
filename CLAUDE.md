@@ -6,7 +6,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 
 ## Architecture (map)
 - **`index.html`** — the ENTIRE frontend. One file, vanilla HTML/CSS/JS, **no
-  framework, no build step.** Tabs: Agents, Insights, Calls, Scores, Settings.
+  framework, no build step.** Tabs: Agents, Dashboard, Insights, Calls, Review, Scores, Settings.
   Talks directly to Supabase REST via the `sbFetch()` helper; the Settings →
   model-calibration UI can dispatch the `process.yml` GitHub Action.
 - **`scripts/`** — Node jobs, run by GitHub Actions on a schedule (see `.github/workflows/`):

@@ -1036,3 +1036,20 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Tested in local PGlite (test fails before, passes after, re-runnable, rollback restores the
   catalog exactly, mutated expectations fail). Not applied to prod yet (firstmate applies after merge).
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - MK-176 Dashboard, PR 2 of 4: overview tab (branch `fm/ivr-mk176`)
+- 064 applied to prod (captain approved). The first refresh ran through the queue in ~24s
+  (outcome_daily 163k rows, caller_daily 441k, May 31 - Nov 11, 138 MB). For Nov 7-13 all five
+  functions matched raw `canoe_calls` exactly (calls, unique, billable, revenue, cost, scored,
+  qualified, conversions). Warm timings 0.1-0.3s at 90 days; the first cold summary call took 2.6s.
+- `check_anon_access.js` probed RPCs with HEAD, which PostgREST answers 200 with arguments
+  without running the function (false FAILs). It now uses GET: every check passes, anon gets 401.
+- New **Dashboard** tab (Insights unchanged), loaded on first open, one `dashboard_summary` call:
+  - 7d/30d/90d presets (complete UTC days) or a custom range.
+  - Searchable vertical, publisher and advertiser multi-selects.
+  - Calls Breakdown card (total, unique, with payout) and Calls Payout card (revenue, $/call,
+    $/paid call, publisher cost, margin), with share and change vs the previous period.
+  - "Export N calls" writes the Calls CSV for the same days and filters (the CSV writer is now
+    shared with the Calls tab).
+- Checked at 1440 and 375 px on a local preview with synthetic data. Tests: 186/186 pass.
+- External sources (Wispr/Jira) not pulled this session.

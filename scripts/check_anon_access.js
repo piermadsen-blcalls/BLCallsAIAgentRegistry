@@ -1,8 +1,8 @@
 // check_anon_access.js — What can someone do with only the publishable key from index.html (no
 // login)? Run after migration 063 and the sign-up toggle; every line should say PASS.
 // Read-only and count-only: tables get a HEAD request (row count in a header, never rows), the
-// read-only RPCs get a HEAD request, and Auth's public settings are read. Nothing is written and
-// no function that writes is called (063's SQL test checks those grants instead).
+// read-only RPCs a GET (body discarded), and Auth's public settings are read. Nothing is written
+// and no function that writes is called (063's SQL test checks those grants instead).
 // Usage: node scripts/check_anon_access.js   (exit code 1 if anything is still open)
 
 const fs = require('fs'), path = require('path');
@@ -27,7 +27,8 @@ const TABLES = [
   'ivr_development', 'ivr_recordings', 'ivr_signoffs',
   'caller_daily', 'outcome_daily',   // 064
 ];
-// Read-only RPCs, as [name, query-string arguments]. HEAD runs them without a body. The two
+// Read-only RPCs, as [name, query-string arguments], called with GET. HEAD is not a test here:
+// PostgREST answers HEAD on an RPC with arguments 200 without running it (2026-11-13). The two
 // argument-free ones bypass RLS (SECURITY DEFINER); 064's dashboard reads get a one-day range.
 const RPCS = [
   ['get_distinct_verticals', ''], ['get_distinct_accounts', ''],
@@ -56,7 +57,8 @@ async function main() {
     report(`table ${t}`, verdict(res.status, total && total !== '*' ? Number(total) : null));
   }
   for (const [fn, args] of RPCS) {
-    const res = await fetch(`${url}/rest/v1/rpc/${fn}${args ? `?${args}` : ''}`, { method: 'HEAD', headers });
+    const res = await fetch(`${url}/rest/v1/rpc/${fn}${args ? `?${args}` : ''}`, { headers });
+    await res.body?.cancel();   // only the status matters
     report(`rpc ${fn}`, res.ok ? ['FAIL', `${res.status} (anon can run it)`] : verdict(res.status, null));
   }
   const settings = await (await fetch(`${url}/auth/v1/settings`, { headers })).json();

@@ -170,7 +170,7 @@ test('Export CSV: a zero-row export re-enables the button', async () => {
     crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crApplied: null, crBuildFilters: () => '', compAssignments: [{}], AGENTS: [],
     document: { getElementById: () => btn }, alert: m => alerts.push(m),
     sbFetch: async () => [], crBuildQuery: () => 'canoe_calls?select=id',
-  }, ['async function crExportAll('], ['crExportAll']);
+  }, ['async function crExportAll(', 'async function callsExportCsv('], ['crExportAll']);
   await ctx.crExportAll();
   assert.deepEqual(alerts, ['No rows to export.']);
   assert.equal(btn.disabled, false);
