@@ -792,7 +792,7 @@ Continued from the 8/7 Scores work; large session. What moved:
 - External sources (Wispr/Jira) not pulled this session.
 
 ### 2026-11-12 (Pier) - Bug + UI bundle from the Nov 12 audit (branch `fm/ivr-bundle`)
-- **Review:** un-marking "Reviewed" no longer deletes the reviewer's note. Migration `058` adds
+- **Review:** un-marking "Reviewed" no longer deletes the reviewer's note. Migration `059` adds
   `call_reviews.reviewed` (un-mark = `reviewed=false`, row and note kept; `review_counts` counts
   `reviewed` rows only, based on the faster definition live on prod, which was never committed).
   A colleague's review shows as theirs and can't be flipped off. Rows show the AI outcome +
@@ -810,8 +810,9 @@ Continued from the 8/7 Scores work; large session. What moved:
   Scores Publisher/Advertiser toggle, call drawer transcript, Review board refresh over a review.
 - **Copy:** Calls revenue card says it follows the table filters; Nemotron labels fixed; digest's
   "normal range" heading; model compare prices gemini-3.6-flash + NVIDIA ("price n/a" if unknown).
-- Tests: `tests/audit-bundle.test.js` (26; 25 fail on the old code, 1 keeps old digest links working), migration 058
-  tested in PGlite (+ rollback) and applied to prod, its test run there (rolled back, no rows left).
+- Tests: `tests/audit-bundle.test.js` (26; 25 fail on the old code, 1 keeps old digest links working), migration 059
+  tested in PGlite (+ rollback) and applied to prod (recorded there as `058_call_reviews_reviewed_flag`,
+  renumbered after a collision), its test run there (rolled back, no rows left).
   Checked at 1440/375 on a local stub harness; the captain's Chrome was not connected, so no signed-in check.
 - Next: merge, then a signed-in look at Review (un-mark keeps note) and a digest link.
 - External sources (Wispr/Jira) not pulled this session.

@@ -1,10 +1,10 @@
--- Rollback for 058_call_reviews_reviewed_flag.sql. Restores review_counts as it was live on
--- prod before 058 and drops the `reviewed` column. Deploy the index.html revert with it: the
+-- Rollback for 059_call_reviews_reviewed_flag.sql. Restores review_counts as it was live on
+-- prod before 059 and drops the `reviewed` column. Deploy the index.html revert with it: the
 -- new page reads and writes the column.
 -- Without the column every row counts as reviewed again, so un-marked rows that hold no note
 -- are removed first (the old page deleted exactly these rows on un-mark). Un-marked rows that
 -- hold a note, or an "AI got this wrong" mark (call_reviews.eval_disagree, migration 056), are
--- kept and read as reviewed again, which is the pre-058 behavior minus the lost note.
+-- kept and read as reviewed again, which is the pre-059 behavior minus the lost note.
 
 do $$ begin
   if exists (select 1 from information_schema.columns

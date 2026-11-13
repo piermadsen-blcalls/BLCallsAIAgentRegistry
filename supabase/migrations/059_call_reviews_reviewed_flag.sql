@@ -1,12 +1,14 @@
 -- ============================================================
--- 058_call_reviews_reviewed_flag.sql
+-- 059_call_reviews_reviewed_flag.sql
 -- Un-marking "Reviewed" in the Review workspace deleted the reviewer's call_reviews row, and
 -- the reviewer's note on that call lives on the same row, so un-ticking deleted the note
 -- (260 of 991 rows carry a note). A row now has a `reviewed` flag: un-marking sets it false
 -- and keeps the note. "Reviewed" = a row with reviewed = true, here (review_counts) and in
 -- the Review workspace. Every existing row is a review, so the default true keeps its meaning.
--- Rollback: supabase/rollbacks/058_call_reviews_reviewed_flag_down.sql
--- Test:     supabase/tests/058_call_reviews_reviewed_flag_test.sql
+-- Rollback: supabase/rollbacks/059_call_reviews_reviewed_flag_down.sql
+-- Test:     supabase/tests/059_call_reviews_reviewed_flag_test.sql
+-- Applied to prod on 2026-11-13 as `058_call_reviews_reviewed_flag` (renumbered after another
+-- worker's 058 landed the same night); the SQL is identical.
 -- ============================================================
 
 alter table call_reviews add column if not exists reviewed boolean not null default true;

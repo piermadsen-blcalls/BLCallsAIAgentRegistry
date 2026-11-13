@@ -3147,7 +3147,7 @@ async function loadReviewMetrics(){
 }
 
 // reviewers = call → who marked it reviewed. A row un-marked by its reviewer stays (reviewed=false,
-// migration 058) because the reviewer's note on the call lives on the same row.
+// migration 059) because the reviewer's note on the call lives on the same row.
 async function loadReviewedSet(){
   RV.reviewedSet=new Set(); RV.reviewers={}; RV.notesByCall={};
   try{
@@ -3420,7 +3420,7 @@ async function toggleCallReviewed(callId,el){
   if(who.length&&!who.includes(by)) return;   // a colleague's review: only they can un-mark it
   try{
     if(who.includes(by)){
-      // Un-mark keeps the row, and the note on it (migration 058). It used to DELETE the row.
+      // Un-mark keeps the row, and the note on it (migration 059). It used to DELETE the row.
       const rows=await sbFetch(`call_reviews?call_id=eq.${encodeURIComponent(callId)}&reviewed_by=eq.${encodeURIComponent(by)}&select=call_id`,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({reviewed:false})});
       if(!rows||!rows.length) throw new Error('no review row was updated');
       rvSetReviewed(rv,callId,by,false);
