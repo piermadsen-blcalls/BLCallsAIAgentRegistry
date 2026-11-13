@@ -951,6 +951,18 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Repo: invited a new collaborator with write access (pending acceptance).
 - External sources (Wispr/Jira) not pulled this session.
 
+### 2026-11-13 (Pier) - New IVRs banner is admin-only (branch `fm/ivr-newivr-admin`)
+- Captain decision: only admins see the New IVRs banner, its setup form, and the Review board's
+  "N new IVRs waiting for setup" note with its button. Non-admins see none of it; new agents stay
+  out of Needs review for everyone. The card's "New · needs setup" chip is unchanged.
+- Uses the existing `window.isAdmin` (from `account_managers.is_admin`). Nothing renders until it
+  resolves to true, so a non-admin never sees the banner flash in. Signed out it isn't read (the
+  managers list reads as empty there and would cache "not an admin"); every sign-in re-reads it.
+  A non-admin following a `?setup=` link just lands on the agent's card.
+- UI only: database-level enforcement belongs to the parked security lockdown.
+- Tests: 3 new in `tests/new-ivr.test.js`; 155/155 pass.
+- External sources (Wispr/Jira) not pulled this session.
+
 ### 2026-11-13 (Pier) - Compliance flag severity, Option A (branch `fm/ivr-newivr-flags`)
 - **Why:** geo_mismatch is ~42% of flags, so "Flagged only", the flag rate and the digest buried
   outbound dials and coached calls (audit item 10). Captain picked Option A for the tiers.
