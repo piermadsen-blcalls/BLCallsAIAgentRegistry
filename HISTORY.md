@@ -883,3 +883,33 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Applied to prod (standing OK):** `057`, after its test passed in a rolled-back transaction.
 - Signed-in Chrome was not connected: UI checked at 1440px and 375px on a local harness with synthetic data.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - Missing ASCND transcripts and Canoe recordings (branch `fm/ivr-rec-tx`)
+- **Transcripts, cause:** 1,247 of 4,847 ASCND calls (30d) had no `ascnd_transcript`. Webhook
+  deliveries were all 200. 417 had their transcript in `hl_call_data` already: ASCND stamps a call
+  8-120s after Canoe does, and pairing only allowed +/-7s. 331 arrived with an empty transcript,
+  494 never arrived (446 repeat calls minutes apart from a caller ASCND has one record for, 48
+  callers it has none for; 339 lasted 5s or less), 5 other. ASCND also re-sends the caller's
+  previous transcript on 48 of 361 repeat calls, so its webhook likely fires before the new
+  transcript is on the GHL contact (empty 9% on first calls, 17% on repeats).
+- **Fix (migration `058`, applied):** pairing accepts ASCND up to 120s behind (also on top of the
+  1h DST skew), ranked after exact matches; one hl row pairs one call (mutual best); fills only
+  (never nulls a stored value); re-pairs calls with a disposition but no transcript. 31-day
+  backfill: missing 1,247 -> 829 (418 recovered). Previous values kept in
+  `ascnd_pairing_backfill_058` for the rollback. Test passed on prod and in PGlite (with the 049
+  test, and failing on 049 as it should). Nightly Pass 3 runs the new rule.
+- **Not fixable from here:** the project has no GHL API access (transcripts came from a CSV
+  export). Per-call fetch needs a GHL Private Integration token with `voice-ai-dashboard.readonly`
+  (Voice AI "List Call Logs"). A Wait step before the webhook action in the GHL workflow should
+  stop new empty/stale transcripts.
+- **Recordings:** Canoe's `recordings/get` returns `provider_recording_url` (Twilio, plays without
+  auth). Sync Pass 2b stores it in `recording_url` (id + recording_url upserts). Calls Listen
+  prefers it, then the ASCND recording; "Has recording" now means "has a Listen link"; Review shows
+  both buttons when both exist. Backfill (branch sync dispatch): 62,231 calls linked; Canoe only
+  has links from 2026-09-10 23:57 UTC on (98-100% since Sep 11, none before).
+- **Older pairing (side effect of that backfill):** May 31 - Oct 12 ASCND calls missing a
+  transcript 71,360 -> 55,190 (fills only; not in the 058 rollback record; partly 036's
+  contact-level transcripts). 5 summer chunks timed out at 8s and were re-run in 1-day calls.
+- Side requests: n8n "Dispo: Error handler" now sends one grouped digest at 8 AM + 3 PM ET instead
+  of per-failure emails (live, previous version restorable); UI suggestions mockup page for review.
+- External sources (Wispr/Jira) not pulled this session.
