@@ -238,12 +238,13 @@ test('banner: lists only needs_setup agents, newest first, with first-seen date 
   assert.ok(out.indexOf('IVR Newer') < out.indexOf('IVR Older'), 'newest first');
   assert.match(out, /First seen Nov 11, 2026 · 1,234 calls/);
   assert.match(out, /First seen Nov 4, 2026 · 1 call</);
+  assert.match(out, /<span class="nib-note">Auto-added from the Canoe sync\. Add a vertical and screening rules to include them in Review\.<\/span>/);
   assert.equal(ctx.getEffectiveStatus(ctx.AGENTS[1]), 'setup', 'card badge says needs setup');
 });
 
 test('card badge: a new IVR says it needs setup, even when the metrics failed to load', () => {
   const ctx = { vClass: () => '', rtLabel: () => 'unknown', fmtPct: () => '—', renderTestCallRow: () => '', aeCardLine: () => '', openAgent: null, agentLastCall: null };
-  vm.runInNewContext(['function esc(', 'function needsSetup(', 'function isInactive(', 'function getEffectiveStatus(', 'function renderCard('].map(lift).join(';\n') +
+  vm.runInNewContext(['function esc(', 'function nullMark(', 'function needsSetup(', 'function isInactive(', 'function getEffectiveStatus(', 'function renderCard('].map(lift).join(';\n') +
     ';\nthis.renderCard = renderCard;', ctx);
   const a = agent('IVR New', { status: 'needs_setup', raw_calls: 0, paid_calls: 0, revenue: 0 });
   for (const failed of [false, true]) {
@@ -266,7 +267,11 @@ test('setup form: needs a vertical, then saves the agent as live and leaves the 
   const ctx = pageCtx({ document: doc, AGENTS: [agent('IVR Roof', { status: 'needs_setup', seenCalls: 3 })],
     sbFetch: async (url, opts) => { calls.push({ url, opts }); return [{}]; } });
   ctx.openIvrSetup(0);
-  assert.match(unhtml(doc.els['new-ivr-banner'].innerHTML), /Save and finish setup/, 'form open');
+  const form = unhtml(doc.els['new-ivr-banner'].innerHTML);
+  assert.match(form, /Save and finish setup/, 'form open');
+  assert.match(form, /<option value="unknown" selected>Unknown<\/option>/, 'routing "Unknown", preselected for an unknown agent');
+  assert.match(form, /value="live" checked> Live AI agent<\/label>/);
+  assert.match(form, /value="test"> Internal \/ test \(hidden from Review\)<\/label>/);
   assert.ok(doc.els['nib-vertical-0'].focused, 'focus lands on the vertical');
 
   await ctx.saveIvrSetup(0);
@@ -291,7 +296,7 @@ test('setup form: needs a vertical, then saves the agent as live and leaves the 
   assert.ok(ctx.filtered >= 1, 'grid re-rendered');
 });
 
-test('setup form: "internal or a test" saves status test without a vertical', async () => {
+test('setup form: "Internal / test" saves status test without a vertical', async () => {
   const doc = fakeDoc({ 'nib-name-0': 'Door', 'nib-vertical-0': '', 'nib-routing-0': 'unknown', 'nib-qual-0': '', 'nib-dq-0': '', 'nib-notes-0': '',
     'input[name="nib-kind-0"]:checked': 'test' });
   let body;
@@ -337,7 +342,7 @@ test('Review board: agents waiting for setup are off the board and out of Needs 
       agent('New1', { name: 'New agent', status: 'needs_setup' }), agent('T', { name: 'Test agent', status: 'test' })],
     document: { getElementById: id => (id === 'review-root' ? { set innerHTML(v) { rootHtml = v; } } : null) } };
   vm.runInNewContext(['function needsSetup(', 'function isInactive(', 'function byLastCall(', 'function getEffectiveStatus(', 'function renderReviewBoard(', 'function reviewBoardStatus(',
-    'function rvScopeSet(', 'function rvAcctLabel(', 'function esc(', 'function fmtDate(', 'function jsStr('].map(lift).join(';\n') +
+    'function rvScopeSet(', 'function rvAcctLabel(', 'function esc(', 'function nullMark(', 'function fmtDate(', 'function jsStr('].map(lift).join(';\n') +
     ';\nthis.renderReviewBoard = renderReviewBoard;', ctx);
   ctx.renderReviewBoard();
   const out = unhtml(rootHtml);

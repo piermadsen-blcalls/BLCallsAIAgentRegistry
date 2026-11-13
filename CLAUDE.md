@@ -54,8 +54,8 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
   (Supabase SQL editor or `supabase db query --linked`); the files are the record.
 - **Agents are keyed by IVR name** with an alias→canonical map (`agent_ivr_aliases`);
   resolve to the canonical name before grouping.
-- **The design system is deliberate** — warm off-white (`#F7F5F0`), Instrument
-  Serif (headings) / DM Sans (body) / DM Mono (data/numbers), navy `#1A2E4A` +
+- **The design system is deliberate** — white page (`#FFFFFF`), DM Sans 600
+  (headings, agent names) / DM Sans (body) / DM Mono (data/numbers), navy `#1A2E4A` +
   mint `#00C896`. Match the `:root` variables; don't reskin.
 
 ## Commands

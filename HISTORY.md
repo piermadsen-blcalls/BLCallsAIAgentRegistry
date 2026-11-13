@@ -928,3 +928,25 @@ Continued from the 8/7 Scores work; large session. What moved:
   on prod in a rolled-back transaction.
 - Next: apply 061, vacuum, resize to Small, then re-time the tabs.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - Site-wide UI cleanup and a new look (branch `fm/ivr-newivr`, second PR)
+- **Why:** the captain flagged "AI slop" across the site. Two independent audits (design review + the
+  impeccable detector) found 54 issues; the captain approved all of them on a Lavish board.
+- **Shell:** the hero heading, tagline, freshness pill and "Data window" footer are gone; freshness
+  is one plain line in the logo bar. No em dashes in visible copy (an empty value is a muted "-"),
+  no glyphs used as icons, one close button, one segmented control + one toggle pill, raw
+  snake_case replaced by readable labels everywhere, numbers in DM Mono, nothing under 11px.
+- **Agents:** cards show only exceptions (no "Live", routing type or "No test call" on every card);
+  details open right under the clicked card's row; test-call add/edit moved into the details.
+- **Insights:** opens on the last 7 days vs the 7 before; "movers" instead of "flagged"; pp unit.
+- **Calls:** every filter applies on change ("Load calls" removed); one Outcome select; separate
+  Outcome and Canoe columns. **Review:** one summary line and at most 2 chips per call row, real
+  toggle buttons. **Scores:** the window is labelled as the Agents range. Errors everywhere are a
+  coral message with Retry instead of raw JSON. **Settings:** "Save and rescore", plain Training
+  labels, "Label calls". Dead CSV-upload code removed.
+- **New look (captain's pick from a side-by-side):** DM Sans 600 for headings and agent names
+  (Instrument Serif dropped) on a white page; grays retuned so the lightest text is 5.3:1.
+  Project CLAUDE.md design-system line updated to match.
+- Detector findings 46 -> 1 (11px tile labels, intentional). Tests 108 -> 151, all passing.
+- Repo: invited a new collaborator with write access (pending acceptance).
+- External sources (Wispr/Jira) not pulled this session.
