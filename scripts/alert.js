@@ -181,7 +181,7 @@ function rankAccounts(curr) {
 // Deep link into the merged Calls tab showing exactly the calls this account's entry counted:
 // the exact account name, scored in (from, to], with one of the digest's flags (digest=1). It
 // used to send a substring account match and "any flag", so the page added quoted_abandoned and
-// look-alike accounts and missed suspicious calls. The Calls date range (viewer-local days) only
+// look-alike accounts and missed suspicious calls. The Calls date range (Mountain Time days) only
 // has to contain those calls: from the day before the oldest flagged call to the send day.
 const DIGEST_FLAGS = [...AI_FLAGS, 'suspicious_call'];
 function deepLink(a, fromISO, toISO) {

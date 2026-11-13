@@ -258,6 +258,7 @@ function pgTermMatch(row, col, op, raw) {
     case 'lte': return cell != null && t(cell) <= t(v);
     case 'is': return v === 'null' ? cell == null : cell === (v === 'true');
     case 'cs': return JSON.parse(v).every(x => (cell || []).includes(x));
+    case 'not': { const [neg, ...rest] = raw.split('.'); return !pgTermMatch(row, col, neg, rest.join('.')); }
     case 'ilike': return new RegExp('^' + v.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i').test(cell || '');
     default: throw new Error('operator not in the fake: ' + op);
   }
@@ -279,11 +280,12 @@ function pgMatch(row, filters) {
 
 function callsPage(params) {
   const ctx = load({
-    crDrpPickStart: null, crDrpPickEnd: null, crLinkScope: null, crPendingVerticals: null, crAutoLoaded: false,
-    CR_OUTCOME_GROUPS: [], AGENTS: [], aliasesForAgent: () => [], crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [],
-    crApplyPendingVerticals() {}, crRenderLinkScope() {}, crLoad() {}, fmtShortD: x => x,
-    values: { 'cr-rec-filter': '', 'cr-pub-filter': 'stale text', 'cr-adv-filter': '', 'cr-search': '' }, active: {},
-  }, ['function localDayRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters(', 'function applyCallsFilters('], ['crBuildFilters', 'applyCallsFilters']);
+    crDrpPickStart: '2026-10-14', crDrpPickEnd: '2026-11-12', crLinkScope: null, crAutoLoaded: false,
+    CR_OUTCOME_GROUPS: [], AGENTS: [], aliasesForAgent: () => [], crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [], DASH_TZ: 'America/Denver', dashSel: { vertical: new Set(), publisher: new Set(), advertiser: new Set() },
+    crRenderLinkScope() {}, dashInit() {}, dashMsLabel() {}, dashApply() {}, fmtShortD: x => x,
+    dashSetRange(from, to) { this.crDrpPickStart = from; this.crDrpPickEnd = to; },
+    values: { 'cr-rec-filter': '', 'cr-search': '' }, active: {},
+  }, ['function dashAddDays(', 'function dashMtMidnight(', 'function dashMtRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters(', 'function applyCallsFilters('], ['crBuildFilters', 'applyCallsFilters']);
   ctx.document = { getElementById: id => ({ get value() { return ctx.values[id] ?? ''; }, set value(v) { ctx.values[id] = v; }, classList: { contains: c => !!ctx.active[id], add() { ctx.active[id] = true; } } }) };
   ctx.applyCallsFilters(new URLSearchParams(params));
   return ctx;
@@ -316,7 +318,7 @@ test('B7: the digest link opens exactly the calls the email counted for that acc
 
   const page = callsPage(link.search);
   assert.deepEqual({ ...page.crLinkScope, flags: [...page.crLinkScope.flags] }, { account: 'Pub A', type: 'publisher', flags: link.searchParams.get('flags').split(','), scoredFrom: from, scoredTo: to });
-  assert.equal(page.values['cr-pub-filter'], '', 'the substring box is cleared, the exact scope applies');
+  assert.doesNotMatch(page.crBuildFilters(), /ilike/, 'the exact scope applies, no substring match');
   const shown = calls.filter(r => pgMatch(r, page.crBuildFilters())).map(r => r.id).sort();
   assert.deepEqual(shown, ['flagged', 'made-early', 'suspicious-only', 'two-flags']);
   assert.equal(shown.length, acct.curr.flaggedCalls, 'same number as the email');
@@ -329,8 +331,7 @@ test('B7: the digest link opens exactly the calls the email counted for that acc
 
 test('B7: links from digests already sent keep their substring match', () => {
   const page = callsPage('?tab=calls&account=Pub%20A&type=publisher&from=2026-11-05&to=2026-11-09T16%3A00%3A00&flagged=1');
-  assert.equal(page.crLinkScope, null);
-  assert.equal(page.values['cr-pub-filter'], 'Pub A');
+  assert.deepEqual({ ...page.crLinkScope }, { account: 'Pub A', type: 'publisher', match: 'substring' });
   assert.match(page.crBuildFilters(), /&publisher_name=ilike\.\*Pub%20A\*/);
   assert.match(page.crBuildFilters(), /&flags=neq\.%5B%5D/);
 });
@@ -344,10 +345,11 @@ test('N6: Load more and Export reuse the filters the table was loaded with, not 
     crSortCol: 'created_at', crSortDir: -1, live: '&publisher_name=ilike.*Acme*', compAssignments: [{}], AGENTS: [], aliasesForAgent: () => [],
     crBuildFilters(withFlags = true) { return this.live + (withFlags ? '' : '&strip'); },
     loadOutcomeWeights: async () => ({}), ensureVerticals: async () => {}, crRender() {}, callsLoadSummary() {},
+    crListOnly: () => true, dashFilterBody: () => ({}),
     document: { getElementById: id => els[id] || {} }, alert() {}, console: { warn() {} },
     sbFetch: async url => { fetched.push(url); return Array.from({ length: 25 }, (_, i) => ({ id: 'r' + i })); },
     Blob: class {}, URL: { createObjectURL: () => '', revokeObjectURL() {} },
-  }, ['function crBuildQuery(', 'async function crLoad(', 'async function crExportAll('], ['crLoad', 'crExportAll']);
+  }, ['function crBuildQuery(', 'async function crLoad(', 'async function crExportAll(', 'async function callsExportCsv('], ['crLoad', 'crExportAll']);
   ctx.crBuildFilters = ctx.crBuildFilters.bind(ctx);
   await ctx.crLoad(false);
   ctx.live = '&publisher_name=ilike.*Bolt*';   // typed, not applied
@@ -356,7 +358,9 @@ test('N6: Load more and Export reuse the filters the table was loaded with, not 
   assert.equal(fetched.length, 2);
   assert.ok(fetched.every(u => u.includes('ilike.*Acme*') && !u.includes('Bolt')), fetched.join('\n'));
   ctx.sbFetch = async url => { fetched.push(url); return []; };
+  const before = fetched.length;
   await ctx.crExportAll();
+  assert.equal(fetched.length, before + 1, 'the export ran its own request');
   assert.ok(fetched.at(-1).includes('ilike.*Acme*'), 'export = what the table shows');
   assert.equal(ctx.crApplied.start, '2026-11-02');
   await ctx.crLoad(false);   // the next filter apply (crApply) loads the edits

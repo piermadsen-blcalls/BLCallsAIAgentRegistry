@@ -60,12 +60,12 @@ test('badges: colored by tier, most severe first; suspicious_call shows as a hig
 
 test('Calls: "High severity only" matches any high flag or suspicious_call, and combines with other filters', () => {
   const on = new Set(['cr-high-only']);
-  const values = { 'cr-rec-filter': 'yes', 'cr-pub-filter': '', 'cr-adv-filter': '', 'cr-search': '' };
+  const values = { 'cr-rec-filter': 'yes', 'cr-search': '' };
   const ctx = load({
     crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crLinkScope: null, AGENTS: [], aliasesForAgent: () => [],
-    crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [],
+    crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [], DASH_TZ: 'America/Denver', dashSel: { vertical: new Set(), publisher: new Set(), advertiser: new Set() },
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: c => c === 'active' && on.has(id) } }) },
-  }, ['function localDayRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters('], ['crBuildFilters']);
+  }, ['function dashAddDays(', 'function dashMtMidnight(', 'function dashMtRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters('], ['crBuildFilters']);
   const q = decodeURIComponent(ctx.crBuildFilters());
   assert.match(q, /&and=\(or\(recording_url\.not\.is\.null,ascnd_recording_url\.not\.is\.null\),or\(flags\.cs\.\["outbound_dial"\],flags\.cs\.\["facebook_marketplace"\],flags\.cs\.\["coached_call"\],suspicious_call\.is\.true\)\)/);
   assert.doesNotMatch(decodeURIComponent(ctx.crBuildFilters(false)), /coached_call/, 'the strip scope ignores flag drill-downs, so its rates stay real ratios');
