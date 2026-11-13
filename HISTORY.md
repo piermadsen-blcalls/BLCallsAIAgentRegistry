@@ -844,3 +844,31 @@ Continued from the 8/7 Scores work; large session. What moved:
   ~500 calls per run, or dispatch `process-submit.yml` with `target=agent` for a same-day backfill.
 - Draft rules for the 9 rule-less live agents are with the captain for review (not in `agents`).
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - New AI IVRs are detected after each sync (branch `fm/ivr-newivr`)
+- **Why:** a brand-new AI IVR was silent (audit I6 / UI3): its calls matched no agent, so they
+  counted nowhere until someone registered it by hand. Renames already self-healed (050), but that
+  job ran at 00:45 UTC, before the sync lands (N18).
+- **Detect + register:** migration `060` adds `check_new_ivrs()`. It heals renames first, then
+  registers every other `ASCND%` IVR seen in the last 7 days as an agent with status `needs_setup`,
+  its first-seen date and call count (one name per Canoe ivr_id). Its calls count from the first
+  one. `sync.js` runs it at the end of every sync; the nightly pg_cron job moved from 00:45 to
+  07:15 UTC and runs the same check as a safety net. `new_ivr_detections` (service-role only)
+  remembers each IVR, so it is registered and emailed once, ever.
+- **Rule:** an AI agent IVR = name starts with `ASCND` (same rule as the heal job and the ASCND
+  pairing). All registered agents and every IVR with an ASCND transcript in the last 30 days match
+  it; none of the ~130 other Canoe IVRs had one.
+- **Alert:** "New IVRs" banner on the Agents tab with a setup form (name, vertical, routing,
+  screening rules, disqualify, notes; live or internal/test). Setup agents are off the Review
+  board's All / Needs review counts until set up. `alert.js ALERT_MODE=new_ivrs` (a new step in
+  `sync.yml`) sends one email per new IVR through the GHL webhook to the admins who get the digest,
+  linking to `?tab=agents&setup=<IVR>`.
+- **Applied to prod:** `060` plus its first run over 30 days registered 2 IVRs, each with 1 call
+  (`hvac - Incoming`, `incoming - multicategory GLS`). Their emails go out on the first sync after
+  merge. Test `supabase/tests/060_new_ivr_detection_test.sql` passed on prod (rolled back); the
+  rollback script was not run on prod (the connector wanted a manual Accept for its DROPs).
+- **Left alone:** `ASCND AI Agent - Dentist - Aspen - Outgoing` (~31k calls Sep 3 - Oct 5, never
+  registered, no calls since). `select check_new_ivrs(60);` would register it.
+- Tests: `tests/new-ivr.test.js` (15). UI checked locally against live data at 1440/375; no
+  signed-in check (the change is not on the live site yet).
+- External sources (Wispr/Jira) not pulled this session.
