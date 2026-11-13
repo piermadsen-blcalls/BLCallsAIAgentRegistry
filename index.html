@@ -308,6 +308,43 @@
   .flag-tip .fb-head.sev-medium { color:var(--amber); }
   .flag-tip .fb-head.sev-info { color:var(--text-2); }
   .summary-sub { font-size:11px; margin-top:4px; font-family:var(--mono); }
+  /* Dashboard tab (MK-176): filter bar, searchable multi-selects, period cards. */
+  .dash-filters { position:relative; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .dash-custom { display:none; align-items:center; gap:6px; font-size:12px; color:var(--text-2); }
+  .dash-custom.open { display:flex; }
+  .dash-custom input { font-family:var(--mono); font-size:12px; color:var(--text); border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:5px 8px; min-height:30px; background:var(--surface); }
+  .dash-ms { position:relative; }
+  .dash-ms-pop { display:none; position:absolute; top:calc(100% + 6px); left:0; width:300px; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:9999; padding:8px 0; }
+  .dash-ms.open .dash-ms-pop { display:block; }
+  .dash-ms-search { display:block; width:calc(100% - 20px); margin:0 10px 6px; font-family:var(--sans); font-size:13px; padding:6px 10px; min-height:32px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); }
+  .dash-ms-head { display:flex; justify-content:space-between; align-items:center; padding:2px 14px 6px; font-size:11px; color:var(--text-3); }
+  .dash-ms-head button { font-family:var(--sans); font-size:12px; color:var(--blue); background:none; border:none; cursor:pointer; padding:4px 0; }
+  .dash-ms-list { max-height:280px; overflow-y:auto; }
+  .dash-ms-list .ins-vertical-opt span { overflow-wrap:anywhere; }
+  .dash-ms .ins-vertical-trigger span { max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+  .dash-export { margin-left:auto; background:var(--surface); color:var(--brand-navy); border:1px solid var(--border-strong); }
+  .dash-period { font-size:12px; color:var(--text-2); margin-bottom:20px; }
+  .dash-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-bottom:12px; }
+  .dash-card { border:1px solid var(--border); border-radius:var(--radius); padding:18px 22px; background:var(--surface); min-width:0; }
+  .dash-card-title { font-family:var(--heading); font-size:15px; font-weight:600; color:var(--brand-navy); margin-bottom:10px; }
+  .dash-row { display:grid; grid-template-columns:minmax(0,1fr) auto 64px 84px; align-items:baseline; gap:12px; padding:9px 0; border-top:1px solid var(--border); }
+  .dash-row.dash-head { border-top:none; padding:0 0 2px; }
+  .dash-lbl { font-size:13px; color:var(--text-2); }
+  .dash-val { font-family:var(--mono); font-size:18px; font-weight:500; color:var(--text); text-align:right; }
+  .dash-share, .dash-delta { font-family:var(--mono); font-size:12px; text-align:right; color:var(--text-3); }
+  .dash-delta.up { color:var(--teal); }
+  .dash-delta.down { color:var(--coral); }
+  .dash-note { font-size:11px; color:var(--text-3); line-height:1.6; }
+  @media (max-width:760px){ .dash-cards { grid-template-columns:minmax(0,1fr); } }
+  @media (max-width:640px){
+    /* Pickers open across the whole filter bar, so a list near the right edge stays on screen. */
+    .dash-ms { position:static; }
+    .dash-ms-pop { width:auto; right:0; }
+    .dash-export { margin-left:0; }
+    .dash-card { padding:14px 16px; }
+    .dash-row { grid-template-columns:minmax(0,1fr) auto 52px 68px; gap:8px; }
+    .dash-val { font-size:15px; }
+  }
   .insights-section { margin-bottom:28px; }
   .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
   .section-title { font-family:var(--heading); font-size:20px; font-weight:600; letter-spacing:-0.01em; }
@@ -980,6 +1017,7 @@
 
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('agents',this)">Agents</button>
+    <button class="nav-tab" onclick="switchTab('dashboard',this)">Dashboard</button>
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('calls',this)">Calls</button>
     <button class="nav-tab" onclick="switchTab('review',this)">Review</button>
@@ -1044,6 +1082,29 @@
   </div>
 
   <!-- INSIGHTS TAB -->
+  <!-- DASHBOARD TAB (MK-176): each card is one RPC over the 064 rollups, loaded on first open -->
+  <div id="tab-dashboard" class="tab-pane">
+    <div class="dash-filters">
+      <div class="seg" role="group" aria-label="Date range">
+        <button class="seg-btn" data-preset="7" onclick="dashSetPreset(7)">7d</button>
+        <button class="seg-btn active" data-preset="30" onclick="dashSetPreset(30)">30d</button>
+        <button class="seg-btn" data-preset="90" onclick="dashSetPreset(90)">90d</button>
+        <button class="seg-btn" data-preset="custom" onclick="dashSetPreset('custom')">Custom</button>
+      </div>
+      <div class="dash-custom" id="dash-custom">
+        <input type="date" id="dash-from" aria-label="From (UTC day)" onchange="dashCustomChange()">
+        <span>to</span>
+        <input type="date" id="dash-to" aria-label="To (UTC day)" onchange="dashCustomChange()">
+      </div>
+      <div class="dash-ms" id="dash-ms-vertical"></div>
+      <div class="dash-ms" id="dash-ms-publisher"></div>
+      <div class="dash-ms" id="dash-ms-advertiser"></div>
+      <button class="run-btn dash-export" id="dash-export-btn" onclick="dashExport()" disabled>Export calls</button>
+    </div>
+    <div class="dash-period" id="dash-period"></div>
+    <div id="dash-output"><div class="ins-loading">Loading…</div></div>
+  </div>
+
   <div id="tab-insights" class="tab-pane">
     <div class="period-bar">
       <div class="period-group">
@@ -1551,6 +1612,7 @@ function switchTab(id, el) {
   const pane = document.getElementById('tab-' + id);
   if (pane) pane.classList.add('active');
   if (id === 'agents' && agentsMetricsDeferred) refreshMetrics();
+  if (id === 'dashboard') dashInit();
   if (id === 'insights') { ensureVerticals(); insightsInit(); }
   if (id === 'calls') crAutoLoad();
   if (id === 'review') reviewInit();
@@ -2327,8 +2389,229 @@ function openSetupFromUrl(){
   else { document.getElementById('search-input').value=AGENTS[idx].name; applyFilters(); }
 }
 
+// ─── DASHBOARD TAB (MK-176) ───────────────────────────────────────────────────
+// Headline cards over the 064 rollups. Each card is one RPC, loaded the first time the tab opens
+// (nothing at boot). Days are UTC, like the rollups. The metric definitions live in the database
+// functions (064), not here: unique = distinct caller numbers, calls with payout = billable
+// (advertiser payin > 0), revenue = advertiser payin, averages per raw call and per paid call.
+const dashRange = { from: null, to: null };
+const dashSel  = { vertical: new Set(), publisher: new Set(), advertiser: new Set() };
+const dashOpts = { vertical: [], publisher: [], advertiser: [] };
+const DASH_MS_NOUN = { vertical: 'verticals', publisher: 'publishers', advertiser: 'advertisers' };
+let dashSeq = 0, dashSummary = null, dashReloadTimer = null, dashInitDone = false, dashOptsLoaded = false;
+
+// The UTC day k days before now, as YYYY-MM-DD.
+function dashUtcDay(k, now = new Date()) {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - k)).toISOString().slice(0, 10);
+}
+function dashNextDay(iso) { return new Date(Date.parse(iso + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10); }
+// A preset is the last N complete UTC days; today is still syncing (Insights does the same).
+function dashPresetRange(days, now = new Date()) { return { from: dashUtcDay(days, now), to: dashUtcDay(1, now) }; }
+
+function dashInit() {
+  if (dashInitDone) return;
+  dashInitDone = true;
+  Object.keys(DASH_MS_NOUN).forEach(dashMsRender);
+  dashSetPreset(30);
+  dashLoadOptions();
+}
+
+// Picker options: the shared vertical list and every publisher/advertiser name (055). A failed
+// list leaves its picker empty; the cards load either way.
+async function dashLoadOptions() {
+  await ensureVerticals();
+  dashOpts.vertical = [...VERTICALS];
+  try {
+    const rows = await sbFetch('rpc/get_distinct_accounts', { method: 'POST', body: '{}' }) || [];
+    dashOpts.publisher  = rows.filter(r => r.account_type === 'publisher').map(r => r.account_name);
+    dashOpts.advertiser = rows.filter(r => r.account_type === 'advertiser').map(r => r.account_name);
+  } catch (e) { console.warn('dashboard accounts:', e.message); }
+  dashOptsLoaded = true;
+  Object.keys(DASH_MS_NOUN).forEach(dashMsList);
+}
+
+function dashSetPreset(p) {
+  document.querySelectorAll('#tab-dashboard [data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === String(p)));
+  document.getElementById('dash-custom').classList.toggle('open', p === 'custom');
+  if (p === 'custom') {   // start the inputs from the range on screen; nothing to reload yet
+    const from = document.getElementById('dash-from'), to = document.getElementById('dash-to');
+    if (!from.value) from.value = dashRange.from;
+    if (!to.value) to.value = dashRange.to;
+    from.max = to.max = dashUtcDay(0);
+    return;
+  }
+  Object.assign(dashRange, dashPresetRange(p));
+  dashLoad();
+}
+function dashCustomChange() {
+  let from = document.getElementById('dash-from').value, to = document.getElementById('dash-to').value;
+  if (!from || !to) return;
+  if (from > to) [from, to] = [to, from];
+  Object.assign(dashRange, { from, to });
+  dashLoad();
+}
+
+// Searchable multi-select. Options are referenced by index, so a name never lands in an onclick.
+function dashMsRender(key) {
+  const noun = DASH_MS_NOUN[key];
+  document.getElementById('dash-ms-' + key).innerHTML = `
+    <button type="button" class="ins-vertical-trigger" aria-haspopup="true" onclick="dashMsToggle('${key}',event)">
+      <span id="dash-ms-${key}-label">All ${noun}</span>
+      <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <div class="dash-ms-pop" onclick="event.stopPropagation()">
+      <input class="dash-ms-search" type="search" placeholder="Search ${noun}…" aria-label="Search ${noun}" oninput="dashMsList('${key}')">
+      <div class="dash-ms-head"><span id="dash-ms-${key}-count">All ${noun}</span><button type="button" onclick="dashMsClear('${key}')">Clear</button></div>
+      <div class="dash-ms-list" id="dash-ms-${key}-list"></div>
+    </div>`;
+}
+function dashMsToggle(key, e) {
+  e.stopPropagation();
+  const wrap = document.getElementById('dash-ms-' + key), open = !wrap.classList.contains('open');
+  document.querySelectorAll('.dash-ms.open').forEach(w => w.classList.remove('open'));
+  if (!open) return;
+  wrap.classList.add('open');
+  dashMsList(key);
+  wrap.querySelector('.dash-ms-search').focus();
+}
+// The options matching the search box, ticked ones first. Ticking doesn't re-sort the list, so
+// nothing moves under the pointer.
+function dashMsList(key) {
+  const list = document.getElementById(`dash-ms-${key}-list`);
+  if (!list) return;
+  const q = (document.querySelector(`#dash-ms-${key} .dash-ms-search`)?.value || '').trim().toLowerCase();
+  const sel = dashSel[key];
+  const opts = dashOpts[key].map((v, i) => ({ v, i })).filter(o => !q || o.v.toLowerCase().includes(q))
+    .sort((a, b) => sel.has(b.v) - sel.has(a.v));
+  list.innerHTML = opts.length
+    ? opts.map(o => `<label class="ins-vertical-opt"><input type="checkbox"${sel.has(o.v) ? ' checked' : ''} onchange="dashMsPick('${key}',${o.i},this.checked)"><span>${esc(o.v)}</span></label>`).join('')
+    : `<div class="dash-ms-head">${!dashOptsLoaded ? 'Loading…' : q ? 'No matches' : 'None available'}</div>`;
+}
+function dashMsPick(key, i, on) {
+  const v = dashOpts[key][i];
+  if (on) dashSel[key].add(v); else dashSel[key].delete(v);
+  dashMsLabel(key);
+  dashScheduleLoad();
+}
+function dashMsClear(key) { dashSel[key].clear(); dashMsLabel(key); dashMsList(key); dashScheduleLoad(); }
+function dashMsLabel(key) {
+  const n = dashSel[key].size, noun = DASH_MS_NOUN[key];
+  document.getElementById(`dash-ms-${key}-label`).textContent = !n ? `All ${noun}` : n === 1 ? [...dashSel[key]][0] : `${n} ${noun}`;
+  document.getElementById(`dash-ms-${key}-count`).textContent = n ? `${n} selected` : `All ${noun}`;
+}
+document.addEventListener('click', e => {
+  document.querySelectorAll('.dash-ms.open').forEach(w => { if (!w.contains(e.target)) w.classList.remove('open'); });
+});
+// Ticking several boxes runs one load, after a short pause.
+function dashScheduleLoad() { clearTimeout(dashReloadTimer); dashReloadTimer = setTimeout(dashLoad, 500); }
+
+// RPC arguments for the current filters; an empty picker means all (null).
+function dashFilterBody() {
+  const pick = key => dashSel[key].size ? [...dashSel[key]] : null;
+  return { from_day: dashRange.from, to_day: dashRange.to, verticals: pick('vertical'), publishers: pick('publisher'), advertisers: pick('advertiser') };
+}
+
+async function dashLoad() {
+  clearTimeout(dashReloadTimer);
+  const seq = ++dashSeq, body = dashFilterBody();
+  const out = document.getElementById('dash-output'), btn = document.getElementById('dash-export-btn');
+  if (dashSummary) out.style.opacity = '0.5';   // keep the last numbers on screen while the new ones load
+  else out.innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading…</div>`;
+  btn.disabled = true;
+  try {
+    const s = await sbFetch('rpc/dashboard_summary', { method: 'POST', body: JSON.stringify(body) });
+    if (seq !== dashSeq) return;   // a newer filter change owns the cards now
+    dashSummary = { ...s, filters: body };
+    document.getElementById('dash-period').textContent =
+      `${fmtShortD(s.from)} – ${fmtShortD(s.to)}, compared with ${fmtShortD(s.prev_from)} – ${fmtShortD(s.prev_to)} (UTC days)`;
+    out.innerHTML = dashSummaryHtml(s);
+    btn.textContent = dashExportLabel(s.current.calls);
+    btn.disabled = !s.current.calls;
+  } catch (e) {
+    if (seq !== dashSeq) return;
+    dashSummary = null;
+    out.innerHTML = loadErrorHtml('the dashboard', 'dashLoad()', e);
+  } finally {
+    if (seq === dashSeq) out.style.opacity = '';
+  }
+}
+
+// Change from the previous period: arrow + %, teal up / coral down where up is good. No previous
+// value means no change to show.
+function dashDelta(cur, prev, colored = true) {
+  if (cur == null || prev == null) return { text: '', cls: '' };
+  if (!prev) return { text: cur ? 'new' : '', cls: '' };
+  const pct = (cur - prev) / Math.abs(prev) * 100, flat = Math.abs(pct) < 0.05;
+  return {
+    text: (flat ? '' : pct > 0 ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(1) + '%',
+    cls: !colored || flat ? '' : pct > 0 ? 'up' : 'down',
+  };
+}
+function dashMoney(v, cents) {
+  if (v == null) return nullMark();
+  const n = Number(v), d = cents ? 2 : 0;
+  return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+function dashExportLabel(n) { return n ? `Export ${Number(n).toLocaleString('en-US')} calls` : 'Export calls'; }
+
+// The two cards from a dashboard_summary result. Each row: label (definition on hover), value,
+// share, change vs the previous period (previous value on hover).
+function dashSummaryHtml(s) {
+  const c = s.current, p = s.previous;
+  const num = v => Number(v).toLocaleString('en-US'), usd = v => dashMoney(v), cents = v => dashMoney(v, true);
+  const pct = v => v == null ? '' : (v * 100).toFixed(1) + '%';
+  const row = (label, def, key, fmt, share, colored = true) => {
+    const d = dashDelta(c[key], p[key], colored);
+    const prev = p[key] == null ? '' : 'Previous period: ' + fmt(p[key]);
+    return `<div class="dash-row"><div class="dash-lbl" title="${esc(def)}">${label}</div>`
+      + `<div class="dash-val">${c[key] == null ? nullMark() : fmt(c[key])}</div><div class="dash-share">${share}</div>`
+      + `<div class="dash-delta ${d.cls}" title="${esc(prev)}">${d.text}</div></div>`;
+  };
+  const head = `<div class="dash-row dash-head"><div></div><div></div><div class="dash-share">share</div><div class="dash-share">vs prev.</div></div>`;
+  return `<div class="dash-cards">
+    <div class="dash-card"><div class="dash-card-title">Calls Breakdown</div>${head}
+      ${row('Total calls', 'Every call in the range and filters (test calls excluded)', 'calls', num, c.calls ? '100%' : '')}
+      ${row('Unique calls', 'Distinct caller numbers in the range and filters', 'unique_calls', num, pct(c.unique_pct))}
+      ${row('Calls with payout', 'Billable calls: advertiser payin above $0', 'paid_calls', num, pct(c.paid_pct))}
+    </div>
+    <div class="dash-card"><div class="dash-card-title">Calls Payout</div>${head}
+      ${row('Revenue', 'Advertiser payin', 'revenue', usd, '')}
+      ${row('Avg per call', 'Revenue / total calls', 'revenue_per_call', cents, '')}
+      ${row('Avg per paid call', 'Revenue / calls with payout', 'revenue_per_paid_call', cents, '')}
+      ${row('Publisher cost', 'Publisher payout', 'publisher_cost', usd, '', false)}
+      ${row('Margin', 'Revenue - publisher cost; share = % of revenue', 'margin', usd, pct(c.margin_pct))}
+    </div>
+  </div>
+  <div class="dash-note">Unique calls = distinct caller numbers. Calls with payout = billable calls (advertiser payin above $0). Revenue = advertiser payin; averages are per call and per paid call. Hover a row for its definition, or a change for the previous value.</div>`;
+}
+
+// Export: the Calls CSV for exactly the cards' scope (same UTC days and filters, no test calls).
+function dashExportFilters(f) {
+  const list = vals => encodeURIComponent(vals.map(pgQuote).join(','));
+  let q = `&created_at=gte.${encodeURIComponent(f.from_day + 'T00:00:00Z')}&created_at=lt.${encodeURIComponent(dashNextDay(f.to_day) + 'T00:00:00Z')}&is_test=not.is.true`;
+  if (f.verticals)   q += `&vertical_name=in.(${list(f.verticals)})`;
+  if (f.publishers)  q += `&publisher_name=in.(${list(f.publishers)})`;
+  if (f.advertisers) q += `&advertiser_name=in.(${list(f.advertisers)})`;
+  return q;
+}
+async function dashExport() {
+  if (!dashSummary) return;
+  const f = dashSummary.filters, total = Number(dashSummary.current.calls).toLocaleString('en-US');
+  const btn = document.getElementById('dash-export-btn');
+  btn.disabled = true;
+  try {
+    await callsExportCsv(dashExportFilters(f), `calls_${f.from_day}_to_${f.to_day}.csv`,
+      n => { btn.textContent = `Exporting… ${n.toLocaleString('en-US')} / ${total}`; });
+  } catch (e) {
+    alert('Export failed: ' + e.message);
+  } finally {
+    btn.disabled = !dashSummary?.current.calls;
+    btn.textContent = dashExportLabel(dashSummary?.current.calls);
+  }
+}
+
 // ─── INSIGHTS TAB ─────────────────────────────────────────────────────────────
-const insPeriods = { a:{start:null,end:null}, b:{start:null,end:null} };
+const insPeriods ={ a:{start:null,end:null}, b:{start:null,end:null} };
 const insDrpState = {
   a:{year:0,month:0,pickStart:null,pickEnd:null,selecting:false},
   b:{year:0,month:0,pickStart:null,pickEnd:null,selecting:false}
@@ -2906,40 +3189,49 @@ async function crExportAll() {
   const btn = document.getElementById('cr-export-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Exporting…'; }
   try {
-    if (!compAssignments.length) await compLoadAssignments();  // publisher→manager map (Settings may not have loaded it yet)
-    const pubMgr = {};
-    compAssignments.forEach(a => { if (a.account_type === 'publisher') pubMgr[a.account_name] = a.manager_name; });
-    const all = [];
-    const PAGE = 1000; let offset = 0;
-    while (true) {
-      const batch = await sbFetch(crBuildQuery(offset, scope.table), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+PAGE-1}` } });
-      if (!batch || !batch.length) break;
-      all.push(...batch);
-      if (batch.length < PAGE) break;
-      offset += PAGE;
-    }
-    if (!all.length) { alert('No rows to export.'); return; }
-    const agentMap = {};
-    AGENTS.forEach(a => { agentMap[a.ivrName] = a; aliasesForAgent(a.ivrName).forEach(alias => agentMap[alias] = a); });
-    const cols = ['id','created_at','vertical','agent','ivr_name','publisher_name','publisher_account_manager','advertiser_name','phone','ivr_duration','disposition','disposition_description','advertiser_payin','our_outcome','canoe_outcome','publisher_score','advertiser_score','our_summary','canoe_summary','flags','compliance_reviewed','recording_url'];
-    const esc = v => { if (v === null || v === undefined) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
-    const lines = [cols.join(',')];
-    for (const r of all) {
-      const agent = agentMap[r.ivr_name];
-      const row = { ...r, agent: agent ? agent.name : (r.ivr_name || ''), vertical: r.vertical || (agent ? agent.vertical : '') || '', publisher_account_manager: pubMgr[r.publisher_name] || '', flags: (r.flags || []).join('; ') };
-      lines.push(cols.map(c => esc(row[c])).join(','));
-    }
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `call_report_${scope.start}_to_${scope.end}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!await callsExportCsv(scope.table, `call_report_${scope.start}_to_${scope.end}.csv`)) alert('No rows to export.');
   } catch(e) {
     alert('Export failed: ' + e.message);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Export CSV'; }
   }
+}
+
+// Every call matching filters (a crBuildFilters-style query string) as a CSV download, 1,000 rows
+// per request. Shared by the Calls and Dashboard exports. onPage(rowsSoFar) reports progress.
+// Returns the number of rows written; 0 = nothing matched and no file was made.
+async function callsExportCsv(filters, filename, onPage) {
+  if (!compAssignments.length) await compLoadAssignments();  // publisher→manager map (Settings may not have loaded it yet)
+  const pubMgr = {};
+  compAssignments.forEach(a => { if (a.account_type === 'publisher') pubMgr[a.account_name] = a.manager_name; });
+  const all = [];
+  const PAGE = 1000; let offset = 0;
+  while (true) {
+    const batch = await sbFetch(crBuildQuery(offset, filters), { headers: { 'Range-Unit':'items', 'Range':`${offset}-${offset+PAGE-1}` } });
+    if (!batch || !batch.length) break;
+    all.push(...batch);
+    if (onPage) onPage(all.length);
+    if (batch.length < PAGE) break;
+    offset += PAGE;
+  }
+  if (!all.length) return 0;
+  const agentMap = {};
+  AGENTS.forEach(a => { agentMap[a.ivrName] = a; aliasesForAgent(a.ivrName).forEach(alias => agentMap[alias] = a); });
+  const cols = ['id','created_at','vertical','agent','ivr_name','publisher_name','publisher_account_manager','advertiser_name','phone','ivr_duration','disposition','disposition_description','advertiser_payin','our_outcome','canoe_outcome','publisher_score','advertiser_score','our_summary','canoe_summary','flags','compliance_reviewed','recording_url'];
+  const esc = v => { if (v === null || v === undefined) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  const lines = [cols.join(',')];
+  for (const r of all) {
+    const agent = agentMap[r.ivr_name];
+    const row = { ...r, agent: agent ? agent.name : (r.ivr_name || ''), vertical: r.vertical || (agent ? agent.vertical : '') || '', publisher_account_manager: pubMgr[r.publisher_name] || '', flags: (r.flags || []).join('; ') };
+    lines.push(cols.map(c => esc(row[c])).join(','));
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return all.length;
 }
 
 function crRender() {

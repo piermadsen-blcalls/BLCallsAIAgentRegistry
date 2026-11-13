@@ -260,7 +260,7 @@ test('S-36: Outcome and Canoe are separate columns; footer counts once the total
   vm.runInNewContext('crRender()', ctx);
   assert.match(out.innerHTML, /<span>Showing 2 of 1,240<\/span>/);
   // CSV export keeps both outcome columns.
-  assert.match(lift('async function crExportAll('), /'our_outcome','canoe_outcome'/);
+  assert.match(lift('async function callsExportCsv('), /'our_outcome','canoe_outcome'/);
 });
 
 // ── S-46: toggles are buttons with aria-pressed and .on ─────────────────────
