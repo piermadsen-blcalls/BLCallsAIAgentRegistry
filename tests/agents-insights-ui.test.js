@@ -258,7 +258,7 @@ test('S-18: the card shows a test-call link only when there is a URL, and no add
 function drawerCtx(over = {}) {
   const els = {};
   const ctx = load({
-    metricsFailed: false, openAgent: 0, tcEdit: null, testCallMap: {}, activeRange: { label: 'Oct 14, 2026 – Nov 12, 2026' },
+    metricsFailed: false, agentTargetsFailed: false, openAgent: 0, tcEdit: null, testCallMap: {}, activeRange: { label: 'Oct 14, 2026 – Nov 12, 2026' },
     aeDrawerHtml: () => '<div class="dsec-title">Agent quality</div>', console: { warn() {} }, redraws: 0,
     applyFilters(keep) { ctx.redraws++; ctx.keptOpen = keep; },
     document: { getElementById: id => els[id] || null },
@@ -273,7 +273,7 @@ function drawerCtx(over = {}) {
   els['dtc-row'] = row;
   return ctx;
 }
-const AGENT = { name: 'Roofing', ivrName: 'IVR Roof', vertical: 'Home Services', status: 'live', routingType: 'publisher-led', qualifying: [], publisherCampaigns: [], ivrTargets: [],
+const AGENT = { name: 'Roofing', ivrName: 'IVR Roof', vertical: 'Home Services', status: 'live', routingType: 'publisher-led', qualifying: [], targets: null,
   raw_calls: 200, sent_calls: 90, paid_calls: 40, revenue: 4000, margin: 1234, _bdKey: 'Oct 14, 2026 – Nov 12, 2026', pubBreakdown: [], advBreakdown: [] };
 
 test('S-23 + S-24 + S-26: details show the range once, Sent / raw and Direct margin in the meta line, no perf strip, plain empty states', () => {
@@ -285,7 +285,8 @@ test('S-23 + S-24 + S-26: details show the range once, Sent / raw and Direct mar
   assert.match(out, /<div class="dsec-title">Publishers<\/div>/);
   assert.match(out, /<div class="dsec-title">Advertisers<\/div>/);
   assert.doesNotMatch(out, /sending traffic|buying calls|No publisher campaign|No IVR targets|qualification data|Internal test agent|selected period/);
-  assert.equal(out.split('<div class="canoe-none">None</div>').length - 1, 3, 'qualifying, campaign IVRs, buyer targets');
+  assert.equal(out.split('<div class="canoe-none">None</div>').length - 1, 1, 'qualifying');
+  assert.equal(out.split('<div class="canoe-none">No calls in the last 30 days</div>').length - 1, 2, 'campaign IVRs, buyer targets');
   assert.equal(out.split('No calls in this range').length - 1, 2, 'both breakdowns');
   assert.match(ctx.renderDrawer({ ...AGENT, status: 'test', qualifying: ['Owns the home'] }), /Qualifying for<\/div><div class="canoe-none">None</);
   ctx.metricsFailed = true;

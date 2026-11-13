@@ -986,3 +986,16 @@ Continued from the 8/7 Scores work; large session. What moved:
   so IVRs already sent are not re-sent. No migration.
 - Tests: `tests/new-ivr.test.js` updated + 2 new; 164/164 pass.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - Publisher campaigns + buyer targets come from the calls (branch `fm/ivr-auto-targets`)
+- The Agents details' "Publisher campaign IVRs" and "Buyer targets" were hand-entered in May and
+  never updated (new IVRs got none). Migration 062 derives both per agent from the last 30 days of
+  `canoe_calls` (aliases resolved) into `agent_targets`; `sync.js` rebuilds it right after
+  `check_new_ivrs` (~150 ms), plus a 07:20 UTC pg_cron safety net. New IVRs get lists from their first calls.
+- Publisher campaigns = publisher + `api_campaign_name`; buyer targets = advertiser + `campaign_name`
+  with the main vertical. Both sorted by calls, top 25 stored, totals shown.
+- The hand-entered columns are kept, renamed `*_manual`. Drawer tables fixed: header/cell alignment, no empty
+  columns, Calls column, footer total, fine at 375px.
+- Tested in local PGlite (migration, test, rollback, re-apply); real-agent check via read-only SELECTs.
+  Not applied to prod yet (firstmate applies after merge). Tests: 170/170 pass.
+- External sources (Wispr/Jira) not pulled this session.
