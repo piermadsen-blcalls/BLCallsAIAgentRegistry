@@ -871,4 +871,15 @@ Continued from the 8/7 Scores work; large session. What moved:
   registered, no calls since). `select check_new_ivrs(60);` would register it.
 - Tests: `tests/new-ivr.test.js` (15). UI checked locally against live data at 1440/375; no
   signed-in check (the change is not on the live site yet).
+
+### 2026-11-13 (Pier) - Inactive agents + Settings > Team rebuild (branch `fm/ivr-inactive-team`)
+- **Inactive agents:** an agent with no call in 30 days (aliases resolved) now leaves the Agents grid and the
+  Review board's All / Needs review counts and sits in a collapsed "Inactive (no calls in 30 days)" section
+  with its last call date. Its next call moves it back. Source: new `agent_last_call_days()` RPC over the
+  `agent_metrics_daily` rollup (migration `057`). Prod data today: 14 agents inactive, 3 with no calls ever.
+- **Settings > Team rebuilt:** one card per manager with the accounts assigned in Admin > Assignments,
+  flagged calls on them in the last 7 days (linking to the Calls tab), and digest on/off. New
+  `team_overview(since_ts)` RPC (`057`) replaces the 5,000-row sample grouped by a never-filled column.
+- **Applied to prod (standing OK):** `057`, after its test passed in a rolled-back transaction.
+- Signed-in Chrome was not connected: UI checked at 1440px and 375px on a local harness with synthetic data.
 - External sources (Wispr/Jira) not pulled this session.

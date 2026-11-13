@@ -151,6 +151,19 @@
   }
   .card-name { font-family: var(--serif); font-size: 17px; font-weight: 400; color: var(--text); line-height: 1.3; margin-bottom: 5px; }
   .card-routing { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+  .card-lastcall { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-bottom: 10px; }
+  /* Agents with no calls in 30 days (agent_last_call_days, migration 057): collapsed below the grid / board. */
+  .inactive-section { margin-top: 28px; }
+  .inactive-section > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--border); }
+  .inactive-section > summary::-webkit-details-marker { display: none; }
+  .inactive-section > summary::before { content: '▸'; font-size: 12px; color: var(--text-3); transition: transform .15s; }
+  .inactive-section[open] > summary::before { transform: rotate(90deg); }
+  .inactive-title { font-family: var(--serif); font-size: 18px; color: var(--text-2); }
+  .inactive-count { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+  .inactive-note { font-size: 12px; color: var(--text-3); flex-basis: 100%; padding-left: 22px; }
+  .inactive-section[open] > summary { margin-bottom: 12px; }
+  table.rv-board.rv-inactive-tbl { min-width: 0; }
+  @media (max-width: 640px) { .rv-inactive-tbl .rv-hide-sm { display: none; } }
   .card-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border); }
   .metric-val { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
   .metric-val.zero { color: var(--text-3); }
@@ -549,6 +562,24 @@
   .comp-team-stat-val { font-family:var(--mono); font-size:14px; font-weight:500; color:var(--text); }
   .comp-team-stat-val.alert { color:var(--coral); }
   .comp-team-stat-label { font-size:10px; color:var(--text-3); margin-top:2px; }
+  .comp-team-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px; }
+  .comp-team-head .comp-team-name { margin-bottom:2px; }
+  .comp-team-email { font-size:11px; color:var(--text-3); overflow-wrap:anywhere; }
+  .comp-team-digest { font-size:11px; font-weight:500; padding:3px 8px; border-radius:100px; white-space:nowrap; flex-shrink:0; }
+  .comp-team-digest.on { background:var(--teal-bg); color:var(--teal); }
+  .comp-team-digest.off { background:var(--gray-bg); color:var(--text-3); }
+  .comp-team-card .comp-team-stats { grid-template-columns:1fr 1fr; padding-bottom:12px; border-bottom:1px solid var(--border); }
+  .comp-team-accts { list-style:none; margin-top:8px; }
+  .comp-team-acct { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:12.5px; }
+  .comp-team-acct-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+  .comp-team-acct-type { font-size:9.5px; font-weight:600; letter-spacing:.4px; text-transform:uppercase; color:var(--text-3); flex-shrink:0; }
+  .comp-team-acct-flags { font-family:var(--mono); font-size:12px; min-width:28px; text-align:right; color:var(--text-3); flex-shrink:0; }
+  a.comp-team-acct-flags { color:var(--coral); font-weight:500; text-decoration:none; padding:8px 0 8px 12px; margin:-8px 0; }   /* bigger tap target, same row height */
+  a.comp-team-acct-flags:hover { text-decoration:underline; }
+  .comp-team-more > summary { cursor:pointer; font-size:11.5px; color:var(--brand-navy); font-weight:500; padding:6px 0 0; }
+  .comp-team-none { font-size:12.5px; color:var(--text-3); margin-top:10px; line-height:1.5; }
+  .comp-team-link { background:none; border:none; padding:0; font:inherit; color:var(--brand-navy); font-weight:500; text-decoration:underline; cursor:pointer; }
+  .comp-team-foot { grid-column:1 / -1; font-size:11.5px; color:var(--text-3); line-height:1.5; }
 
   .comp-empty { text-align:center; padding:60px 20px; color:var(--text-3); font-size:13px; }
   .comp-loading { text-align:center; padding:60px 20px; color:var(--text-3); font-size:13px; }
@@ -1035,6 +1066,12 @@
     </div>
     <div class="agents-grid" id="agents-grid"></div>
     <div id="drawer-container"></div>
+    <details class="inactive-section" id="agents-inactive" hidden>
+      <summary><span class="inactive-title">Inactive (no calls in 30 days)</span><span class="inactive-count" id="agents-inactive-count"></span>
+        <span class="inactive-note">An agent moves back up automatically once it takes a call.</span></summary>
+      <div class="agents-grid" id="agents-inactive-grid"></div>
+      <div id="drawer-container-inactive"></div>
+    </details>
   </div>
 
   <!-- INSIGHTS TAB -->
@@ -2082,6 +2119,12 @@ function recomputeStats(){const nd=metricsFailed;document.getElementById('stat-a
 // ─── AGENTS METADATA ──────────────────────────────────────────────────────────
 async function loadAgentsFromSupabase(){try{const rows=await sbFetch('agents?select=*&order=name.asc');if(!rows||!rows.length){AGENTS=[];return;}AGENTS=rows.map(r=>({ivrName:r.ivr_name,name:r.name,vertical:r.vertical||'Other',status:r.status||'live',routingType:r.routing_type||'unknown',qualifying:Array.isArray(r.qualifying)?r.qualifying:[],disqualify:r.disqualify,publisherCampaigns:Array.isArray(r.publisher_campaigns)?r.publisher_campaigns:[],ivrTargets:Array.isArray(r.ivr_targets)?r.ivr_targets:[],notes:r.notes,objective:r.objective||'',canoeUrl:r.canoe_url||null,firstSeenAt:r.first_seen_at||null,seenCalls:r.seen_calls||0,raw_calls:0,sent_calls:0,paid_calls:0,revenue:0,margin:0,conversion:0,pubBreakdown:[],advBreakdown:[]}));}catch(e){console.error('Could not load agents:',e.message);AGENTS=[];document.getElementById('agents-grid').innerHTML=`<div class="empty">Could not load agents: ${e.message}</div>`;}}
 
+// ─── AGENT ACTIVITY ───────────────────────────────────────────────────────────
+// Last UTC day with a call per agent (agent_last_call_days, migration 057), keyed by the canonical
+// IVR name so a renamed agent keeps its history. null = not loaded; nothing is marked inactive.
+let agentLastCall=null;
+async function loadAgentActivity(){try{const rows=await sbFetch('rpc/agent_last_call_days',{method:'POST',body:'{}'});const m={};for(const r of rows||[]){const k=resolveIvrName(r.ivr_name);if(!m[k]||r.last_day>m[k])m[k]=r.last_day;}agentLastCall=m;}catch(e){console.warn('agent activity:',e.message);}}
+
 // ─── TEST CALL LINKS ──────────────────────────────────────────────────────────
 let testCallMap={};
 async function loadTestCalls(){try{const rows=await sbFetch('agent_test_calls?select=ivr_name,url');if(rows)rows.forEach(r=>{if(r.ivr_name&&r.url)testCallMap[r.ivr_name]=r.url;});}catch(e){console.warn('test calls:',e.message);}}
@@ -2096,19 +2139,28 @@ function tcCancel(cardId,ivrName){document.getElementById('tc-row-'+cardId).oute
 function vClass(v){return v==='Home Services'?'v-home':v==='Insurance'?'v-insurance':v==='Legal'?'v-legal':v==='Financial'?'v-financial':'v-other';}
 function rtLabel(t){return t==='publisher-led'?'publisher-led':t==='advertiser-led'?'advertiser-led':t==='both'?'publisher + advertiser':t==='test-only'?'internal / test':'unknown';}
 function needsSetup(a){return a.status==='needs_setup';}
-function getEffectiveStatus(a){if(needsSetup(a))return'setup';if(a.status==='test')return'test';if(a.raw_calls>0)return'live';return'inactive';}
-function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'&&!needsSetup(a)?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':es==='setup'?'New · needs setup':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${renderTestCallRow(a.ivrName,cardId)}${aeCardLine(a)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
+// Inactive = no call in the last 30 days (by agent_last_call_days, aliases resolved), whatever the
+// selected range. Until that loads (or if it fails) the old rule applies: no calls in the range.
+function getEffectiveStatus(a){if(needsSetup(a))return'setup';if(a.status==='test')return'test';if(agentLastCall)return isInactive(a)?'inactive':'live';if(a.raw_calls>0)return'live';return'inactive';}
+function agentLastDay(a){return agentLastCall?(agentLastCall[resolveIvrName(a.ivrName)]||null):null;}
+function isInactive(a){if(a.status==='test'||needsSetup(a)||!agentLastCall)return false;const d=agentLastDay(a);return!d||d<new Date(Date.now()-30*86400000).toISOString().slice(0,10);}
+function lastCallLabel(a){const d=agentLastDay(a);return d?'Last call '+fmtDate(new Date(d+'T00:00:00')):'No calls on record';}
+function byLastCall(x,y){return(agentLastDay(y)||'').localeCompare(agentLastDay(x)||'')||x.name.localeCompare(y.name);}
+function renderCard(a,idx){const isOpen=openAgent===idx,nd=metricsFailed,es=nd&&a.status!=='test'&&!needsSetup(a)?'inactive':getEffectiveStatus(a),cardId='c'+idx,conv=nd?'—':fmtPct(a.paid_calls,a.raw_calls);return`<div class="agent-card${isOpen?' open':''}" onclick="toggleAgent(${idx})" style="animation-delay:${(idx%12)*0.02}s"><div class="card-header"><span class="card-vtag ${vClass(a.vertical)}">${esc(a.vertical||'')}</span><span class="card-status status-${es}">${es==='live'?'Live':es==='test'?'Test':es==='setup'?'New · needs setup':nd?'No data':'Inactive'}</span></div><div class="card-name">${esc(a.name)}</div><div class="card-routing">${rtLabel(a.routingType)}</div>${isInactive(a)?`<div class="card-lastcall">${lastCallLabel(a)}</div>`:''}${renderTestCallRow(a.ivrName,cardId)}${aeCardLine(a)}<div class="card-metrics"><div><div class="metric-val${nd||a.raw_calls===0?' zero':''}">${nd?'—':(a.raw_calls||0).toLocaleString()}</div><div class="metric-label">raw</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${nd?'—':(a.paid_calls||0).toLocaleString()}</div><div class="metric-label">paid</div></div><div><div class="metric-val${nd||a.paid_calls===0?' zero':''}">${conv}</div><div class="metric-label">conv.</div></div><div><div class="metric-val${nd||a.revenue===0?' zero':''}">${nd?'—':'$'+Math.round(a.revenue||0).toLocaleString()}</div><div class="metric-label">revenue</div></div></div><div class="card-chevron">▾</div></div>`;}
 function renderDrawer(a){const hasPC=(a.publisherCampaigns||[]).length>0,hasIVR=(a.ivrTargets||[]).length>0,hasQual=(a.qualifying||[]).length>0;const pcTable=hasPC?`<table class="canoe-table"><thead><tr><th>Api Campaign</th><th>Publisher</th></tr></thead><tbody>${a.publisherCampaigns.map(p=>`<tr><td>${esc(p.campaign)}</td><td class="${p.publisher?'':'muted'}">${esc(p.publisher||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.publisherCampaigns.length} total</div>`:'<div class="canoe-none">No publisher campaign IVRs configured</div>';const ivrTable=hasIVR?`<table class="canoe-table"><thead><tr><th>Publisher</th><th>Advertiser</th><th>Vertical</th></tr></thead><tbody>${a.ivrTargets.map(t=>`<tr><td class="${t.publisher?'':'muted'}">${esc(t.publisher||'—')}</td><td class="${t.advertiser?'':'muted'}">${esc(t.advertiser||'—')}</td><td class="${t.vertical?'':'muted'}">${esc(t.vertical||'—')}</td></tr>`).join('')}</tbody></table><div class="canoe-count">${a.ivrTargets.length} total</div>`:'<div class="canoe-none">No IVR targets after listing search</div>';const qualSection=getEffectiveStatus(a)==='test'?'<div class="canoe-none">Internal test agent</div>':hasQual?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">No qualification data on record</div>';
 const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No data for selected period</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=totRaw>0?fmtPct(totPaid,totRaw):'—';const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>TOTAL — ${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''}</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const sentOverRaw=fmtPct(a.sent_calls,a.raw_calls),paidOverRaw=fmtPct(a.paid_calls,a.raw_calls);
 return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${esc(a.notes)}</em>`:''}</div></div><button class="drawer-close" onclick="closeDrawer(event)">close ×</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher Campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">IVR Targets — After Listing Search</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers sending traffic — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers buying calls — ${activeRange.label}</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div><div class="perf-strip"><div class="perf-item"><div class="perf-val${a.raw_calls===0?' zero':''}">${(a.raw_calls||0).toLocaleString()}</div><div class="perf-lbl">Raw calls</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${(a.sent_calls||0).toLocaleString()}</div><div class="perf-lbl">Sent</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${(a.paid_calls||0).toLocaleString()}</div><div class="perf-lbl">Paid</div></div><div class="perf-item"><div class="perf-val${(a.sent_calls||0)===0?' zero':''}">${sentOverRaw}</div><div class="perf-lbl">Sent / raw</div></div><div class="perf-item"><div class="perf-val${a.paid_calls===0?' zero':''}">${paidOverRaw}</div><div class="perf-lbl">Paid / raw</div></div><div class="perf-item"><div class="perf-val${a.revenue===0?' zero':''}">$${Math.round(a.revenue||0).toLocaleString()}</div><div class="perf-lbl">Revenue</div></div><div class="perf-item"><div class="perf-val${a.margin===0?' zero':''}">$${Math.round(a.margin||0).toLocaleString()}</div><div class="perf-lbl">Direct margin</div></div></div>${aeDrawerHtml(a)}</div></div>`;}
 
 function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);if(s==='defects')return aeDefectRate(b)-aeDefectRate(a)||(b.raw_calls||0)-(a.raw_calls||0);return 0;});}
-function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim();if(!keepOpen){document.getElementById('drawer-container').innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered);document.getElementById('agents-grid').innerHTML=sorted.length?sorted.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):'<div class="empty">No agents match.</div>';}
+function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim();if(!keepOpen){clearAgentDrawers();openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered),active=sorted.filter(a=>!isInactive(a)),inactive=sorted.filter(isInactive).sort(byLastCall);document.getElementById('agents-grid').innerHTML=active.length?active.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):`<div class="empty">${inactive.length?'No active agents match.':'No agents match.'}</div>`;const sec=document.getElementById('agents-inactive');sec.hidden=!inactive.length;if(q&&inactive.length)sec.open=true;document.getElementById('agents-inactive-count').textContent=inactive.length;document.getElementById('agents-inactive-grid').innerHTML=inactive.map(a=>renderCard(a,AGENTS.indexOf(a))).join('');}
+// An inactive agent's drawer opens under the Inactive section, next to its card.
+function agentDrawerEl(idx){return document.getElementById(idx!=null&&isInactive(AGENTS[idx])?'drawer-container-inactive':'drawer-container');}
+function clearAgentDrawers(){['drawer-container','drawer-container-inactive'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});}
 function setFilter(v,el){activeFilter=v;document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');applyFilters();}
 // Opening passes applyFilters(true) so openAgent survives the grid re-render; otherwise the
 // post-load re-render below (if(openAgent===idx)) never fired and the drawer stuck on "Loading…".
-async function toggleAgent(idx){const drawer=document.getElementById('drawer-container');if(openAgent===idx){openAgent=null;drawer.innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});return;}savedScrollY=window.scrollY;openAgent=idx;applyFilters(true);const a=AGENTS[idx];if(bdAll.byIvr&&bdAll.key===(activeRange.label||''))fillAgentBreakdown(a,bdAll.byIvr);drawer.innerHTML=renderDrawer(a);requestAnimationFrame(()=>{const gap=drawer.getBoundingClientRect().bottom-window.innerHeight;if(gap>0)window.scrollBy({top:gap+24,behavior:'smooth'});});await Promise.all([loadAgentBreakdown(a),loadAgentTopIssues(a)]);if(openAgent===idx)drawer.innerHTML=renderDrawer(a);}
+async function toggleAgent(idx){const drawer=agentDrawerEl(idx);if(openAgent===idx){openAgent=null;drawer.innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});return;}savedScrollY=window.scrollY;openAgent=idx;applyFilters(true);const a=AGENTS[idx];if(bdAll.byIvr&&bdAll.key===(activeRange.label||''))fillAgentBreakdown(a,bdAll.byIvr);drawer.innerHTML=renderDrawer(a);requestAnimationFrame(()=>{const gap=drawer.getBoundingClientRect().bottom-window.innerHeight;if(gap>0)window.scrollBy({top:gap+24,behavior:'smooth'});});await Promise.all([loadAgentBreakdown(a),loadAgentTopIssues(a)]);if(openAgent===idx)drawer.innerHTML=renderDrawer(a);}
 // Every agent's publisher/advertiser breakdown for the active range, fetched ONCE alongside
 // the card metrics (agent_breakdown_all, rollup 045) so opening a drawer needs no request.
 let bdAll={key:null,promise:null,byIvr:null};
@@ -2152,12 +2204,12 @@ function bdPending(a){
 }
 async function retryAgentBreakdown(){
   if(openAgent==null) return;
-  const idx=openAgent,a=AGENTS[idx],drawer=document.getElementById('drawer-container');
+  const idx=openAgent,a=AGENTS[idx],drawer=agentDrawerEl(idx);
   a._bdErr=null; drawer.innerHTML=renderDrawer(a);
   await loadAgentBreakdown(a);
   if(openAgent===idx) drawer.innerHTML=renderDrawer(a);
 }
-function closeDrawer(e){e.stopPropagation();openAgent=null;document.getElementById('drawer-container').innerHTML='';applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});}
+function closeDrawer(e){e.stopPropagation();openAgent=null;clearAgentDrawers();applyFilters();window.scrollTo({top:savedScrollY,behavior:'smooth'});}
 
 // ─── NEW IVRs (check_new_ivrs, migration 060) ────────────────────────────────
 // AI IVRs the post-sync check registered as needs_setup. Their calls count from the first one;
@@ -3188,7 +3240,7 @@ async function loadAgentQuality(fromTs,toTs){
   applyFilters(true);   // keeps an open drawer
   const a=openAgent!=null?AGENTS[openAgent]:null; if(!a) return;
   await loadAgentTopIssues(a);
-  if(seq===aeQSeq&&openAgent!=null&&AGENTS[openAgent]===a) document.getElementById('drawer-container').innerHTML=renderDrawer(a);
+  if(seq===aeQSeq&&openAgent!=null&&AGENTS[openAgent]===a) agentDrawerEl(openAgent).innerHTML=renderDrawer(a);
 }
 async function loadAgentTopIssues(a){
   const key=activeRange.label||'';
@@ -3221,7 +3273,7 @@ async function reviewInit(){
   const root=document.getElementById('review-root');
   if(!AGENTS.length){
     root.innerHTML='<div class="empty">Loading agents…</div>';
-    try{ await (agentsLoadedPromise || Promise.all([loadAliases(), loadAgentsFromSupabase()])); }catch(e){ console.warn('review agents load:',e.message); }
+    try{ await (agentsLoadedPromise || Promise.all([loadAliases().then(loadAgentActivity), loadAgentsFromSupabase()])); }catch(e){ console.warn('review agents load:',e.message); }
   }
   if(!AGENTS.length){ root.innerHTML='<div class="empty">No agents found.</div>'; return; }
   if(RV) return;   // keep the open session when re-entering the tab
@@ -3301,7 +3353,11 @@ function renderReviewBoard(){
   // otherwise miss its own bucket and read "—" / "Never reviewed".
   // New IVRs waiting for setup (migration 060) are not reviewable yet: off the board and its counts.
   const setupCount=AGENTS.filter(needsSetup).length;
-  const boardAgents=[...AGENTS].filter(a=>!['test','setup'].includes(getEffectiveStatus(a)))
+  // Inactive agents (no calls in 30 days) leave the table and the Needs review count; they are
+  // listed in a collapsed section under it and move back on their next call.
+  const reviewable=AGENTS.filter(a=>!['test','setup'].includes(getEffectiveStatus(a)));
+  const inactiveAgents=reviewable.filter(isInactive).sort(byLastCall);
+  const boardAgents=reviewable.filter(a=>!isInactive(a))
     .map(a=>{ const k=resolveIvrName(a.ivrName); return {a, key:k, st:reviewBoardStatus(k)}; });
   // Applied scope: an agent is in scope when it touched one of the scoped accounts in 30d.
   const scopeSet=rvScopeSet(ap), apAdv=ap.side==='advertiser';
@@ -3371,8 +3427,27 @@ function renderReviewBoard(){
            <td class="rv-board-calls">${b.lastReview[x.key]?fmtDate(new Date(b.lastReview[x.key])):'<span style="color:var(--text-3)">—</span>'}</td>
            <td class="rv-board-open">Review →</td>
          </tr>`; }).join('') : `<tr><td colspan="${scopeSet?7:6}" class="rv-board-empty">${esc(emptyMsg)}</td></tr>` }</tbody>
-     </table></div>`;
+     </table></div>${scopeSet||!inactiveAgents.length?'':rvInactiveSection(inactiveAgents)}`;
   if(b.acctSearch) rvAcctSearch(b.acctSearch);
+}
+
+function rvInactiveSection(list){
+  const muted=t=>`<span style="color:var(--text-3)">${t}</span>`;
+  return `<details class="inactive-section" ${reviewBoard.inactiveOpen?'open':''} ontoggle="reviewBoard.inactiveOpen=this.open">
+    <summary><span class="inactive-title">Inactive (no calls in 30 days)</span><span class="inactive-count">${list.length}</span>
+      <span class="inactive-note">Not counted in Needs review. An agent moves back up automatically once it takes a call.</span></summary>
+    <div class="rv-board-wrap"><table class="rv-board rv-inactive-tbl">
+      <thead><tr><th>Agent</th><th>Last call</th><th class="rv-hide-sm">Last reviewed</th><th class="rv-hide-sm">Vertical</th><th></th></tr></thead>
+      <tbody>${list.map(a=>{ const d=agentLastDay(a), lr=reviewBoard.lastReview[resolveIvrName(a.ivrName)];
+        return `<tr onclick="openReview('${jsStr(a.ivrName)}')">
+          <td class="rv-board-name">${esc(a.name)}</td>
+          <td class="rv-board-calls">${d?fmtDate(new Date(d+'T00:00:00')):muted('Never')}</td>
+          <td class="rv-board-calls rv-hide-sm">${lr?fmtDate(new Date(lr)):muted('—')}</td>
+          <td class="rv-hide-sm" style="color:var(--text-2)">${esc(a.vertical||'—')}</td>
+          <td class="rv-board-open">Review →</td>
+        </tr>`; }).join('')}</tbody>
+    </table></div>
+  </details>`;
 }
 
 function rvAcctLabel(s){
@@ -4019,7 +4094,7 @@ let agentsLoadedPromise = null;
 async function bootDashboard() {
   agentDrpInit();
   loadFreshness();
-  agentsLoadedPromise = Promise.all([loadAliases(), loadAgentsFromSupabase(), loadTestCalls()]);
+  agentsLoadedPromise = Promise.all([loadAliases().then(loadAgentActivity), loadAgentsFromSupabase(), loadTestCalls()]);
   await agentsLoadedPromise;
   document.getElementById('cr-colpicker-popover').innerHTML = crBuildColPicker();   // columns: defaults + saved choices (crLoadColPrefs)
   recomputeStats();
@@ -4348,6 +4423,7 @@ function switchCompTab(id, btn) {
   const pane = document.getElementById('comp-' + id);
   if (pane) pane.classList.add('active');
   if (id === 'settings' && !settingsLoaded) { settingsLoaded = true; settingsInit(); }
+  if (id === 'team' && settingsLoaded) compLoadTeam();   // pick up assignment edits made in Admin
   if (id === 'training') {
     // Relocate the model calibration/review section into the Training sub-pane (once).
     const sec = document.getElementById('settings-cost-section');
@@ -4541,50 +4617,82 @@ async function saveCorrection() {
 
 // ── TEAM VIEW ─────────────────────────────────────────────────
 
+// Per manager: the accounts assigned in Admin > Assignments (same data as the Review board), flagged
+// calls on them in the last 7 days (team_overview, migration 057) and whether their digest is on.
 async function compLoadTeam() {
+  const grid = document.getElementById('comp-team-grid');
   try {
-    const rows = await compFetch(
-      'canoe_calls?select=account_manager,flags,our_outcome,compliance_reviewed&ai_processed_at=not.is.null&limit=5000'
-    );
+    const now = new Date(), since = new Date(now.getTime() - 7 * 86400000);
+    const [, overview, digests] = await Promise.all([
+      ensureAssignments(),
+      sbFetch('rpc/team_overview', { method: 'POST', body: JSON.stringify({ since_ts: since.toISOString() }) }),
+      compFetch('manager_alert_settings?select=manager_id,enabled,last_sent_at'),
+    ]);
+    const acctFlags = {}, mgrFlags = {}, digest = {};
+    (overview?.accounts || []).forEach(a => { acctFlags[a.account_type + '|' + a.account_name] = Number(a.flagged) || 0; });
+    (overview?.managers || []).forEach(m => { mgrFlags[m.manager_id] = Number(m.flagged) || 0; });
+    (digests || []).forEach(d => { digest[d.manager_id] = d; });
+    grid.innerHTML = renderTeam(compManagers, compAssignments, acctFlags, mgrFlags, digest, toISO(since), toISO(now));
+  } catch(e) {
+    console.warn('compLoadTeam:', e.message);
+    grid.innerHTML = `<div class="comp-empty">Could not load the team view: ${esc(e.message)}</div>`;
+  }
+}
 
-    const managerMap = {};
-    rows.forEach(r => {
-      const m = r.account_manager || 'Unassigned';
-      if (!managerMap[m]) managerMap[m] = { total: 0, flagged: 0, pending: 0 };
-      managerMap[m].total++;
-      if ((r.flags||[]).length > 0) {
-        managerMap[m].flagged++;
-        if (!r.compliance_reviewed) managerMap[m].pending++;
-      }
-    });
+function teamGoAssignments() {
+  switchCompTab('settings');
+  document.getElementById('s-accounts-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
-    const managers = Object.entries(managerMap)
-      .map(([name, v]) => ({ name, ...v }))
-      .sort((a, b) => b.flagged - a.flagged);
-
-    const grid = document.getElementById('comp-team-grid');
-    if (!managers.length) { grid.innerHTML = '<div class="comp-empty">No data yet.</div>'; return; }
-
-    grid.innerHTML = managers.map(m => `
+function renderTeam(managers, assignments, acctFlags, mgrFlags, digest, fromISO, toISO_) {
+  const goAssign = '<button class="comp-team-link" onclick="teamGoAssignments()">Admin &gt; Assignments</button>';
+  if (!assignments.length) {
+    return `<div class="comp-empty" style="grid-column:1 / -1">No accounts are assigned to managers yet.<br>Admins can assign publishers and advertisers in ${goAssign}.</div>`;
+  }
+  const byMgr = {};
+  assignments.forEach(a => {
+    (byMgr[a.manager_id] = byMgr[a.manager_id] || []).push({ ...a, flagged: acctFlags[a.account_type + '|' + a.account_name] || 0 });
+  });
+  const callsLink = a => '?' + new URLSearchParams({ tab: 'calls', account: a.account_name, type: a.account_type, from: fromISO, to: toISO_, flagged: '1' }).toString();
+  const acctRow = a => `<li class="comp-team-acct">
+      <span class="comp-team-acct-name" title="${esc(a.account_name)}">${esc(a.account_name)}</span>
+      <span class="comp-team-acct-type">${a.account_type === 'advertiser' ? 'Adv' : 'Pub'}</span>
+      ${a.flagged ? `<a class="comp-team-acct-flags" href="${esc(callsLink(a))}" title="Open these flagged calls">${a.flagged.toLocaleString()}</a>` : '<span class="comp-team-acct-flags">0</span>'}
+    </li>`;
+  const SHOWN = 6;
+  const cards = managers.map(m => ({ m, accts: (byMgr[m.id] || []).sort((x, y) => y.flagged - x.flagged || x.account_name.localeCompare(y.account_name)), flagged: mgrFlags[m.id] || 0 }))
+    .sort((x, y) => y.flagged - x.flagged || (y.accts.length > 0) - (x.accts.length > 0) || x.m.manager_name.localeCompare(y.m.manager_name))
+    .map(({ m, accts, flagged }) => {
+      const d = digest[m.id], on = !!(d && d.enabled);
+      const digestTitle = on ? (d.last_sent_at ? 'Last sent ' + fmtDate(new Date(d.last_sent_at)) : 'Not sent yet') : 'Compliance digest is off';
+      const adv = accts.filter(a => a.account_type === 'advertiser').length, pub = accts.length - adv;
+      const list = accts.length
+        ? `<ul class="comp-team-accts">${accts.slice(0, SHOWN).map(acctRow).join('')}</ul>` +
+          (accts.length > SHOWN ? `<details class="comp-team-more"><summary>Show ${accts.length - SHOWN} more</summary><ul class="comp-team-accts">${accts.slice(SHOWN).map(acctRow).join('')}</ul></details>` : '')
+        : `<div class="comp-team-none">No accounts assigned. Assign them in ${goAssign}.</div>`;
+      return `
       <div class="comp-team-card">
-        <div class="comp-team-name">${esc(m.name)}</div>
+        <div class="comp-team-head">
+          <div style="min-width:0">
+            <div class="comp-team-name">${esc(m.manager_name)}</div>
+            ${m.manager_email ? `<div class="comp-team-email">${esc(m.manager_email)}</div>` : ''}
+          </div>
+          <span class="comp-team-digest ${on ? 'on' : 'off'}" title="${esc(digestTitle)}">Digest ${on ? 'on' : 'off'}</span>
+        </div>
         <div class="comp-team-stats">
           <div>
-            <div class="comp-team-stat-val">${m.total.toLocaleString()}</div>
-            <div class="comp-team-stat-label">total calls</div>
+            <div class="comp-team-stat-val">${accts.length.toLocaleString()}</div>
+            <div class="comp-team-stat-label">accounts · ${adv} adv, ${pub} pub</div>
           </div>
           <div>
-            <div class="comp-team-stat-val ${m.flagged > 0 ? 'alert' : ''}">${m.flagged.toLocaleString()}</div>
-            <div class="comp-team-stat-label">flagged</div>
-          </div>
-          <div>
-            <div class="comp-team-stat-val">${m.pending.toLocaleString()}</div>
-            <div class="comp-team-stat-label">pending review</div>
+            <div class="comp-team-stat-val ${flagged > 0 ? 'alert' : ''}">${flagged.toLocaleString()}</div>
+            <div class="comp-team-stat-label">flagged calls · 7 days</div>
           </div>
         </div>
-      </div>
-    `).join('');
-  } catch(e) { console.warn('compLoadTeam:', e.message); }
+        ${list}
+      </div>`;
+    });
+  return cards.join('') + `<div class="comp-team-foot">Flagged calls: calls from the last 7 days with any compliance flag, on the accounts each manager owns. A call on two of a manager's accounts counts once. Change ownership in ${goAssign}.</div>`;
 }
 
 // ── ASSIGNMENTS & MANAGER RESOLUTION ─────────────────────────
