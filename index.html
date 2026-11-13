@@ -294,6 +294,15 @@
     .summary-item:nth-child(2n) .flag-tip { left:auto; right:8px; }
   }
   .flag-tip .fb-row .fb-n { color:var(--text); font-variant-numeric:tabular-nums; }
+  .flag-card { position:relative; cursor:pointer; }
+  .flag-card:focus-visible { outline:2px solid var(--brand-navy); outline-offset:-2px; }
+  .summary-sub { font-size:11px; color:var(--text-3); margin-top:2px; }
+  .summary-sub.hot { color:var(--coral); font-weight:500; }
+  .flag-tip .fb-head { font-size:11px; font-weight:600; padding:6px 2px 2px; }
+  .flag-tip .fb-head:first-child { padding-top:0; }
+  .flag-tip .fb-head.sev-high { color:var(--coral); }
+  .flag-tip .fb-head.sev-medium { color:var(--amber); }
+  .flag-tip .fb-head.sev-info { color:var(--text-2); }
   .summary-sub { font-size:11px; margin-top:4px; font-family:var(--mono); }
   .insights-section { margin-bottom:28px; }
   .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -429,15 +438,10 @@
 
   /* flag badges */
   .flag-badge { display:inline-flex; align-items:center; font-size:11px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap; }
-  .flag-outbound_dial      { background:#FEE2E2; color:#991B1B; }
-  .flag-facebook_marketplace { background:#FEF3C7; color:#92400E; }
-  .flag-angry_caller       { background:#FFE4E6; color:#9F1239; }
-  .flag-wrong_business     { background:#EDE9FE; color:#4C1D95; }
-  .flag-incentivized_caller { background:#DCFCE7; color:#14532D; }
-  .flag-geo_mismatch       { background:#DBEAFE; color:#1E3A8A; }
-  .flag-quoted_abandoned   { background:#EDE9FE; color:#5B21B6; }
-  .flag-coached_call       { background:#FCE7F3; color:#9D174D; }
-  .flag-duplicate_caller   { background:#F3F4F6; color:#374151; }
+  /* Flag badges are colored by severity tier (FLAG_SEVERITY), not per flag. */
+  .flag-badge.sev-high   { background:var(--coral-bg); color:var(--coral); }
+  .flag-badge.sev-medium { background:var(--amber-bg); color:var(--amber); }
+  .flag-badge.sev-info   { background:var(--gray-bg); color:var(--text-2); }
 
   /* outcome badge */
   .outcome-badge { font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:4px; background:var(--gray-bg); color:var(--text-2); white-space:nowrap; }
@@ -1110,7 +1114,7 @@
   <div id="tab-calls" class="tab-pane">
     <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
       <div class="summary-item" title="AI-scored calls in this scope. Ignores the Flagged only and flag-type filters, so the flag rate stays a real ratio."><div class="summary-val" id="calls-stat-total"><span class="null-mark">-</span></div><div class="summary-lbl">AI-scored calls</div></div>
-      <div class="summary-item" style="position:relative" onmouseenter="callsFlagBreakdown()" onmouseleave="callsFlagBreakdownHide()"><div class="summary-val" id="calls-stat-flagged"><span class="null-mark">-</span></div><div class="summary-lbl">flagged</div><div id="calls-flag-breakdown" class="flag-tip" style="display:none"></div></div>
+      <div class="summary-item flag-card" id="calls-flag-card" role="button" tabindex="0" aria-expanded="false" aria-controls="calls-flag-breakdown" title="Show flags by type" onclick="callsFlagBreakdownToggle(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();callsFlagBreakdownToggle(event);}"><div class="summary-val" id="calls-stat-flagged"><span class="null-mark">-</span></div><div class="summary-lbl">flagged</div><div class="summary-sub" id="calls-stat-high"></div><div id="calls-flag-breakdown" class="flag-tip" role="dialog" aria-label="Flags by type" style="display:none" onclick="event.stopPropagation()"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate"><span class="null-mark">-</span></div><div class="summary-lbl">flag rate</div></div>
       <div class="summary-item" title="Advertiser payin on every call the table matches, including the Flagged only and flag-type filters."><div class="summary-val" id="calls-stat-revenue"><span class="null-mark">-</span></div><div class="summary-lbl">Revenue</div></div>
     </div>
@@ -1163,6 +1167,7 @@
         </div>
         <!-- Flagged only -->
         <button class="pill" id="cr-flagged-only" aria-pressed="false" onclick="crToggleFlagged(this)">Flagged only</button>
+        <button class="pill" id="cr-high-only" aria-pressed="false" onclick="crToggleFlagged(this)" title="Outbound dial, Facebook Marketplace, coached call or suspicious call">High severity only</button>
         <!-- Search -->
         <div class="search-wrap">
           <svg class="search-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.75" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -1455,6 +1460,20 @@ function toISO(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2
 function nullMark() { return '<span class="null-mark">-</span>'; }
 // A stored snake_case value (outcome, flag) as screen text. Raw values stay in value= / data-*.
 function labelOf(v) { return String(v ?? '').replace(/_/g, ' '); }
+// Compliance flag severity (captain's Option A, 2026-11-13). Drives badge color, the Calls "High
+// severity only" filter and strip count, and the flag breakdown. Must match FLAG_SEVERITY in
+// scripts/alert.js. suspicious_call is a boolean column, shown and filtered as a high flag.
+const FLAG_SEVERITY = {
+  outbound_dial: 'high', facebook_marketplace: 'high', coached_call: 'high', suspicious_call: 'high',
+  duplicate_caller: 'medium', wrong_business: 'medium', angry_caller: 'medium',
+  geo_mismatch: 'info', quoted_abandoned: 'info',
+};
+const SEVERITY_ORDER = ['high', 'medium', 'info'];
+const HIGH_FLAGS = Object.keys(FLAG_SEVERITY).filter(f => FLAG_SEVERITY[f] === 'high');
+function flagSeverity(f) { return FLAG_SEVERITY[f] || 'info'; }   // an unknown flag counts as info
+function bySeverity(flags) { return [...(flags || [])].sort((a, b) => SEVERITY_ORDER.indexOf(flagSeverity(a)) - SEVERITY_ORDER.indexOf(flagSeverity(b))); }
+// A call's flags plus suspicious_call, which is a column rather than an entry in flags.
+function callFlags(c) { const f = Array.isArray(c && c.flags) ? [...c.flags] : []; if (c && c.suspicious_call && !f.includes('suspicious_call')) f.push('suspicious_call'); return f; }
 // A failed load, as HTML: coral "Couldn't load <thing>." and a Retry button that reruns the loader.
 // retry is a JS call for the onclick attribute; callers pass fixed code (jsStr any value in it).
 // The raw error (a Supabase status + body) goes to the console, never onto the page.
@@ -2801,6 +2820,8 @@ function crBuildFilters(includeFlagFilters = true) {
   if (search) ors.push(crSearchFilter(search));
   if (includeFlagFilters) {
     if (document.getElementById('cr-flagged-only')?.classList.contains('active')) q += `&flags=neq.${encodeURIComponent('[]')}`;
+    if (document.getElementById('cr-high-only')?.classList.contains('active'))
+      ors.push(HIGH_FLAGS.map(f => f === 'suspicious_call' ? 'suspicious_call.is.true' : `flags.cs.${JSON.stringify([f])}`));
     const flag = document.getElementById('cr-flag-filter')?.value;
     if (flag) q += `&flags=cs.${encodeURIComponent(JSON.stringify([flag]))}`;
     // A digest link's flag set: what the email counted (suspicious_call is a column, not a flag).
@@ -2828,7 +2849,7 @@ function crSearchFilter(text) {
 // Build query. filters defaults to the live inputs; the table, Load more and Export pass the
 // snapshot taken when the table was loaded (crApplied).
 function crBuildQuery(offset, filters = crBuildFilters()) {
-  const select = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,ascnd_recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,publisher_score,advertiser_score,our_summary,canoe_summary,flags,compliance_reviewed`;
+  const select = `canoe_calls?select=id,created_at,vertical:vertical_name,ivr_name,publisher_name,advertiser_name,phone:called_from,ivr_duration,connect_duration,result,disposition,disposition_description,recording_url,ascnd_recording_url,advertiser_payin,lead_id,duration,city,state,account_manager,our_outcome,canoe_outcome,publisher_score,advertiser_score,our_summary,canoe_summary,flags,suspicious_call,compliance_reviewed`;
   const sortDir = crSortDir === -1 ? 'desc' : 'asc';
   const sortCol = crSortCol === 'vertical' ? 'vertical_name' : crSortCol === 'phone' ? 'called_from' : crSortCol;
   // Unscored/empty values sort last. created_at is never null inside the date filter, and nullslast
@@ -2981,7 +3002,7 @@ function crRender() {
         return `<td class="cr-mono" style="text-align:right;color:${color}">${n > 0 ? '+' : ''}${n}</td>`;
       }
       case 'flags':
-        return `<td>${(r.flags && r.flags.length) ? flagBadges(r.flags) : ''}</td>`;
+        return `<td>${flagBadges(callFlags(r))}</td>`;
       case 'reviewed':
         return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span style="color:var(--teal)">reviewed</span>' : '<span style="color:var(--amber)">pending</span>') : ''}</td>`;
       default:
@@ -3051,11 +3072,11 @@ async function callsLoadSummary(seq) {
   // "flagged" is coral only when there are flagged calls.
   const flaggedTone = on => document.getElementById('calls-stat-flagged')?.classList?.toggle('neg', on);
   ['calls-stat-total', 'calls-stat-flagged', 'calls-stat-rate', 'calls-stat-revenue'].forEach(id => set(id, '…'));
-  flaggedTone(false);
+  flaggedTone(false); callsHighLine(null);
   callsFlagCounts = null; callsFlagBreakdownRender();
   const [table, strip] = await Promise.allSettled([
     sbFetch(`canoe_calls?select=n:count(),revenue:advertiser_payin.sum()${crApplied.table}`),
-    sbFetch(`canoe_calls?select=flags,n:count()${crApplied.strip}&ai_processed_at=not.is.null`),
+    sbFetch(`canoe_calls?select=flags,suspicious_call,n:count()${crApplied.strip}&ai_processed_at=not.is.null`),
   ]);
   if (seq !== crLoadSeq) return;   // superseded by a newer load
   const t = table.status === 'fulfilled' && table.value && table.value[0];
@@ -3066,30 +3087,54 @@ async function callsLoadSummary(seq) {
   if (strip.status !== 'fulfilled') {
     console.warn('calls summary:', strip.reason?.message);
     ['calls-stat-total', 'calls-stat-flagged', 'calls-stat-rate'].forEach(id => set(id, '-'));   // not stale numbers from the last scope
+    callsHighLine(null);
     callsFlagCounts = false; callsFlagBreakdownRender();
     return;
   }
-  let total = 0, flagged = 0;
-  const counts = Object.fromEntries(CALLS_FLAG_TYPES.map(f => [f, 0]));
-  for (const r of strip.value || []) {
-    const n = Number(r.n), flags = Array.isArray(r.flags) ? r.flags : [];
-    total += n;
-    if (flags.length) flagged += n;
-    for (const f of new Set(flags)) if (f in counts) counts[f] += n;
-  }
+  const { total, flagged, high, counts } = callsStripTotals(strip.value);
   set('calls-stat-total', total.toLocaleString());
   set('calls-stat-flagged', flagged.toLocaleString());
   flaggedTone(flagged > 0);
+  callsHighLine(high);
   set('calls-stat-rate', total > 0 ? ((flagged / total) * 100).toFixed(1) + '%' : '-');
   callsFlagCounts = counts; callsFlagBreakdownRender();
 }
 
-// Hover breakdown on the "flagged" metric: calls per flag type for the strip's scope.
-function callsFlagBreakdown() {
-  const tip = document.getElementById('calls-flag-breakdown');
+// The strip's (flags, suspicious_call) histogram -> totals. "flagged" counts calls with an entry in
+// flags (what Flagged only matches); "high" counts calls with a high-severity flag or suspicious_call
+// (what High severity only matches), so a suspicious call with no other flag is high but not flagged.
+function callsStripTotals(rows) {
+  let total = 0, flagged = 0, high = 0;
+  const counts = Object.fromEntries([...CALLS_FLAG_TYPES, 'suspicious_call'].map(f => [f, 0]));
+  for (const r of rows || []) {
+    const n = Number(r.n), flags = Array.isArray(r.flags) ? r.flags : [];
+    total += n;
+    if (flags.length) flagged += n;
+    for (const f of new Set(flags)) if (f in counts) counts[f] += n;
+    if (r.suspicious_call) counts.suspicious_call += n;
+    if (r.suspicious_call || flags.some(f => flagSeverity(f) === 'high')) high += n;
+  }
+  return { total, flagged, high, counts };
+}
+// "N high severity" under the flagged count; coral when there are any. null = loading or failed.
+function callsHighLine(high) {
+  const el = document.getElementById('calls-stat-high');
+  if (!el) return;
+  el.textContent = high == null ? '' : `${high.toLocaleString()} high severity`;
+  el.classList.toggle('hot', high > 0);
+}
+
+// Flag breakdown on the "flagged" card: calls per flag type for the strip's scope, grouped by
+// severity. Opens on click, tap or Enter/Space (it used to be hover-only, so touch and keyboard
+// never saw it); closes on a second press, Escape or a click elsewhere.
+function callsFlagBreakdownToggle(e) {
+  if (e) e.stopPropagation();
+  const tip = document.getElementById('calls-flag-breakdown'), card = document.getElementById('calls-flag-card');
   if (!tip) return;
-  tip.style.display = 'block';
-  callsFlagBreakdownRender();
+  const open = tip.style.display === 'none';
+  tip.style.display = open ? 'block' : 'none';
+  if (card) card.setAttribute('aria-expanded', String(open));
+  if (open) callsFlagBreakdownRender();
 }
 function callsFlagBreakdownRender() {
   const tip = document.getElementById('calls-flag-breakdown');
@@ -3097,10 +3142,22 @@ function callsFlagBreakdownRender() {
   if (!crDrpPickStart || !crDrpPickEnd) { tip.innerHTML = '<div class="fb-row">Pick a date range first</div>'; return; }
   if (callsFlagCounts === null) { tip.innerHTML = '<div class="fb-row">Loading…</div>'; return; }
   if (callsFlagCounts === false) { tip.innerHTML = `<div class="fb-row">${nullMark()}</div>`; return; }
-  tip.innerHTML = Object.entries(callsFlagCounts).sort((a, b) => b[1] - a[1])
-    .map(([flag, n]) => `<div class="fb-row"><span>${labelOf(flag)}</span><span class="fb-n">${n.toLocaleString()}</span></div>`).join('');
+  tip.innerHTML = SEVERITY_ORDER.map(sev => {
+    const rows = Object.entries(callsFlagCounts).filter(([f]) => flagSeverity(f) === sev).sort((a, b) => b[1] - a[1]);
+    return rows.length ? `<div class="fb-head sev-${sev}">${sev[0].toUpperCase() + sev.slice(1)}</div>` +
+      rows.map(([flag, n]) => `<div class="fb-row"><span>${labelOf(flag)}</span><span class="fb-n">${n.toLocaleString()}</span></div>`).join('') : '';
+  }).join('');
 }
-function callsFlagBreakdownHide() { const t = document.getElementById('calls-flag-breakdown'); if (t) t.style.display = 'none'; }
+function callsFlagBreakdownHide() {
+  const t = document.getElementById('calls-flag-breakdown'), card = document.getElementById('calls-flag-card');
+  if (t) t.style.display = 'none';
+  if (card) card.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', () => callsFlagBreakdownHide());
+document.addEventListener('keydown', e => {
+  const t = document.getElementById('calls-flag-breakdown');
+  if (e.key === 'Escape' && t && t.style.display !== 'none') { callsFlagBreakdownHide(); document.getElementById('calls-flag-card')?.focus(); }
+});
 
 // ─── AGENT QUALITY (agent_call_evals, migration 056) ─────────────────────────
 // A second scorer (scripts/agent_eval.js) grades the AI agent's own side of every ASCND call,
@@ -3830,7 +3887,7 @@ function renderReviewCalls(){
 function reviewCallRow(c,i){
   const route=[c.publisher_name,c.advertiser_name].filter(Boolean).join(' → ');
   const ae=aeRowParts(c);   // null = not scored
-  const flags=c.flags||[];
+  const flags=bySeverity(c.flags);
   const outcome=c.our_outcome?`<span title="Registry outcome">${outcomeBadge(c.our_outcome)}</span>`:'';
   const chips=ae ? ae.chips : outcome+flagBadges(flags.slice(0,1));
   const summary=(ae&&ae.summary)||c.our_summary||'';
@@ -4402,7 +4459,8 @@ function outcomeBadge(outcome) {
 
 function flagBadges(flags) {
   if (!flags || flags.length === 0) return '';
-  return flags.map(f => `<span class="flag-badge flag-${esc(f)}">${esc(labelOf(f))}</span>`).join(' ');
+  return bySeverity(flags).map(f => { const sev = flagSeverity(f);
+    return `<span class="flag-badge sev-${sev} flag-${esc(f)}" title="${sev[0].toUpperCase() + sev.slice(1)} severity">${esc(labelOf(f))}</span>`; }).join(' ');
 }
 
 // ── CALL DRAWER ───────────────────────────────────────────────
@@ -4432,8 +4490,9 @@ function openCallDrawer(call) {
     (call.canoe_outcome ? `<span class="drawer-src" style="margin-left:12px">Canoe</span><span class="drawer-canoe-outcome">${esc(labelOf(call.canoe_outcome))}</span>` : '');
 
   const flagsEl = document.getElementById('drawer-flags');
-  flagsEl.innerHTML = compDrawerFlags.length
-    ? `<div class="drawer-flags-row">${flagBadges(compDrawerFlags)}</div>`
+  const shownFlags = callFlags({ flags: compDrawerFlags, suspicious_call: call.suspicious_call });
+  flagsEl.innerHTML = shownFlags.length
+    ? `<div class="drawer-flags-row">${flagBadges(shownFlags)}</div>`
     : '<div class="drawer-no-flags">No compliance flags</div>';
 
   const summaryEl = document.getElementById('drawer-summary');

@@ -962,3 +962,18 @@ Continued from the 8/7 Scores work; large session. What moved:
 - UI only: database-level enforcement belongs to the parked security lockdown.
 - Tests: 3 new in `tests/new-ivr.test.js`; 155/155 pass.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - Compliance flag severity, Option A (branch `fm/ivr-newivr-flags`)
+- **Why:** geo_mismatch is ~42% of flags, so "Flagged only", the flag rate and the digest buried
+  outbound dials and coached calls (audit item 10). Captain picked Option A for the tiers.
+- **Tiers:** High = outbound_dial, facebook_marketplace, coached_call, suspicious_call; Medium =
+  duplicate_caller, wrong_business, angry_caller; Info = geo_mismatch, quoted_abandoned. One map in
+  `index.html` and the same one in `scripts/alert.js` (a test checks they match).
+- **Calls:** flag badges colored by tier (high coral, medium amber, info gray), most severe first;
+  suspicious_call now shows as a high badge. New "High severity only" toggle. The strip shows
+  "N high severity" under "flagged". The flag breakdown opens on click, tap or Enter (it was
+  hover-only) and is grouped High / Medium / Info. Review rows show the most severe flag collapsed.
+- **Digest:** within Outliers and Other accounts, accounts with more high-severity calls come first,
+  then the higher flag rate; each account's flags list high severity first.
+- Tests: `tests/flag-severity.test.js` (7); 159/159 pass.
+- External sources (Wispr/Jira) not pulled this session.

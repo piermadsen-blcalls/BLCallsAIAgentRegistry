@@ -24,8 +24,16 @@ function lift(decl) {
   }
   return html.slice(start, i + 1);
 }
+// The flag-severity block (consts + helpers) can't be lifted by brace matching; load() adds it
+// whenever a lifted function uses it.
+function severityBlock() {
+  const s = html.indexOf('const FLAG_SEVERITY = {'), e = html.indexOf('\n', html.indexOf('function callFlags(', s));
+  return html.slice(s, e);
+}
 function load(ctx, decls, exportNames) {
-  vm.runInNewContext(decls.map(lift).join(';\n') + ';\n' + exportNames.map(n => `this.${n} = ${n};`).join(' '), ctx);
+  const src = decls.map(lift).join(';\n');
+  const sev = /\b(bySeverity|flagSeverity|callFlags|HIGH_FLAGS|SEVERITY_ORDER|FLAG_SEVERITY)\b/.test(src) ? severityBlock() + ';\n' : '';
+  vm.runInNewContext(sev + src + ';\n' + exportNames.map(n => `this.${n} = ${n};`).join(' '), ctx);
   return ctx;
 }
 const unhtml = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
@@ -213,10 +221,10 @@ test('S-33: strip labels, and "flagged" is coral only when calls are flagged', a
   const els = {};
   const el = id => (els[id] ??= { textContent: '', style: { display: 'none' }, innerHTML: '', classList: classes() });
   const run = async rows => {
-    const ctx = load({ sbFetch: async url => (url.includes('flags,n:count()') ? rows : [{ n: 5, revenue: 0 }]), crLoadSeq: 1, crOffset: 5, crTotal: null, crHasMore: false,
+    const ctx = load({ sbFetch: async url => (url.includes('select=flags') ? rows : [{ n: 5, revenue: 0 }]), crLoadSeq: 1, crOffset: 5, crTotal: null, crHasMore: false,
       crRender() {}, callsFlagCounts: null, crDrpPickStart: 'a', crDrpPickEnd: 'b', console: { warn() {} }, CALLS_FLAG_TYPES: ['geo_mismatch'],
       crApplied: { table: '', strip: '' }, document: { getElementById: el } },
-    ['function nullMark(', 'function labelOf(', 'async function callsLoadSummary(', 'function callsFlagBreakdownRender('], ['callsLoadSummary']);
+    ['function nullMark(', 'function labelOf(', 'async function callsLoadSummary(', 'function callsStripTotals(', 'function callsHighLine(', 'function callsFlagBreakdownRender('], ['callsLoadSummary']);
     await ctx.callsLoadSummary(1);
   };
   await run([{ flags: [], n: 5 }]);
@@ -236,7 +244,7 @@ test('S-36: Outcome and Canoe are separate columns; footer counts once the total
     POSITIVE_OUTCOMES: new Set(['sale']), NEGATIVE_OUTCOMES: new Set(), AGENTS: [], aliasesForAgent: () => [], vClass: () => '',
     crSortCol: 'created_at', crSortDir: -1, crHasMore: true, crTotal: null, document: { getElementById: () => out } };
   store.cr_visible_cols = JSON.stringify({ outcome: true, publisher_score: false });   // saved before the split
-  vm.runInNewContext(src.replace(/^const |\nlet /g, m => m.replace(/const |let /, 'var ')) + ';\n' + ['function esc(', 'function nullMark(', 'function labelOf(', 'function httpUrl(',
+  vm.runInNewContext(src.replace(/^const |\nlet /g, m => m.replace(/const |let /, 'var ')) + ';\n' + severityBlock() + ';\n' + ['function esc(', 'function nullMark(', 'function labelOf(', 'function httpUrl(',
     'function crFmtDuration(', 'function crFmtDateTime(', 'function crFmtRev(', 'function crDispoClass(', 'function outcomeBadge(', 'function flagBadges(', 'function crRender('].map(lift).join(';\n'), ctx);
   assert.equal(ctx.crVisibleCols.outcome, true, 'the column picker key still works');
   assert.equal(ctx.crVisibleCols.canoe_outcome, true, 'the new column starts on');
@@ -301,11 +309,11 @@ test('S-40: an unscored row: outcome + one flag, the buyer-call summary; the res
   const [row, panel] = split(rowCtx(null).reviewCallRow(CALL, 0));
   assert.equal(chipCount(row), 2);
   assert.match(row, /title="Registry outcome"><span class="outcome-badge outcome-positive">sale/);
-  assert.match(row, /flag-geo_mismatch/);
-  assert.doesNotMatch(row, /angry caller|Transferred|Caller wants a quote|1m 01s/);
+  assert.match(row, /flag-angry_caller/, 'the most severe flag (medium) is the one shown');
+  assert.doesNotMatch(row, /geo mismatch|Transferred|Caller wants a quote|1m 01s/);
   assert.match(row, /<div class="rv-call-sum">Booked an install\.<\/div>/);
   assert.match(panel, /^<div class="rv-x" id="rv-x-0" style="display:none">/);
-  assert.match(panel, /1m 01s[\s\S]*Transferred[\s\S]*angry caller/);
+  assert.match(panel, /1m 01s[\s\S]*Transferred[\s\S]*geo mismatch/);
   assert.match(panel, /"Caller wants a quote"/);
   assert.doesNotMatch(panel, /Buyer call/, 'one summary only, already on the row');
   assert.match(panel, /ASSESSMENT[\s\S]*id="rv-tx-0">bot: hi/);
@@ -320,7 +328,7 @@ test('S-40 + S-37: a scored row: verdict + finding, the agent-review summary; th
   assert.doesNotMatch(row, /outcome-badge|flag-badge/);
   assert.match(row, /<div class="rv-call-sum">Rejected a caller from TV\.<\/div>/);
   assert.doesNotMatch(row, /Booked an install/);
-  assert.match(panel, /outcome-badge outcome-positive">sale[\s\S]*geo mismatch[\s\S]*angry caller/, 'outcome and every flag in Details');
+  assert.match(panel, /outcome-badge outcome-positive">sale[\s\S]*angry caller[\s\S]*geo mismatch/, 'outcome and every flag in Details, most severe first');
   assert.match(panel, /<span class="rv-x-lbl">Buyer call<\/span> Booked an install\./);
   assert.match(text(row), /Asked twice for price\. Note by Pier · Nov 3/);
   assert.doesNotMatch(row + panel, /AI summary|AI agent review|📝/);

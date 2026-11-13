@@ -42,6 +42,14 @@ const FLAG_LABELS = {
   suspicious_call:      'Suspicious call',
 };
 const AI_FLAGS = ['outbound_dial', 'facebook_marketplace', 'angry_caller', 'wrong_business', 'duplicate_caller', 'geo_mismatch', 'coached_call'];
+// Flag severity (captain's Option A, 2026-11-13). Orders the digest: high-severity accounts and
+// flags first. Must match FLAG_SEVERITY in index.html.
+const FLAG_SEVERITY = {
+  outbound_dial: 'high', facebook_marketplace: 'high', coached_call: 'high', suspicious_call: 'high',
+  duplicate_caller: 'medium', wrong_business: 'medium', angry_caller: 'medium',
+  geo_mismatch: 'info', quoted_abandoned: 'info',
+};
+const sevRank = f => ['high', 'medium', 'info'].indexOf(FLAG_SEVERITY[f] || 'info');
 
 const BOOTSTRAP_DAYS = 7;  // first-ever digest window when there's no last_sent_at
 // The window is on ai_processed_at, not created_at: a call only gets flags once it is scored,
@@ -120,7 +128,7 @@ function tallyAccounts(calls, advSet, pubSet, base) {
     const isAdv = advSet.has(c.advertiser_name);
     const name  = isAdv ? c.advertiser_name : c.publisher_name;
     if (!name || !isScored(c)) continue;
-    if (!curr[name]) curr[name] = { type: isAdv ? 'advertiser' : 'publisher', flagCounts: {}, flaggedCalls: 0, scored: 0, expected: {}, variance: {}, firstFlaggedAt: null };
+    if (!curr[name]) curr[name] = { type: isAdv ? 'advertiser' : 'publisher', flagCounts: {}, flaggedCalls: 0, highCalls: 0, scored: 0, expected: {}, variance: {}, firstFlaggedAt: null };
     const a = curr[name];
     a.scored++;
     for (const f of flagList) {
@@ -131,6 +139,7 @@ function tallyAccounts(calls, advSet, pubSet, base) {
     const fl = callFlags(c);
     if (!fl.length) continue;
     a.flaggedCalls++;
+    if (fl.some(f => FLAG_SEVERITY[f] === 'high')) a.highCalls++;
     if (c.created_at && (!a.firstFlaggedAt || c.created_at < a.firstFlaggedAt)) a.firstFlaggedAt = c.created_at;
     for (const f of fl) a.flagCounts[f] = (a.flagCounts[f] || 0) + 1;
   }
@@ -139,8 +148,9 @@ function tallyAccounts(calls, advSet, pubSet, base) {
   return curr;
 }
 
-// One entry per flagged account with a reason per flag. Outliers first (worst z-score
-// first), then everyone else by flagged-call count.
+// One entry per flagged account with a reason per flag. Outliers first (their own section in the
+// email), then everyone else; within each, accounts with more high-severity calls first, then the
+// higher flag rate. An account's flags: outliers first, then high severity first, then z-score.
 function rankAccounts(curr) {
   const pct = x => `${Math.round(x * 100)}%`;
   const alerted = Object.entries(curr).map(([name, c]) => {
@@ -154,12 +164,14 @@ function rankAccounts(curr) {
       const label = `${n} × ${FLAG_LABELS[f]}` + (outlier ? ` (${pct(rate)} of ${c.scored} scored calls vs ${pct(baseRate)} baseline)` : '');
       reasons.push({ flag: f, n, rate, baseRate, z, outlier, label });
     }
-    reasons.sort((x, y) => (y.outlier - x.outlier) || ((y.z ?? -Infinity) - (x.z ?? -Infinity)));
+    reasons.sort((x, y) => (y.outlier - x.outlier) || (sevRank(x.flag) - sevRank(y.flag)) || ((y.z ?? -Infinity) - (x.z ?? -Infinity)));
     const outliers = reasons.filter(r => r.outlier);
     return { name, type: c.type, curr: c, reasons, outlier: outliers.length > 0, worstZ: outliers.length ? outliers[0].z : null };
   });
+  const rate = a => a.curr.flaggedCalls / a.curr.scored;
   return alerted.sort((a, b) =>
-    (b.outlier - a.outlier) || (a.outlier ? b.worstZ - a.worstZ : 0) || (b.curr.flaggedCalls - a.curr.flaggedCalls));
+    (b.outlier - a.outlier) || (b.curr.highCalls - a.curr.highCalls) || (rate(b) - rate(a))
+    || (a.outlier ? b.worstZ - a.worstZ : 0) || (b.curr.flaggedCalls - a.curr.flaggedCalls));
 }
 
 // Deep link into the merged Calls tab showing exactly the calls this account's entry counted:
