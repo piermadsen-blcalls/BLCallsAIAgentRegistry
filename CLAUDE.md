@@ -24,7 +24,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
     address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
     accounts, ignoring the enabled flag.
-- **`supabase/`** — `migrations/` and edge fns `functions/admin-users` + `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`).
+- **`supabase/`** — `migrations/` and edge fn `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
   `028` partial + `029` GIN (`jsonb_path_ops`) index on `flags` (Calls-tab jsonb
@@ -42,7 +42,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 - **It's one static file.** Edit `index.html` directly. Don't add a build tool,
   framework, or bundler without a real reason — Netlify serves the repo root as-is.
 - **Frontend uses the Supabase *publishable* key** (client-safe, RLS-gated — see
-  `migrations/002_rls.sql`). The **service-role key is never in the client** (the
+  `migrations/063_security_lockdown.sql`). The **service-role key is never in the client** (the
   Settings admin UI takes it session-only; scripts read it from env). Never commit
   a service key.
 - **Secrets live in `scripts/.env` (gitignored) + GitHub Actions secrets** — never
