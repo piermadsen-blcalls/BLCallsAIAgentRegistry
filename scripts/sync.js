@@ -5,6 +5,8 @@
  *   Pass 2 — recordings: patches transcription/duration/outcome onto rows
  *             where recording_id is set but transcription is still null
  *             (looks back TRANSCRIPTION_LOOKBACK_DAYS to catch delayed transcriptions)
+ *   Pass 2b — recording links: stores Canoe's playable link (recording_url) for calls
+ *             with a recording_id but no link yet, over the same window
  *   Pass 3 — pairs ASCND data (hl_call_data) onto canoe_calls
  *
  * Catch-up: a fully successful Pass 1 records how far it synced in sync_state (migration 052).
@@ -385,8 +387,7 @@ async function patchTranscriptions(syncFrom) {
         continue;
       }
       if (!recordings || !recordings.length) continue;
-      // Field names only (never values: the Actions log is public). recording_url is not stored
-      // until the field Canoe uses for a playable link is confirmed from this line.
+      // Field names only (never values: the Actions log is public). Pass 2b stores the link.
       if (!loggedFields) { console.log(`  recordings/get fields: ${Object.keys(recordings[0]).sort().join(', ')}`); loggedFields = true; }
 
       const recMap = {};
@@ -424,6 +425,66 @@ async function patchTranscriptions(syncFrom) {
   if (failedBatches) console.warn(`  ${failedBatches} batch(es) failed and were skipped — will retry next run.`);
 
   console.log(`Pass 2 complete. ${patched} rows patched with transcription data.`);
+}
+
+// ── Pass 2b: recording links ─────────────────────────────────────────────────
+
+// The playable link recordings/get returns (provider_recording_url, per the field names Pass 2
+// logged on 2026-11-13), http(s) only; null when there is none.
+function recordingLink(rec) {
+  const url = String((rec && rec.provider_recording_url) || '').trim();
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
+// Fills recording_url for calls with a recording_id but no link yet, over the same window as
+// Pass 2 (SYNC_FROM backfills). Writes only id + recording_url, 100 rows per upsert, so it never
+// touches the transcription columns. Logs counts and provider names only (the Actions log is public).
+async function patchRecordingLinks(syncFrom) {
+  const from = getTranscriptionFrom(syncFrom);
+  console.log(`\nPass 2b: recording links — from ${from}`);
+
+  const FETCH = 1000;
+  let cursor = null, scanned = 0, linked = 0, failedBatches = 0;
+  const providers = {};
+
+  while (scanned < PATCH_MAX_PER_RUN) {
+    let q = `canoe_calls?select=id,recording_id,created_at&recording_id=not.is.null&recording_url=is.null` +
+            `&created_at=gte.${from}&order=created_at.desc&limit=${FETCH}`;
+    if (cursor) q += `&created_at=lt.${encodeURIComponent(cursor)}`;
+    const pending = await sbFetch(q);
+    if (!pending || !pending.length) break;
+    scanned += pending.length;
+    cursor = pending[pending.length - 1].created_at;
+
+    for (let i = 0; i < pending.length; i += 100) {
+      const slice = pending.slice(i, i + 100);
+      let recordings;
+      try {
+        ({ data: recordings } = await fetchRecordingsByIds(slice.map(r => r.recording_id)));
+      } catch (e) {
+        failedBatches++;
+        console.warn(`  Skipping batch near ${cursor}: ${e.message}`);
+        continue;
+      }
+      const byId = {};
+      for (const rec of recordings || []) byId[rec.id] = rec;
+      const rows = [];
+      for (const row of slice) {
+        const rec = byId[row.recording_id];
+        const url = recordingLink(rec);
+        if (!url) continue;
+        rows.push({ id: row.id, recording_url: url });
+        providers[rec.provider || 'unknown'] = (providers[rec.provider || 'unknown'] || 0) + 1;
+      }
+      if (rows.length) { await upsertBatch(rows); linked += rows.length; }
+    }
+
+    if (pending.length < FETCH) break;
+  }
+
+  if (failedBatches) console.warn(`  ${failedBatches} batch(es) failed and were skipped — will retry next run.`);
+  const by = Object.entries(providers).map(([p, n]) => `${p} ${n}`).join(', ');
+  console.log(`Pass 2b complete. Scanned ${scanned}, stored ${linked} recording links${by ? ` (${by})` : ''}.`);
 }
 
 // ── Pass 3: pair ASCND data (hl_call_data) onto canoe_calls ───────────────────
@@ -492,6 +553,7 @@ async function run() {
 
   const syncFrom = window && window.from;
   try { await patchTranscriptions(syncFrom); } catch (e) { failures.push(`Pass 2: ${e.message}`); console.error(`Pass 2 failed: ${e.message}`); }
+  try { await patchRecordingLinks(syncFrom); } catch (e) { failures.push(`Pass 2b: ${e.message}`); console.error(`Pass 2b failed: ${e.message}`); }
   try { await pairAscndData(syncFrom); } catch (e) { failures.push(`Pass 3: ${e.message}`); console.error(`Pass 3 failed: ${e.message}`); }
 
   // Agents, counterparty and Scores rollups for every day Pass 1 touched (also after a partial
@@ -514,4 +576,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { mapPLT, getSyncWindow, canoePost, run, io };
+module.exports = { mapPLT, getSyncWindow, canoePost, recordingLink, run, io };

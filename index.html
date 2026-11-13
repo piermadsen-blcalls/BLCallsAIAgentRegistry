@@ -2735,11 +2735,6 @@ function crApplyPendingVerticals() {
 function crBuildFilters(includeFlagFilters = true) {
   const [from, to] = localDayRange(crDrpPickStart, crDrpPickEnd);
   let q = `&created_at=gte.${encodeURIComponent(from)}&created_at=lt.${encodeURIComponent(to)}`;
-  // recording_id, not recording_url: sync never fills recording_url (NULL on every row), so
-  // "Has recording" matched nothing and walked the whole range into the 8s statement timeout.
-  const rec = document.getElementById('cr-rec-filter').value;
-  if (rec === 'yes') q += `&recording_id=not.is.null`;
-  else if (rec === 'no') q += `&recording_id=is.null`;
   const pub = document.getElementById('cr-pub-filter').value.trim();
   if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
   const adv = document.getElementById('cr-adv-filter').value.trim();
@@ -2760,6 +2755,11 @@ function crBuildFilters(includeFlagFilters = true) {
   const verticals = crSelectedVerticals();
   if (verticals.length) q += `&vertical_name=in.(${encodeURIComponent(verticals.map(pgQuote).join(','))})`;
   const ors = [];   // or=() groups; two of them AND as and=(or(…),or(…))
+  // "Has recording" = the row has a Listen link: the Canoe recording (recording_url, filled by
+  // sync Pass 2b) or the ASCND AI-agent recording.
+  const rec = document.getElementById('cr-rec-filter').value;
+  if (rec === 'yes') ors.push(['recording_url.not.is.null', 'ascnd_recording_url.not.is.null']);
+  else if (rec === 'no') q += `&recording_url=is.null&ascnd_recording_url=is.null`;
   const search = document.getElementById('cr-search')?.value.trim();
   if (search) ors.push(crSearchFilter(search));
   if (includeFlagFilters) {
@@ -3796,7 +3796,7 @@ function reviewCallRow(c,i){
   const flags=flagBadges(c.flags||[]);
   const desc=c.disposition_description?`<div class="rv-call-desc">"${esc(c.disposition_description)}"</div>`:'';
   const aiSum=c.our_summary?`<div class="rv-call-sum"><span class="rv-ai-lbl">AI summary</span> ${esc(c.our_summary)}</div>`:'';
-  const rec=httpUrl(c.recording_url)||httpUrl(c.ascnd_recording_url);
+  const rec=httpUrl(c.recording_url), aiRec=httpUrl(c.ascnd_recording_url);
   const chk=rvCheckState(c.id);
   const tx=(c.ascnd_transcript||'').trim();
   const saved=RV.notesByCall&&RV.notesByCall[c.id];
@@ -3810,7 +3810,8 @@ function reviewCallRow(c,i){
     ${noteShown}
     <div class="rv-actions">
       <button class="rv-btn" onclick="rvToggleTx(${i})">▸ Transcript</button>
-      ${rec?`<a class="rv-btn" href="${esc(rec)}" target="_blank" rel="noopener">▶ Recording</a>`:''}
+      ${rec?`<a class="rv-btn" href="${esc(rec)}" target="_blank" rel="noopener" title="Canoe call recording">▶ Recording</a>`:''}
+      ${aiRec?`<a class="rv-btn" href="${esc(aiRec)}" target="_blank" rel="noopener" title="ASCND AI-agent recording">▶ AI agent</a>`:''}
       <button class="rv-btn" onclick="rvShowNote(${i})">✎ ${saved?'Edit note':'Note'}</button>
       <button type="button" class="rv-check${chk.on?' on':''}" id="rv-chk-${i}" aria-pressed="${chk.on}" title="${esc(chk.title)}"${chk.locked?' disabled':''} onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${esc(chk.label)}</button>
     </div>
