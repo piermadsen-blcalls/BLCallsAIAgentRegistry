@@ -397,8 +397,10 @@ async function runSubmit() {
         { batch: { displayName: `blcalls-agent-${day}-${idx + 1}`, inputConfig: { requests: { requests } } } });
     } catch (e) {
       // Batch quota (429) is shared with the call scorer: stop cleanly; the next run resumes.
+      // Anything else (a rejected request, a bad key) fails the run so it shows in Actions.
       console.error(`  Stopping at job ${idx + 1}/${jobs.length}: ${e.message.slice(0, 200)}`);
-      if (/\b429\b|quota|RESOURCE_EXHAUSTED/i.test(e.message)) console.error('  Gemini batch quota reached; the next submit resumes.');
+      if (!/\b429\b|quota|RESOURCE_EXHAUSTED/i.test(e.message)) throw e;
+      console.error('  Gemini batch quota reached; the next submit resumes.');
       break;
     }
     await sb('agent_eval_jobs', { method: 'POST', prefer: 'return=minimal', body: {
@@ -434,6 +436,7 @@ async function runDryRun(calls, agentFor, registered) {
   }
   await Promise.all(Array.from({ length: Math.min(4, calls.length) }, worker));
   console.log(`Dry run done. Verdicts ${JSON.stringify(verdicts)}, errors ${errors}, tokens in ${total.input} / out ${total.output} (~$${(costOf(total) * 2).toFixed(4)} at sync price)`);
+  if (errors) process.exitCode = 1;
 }
 
 // ── Ingest ────────────────────────────────────────────────────
@@ -494,6 +497,9 @@ async function ingestAgentJob(job, data, agentFor) {
     input_tokens: total.input, output_tokens: total.output,
   } });
   console.log(`  Ingested ${job.job_name}: ${rows.length} eval(s), errors ${errors}, tokens in ${total.input} / out ${total.output} (~$${costOf(total).toFixed(4)})`);
+  // Every item failed (e.g. Gemini rejected the request shape): fail the run so it is noticed; the
+  // calls have no eval row, so they stay queued.
+  if (errors && !rows.length) { console.error(`  Job ${job.job_name}: no usable replies`); process.exitCode = 1; }
 }
 
 // ── Main ──────────────────────────────────────────────────────

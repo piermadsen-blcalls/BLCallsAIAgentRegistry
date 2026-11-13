@@ -4,7 +4,7 @@
 --
 -- Today's scorer (process.js) reads canoe_calls.transcription, which on ASCND calls is the
 -- BUYER leg after the transfer, so the agent's side (ascnd_transcript) is graded on 0% of calls
--- and the ~70% of agent calls that never reach a buyer are not scored at all.
+-- and ~70% of agent calls (no Canoe transcript) are not scored at all.
 -- scripts/agent_eval.js reads ascnd_transcript on every ASCND call that has one and judges the
 -- agent: transfer/reject decision and whether it was right, qualifying rules, drop-off stage and
 -- reason, understanding, script, agent-side compliance flags, intent and disposition checks.

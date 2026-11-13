@@ -180,6 +180,23 @@ test('submit: silent calls are written as no_conversation, in-flight calls skipp
   for (const w of writes(log)) assert.match(w.url, /\/rest\/v1\/(agent_call_evals|agent_eval_jobs)\b/, `unexpected write: ${w.method} ${w.url}`);
 });
 
+test('submit: the shared batch quota stops cleanly, any other rejection fails the run', async () => {
+  const m = load();
+  for (const [status, msg, fails] of [[429, 'RESOURCE_EXHAUSTED', false], [400, 'Invalid JSON payload: unknown field thinkingLevel', true]]) {
+    const log = stubFetch({ pending: [A1] });
+    const inner = global.fetch;
+    global.fetch = async (url, opts) => url.includes(':batchGenerateContent')
+      ? (log.push({ url, method: 'POST', body: null }), { ok: false, status, text: async () => msg, json: async () => ({}) })
+      : inner(url, opts);
+    const orig = console.error; console.error = () => {};
+    try {
+      if (fails) await assert.rejects(m.runSubmit(), /400/);
+      else await m.runSubmit();
+    } finally { console.error = orig; }
+    assert.ok(!log.some(r => r.url.endsWith('/rest/v1/agent_eval_jobs') && r.method === 'POST'), 'no job row without a Gemini job');
+  }
+});
+
 test('dry run: scores synchronously and writes nothing', async () => {
   const m = load({ DRY_RUN: 'true', TEST_CALL_IDS: `${A1.id},${SILENT.id}` });
   const generate = { candidates: [{ content: { parts: [{ text: JSON.stringify(reply({ decision: 'rejected', decision_verdict: 'over_reject' })) }] } }],
