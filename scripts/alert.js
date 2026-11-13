@@ -2,6 +2,7 @@
 // Reads canoe_calls, groups by each manager's assigned accounts, lists the compliance flags each
 // account's calls got since the last digest, plus bidirectional performance moves, and links each
 // account to its flagged calls on the dashboard. Emails HTML through the ASCND (GHL) webhook.
+// ALERT_MODE=new_ivrs (run after each sync): one email per newly detected AI IVR instead.
 
 // Local dev convenience: load scripts/.env if present (gitignored).
 // In GitHub Actions this file doesn't exist and real secrets are used.
@@ -27,6 +28,7 @@ const WINDOW_DAYS    = parseInt(process.env.ALERT_WINDOW_DAYS || '', 10); // for
 const WINDOW_FROM    = process.env.ALERT_WINDOW_FROM || '';    // explicit window start, ISO/date (testing)
 const WINDOW_TO      = process.env.ALERT_WINDOW_TO   || '';    // explicit window end, ISO/date (testing)
 const DASHBOARD_URL  = (process.env.DASHBOARD_URL || '').replace(/\/$/, ''); // base URL for deep links
+const MODE           = process.env.ALERT_MODE || 'digest';     // 'new_ivrs': new-IVR emails (migration 060) instead of the digest
 
 // ── Compliance flag taxonomy (must match scripts/process.js + the active ai_prompts row) ──
 const FLAG_LABELS = {
@@ -378,8 +380,97 @@ function buildEmail(mgr, alerted, periodLabel, fromISO, toISO) {
   </div>`;
 }
 
-if (require.main === module) {
-  main().catch(e => { console.error('Alert script failed:', e.message); process.exit(1); });
+// ── New IVRs (migration 060) ─────────────────────────────────────────────────
+// One email per IVR that check_new_ivrs registered as needs_setup, to each admin who gets the
+// digest (is_admin + alerts enabled): the people who finish agent setup. new_ivr_detections
+// records who has it, so a failed send retries only the missing recipients and nobody gets an
+// IVR twice. An IVR set up (or removed) before its email went out is not emailed.
+async function newIvrAlerts() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  if (!WEBHOOK_URL && !DRY_RUN)       throw new Error('Missing ASCND_ALERT_WEBHOOK_URL (set DRY_RUN=true to skip)');
+
+  const pending = await sb('new_ivr_detections?emailed_at=is.null&select=ivr_name,emailed_to&order=detected_at.asc,ivr_name.asc');
+  if (!pending || !pending.length) { console.log('No new IVRs to announce. Done.'); return; }
+
+  const [admins, alertRows] = await Promise.all([
+    sb('account_managers?is_admin=eq.true&select=id,manager_name,manager_email'),
+    sb('manager_alert_settings?enabled=eq.true&select=manager_id'),
+  ]);
+  const enabled = new Set((alertRows || []).map(s => s.manager_id));
+  const recipients = OVERRIDE_EMAIL
+    ? [{ id: null, manager_name: 'Preview', manager_email: OVERRIDE_EMAIL }]
+    : (admins || []).filter(m => enabled.has(m.id) && m.manager_email);
+  if (!recipients.length) { console.log('No admin has the digest enabled, so no new-IVR emails. Done.'); return; }
+  const recordState = !DRY_RUN && !OVERRIDE_EMAIL;   // previews and dry runs never mark anything sent
+
+  let sentCount = 0;
+  for (const d of pending) {
+    const key = `new_ivr_detections?ivr_name=eq.${encodeURIComponent(d.ivr_name)}`;
+    const agent = ((await sb(`agents?ivr_name=eq.${encodeURIComponent(d.ivr_name)}&select=ivr_name,name,status,first_seen_at,seen_calls`)) || [])[0];
+    console.log(`\n${d.ivr_name}`);
+    if (!agent || agent.status !== 'needs_setup') {
+      console.log('  Already set up or removed → no email.');
+      if (recordState) await sb(key, { method: 'PATCH', body: JSON.stringify({ emailed_at: new Date().toISOString() }) });
+      continue;
+    }
+
+    const link    = DASHBOARD_URL ? `${DASHBOARD_URL}/?${new URLSearchParams({ tab: 'agents', setup: agent.ivr_name })}` : '';
+    const subject = `New AI IVR needs setup: ${agent.name}` + (OVERRIDE_EMAIL ? ' [preview]' : '');
+    const sent = new Set(d.emailed_to || []);
+    let failed = 0;
+    for (const m of recipients) {
+      if (m.id && sent.has(m.id)) continue;
+      const firstName = m.manager_name.split(' ')[0];
+      const payload = {
+        to_email: m.manager_email, to_name: m.manager_name, first_name: firstName, subject,
+        alert_type: 'new_ivr', ivr_name: agent.ivr_name, agent_name: agent.name,
+        first_seen: agent.first_seen_at, calls: agent.seen_calls || 0, link,
+        email_body_html: buildNewIvrEmail(agent, firstName, link),
+      };
+      if (DRY_RUN) { console.log(`  DRY RUN — would email ${m.manager_email}: ${subject}`); continue; }
+      const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) { failed++; console.error(`  Webhook failed for ${m.manager_email} ${res.status}: ${await res.text()}`); continue; }
+      if (m.id) sent.add(m.id);
+      sentCount++;
+      console.log(`  ✓ Sent to ${m.manager_email}`);
+    }
+    if (recordState) {
+      await sb(key, { method: 'PATCH', body: JSON.stringify({ emailed_to: [...sent], emailed_at: failed ? null : new Date().toISOString() }) });
+    }
+  }
+  console.log(`\nDone. Sent ${sentCount} new-IVR email${sentCount !== 1 ? 's' : ''}.`);
 }
 
-module.exports = { buildBaseline, tallyAccounts, rankAccounts, buildEmail };
+function buildNewIvrEmail(agent, firstName, link) {
+  const S = 'font-family:Arial,sans-serif;';
+  const navy = '#1A2E4A', muted = '#6B6760', border = '#E0DDD6', bg = '#F7F5F0';
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const firstSeen = agent.first_seen_at
+    ? new Date(agent.first_seen_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+    : 'unknown';
+  const calls = agent.seen_calls || 0;
+  const row = (label, value) =>
+    `<tr><td style="${S}padding:6px 0;font-size:12px;color:${muted};width:110px;vertical-align:top">${label}</td><td style="${S}padding:6px 0;font-size:13px;color:${navy}">${value}</td></tr>`;
+  const button = link
+    ? `<a href="${esc(link)}" style="${S}display:inline-block;background:${navy};color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 18px;border-radius:6px">Finish setup →</a>`
+    : `<p style="${S}font-size:13px;color:${muted}">Open the Agents tab of the AI Agent Registry to finish setup.</p>`;
+  return `<div style="${S}max-width:600px;margin:0 auto;color:#1A1816">
+    <h2 style="${S}font-size:22px;font-weight:400;margin:0 0 6px">New AI IVR: ${esc(agent.name)}</h2>
+    <p style="${S}font-size:13px;color:${muted};margin:0 0 16px;line-height:1.6">Hi ${esc(firstName)}, Canoe is sending calls to an AI agent IVR that was not in the registry. It has been added as <strong>New, needs setup</strong>, so its calls already count on the Agents tab. Add its vertical and screening rules and it will be scored like any other agent.</p>
+    <div style="border:1px solid ${border};border-radius:6px;background:${bg};padding:10px 14px;margin-bottom:18px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+        ${row('Canoe IVR', `<span style="font-family:monospace;font-size:12px">${esc(agent.ivr_name)}</span>`)}
+        ${row('First seen', firstSeen)}
+        ${row('Calls so far', calls.toLocaleString('en-US'))}
+      </table>
+    </div>
+    ${button}
+    <p style="${S}font-size:12px;color:${muted};line-height:1.6;border-top:1px solid ${border};padding-top:14px;margin-top:20px">Generated automatically by the Buyerlink Calls AI Agent Registry after the nightly Canoe sync. You get one email per new IVR.</p>
+  </div>`;
+}
+
+if (require.main === module) {
+  (MODE === 'new_ivrs' ? newIvrAlerts() : main()).catch(e => { console.error('Alert script failed:', e.message); process.exit(1); });
+}
+
+module.exports = { buildBaseline, tallyAccounts, rankAccounts, buildEmail, buildNewIvrEmail };

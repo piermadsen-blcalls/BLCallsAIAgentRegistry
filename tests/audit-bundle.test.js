@@ -388,7 +388,7 @@ test('N5: a range change during a load is not dropped, and the older reply does 
 
 test('N5: after a failed load the cards say "No data" with dashes, not 0 and Inactive', () => {
   const ctx = load({ metricsFailed: true, openAgent: null, testCallMap: {}, vClass: () => '', rtLabel: () => 'Publisher-led', fmtPct: (a, b) => (b ? Math.round(a / b * 100) + '%' : '—'), renderTestCallRow: () => '', aeCardLine: () => '' },
-    ['function esc(', 'function getEffectiveStatus(', 'function renderCard('], ['renderCard']);
+    ['function esc(', 'function needsSetup(', 'function getEffectiveStatus(', 'function renderCard('], ['renderCard']);
   const a = { name: 'Roofing', vertical: 'Home Services', status: 'live', raw_calls: 0, paid_calls: 0, revenue: 0, routingType: 'publisher-led', ivrName: 'A' };
   const card = ctx.renderCard(a, 0);
   assert.match(card, />No data</);
