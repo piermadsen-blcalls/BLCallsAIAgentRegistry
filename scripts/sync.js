@@ -13,7 +13,8 @@
  * The next run starts at whichever is earlier, the usual 2-day window or that mark, so a failed
  * or skipped run leaves no gap. A failing pass does not stop the others; the run still exits 1.
  * At the end it asks pg_cron to refresh the rollups for the synced days, then heals renamed IVRs
- * and registers brand-new AI IVRs for setup (check_new_ivrs, migration 060).
+ * and registers brand-new AI IVRs for setup (check_new_ivrs, migration 060), then rebuilds each
+ * agent's publisher campaigns and buyer targets from the calls (refresh_agent_targets, 062).
  *
  * Required env vars:
  *   CANOE_API_URL        - https://exchange-gateway.ringpartner.com
@@ -342,6 +343,18 @@ async function checkNewIvrs() {
   }
 }
 
+// Rebuild each agent's publisher campaigns and buyer targets from the last 30 days of calls
+// (migration 062), after checkNewIvrs so a just-registered IVR gets its lists this run. ~150 ms,
+// well inside the API's 8s. Non-fatal: the 07:20 UTC pg_cron run of the same refresh catches up.
+async function refreshAgentTargets() {
+  try {
+    const n = await sbFetch('rpc/refresh_agent_targets', { method: 'POST', body: '{}' });
+    console.log(`\nAgent targets refreshed (${n} agent(s) with calls in the last 30 days).`);
+  } catch (e) {
+    console.warn(`\nAgent targets refresh failed (the 07:20 UTC pg_cron run will catch up): ${e.message.slice(0, 200)}`);
+  }
+}
+
 // ── Pass 1: phone-lead-transactions ──────────────────────────────────────────
 
 async function syncCalls({ from, to }) {
@@ -579,6 +592,7 @@ async function run() {
   // Pass 1: whatever landed is real). Scores too, since a re-sync can rename a publisher/vertical.
   if (window) await requestRollupRefresh(window.from, ['agent_metrics', 'agent_counterparty', 'outcome_score']);
   await checkNewIvrs();
+  await refreshAgentTargets();
 
   if (failures.length) {
     console.error(`\nSync finished with ${failures.length} failed pass(es):\n  ${failures.join('\n  ')}`);
