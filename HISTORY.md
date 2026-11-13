@@ -1071,3 +1071,27 @@ Continued from the 8/7 Scores work; large session. What moved:
   - mutations (the `flags` name clash, UTC instead of Mountain) fail.
 - Not applied to prod yet.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - MK-176: one Calls page with the overview on top (branch `fm/ivr-mk176`)
+- 065 merged (https://github.com/piermadsen-blcalls/BLCallsAIAgentRegistry/pull/31) and applied on the captain's go.
+  - All 16 function bodies match the repo by md5.
+  - Rollups rebuilt on Mountain days (May 30 to Nov 11).
+  - The Mountain week Nov 7-13 matches raw `canoe_calls` on every figure.
+  - The anon check passes.
+- **The Dashboard tab folds into Calls.** One filter bar (7d/30d/90d or custom Mountain days, plus vertical, publisher and advertiser pickers) scopes the overview and the call list below it. `?tab=dashboard` links land on Calls.
+- **Overview cards** (one rollup RPC each, loaded on first open):
+  - Calls Breakdown and Calls Payout.
+  - **Call Outcomes:** Qualified Lead first, then each outcome as % of AI-scored calls, with +/− signs from the advertiser weights. Clicking a row filters the list.
+  - **Call Quality:** a gauge on the Scores tier cutoffs per vertical (pending Vicky); qualified leads as % of AI-scored calls, with the all-calls rate shown under it.
+  - **Call Quality Trend:** daily and 7-day lines with Tier 1 and Tier 3 reference lines, a hover/keyboard crosshair, and a table of daily values.
+  - **CPA:** appointment + sale, or plus quoted interested; by publisher or by Scores tier; a group = publishers picked in the filter bar.
+- **The list** now uses Mountain days, exact publisher/advertiser picks, and excludes test calls.
+  - Its stat strip and total come from the rollups unless a list-only filter is on.
+  - Old digest links keep their substring account match.
+  - The Calls date picker, the text publisher/advertiser inputs and the Calls vertical picker are gone.
+- Checked at 1440 and 375 px on the synthetic preview. Fixed along the way:
+  - a 10px overflow at 375 caused by the new outcome-group label;
+  - the gauge needle covering a cutoff label;
+  - outcome signs rendering before the weights loaded.
+- Tests: 190/190. The N6 export test now really exercises the export: since PR 30 it had been passing vacuously.
+- External sources (Wispr/Jira) not pulled this session.

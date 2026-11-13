@@ -322,9 +322,8 @@
   .dash-ms-list { max-height:280px; overflow-y:auto; }
   .dash-ms-list .ins-vertical-opt span { overflow-wrap:anywhere; }
   .dash-ms .ins-vertical-trigger span { max-width:200px; overflow:hidden; text-overflow:ellipsis; }
-  .dash-export { margin-left:auto; background:var(--surface); color:var(--brand-navy); border:1px solid var(--border-strong); }
   .dash-period { font-size:12px; color:var(--text-2); margin-bottom:20px; }
-  .dash-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-bottom:12px; }
+  .dash-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-bottom:20px; }
   .dash-card { border:1px solid var(--border); border-radius:var(--radius); padding:18px 22px; background:var(--surface); min-width:0; }
   .dash-card-title { font-family:var(--heading); font-size:15px; font-weight:600; color:var(--brand-navy); margin-bottom:10px; }
   .dash-row { display:grid; grid-template-columns:minmax(0,1fr) auto 64px 84px; align-items:baseline; gap:12px; padding:9px 0; border-top:1px solid var(--border); }
@@ -334,16 +333,81 @@
   .dash-share, .dash-delta { font-family:var(--mono); font-size:12px; text-align:right; color:var(--text-3); }
   .dash-delta.up { color:var(--teal); }
   .dash-delta.down { color:var(--coral); }
-  .dash-note { font-size:11px; color:var(--text-3); line-height:1.6; }
+  .dash-note { font-size:11px; color:var(--text-3); line-height:1.6; margin-top:10px; }
+  #dash-output { margin-bottom:20px; }
+  #dash-output .dash-cards { margin-bottom:0; }
+  .dash-wide { margin-bottom:20px; }
+  .dash-list-head { margin-top:8px; padding-top:20px; border-top:1px solid var(--border); scroll-margin-top:12px; }
+  .dash-sub { font-size:12px; color:var(--text-2); margin:-4px 0 12px; line-height:1.5; }
+  .dash-muted { color:var(--text-3); font-size:11px; }
+  .dash-link { font-family:var(--sans); font-size:12px; color:var(--blue); background:none; border:none; padding:4px 0; cursor:pointer; }
+  .dash-link:hover { text-decoration:underline; }
+  /* Outcome bars: the whole row is the button (a big target); 4px rounded data end, 2px gap between rows. */
+  .dash-bars { display:flex; flex-direction:column; gap:2px; }
+  .dash-bar-row { display:grid; grid-template-columns:minmax(0,150px) minmax(40px,1fr) auto; align-items:center; gap:10px; width:100%; padding:5px 6px; border:none; border-radius:var(--radius-sm); background:none; cursor:pointer; text-align:left; font-family:var(--sans); }
+  .dash-bar-row:hover, .dash-bar-row:focus-visible { background:var(--tint); }
+  .dash-bar-lbl { font-size:12px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dash-sign { display:inline-block; width:12px; font-family:var(--mono); color:var(--text-3); }
+  .dash-bar-track { height:10px; }
+  .dash-bar { display:block; height:100%; min-width:2px; border-radius:0 4px 4px 0; }
+  .dash-bar.pos { background:var(--teal); }
+  .dash-bar.neg { background:var(--coral); }
+  .dash-bar.neu { background:#9A9A9A; }
+  .dash-bar-val { font-family:var(--mono); font-size:12px; color:var(--text); white-space:nowrap; text-align:right; }
+  /* Quality gauge */
+  .dash-gauge-wrap { text-align:center; margin-bottom:8px; }
+  .dash-gauge { width:100%; max-width:280px; height:auto; display:block; margin:0 auto; }
+  .dash-gauge-tier { font-family:var(--mono); font-size:9px; fill:var(--text-3); text-anchor:middle; dominant-baseline:middle; }
+  .dash-gauge-tick { font-family:var(--mono); font-size:9px; fill:var(--text-2); text-anchor:middle; dominant-baseline:middle; }
+  .dash-needle { stroke:var(--brand-navy); stroke-width:3; stroke-linecap:round; }
+  .dash-needle-hub { fill:var(--brand-navy); }
+  .dash-gauge-val { font-family:var(--sans); font-size:30px; font-weight:600; color:var(--text); margin-top:-6px; }
+  .dash-gauge-sub { font-size:12px; color:var(--text-2); line-height:1.5; }
+  .dash-tier { display:inline-block; font-family:var(--sans); font-size:11px; font-weight:500; padding:1px 8px; border-radius:100px; vertical-align:middle; white-space:nowrap; }
+  .dash-gauge-sub .dash-delta { white-space:nowrap; }
+  .dash-tier.t1 { background:var(--teal-bg); color:var(--teal); }
+  .dash-tier.t2 { background:#EAF5F0; color:#2E6B57; }
+  .dash-tier.t3 { background:var(--amber-bg); color:var(--amber); }
+  .dash-tier.t4 { background:var(--coral-bg); color:var(--coral); }
+  .dash-table-wrap { overflow-x:auto; }
+  .dash-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
+  .dash-table th { text-align:left; font-weight:500; color:var(--text-3); font-size:11px; padding:6px 8px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .dash-table td { padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text); }
+  .dash-table .num { text-align:right; font-family:var(--mono); white-space:nowrap; }
+  /* CPA */
+  .dash-card-tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .dash-cpa-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px; }
+  .dash-cpa-val { font-family:var(--sans); font-size:30px; font-weight:600; color:var(--text); }
+  /* Quality trend: solid hairline grid, 2px 7-day line, thin daily line, dashed reference lines. */
+  .dash-legend { display:flex; gap:16px; font-size:12px; color:var(--text-2); margin-bottom:6px; }
+  .dash-key { display:inline-block; width:16px; height:0; margin-right:6px; vertical-align:middle; border-top:2px solid var(--brand-navy); }
+  .dash-key-day { border-top:1px solid #8FA3BC; }
+  .dash-trend-plot { position:relative; }
+  .dash-trend-svg { display:block; max-width:100%; outline:none; }
+  .dash-trend-svg:focus-visible { outline:2px solid var(--brand-navy); outline-offset:2px; }
+  .dash-grid { stroke:var(--border); stroke-width:1; }
+  .dash-axis { font-family:var(--mono); font-size:10px; fill:var(--text-3); }
+  .dash-ref-top { stroke:var(--teal); stroke-width:1; stroke-dasharray:4 3; }
+  .dash-ref-floor { stroke:var(--coral); stroke-width:1; stroke-dasharray:4 3; }
+  .dash-ref-label { fill:var(--text-2); }
+  .dash-line-day { fill:none; stroke:#8FA3BC; stroke-width:1; }
+  .dash-line-7d { fill:none; stroke:var(--brand-navy); stroke-width:2; stroke-linejoin:round; }
+  .dash-cross { stroke:var(--text-3); stroke-width:1; }
+  .dash-dot7 { fill:var(--brand-navy); stroke:var(--surface); stroke-width:2; }
+  .dash-tip { position:absolute; top:0; width:190px; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-sm); box-shadow:0 6px 18px rgba(0,0,0,0.10); padding:6px 9px; font-size:12px; color:var(--text); pointer-events:none; }
+  .dash-details { margin-top:8px; font-size:12px; color:var(--text-2); }
+  .dash-details summary { cursor:pointer; padding:4px 0; }
   @media (max-width:760px){ .dash-cards { grid-template-columns:minmax(0,1fr); } }
   @media (max-width:640px){
     /* Pickers open across the whole filter bar, so a list near the right edge stays on screen. */
     .dash-ms { position:static; }
     .dash-ms-pop { width:auto; right:0; }
-    .dash-export { margin-left:0; }
     .dash-card { padding:14px 16px; }
     .dash-row { grid-template-columns:minmax(0,1fr) auto 52px 68px; gap:8px; }
     .dash-val { font-size:15px; }
+    .dash-bar-row { grid-template-columns:minmax(0,108px) minmax(30px,1fr) auto; gap:8px; padding:6px 4px; }
+    .dash-table th, .dash-table td { padding:6px 4px; }
+    .dash-hide-sm { display:none; }
   }
   .insights-section { margin-bottom:28px; }
   .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -389,11 +453,7 @@
   .cr-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
   .cr-toolbar-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .cr-toolbar-right { display:flex; align-items:center; gap:8px; }
-  .cr-drp-wrap { position:relative; }
-  #cr-drp-popover { left: 0; right: auto; }  /* trigger is left-aligned — open rightward, not off the left edge */
-  .cr-drp-trigger { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:6px 10px; cursor:pointer; font-family:var(--sans); font-size:12px; color:var(--text); white-space:nowrap; }
-  .cr-drp-trigger:hover { border-color:var(--brand-navy); }
-  .cr-select { font-family:var(--sans); font-size:12px; padding:5px 28px 5px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-2); cursor:pointer; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
+  .cr-select { max-width:100%; font-family:var(--sans); font-size:12px; padding:5px 28px 5px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-2); cursor:pointer; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
   .cr-filter-input { font-family:var(--sans); font-size:12px; padding:5px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); outline:none; width:130px; }
   .cr-filter-input::placeholder { color:var(--text-3); }
   /* overflow-x after overflow:hidden — keeps the radius clipped on y, scrolls on x
@@ -1017,7 +1077,6 @@
 
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('agents',this)">Agents</button>
-    <button class="nav-tab" onclick="switchTab('dashboard',this)">Dashboard</button>
     <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
     <button class="nav-tab" onclick="switchTab('calls',this)">Calls</button>
     <button class="nav-tab" onclick="switchTab('review',this)">Review</button>
@@ -1082,29 +1141,6 @@
   </div>
 
   <!-- INSIGHTS TAB -->
-  <!-- DASHBOARD TAB (MK-176): each card is one RPC over the 064 rollups, loaded on first open -->
-  <div id="tab-dashboard" class="tab-pane">
-    <div class="dash-filters">
-      <div class="seg" role="group" aria-label="Date range">
-        <button class="seg-btn" data-preset="7" onclick="dashSetPreset(7)">7d</button>
-        <button class="seg-btn active" data-preset="30" onclick="dashSetPreset(30)">30d</button>
-        <button class="seg-btn" data-preset="90" onclick="dashSetPreset(90)">90d</button>
-        <button class="seg-btn" data-preset="custom" onclick="dashSetPreset('custom')">Custom</button>
-      </div>
-      <div class="dash-custom" id="dash-custom">
-        <input type="date" id="dash-from" aria-label="From (UTC day)" onchange="dashCustomChange()">
-        <span>to</span>
-        <input type="date" id="dash-to" aria-label="To (UTC day)" onchange="dashCustomChange()">
-      </div>
-      <div class="dash-ms" id="dash-ms-vertical"></div>
-      <div class="dash-ms" id="dash-ms-publisher"></div>
-      <div class="dash-ms" id="dash-ms-advertiser"></div>
-      <button class="run-btn dash-export" id="dash-export-btn" onclick="dashExport()" disabled>Export calls</button>
-    </div>
-    <div class="dash-period" id="dash-period"></div>
-    <div id="dash-output"><div class="ins-loading">Loading…</div></div>
-  </div>
-
   <div id="tab-insights" class="tab-pane">
     <div class="period-bar">
       <div class="period-group">
@@ -1177,6 +1213,33 @@
 
   <!-- CALL REPORTING TAB -->
   <div id="tab-calls" class="tab-pane">
+    <!-- MK-176: one page. The filter bar scopes the overview and the call list below it; each
+         overview card is one RPC over the 064/065 rollups, on Mountain Time days. -->
+    <div class="dash-filters">
+      <div class="seg" role="group" aria-label="Date range">
+        <button class="seg-btn" data-preset="7" onclick="dashSetPreset(7)">7d</button>
+        <button class="seg-btn active" data-preset="30" onclick="dashSetPreset(30)">30d</button>
+        <button class="seg-btn" data-preset="90" onclick="dashSetPreset(90)">90d</button>
+        <button class="seg-btn" data-preset="custom" onclick="dashSetPreset('custom')">Custom</button>
+      </div>
+      <div class="dash-custom" id="dash-custom">
+        <input type="date" id="dash-from" aria-label="From (Mountain Time day)" onchange="dashCustomChange()">
+        <span>to</span>
+        <input type="date" id="dash-to" aria-label="To (Mountain Time day)" onchange="dashCustomChange()">
+      </div>
+      <div class="dash-ms" id="dash-ms-vertical"></div>
+      <div class="dash-ms" id="dash-ms-publisher"></div>
+      <div class="dash-ms" id="dash-ms-advertiser"></div>
+    </div>
+    <div class="dash-period" id="dash-period"></div>
+    <div id="dash-output"><div class="ins-loading">Loading…</div></div>
+    <div class="dash-cards">
+      <section class="dash-card" id="dash-outcomes" aria-label="Call outcomes"></section>
+      <section class="dash-card" id="dash-quality" aria-label="Call quality"></section>
+    </div>
+    <section class="dash-card dash-wide" id="dash-trend" aria-label="Call quality trend"></section>
+    <section class="dash-card dash-wide" id="dash-cpa" aria-label="Cost per acquisition"></section>
+    <div class="section-header dash-list-head" id="calls-list"><div class="section-title">Calls</div></div>
     <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
       <div class="summary-item" title="AI-scored calls in this scope. Ignores the Flagged only and flag-type filters, so the flag rate stays a real ratio."><div class="summary-val" id="calls-stat-total"><span class="null-mark">-</span></div><div class="summary-lbl">AI-scored calls</div></div>
       <div class="summary-item flag-card" id="calls-flag-card" role="button" tabindex="0" aria-expanded="false" aria-controls="calls-flag-breakdown" title="Show flags by type" onclick="callsFlagBreakdownToggle(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();callsFlagBreakdownToggle(event);}"><div class="summary-val" id="calls-stat-flagged"><span class="null-mark">-</span></div><div class="summary-lbl">flagged</div><div class="summary-sub" id="calls-stat-high"></div><div id="calls-flag-breakdown" class="flag-tip" role="dialog" aria-label="Flags by type" style="display:none" onclick="event.stopPropagation()"></div></div>
@@ -1185,14 +1248,6 @@
     </div>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left">
-        <!-- Date range -->
-        <div class="cr-drp-wrap" id="cr-drp-wrap">
-          <button class="cr-drp-trigger" onclick="crDrpToggle(event)">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-            <span id="cr-drp-label">Select date range</span>
-          </button>
-          <div class="drp-popover" id="cr-drp-popover"></div>
-        </div>
         <!-- Every filter applies as it changes (crApply); typed text after a pause. -->
         <!-- Has recording -->
         <select class="cr-select" id="cr-rec-filter" aria-label="Recording" onchange="crApply()">
@@ -1200,9 +1255,6 @@
           <option value="yes">Has recording</option>
           <option value="no">No recording</option>
         </select>
-        <!-- Publisher / Advertiser (debounced, see the CR FILTER INPUTS listener) -->
-        <input class="cr-filter-input" type="text" id="cr-pub-filter" placeholder="Publisher…" aria-label="Publisher">
-        <input class="cr-filter-input" type="text" id="cr-adv-filter" placeholder="Advertiser…" aria-label="Advertiser">
         <!-- Flag type -->
         <select class="cr-select" id="cr-flag-filter" aria-label="Flag type" onchange="crApply()">
           <option value="">All flag types</option>
@@ -1222,14 +1274,6 @@
           <optgroup label="Outcome groups" id="cr-outcome-groups"></optgroup>
           <optgroup label="Outcomes" id="cr-outcome-list"></optgroup>
         </select>
-        <!-- Vertical (multi-select; options populated by populateVerticalDropdowns) -->
-        <div class="ins-vertical-wrap" id="cr-vertical-wrap">
-          <button class="ins-vertical-trigger" onclick="crVerticalToggle(event)">
-            <span id="cr-vertical-label">All verticals</span>
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </button>
-          <div class="ins-vertical-popover" id="cr-vertical-popover"></div>
-        </div>
         <!-- Flagged only -->
         <button class="pill" id="cr-flagged-only" aria-pressed="false" onclick="crToggleFlagged(this)">Flagged only</button>
         <button class="pill" id="cr-high-only" aria-pressed="false" onclick="crToggleFlagged(this)" title="Outbound dial, Facebook Marketplace, coached call or suspicious call">High severity only</button>
@@ -1547,12 +1591,6 @@ function loadErrorHtml(thing, retry, err) {
   return `<div class="load-error" role="alert"><span>Couldn't load ${esc(thing)}.</span>${retry ? `<button type="button" class="rv-btn" onclick="${retry}">Retry</button>` : ''}</div>`;
 }
 function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : nullMark(); }
-// [start, endExclusive) ISO instants for the viewer's local days startISO..endISO (end day inclusive),
-// so a picked range matches the local times the tables show (UTC days were ~7 h off).
-function localDayRange(startISO, endISO) {
-  const to = new Date(endISO + 'T00:00:00'); to.setDate(to.getDate() + 1);
-  return [new Date(startISO + 'T00:00:00').toISOString(), to.toISOString()];
-}
 // A value quoted for a PostgREST list or or=() filter. Unquoted values containing , ( ) or "
 // parse as syntax, so e.g. "Auto Insurance (Insured)" silently matched nothing.
 function pgQuote(v) { return '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
@@ -1612,7 +1650,6 @@ function switchTab(id, el) {
   const pane = document.getElementById('tab-' + id);
   if (pane) pane.classList.add('active');
   if (id === 'agents' && agentsMetricsDeferred) refreshMetrics();
-  if (id === 'dashboard') dashInit();
   if (id === 'insights') { ensureVerticals(); insightsInit(); }
   if (id === 'calls') crAutoLoad();
   if (id === 'review') reviewInit();
@@ -1624,14 +1661,14 @@ function switchTab(id, el) {
 async function applyRoute() {
   const params = new URLSearchParams(location.search);
   let tab = params.get('tab') || 'agents';
-  if (tab === 'reporting') tab = 'calls';   // legacy alias → merged Calls tab
+  if (tab === 'reporting' || tab === 'dashboard') tab = 'calls';   // legacy aliases → the Calls page (the Dashboard tab folded into it)
   // Legacy Compliance deep links (from digest emails) now land on the merged Calls
   // tab, pre-filtered to the account's flagged calls for the period.
   const complianceLegacy = (tab === 'compliance');
   if (complianceLegacy) tab = 'calls';
   const filteredCalls = tab === 'calls' && (complianceLegacy || params.get('flagged') === '1' || params.get('account') || params.get('outcomeGroup') || params.get('vertical'));
   _suppressRoute = true;
-  if (filteredCalls) crAutoLoaded = true;   // suppress the default 7-day autoload; applyCallsFilters sets the window
+  if (filteredCalls) crAutoLoaded = true;   // suppress the default first load; applyCallsFilters sets the scope
   switchTab(tab);
   if (filteredCalls) applyCallsFilters(params);
   if (tab === 'settings') {
@@ -2015,13 +2052,11 @@ function buildVerticalOptions(allCb, changeFn) {
 function populateVerticalDropdowns() {
   const insPop = document.getElementById('ins-vertical-popover');
   if (insPop) insPop.innerHTML = buildVerticalOptions('insVerticalAll','insVerticalChange');
-  const crPop = document.getElementById('cr-vertical-popover');
-  if (crPop) crPop.innerHTML = buildVerticalOptions('crVerticalAll','crVerticalChange');
 }
 // Loads + renders the verticals once. Awaited by crLoad so deep links never race the fetch.
 let verticalsPromise = null;
 function ensureVerticals() {
-  if (!verticalsPromise) verticalsPromise = loadVerticals().then(() => { populateVerticalDropdowns(); crApplyPendingVerticals(); });
+  if (!verticalsPromise) verticalsPromise = loadVerticals().then(populateVerticalDropdowns);
   return verticalsPromise;
 }
 
@@ -2054,10 +2089,6 @@ document.addEventListener('click', e => {
   });
   const vwrap = document.getElementById('ins-vertical-wrap');
   if (vwrap && !vwrap.contains(e.target)) document.getElementById('ins-vertical-popover')?.classList.remove('open');
-  const crDWrap = document.getElementById('cr-drp-wrap');
-  if (crDWrap && !crDWrap.contains(e.target)) document.getElementById('cr-drp-popover')?.classList.remove('open');
-  const crVWrap = document.getElementById('cr-vertical-wrap');
-  if (crVWrap && !crVWrap.contains(e.target)) document.getElementById('cr-vertical-popover')?.classList.remove('open');
   const rvAWrap = document.getElementById('rv-acct-wrap');
   if (rvAWrap && !rvAWrap.contains(e.target)) document.getElementById('rv-acct-popover')?.classList.remove('open');
   const crCpWrap = document.getElementById('cr-colpicker-wrap');
@@ -2389,35 +2420,57 @@ function openSetupFromUrl(){
   else { document.getElementById('search-input').value=AGENTS[idx].name; applyFilters(); }
 }
 
-// ─── DASHBOARD TAB (MK-176) ───────────────────────────────────────────────────
-// Headline cards over the 064 rollups. Each card is one RPC, loaded the first time the tab opens
-// (nothing at boot). Days are UTC, like the rollups. The metric definitions live in the database
-// functions (064), not here: unique = distinct caller numbers, calls with payout = billable
-// (advertiser payin > 0), revenue = advertiser payin, averages per raw call and per paid call.
-const dashRange = { from: null, to: null };
+// ─── CALLS PAGE OVERVIEW (MK-176) ─────────────────────────────────────────────
+// The Calls page's filter bar (dates, verticals, publishers, advertisers) scopes the overview
+// cards and the call list below them. The page's range is crDrpPickStart..crDrpPickEnd, in
+// Mountain Time days (dashboard_tz(), 065). Each card is one RPC over the 064/065 rollups, loaded
+// the first time the page opens (nothing at boot). The definitions live in those database
+// functions: unique = distinct caller numbers, calls with payout = billable (advertiser payin
+// > 0), revenue = advertiser payin, qualified lead = appointment, sale or quoted_interested,
+// CPA = advertiser payin / conversions.
+const DASH_TZ = 'America/Denver';   // = dashboard_tz() (065)
 const dashSel  = { vertical: new Set(), publisher: new Set(), advertiser: new Set() };
 const dashOpts = { vertical: [], publisher: [], advertiser: [] };
 const DASH_MS_NOUN = { vertical: 'verticals', publisher: 'publishers', advertiser: 'advertisers' };
-let dashSeq = 0, dashSummary = null, dashReloadTimer = null, dashInitDone = false, dashOptsLoaded = false;
+const DASH_CARDS = ['dash-output', 'dash-outcomes', 'dash-quality', 'dash-trend', 'dash-cpa'];
+let dashSeq = 0, dashReloadTimer = null, dashInitDone = false, dashOptsLoaded = false;
+const dashData = {};                              // last result per card, for re-renders (resize, toggles)
+const dashShowAll = { outcomes: false, verticals: false, cpa: false };
+let dashCpaQuoted = false, dashCpaView = 'publisher';
 
-// The UTC day k days before now, as YYYY-MM-DD.
-function dashUtcDay(k, now = new Date()) {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - k)).toISOString().slice(0, 10);
+function dashAddDays(iso, k) { return new Date(Date.parse(iso + 'T00:00:00Z') + k * 86400000).toISOString().slice(0, 10); }
+// The Mountain Time date k days before now, as YYYY-MM-DD.
+function dashMtDay(k, now = new Date()) {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: DASH_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return dashAddDays(today, -k);
 }
-function dashNextDay(iso) { return new Date(Date.parse(iso + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10); }
-// A preset is the last N complete UTC days; today is still syncing (Insights does the same).
-function dashPresetRange(days, now = new Date()) { return { from: dashUtcDay(days, now), to: dashUtcDay(1, now) }; }
+// The instant a Mountain Time day starts. 07:00 UTC falls in the day's first hours (00:00 MST or
+// 01:00 MDT), before the 02:00 DST switch, so its UTC offset is midnight's.
+function dashMtMidnight(iso) {
+  const off = new Intl.DateTimeFormat('en-US', { timeZone: DASH_TZ, timeZoneName: 'longOffset' })
+    .formatToParts(new Date(iso + 'T07:00:00Z')).find(p => p.type === 'timeZoneName').value.replace('GMT', '');
+  return new Date(Date.parse(`${iso}T00:00:00${off}`)).toISOString();
+}
+// [start, endExclusive) instants of the Mountain days from..to (to inclusive).
+function dashMtRange(from, to) { return [dashMtMidnight(from), dashMtMidnight(dashAddDays(to, 1))]; }
+// A preset is the last N complete Mountain days; today is still syncing.
+function dashPresetRange(days, now = new Date()) { return { from: dashMtDay(days, now), to: dashMtDay(1, now) }; }
 
+// First open of the Calls page: pickers, default range (30 days), picker options. The caller loads.
 function dashInit() {
   if (dashInitDone) return;
   dashInitDone = true;
   Object.keys(DASH_MS_NOUN).forEach(dashMsRender);
-  dashSetPreset(30);
+  if (!crDrpPickStart || !crDrpPickEnd) ({ from: crDrpPickStart, to: crDrpPickEnd } = dashPresetRange(30));
   dashLoadOptions();
+  window.addEventListener('resize', () => { clearTimeout(dashTrendResize); dashTrendResize = setTimeout(dashTrendRender, 150); });
 }
+let dashTrendResize = null;
+// A filter-bar change: the overview and the list reload together.
+function dashApply() { clearTimeout(dashReloadTimer); dashLoad(); crLoad(false); }
 
 // Picker options: the shared vertical list and every publisher/advertiser name (055). A failed
-// list leaves its picker empty; the cards load either way.
+// list leaves its picker empty; the page loads either way.
 async function dashLoadOptions() {
   await ensureVerticals();
   dashOpts.vertical = [...VERTICALS];
@@ -2425,30 +2478,33 @@ async function dashLoadOptions() {
     const rows = await sbFetch('rpc/get_distinct_accounts', { method: 'POST', body: '{}' }) || [];
     dashOpts.publisher  = rows.filter(r => r.account_type === 'publisher').map(r => r.account_name);
     dashOpts.advertiser = rows.filter(r => r.account_type === 'advertiser').map(r => r.account_name);
-  } catch (e) { console.warn('dashboard accounts:', e.message); }
+  } catch (e) { console.warn('calls page accounts:', e.message); }
   dashOptsLoaded = true;
   Object.keys(DASH_MS_NOUN).forEach(dashMsList);
 }
 
-function dashSetPreset(p) {
-  document.querySelectorAll('#tab-dashboard [data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === String(p)));
-  document.getElementById('dash-custom').classList.toggle('open', p === 'custom');
-  if (p === 'custom') {   // start the inputs from the range on screen; nothing to reload yet
-    const from = document.getElementById('dash-from'), to = document.getElementById('dash-to');
-    if (!from.value) from.value = dashRange.from;
-    if (!to.value) to.value = dashRange.to;
-    from.max = to.max = dashUtcDay(0);
-    return;
+// Date range: a preset, or Custom (two date inputs). setRange alone (no reload) serves deep links.
+function dashSetRange(from, to, preset) {
+  crDrpPickStart = from; crDrpPickEnd = to;
+  document.querySelectorAll('#tab-calls [data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === String(preset)));
+  document.getElementById('dash-custom').classList.toggle('open', preset === 'custom');
+  if (preset === 'custom') {
+    const f = document.getElementById('dash-from'), t = document.getElementById('dash-to');
+    f.value = from; t.value = to; f.max = t.max = dashMtDay(0);
   }
-  Object.assign(dashRange, dashPresetRange(p));
-  dashLoad();
+}
+function dashSetPreset(p) {
+  if (p === 'custom') { dashSetRange(crDrpPickStart, crDrpPickEnd, 'custom'); return; }   // nothing changed yet
+  const r = dashPresetRange(p);
+  dashSetRange(r.from, r.to, p);
+  dashApply();
 }
 function dashCustomChange() {
   let from = document.getElementById('dash-from').value, to = document.getElementById('dash-to').value;
   if (!from || !to) return;
   if (from > to) [from, to] = [to, from];
-  Object.assign(dashRange, { from, to });
-  dashLoad();
+  dashSetRange(from, to, 'custom');
+  dashApply();
 }
 
 // Searchable multi-select. Options are referenced by index, so a name never lands in an onclick.
@@ -2464,6 +2520,7 @@ function dashMsRender(key) {
       <div class="dash-ms-head"><span id="dash-ms-${key}-count">All ${noun}</span><button type="button" onclick="dashMsClear('${key}')">Clear</button></div>
       <div class="dash-ms-list" id="dash-ms-${key}-list"></div>
     </div>`;
+  dashMsLabel(key);
 }
 function dashMsToggle(key, e) {
   e.stopPropagation();
@@ -2496,44 +2553,66 @@ function dashMsPick(key, i, on) {
 function dashMsClear(key) { dashSel[key].clear(); dashMsLabel(key); dashMsList(key); dashScheduleLoad(); }
 function dashMsLabel(key) {
   const n = dashSel[key].size, noun = DASH_MS_NOUN[key];
-  document.getElementById(`dash-ms-${key}-label`).textContent = !n ? `All ${noun}` : n === 1 ? [...dashSel[key]][0] : `${n} ${noun}`;
-  document.getElementById(`dash-ms-${key}-count`).textContent = n ? `${n} selected` : `All ${noun}`;
+  const label = document.getElementById(`dash-ms-${key}-label`), count = document.getElementById(`dash-ms-${key}-count`);
+  if (label) label.textContent = !n ? `All ${noun}` : n === 1 ? [...dashSel[key]][0] : `${n} ${noun}`;
+  if (count) count.textContent = n ? `${n} selected` : `All ${noun}`;
 }
 document.addEventListener('click', e => {
   document.querySelectorAll('.dash-ms.open').forEach(w => { if (!w.contains(e.target)) w.classList.remove('open'); });
 });
 // Ticking several boxes runs one load, after a short pause.
-function dashScheduleLoad() { clearTimeout(dashReloadTimer); dashReloadTimer = setTimeout(dashLoad, 500); }
+function dashScheduleLoad() { clearTimeout(dashReloadTimer); dashReloadTimer = setTimeout(dashApply, 500); }
+// The list reads the vertical picker through this (an empty array = all verticals).
+function crSelectedVerticals() { return [...dashSel.vertical]; }
 
-// RPC arguments for the current filters; an empty picker means all (null).
+// RPC arguments for the filter bar; an empty picker means all (null).
 function dashFilterBody() {
   const pick = key => dashSel[key].size ? [...dashSel[key]] : null;
-  return { from_day: dashRange.from, to_day: dashRange.to, verticals: pick('vertical'), publishers: pick('publisher'), advertisers: pick('advertiser') };
+  return { from_day: crDrpPickStart, to_day: crDrpPickEnd, verticals: pick('vertical'), publishers: pick('publisher'), advertisers: pick('advertiser') };
+}
+// One request per RPC and arguments for 5 minutes: the overview and the list's strip ask for the
+// same summary. A failed request is not kept.
+const dashRpcCache = new Map();
+function dashRpc(name, args) {
+  const key = name + JSON.stringify(args), hit = dashRpcCache.get(key);
+  if (hit && Date.now() - hit.at < 300000) return hit.p;
+  if (dashRpcCache.size > 40) dashRpcCache.clear();
+  const p = sbFetch('rpc/' + name, { method: 'POST', body: JSON.stringify(args) });
+  p.catch(() => { if (dashRpcCache.get(key)?.p === p) dashRpcCache.delete(key); });
+  dashRpcCache.set(key, { p, at: Date.now() });
+  return p;
 }
 
 async function dashLoad() {
   clearTimeout(dashReloadTimer);
   const seq = ++dashSeq, body = dashFilterBody();
-  const out = document.getElementById('dash-output'), btn = document.getElementById('dash-export-btn');
-  if (dashSummary) out.style.opacity = '0.5';   // keep the last numbers on screen while the new ones load
-  else out.innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading…</div>`;
-  btn.disabled = true;
-  try {
-    const s = await sbFetch('rpc/dashboard_summary', { method: 'POST', body: JSON.stringify(body) });
-    if (seq !== dashSeq) return;   // a newer filter change owns the cards now
-    dashSummary = { ...s, filters: body };
-    document.getElementById('dash-period').textContent =
-      `${fmtShortD(s.from)} – ${fmtShortD(s.to)}, compared with ${fmtShortD(s.prev_from)} – ${fmtShortD(s.prev_to)} (UTC days)`;
-    out.innerHTML = dashSummaryHtml(s);
-    btn.textContent = dashExportLabel(s.current.calls);
-    btn.disabled = !s.current.calls;
-  } catch (e) {
-    if (seq !== dashSeq) return;
-    dashSummary = null;
-    out.innerHTML = loadErrorHtml('the dashboard', 'dashLoad()', e);
-  } finally {
-    if (seq === dashSeq) out.style.opacity = '';
+  for (const id of DASH_CARDS) {   // keep the last render, dimmed, while the new one loads
+    const el = document.getElementById(id);
+    if (dashData[id]) el.style.opacity = '0.5'; else el.innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading…</div>`;
   }
+  // The outcome bars' +/- signs come from the outcome weights (the list loads them too).
+  const weights = loadOutcomeWeights().catch(e => console.warn('outcome weights:', e.message));
+  const card = (id, name, extra, render) => dashRpc(name, { ...body, ...extra }).then(d => {
+    if (seq !== dashSeq) return;   // a newer filter change owns the cards now
+    dashData[id] = d;
+    render();
+  }, e => {
+    if (seq !== dashSeq) return;
+    delete dashData[id];
+    document.getElementById(id).innerHTML = loadErrorHtml('this card', 'dashLoad()', e);
+  }).finally(() => { if (seq === dashSeq) document.getElementById(id).style.opacity = ''; });
+  await Promise.all([
+    card('dash-output', 'dashboard_summary', {}, () => {
+      const s = dashData['dash-output'];
+      document.getElementById('dash-period').textContent =
+        `${fmtShortD(s.from)} – ${fmtShortD(s.to)}, compared with ${fmtShortD(s.prev_from)} – ${fmtShortD(s.prev_to)} (Mountain Time days)`;
+      document.getElementById('dash-output').innerHTML = dashSummaryHtml(s);
+    }),
+    card('dash-outcomes', 'dashboard_outcomes', {}, () => weights.then(dashOutcomesRender)),
+    card('dash-quality', 'dashboard_quality', {}, dashQualityRender),
+    card('dash-trend', 'dashboard_trend', {}, dashTrendRender),
+    card('dash-cpa', 'dashboard_cpa', { include_quoted: dashCpaQuoted }, dashCpaRender),
+  ]);
 }
 
 // Change from the previous period: arrow + %, teal up / coral down where up is good. No previous
@@ -2552,14 +2631,14 @@ function dashMoney(v, cents) {
   const n = Number(v), d = cents ? 2 : 0;
   return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
-function dashExportLabel(n) { return n ? `Export ${Number(n).toLocaleString('en-US')} calls` : 'Export calls'; }
+function dashPct(v, digits = 1) { return v == null ? '' : (v * 100).toFixed(digits) + '%'; }
+function dashNum(v) { return Number(v || 0).toLocaleString('en-US'); }
 
 // The two cards from a dashboard_summary result. Each row: label (definition on hover), value,
 // share, change vs the previous period (previous value on hover).
 function dashSummaryHtml(s) {
   const c = s.current, p = s.previous;
   const num = v => Number(v).toLocaleString('en-US'), usd = v => dashMoney(v), cents = v => dashMoney(v, true);
-  const pct = v => v == null ? '' : (v * 100).toFixed(1) + '%';
   const row = (label, def, key, fmt, share, colored = true) => {
     const d = dashDelta(c[key], p[key], colored);
     const prev = p[key] == null ? '' : 'Previous period: ' + fmt(p[key]);
@@ -2571,43 +2650,262 @@ function dashSummaryHtml(s) {
   return `<div class="dash-cards">
     <div class="dash-card"><div class="dash-card-title">Calls Breakdown</div>${head}
       ${row('Total calls', 'Every call in the range and filters (test calls excluded)', 'calls', num, c.calls ? '100%' : '')}
-      ${row('Unique calls', 'Distinct caller numbers in the range and filters', 'unique_calls', num, pct(c.unique_pct))}
-      ${row('Calls with payout', 'Billable calls: advertiser payin above $0', 'paid_calls', num, pct(c.paid_pct))}
+      ${row('Unique calls', 'Distinct caller numbers in the range and filters', 'unique_calls', num, dashPct(c.unique_pct))}
+      ${row('Calls with payout', 'Billable calls: advertiser payin above $0', 'paid_calls', num, dashPct(c.paid_pct))}
     </div>
     <div class="dash-card"><div class="dash-card-title">Calls Payout</div>${head}
       ${row('Revenue', 'Advertiser payin', 'revenue', usd, '')}
       ${row('Avg per call', 'Revenue / total calls', 'revenue_per_call', cents, '')}
       ${row('Avg per paid call', 'Revenue / calls with payout', 'revenue_per_paid_call', cents, '')}
       ${row('Publisher cost', 'Publisher payout', 'publisher_cost', usd, '', false)}
-      ${row('Margin', 'Revenue - publisher cost; share = % of revenue', 'margin', usd, pct(c.margin_pct))}
+      ${row('Margin', 'Revenue - publisher cost; share = % of revenue', 'margin', usd, dashPct(c.margin_pct))}
     </div>
   </div>
   <div class="dash-note">Unique calls = distinct caller numbers. Calls with payout = billable calls (advertiser payin above $0). Revenue = advertiser payin; averages are per call and per paid call. Hover a row for its definition, or a change for the previous value.</div>`;
 }
 
-// Export: the Calls CSV for exactly the cards' scope (same UTC days and filters, no test calls).
-function dashExportFilters(f) {
-  const list = vals => encodeURIComponent(vals.map(pgQuote).join(','));
-  let q = `&created_at=gte.${encodeURIComponent(f.from_day + 'T00:00:00Z')}&created_at=lt.${encodeURIComponent(dashNextDay(f.to_day) + 'T00:00:00Z')}&is_test=not.is.true`;
-  if (f.verticals)   q += `&vertical_name=in.(${list(f.verticals)})`;
-  if (f.publishers)  q += `&publisher_name=in.(${list(f.publishers)})`;
-  if (f.advertisers) q += `&advertiser_name=in.(${list(f.advertisers)})`;
-  return q;
+// ── Call outcomes: Qualified Lead first, then every outcome by count, as % of AI-scored calls.
+// A row filters the call list below to those calls. Bar color = the outcome's advertiser weight
+// sign (outcome_weights), also spelled out as +, - or · before the name.
+const DASH_OUTCOMES_SHOWN = 10;
+function dashOutcomeSign(o) {
+  const w = Number(scoresWeights?.[o]?.adv_score) || 0;
+  return w > 0 ? 'pos' : w < 0 ? 'neg' : 'neu';
 }
-async function dashExport() {
-  if (!dashSummary) return;
-  const f = dashSummary.filters, total = Number(dashSummary.current.calls).toLocaleString('en-US');
-  const btn = document.getElementById('dash-export-btn');
-  btn.disabled = true;
-  try {
-    await callsExportCsv(dashExportFilters(f), `calls_${f.from_day}_to_${f.to_day}.csv`,
-      n => { btn.textContent = `Exporting… ${n.toLocaleString('en-US')} / ${total}`; });
-  } catch (e) {
-    alert('Export failed: ' + e.message);
-  } finally {
-    btn.disabled = !dashSummary?.current.calls;
-    btn.textContent = dashExportLabel(dashSummary?.current.calls);
+function dashOutcomesHtml(o, showAll) {
+  const max = Math.max(o.qualified, ...o.outcomes.map(r => r.calls), 1);
+  const bar = (drill, sign, label, n, pct, title) => `
+    <button type="button" class="dash-bar-row" onclick="dashDrill('${drill}')" title="${esc(title)}">
+      <span class="dash-bar-lbl"><span class="dash-sign">${{ pos: '+', neg: '−', neu: '·' }[sign]}</span>${esc(label)}</span>
+      <span class="dash-bar-track"><span class="dash-bar ${sign}" style="width:${(n / max * 100).toFixed(1)}%"></span></span>
+      <span class="dash-bar-val">${dashNum(n)} <span class="dash-muted">(${dashPct(pct)})</span></span>
+    </button>`;
+  const rows = showAll ? o.outcomes : o.outcomes.slice(0, DASH_OUTCOMES_SHOWN);
+  const more = o.outcomes.length > DASH_OUTCOMES_SHOWN
+    ? `<button type="button" class="dash-link" onclick="dashShowAll.outcomes=!dashShowAll.outcomes;dashOutcomesRender()">${showAll ? 'Show fewer' : `Show all ${o.outcomes.length} outcomes`}</button>` : '';
+  return `<div class="dash-card-title">Call Outcomes</div>
+    <div class="dash-sub">% of ${dashNum(o.scored)} AI-scored calls · ${dashNum(o.not_scored)} not scored (no AI outcome) · qualified rate of all calls ${dashPct(o.qualified_rate)}</div>
+    ${o.scored ? `<div class="dash-bars">
+      ${bar('group:qualified', 'pos', 'Qualified Lead', o.qualified, o.qualified_pct_of_scored, 'Qualified Lead = appointment, sale or quoted interested. Click to list these calls.')}
+      ${rows.map(r => bar(r.outcome, dashOutcomeSign(r.outcome), labelOf(r.outcome), r.calls, r.pct_of_scored, labelOf(r.outcome) + '. Click to list these calls.')).join('')}
+    </div>${more}` : `<div class="ins-empty">No AI-scored calls in this range.</div>`}
+    <div class="dash-note">+ positive, − negative, · neutral for the advertiser (outcome weights). List
+      <button type="button" class="dash-link" onclick="dashDrill('group:adv_pos')">positive</button> or
+      <button type="button" class="dash-link" onclick="dashDrill('group:adv_neg')">negative</button> outcome calls below.</div>`;
+}
+function dashOutcomesRender() {
+  const o = dashData['dash-outcomes'];
+  if (o) document.getElementById('dash-outcomes').innerHTML = dashOutcomesHtml(o, dashShowAll.outcomes);
+}
+// Show those calls in the list: sets the list's Outcome filter (an outcome or "group:<key>").
+function dashDrill(value) {
+  const sel = document.getElementById('cr-outcome-filter');
+  if (![...sel.options].some(o => o.value === value)) {   // an outcome missing from REVIEW_OUTCOMES (e.g. 'test')
+    const opt = document.createElement('option');
+    opt.value = value; opt.textContent = labelOf(value);
+    document.getElementById('cr-outcome-list').appendChild(opt);
   }
+  sel.value = value;
+  crApply();
+  document.getElementById('calls-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Call quality: qualified leads as % of AI-scored calls (captain, 2026-11-13: the basis the
+// Scores tier cutoffs were tuned on), on bands from those cutoffs, with the all-calls rate under it.
+// Swap the band source here, e.g. for per-vertical cutoffs once the tier definition is settled
+// (pending Vicky: May framework, Sep weighted tiers, or the live Scores tiers).
+function dashQualityBands(vertical) {   // vertical: the same bands for every vertical today
+  return SCORES_TIERS.publisher.map(t => ({ tier: t.tier, min: t.minConv })).sort((a, b) => a.min - b.min);
+}
+function dashTierOf(rate, bands) {
+  if (rate == null) return null;
+  let tier = 4;
+  for (const b of bands) if (rate >= b.min) tier = b.tier;
+  return tier;
+}
+const DASH_TIER_COLOR = { 1: 'var(--teal)', 2: '#5FAE93', 3: 'var(--amber)', 4: 'var(--coral)' };
+// A half-circle gauge: tier bands as arcs (2px gaps), their labels and cutoffs outside the arc, and
+// a needle at the rate that stops inside it (so it never covers a label).
+function dashGaugeSvg(rate, bands) {
+  const top = bands[bands.length - 1].min;
+  const max = Math.max(0.25, Math.ceil(Math.max(top * 1.5, (rate || 0) * 1.15) * 20) / 20);
+  const cx = 110, cy = 104, r = 84, w = 16;
+  const pt = (v, rad = r) => { const a = Math.PI * (1 - Math.min(v, max) / max); return [cx + rad * Math.cos(a), cy - rad * Math.sin(a)]; };
+  const arc = (v1, v2) => { const [x1, y1] = pt(v1), [x2, y2] = pt(v2); return `M${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 0 1 ${x2.toFixed(1)},${y2.toFixed(1)}`; };
+  const edges = [0, ...bands.map(b => b.min), max], gap = max * 0.006;
+  const segs = edges.slice(0, -1).map((lo, i) => {
+    const tier = i === 0 ? 4 : bands[i - 1].tier, hi = edges[i + 1];
+    const [lx, ly] = pt((lo + hi) / 2, r + w / 2 + 9);
+    return `<path d="${arc(lo + (i ? gap : 0), hi - (i < edges.length - 2 ? gap : 0))}" stroke="${DASH_TIER_COLOR[tier]}" stroke-width="${w}" fill="none"/>`
+      + `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="dash-gauge-tier">T${tier}</text>`;
+  }).join('');
+  const ticks = bands.map(b => { const [x, y] = pt(b.min, r + w / 2 + 9); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="dash-gauge-tick">${Math.round(b.min * 100)}%</text>`; }).join('');
+  const needle = rate == null ? '' : (() => { const [x, y] = pt(rate, r - w / 2 - 3); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="dash-needle"/><circle cx="${cx}" cy="${cy}" r="5" class="dash-needle-hub"/>`; })();
+  return `<svg class="dash-gauge" viewBox="0 0 220 120" role="img" aria-label="Qualified rate ${rate == null ? 'not available' : dashPct(rate)} on tier bands">${segs}${ticks}${needle}</svg>`;
+}
+function dashQualityHtml(q, showAll) {
+  const bands = dashQualityBands(null), c = q.current, p = q.previous;
+  const pts = c.scored_rate != null && p.scored_rate != null ? (c.scored_rate - p.scored_rate) * 100 : null;
+  const delta = pts == null ? '' : `<span class="dash-delta ${Math.abs(pts) < 0.05 ? '' : pts > 0 ? 'up' : 'down'}" title="Previous period: ${dashPct(p.scored_rate)}">${Math.abs(pts) < 0.05 ? '' : pts > 0 ? '▲ ' : '▼ '}${Math.abs(pts).toFixed(1)} pts vs prev.</span>`;
+  const tier = dashTierOf(c.scored_rate, bands);
+  const verts = (q.verticals || []).filter(v => v.scored > 0);
+  const shown = showAll ? verts : verts.slice(0, 6);
+  const bandText = ['Tier 4 below ' + dashPct(bands[0].min, 0)].concat(bands.map((b, i) => `Tier ${b.tier} ${dashPct(b.min, 0)}${bands[i + 1] ? '–' + dashPct(bands[i + 1].min, 0) : '+'}`)).join(' · ');
+  return `<div class="dash-card-title">Call Quality</div>
+    <div class="dash-sub">Qualified leads (appointment, sale, quoted interested) as % of AI-scored calls</div>
+    <div class="dash-gauge-wrap">${dashGaugeSvg(c.scored_rate, bands)}
+      <div class="dash-gauge-val">${c.scored_rate == null ? nullMark() : dashPct(c.scored_rate)}${tier ? ` <span class="dash-tier t${tier}">Tier ${tier}</span>` : ''}</div>
+      <div class="dash-gauge-sub">${dashNum(c.qualified)} of ${dashNum(c.scored)} AI-scored calls · ${dashPct(c.rate)} of all calls ${delta}</div>
+    </div>
+    ${verts.length ? `<table class="dash-table"><thead><tr><th>Vertical</th><th class="num">Qualified</th><th class="num">AI-scored</th><th>Band</th></tr></thead><tbody>
+      ${shown.map(v => { const t = dashTierOf(v.scored_rate, dashQualityBands(v.vertical)); return `<tr><td>${esc(v.vertical || '(none)')}</td><td class="num">${dashPct(v.scored_rate)}</td><td class="num">${dashNum(v.scored)}</td><td>${t ? `<span class="dash-tier t${t}">Tier ${t}</span>` : ''}</td></tr>`; }).join('')}
+    </tbody></table>${verts.length > 6 ? `<button type="button" class="dash-link" onclick="dashShowAll.verticals=!dashShowAll.verticals;dashQualityRender()">${showAll ? 'Show fewer' : `Show all ${verts.length} verticals`}</button>` : ''}` : ''}
+    <div class="dash-note">Bands: the Scores tab's tier cutoffs on the conversion-adjacent rate (${bandText}), applied per vertical; the same cutoffs for every vertical for now. Tier definition pending Vicky.</div>`;
+}
+function dashQualityRender() {
+  const q = dashData['dash-quality'];
+  if (q) document.getElementById('dash-quality').innerHTML = dashQualityHtml(q, dashShowAll.verticals);
+}
+
+// ── Quality trend: daily qualified % of AI-scored calls and its 7-day rolling rate, with the
+// Tier 1 bar (top performers) and the Tier 3 bar (threshold; below it is Tier 4). Hover or arrow
+// keys move a crosshair; the daily table holds every value.
+let dashTrendIdx = null, dashTrendGeo = null;   // hovered day; the plot's scale, for the crosshair
+function dashTrendSvg(days, width) {
+  const bands = dashQualityBands(null), topBar = bands[bands.length - 1].min, floorBar = bands[0].min;
+  const H = 220, L = 40, R = 12, T = 12, B = 26, pw = Math.max(width - L - R, 60), ph = H - T - B;
+  const vals = days.flatMap(d => [d.scored_rate, d.scored_rate_7d]).filter(v => v != null);
+  const ymax = Math.max(Math.ceil(Math.max(topBar * 1.2, ...vals) * 20) / 20, 0.05);
+  dashTrendGeo = { L, pw, T, ph, ymax, n: days.length };
+  const x = i => L + (days.length > 1 ? i / (days.length - 1) * pw : pw / 2), y = v => T + ph - v / ymax * ph;
+  const line = key => { let d = '', pen = false; days.forEach((r, i) => { if (r[key] == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(r[key]).toFixed(1)}`; pen = true; }); return d; };
+  const grid = [0, 0.25, 0.5, 0.75, 1].map(f => { const v = ymax * f, yy = y(v).toFixed(1); return `<line x1="${L}" x2="${L + pw}" y1="${yy}" y2="${yy}" class="dash-grid"/><text x="${L - 6}" y="${(+yy + 3).toFixed(1)}" class="dash-axis" text-anchor="end">${Math.round(v * 100)}%</text>`; }).join('');
+  const step = Math.max(1, Math.ceil(days.length / Math.max(2, Math.floor(pw / 70))));
+  const xt = days.map((d, i) => i % step === 0 ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="dash-axis" text-anchor="middle">${fmtShortD(d.day)}</text>` : '').join('');
+  const ref = (v, cls, label) => `<line x1="${L}" x2="${L + pw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${cls}"/><text x="${L + pw}" y="${(y(v) - 4).toFixed(1)}" class="dash-axis dash-ref-label" text-anchor="end">${label}</text>`;
+  return `<svg class="dash-trend-svg" width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" tabindex="0" role="img"
+      aria-label="Daily qualified rate with a 7-day rolling rate. Use the arrow keys to read days; the Daily values table lists them all."
+      onpointermove="dashTrendHover(event)" onpointerleave="dashTrendShow(null)" onkeydown="dashTrendKey(event)" onblur="dashTrendShow(null)">
+    ${grid}${ref(topBar, 'dash-ref-top', `Top performers (Tier 1) ${dashPct(topBar, 0)}`)}${ref(floorBar, 'dash-ref-floor', `Threshold (Tier 3) ${dashPct(floorBar, 0)}`)}
+    <path d="${line('scored_rate')}" class="dash-line-day"/><path d="${line('scored_rate_7d')}" class="dash-line-7d"/>
+    <g class="dash-cross-g" visibility="hidden"><line y1="${T}" y2="${T + ph}" class="dash-cross"/><circle r="4" class="dash-dot7"/></g>${xt}
+  </svg>`;
+}
+function dashTrendTip(d) {
+  return `<strong>${d.scored_rate_7d == null ? '-' : dashPct(d.scored_rate_7d)}</strong> 7-day · <strong>${d.scored_rate == null ? '-' : dashPct(d.scored_rate)}</strong> that day`
+    + `<div class="dash-muted">${fmtShortD(d.day)}: ${dashNum(d.matched)} qualified of ${dashNum(d.scored)} AI-scored</div>`;
+}
+function dashTrendRender() {
+  const t = dashData['dash-trend'], el = document.getElementById('dash-trend');
+  if (!t || !el) return;
+  const days = t.days || [], width = Math.max((el.clientWidth || 600) - 44, 260);
+  dashTrendIdx = null;
+  el.innerHTML = `<div class="dash-card-title">Call Quality Trend</div>
+    <div class="dash-sub">Daily qualified % of AI-scored calls, with a 7-day rolling average. Monthly 12-month averages once a year of data exists (mid-2027).</div>
+    <div class="dash-legend"><span><i class="dash-key dash-key-7d"></i>7-day rolling</span><span><i class="dash-key dash-key-day"></i>Daily</span></div>
+    <div class="dash-trend-plot">${days.length ? dashTrendSvg(days, width) : '<div class="ins-empty">No days in this range.</div>'}<div class="dash-tip" id="dash-trend-tip" hidden></div></div>
+    <details class="dash-details"><summary>Daily values</summary><div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>Day</th><th class="num">AI-scored</th><th class="num">Qualified</th><th class="num">Rate</th><th class="num">7-day</th></tr></thead><tbody>
+      ${days.map(d => `<tr><td>${fmtShortD(d.day)}</td><td class="num">${dashNum(d.scored)}</td><td class="num">${dashNum(d.matched)}</td><td class="num">${d.scored_rate == null ? '-' : dashPct(d.scored_rate)}</td><td class="num">${d.scored_rate_7d == null ? '-' : dashPct(d.scored_rate_7d)}</td></tr>`).join('')}
+    </tbody></table></div></details>`;
+}
+// Move the crosshair to day idx (null hides it) and fill the tooltip; the plot itself stays.
+function dashTrendShow(idx) {
+  const days = dashData['dash-trend']?.days || [], g = dashTrendGeo;
+  const svg = document.querySelector('#dash-trend .dash-trend-svg'), tip = document.getElementById('dash-trend-tip');
+  if (!svg || !tip || !g || !days.length) return;
+  dashTrendIdx = idx == null ? null : Math.max(0, Math.min(days.length - 1, idx));
+  const cross = svg.querySelector('.dash-cross-g');
+  if (dashTrendIdx == null) { cross.setAttribute('visibility', 'hidden'); tip.hidden = true; return; }
+  const d = days[dashTrendIdx], xi = g.L + (g.n > 1 ? dashTrendIdx / (g.n - 1) * g.pw : g.pw / 2);
+  const ln = cross.querySelector('line'), dot = cross.querySelector('circle');
+  ln.setAttribute('x1', xi); ln.setAttribute('x2', xi);
+  dot.setAttribute('cx', xi);
+  dot.setAttribute('cy', d.scored_rate_7d == null ? -10 : g.T + g.ph - d.scored_rate_7d / g.ymax * g.ph);
+  cross.setAttribute('visibility', 'visible');
+  tip.innerHTML = dashTrendTip(d);
+  tip.hidden = false;
+  tip.style.left = Math.min(Math.max(xi - 90, 0), Math.max(+svg.getAttribute('width') - 190, 0)) + 'px';
+}
+// The pointer's day: the nearest point to its x, so it never has to land on a line.
+function dashTrendIndexAt(px, g) { return g.n > 1 ? Math.round((px - g.L) / g.pw * (g.n - 1)) : 0; }
+function dashTrendHover(e) {
+  const svg = e.currentTarget, rect = svg.getBoundingClientRect(), g = dashTrendGeo;
+  if (!g || !rect.width) return;
+  const idx = dashTrendIndexAt((e.clientX - rect.left) * (+svg.getAttribute('width')) / rect.width, g);
+  if (idx !== dashTrendIdx) dashTrendShow(idx);
+}
+function dashTrendKey(e) {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  e.preventDefault();
+  const n = dashData['dash-trend']?.days?.length || 0;
+  dashTrendShow(dashTrendIdx == null ? n - 1 : dashTrendIdx + (e.key === 'ArrowRight' ? 1 : -1));
+}
+
+// ── CPA: advertiser payin in scope / conversions (appointment + sale; or + quoted interested).
+// By publisher, or by tier: each publisher × vertical row gets its Scores-tab tier (scoresTierOf on
+// its avg score, defect and conversion-adjacent rates over AI-scored calls in this range; under
+// SCORES_MIN_CALLS scored calls it is not tiered). A group = publishers picked in the filter bar.
+function dashCpaGroups(rows, view) {
+  const by = {};
+  for (const r of rows) {
+    const key = view === 'tier'
+      ? (r.scored >= SCORES_MIN_CALLS ? 'Tier ' + scoresTierOf(r.avg_score, r.defect_rate, r.conv_adjacent_rate, 'publisher') : 'Not tiered')
+      : r.publisher_name;
+    const g = by[key] || (by[key] = { key, pairings: 0, calls: 0, scored: 0, revenue: 0, conversions: 0 });
+    g.pairings++; g.calls += +r.calls; g.scored += +r.scored; g.revenue += +r.revenue; g.conversions += +r.conversions;
+  }
+  const out = Object.values(by).map(g => ({ ...g, cpa: g.conversions ? g.revenue / g.conversions : null }));
+  return view === 'tier'
+    ? out.sort((a, b) => (a.key === 'Not tiered') - (b.key === 'Not tiered') || a.key.localeCompare(b.key))
+    : out.sort((a, b) => b.revenue - a.revenue);
+}
+function dashCpaHtml(c, view, quoted, showAll) {
+  const t = c.total, groups = dashCpaGroups(c.rows || [], view);
+  const shown = view === 'tier' || showAll ? groups : groups.slice(0, 10);
+  const conv = quoted ? 'qualified leads' : 'conversions';
+  const groupNote = dashSel.publisher.size ? `Group of ${dashSel.publisher.size} publisher${dashSel.publisher.size > 1 ? 's' : ''} (filter bar). ` : '';
+  return `<div class="dash-card-title">Cost per Acquisition</div>
+    <div class="dash-card-tools">
+      <div class="seg" role="group" aria-label="Counts as an acquisition">
+        <button class="seg-btn${quoted ? '' : ' active'}" onclick="dashCpaSetQuoted(false)">Appointment + sale</button>
+        <button class="seg-btn${quoted ? ' active' : ''}" onclick="dashCpaSetQuoted(true)">+ quoted interested</button>
+      </div>
+      <div class="seg" role="group" aria-label="Break down by">
+        <button class="seg-btn${view === 'publisher' ? ' active' : ''}" onclick="dashCpaSetView('publisher')">By publisher</button>
+        <button class="seg-btn${view === 'tier' ? ' active' : ''}" onclick="dashCpaSetView('tier')">By tier</button>
+      </div>
+    </div>
+    <div class="dash-cpa-head"><div class="dash-cpa-val">${t.cpa == null ? nullMark() : dashMoney(t.cpa, true)}</div>
+      <div class="dash-gauge-sub">${groupNote}${dashMoney(t.revenue)} revenue / ${dashNum(t.conversions)} ${conv}. ${dashPct(t.scored_pct, 0)} of calls are AI-scored, so CPA runs high where calls aren't scored.</div></div>
+    ${groups.length ? `<div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>${view === 'tier' ? 'Tier' : 'Publisher'}</th>${view === 'tier' ? '<th class="num">Pairings</th>' : ''}<th class="num dash-hide-sm">Calls</th><th class="num">Revenue</th><th class="num">${quoted ? 'Qualified' : 'Conv.'}</th><th class="num">CPA</th></tr></thead><tbody>
+      ${shown.map(g => `<tr><td>${esc(g.key)}</td>${view === 'tier' ? `<td class="num">${dashNum(g.pairings)}</td>` : ''}<td class="num dash-hide-sm">${dashNum(g.calls)}</td><td class="num">${dashMoney(g.revenue)}</td><td class="num">${dashNum(g.conversions)}</td><td class="num">${g.cpa == null ? '-' : dashMoney(g.cpa, true)}</td></tr>`).join('')}
+    </tbody></table></div>${view === 'publisher' && groups.length > 10 ? `<button type="button" class="dash-link" onclick="dashShowAll.cpa=!dashShowAll.cpa;dashCpaRender()">${showAll ? 'Show fewer' : `Show all ${groups.length} publishers`}</button>` : ''}` : ''}
+    <div class="dash-note">${view === 'tier' ? `Tier per publisher × vertical, by the Scores tab rules over this range's AI-scored calls (under ${SCORES_MIN_CALLS} = not tiered). ` : ''}Pick publishers in the filter bar to see a group's CPA.</div>`;
+}
+function dashCpaRender() {
+  const c = dashData['dash-cpa'];
+  if (c) document.getElementById('dash-cpa').innerHTML = dashCpaHtml(c, dashCpaView, dashCpaQuoted, dashShowAll.cpa);
+}
+function dashCpaSetView(v) { dashCpaView = v; dashCpaRender(); }
+async function dashCpaSetQuoted(on) {
+  dashCpaQuoted = on;
+  const el = document.getElementById('dash-cpa'), seq = dashSeq;
+  el.style.opacity = '0.5';
+  try {
+    const c = await dashRpc('dashboard_cpa', { ...dashFilterBody(), include_quoted: on });
+    if (seq !== dashSeq || dashCpaQuoted !== on) return;
+    dashData['dash-cpa'] = c;
+    dashCpaRender();
+  } catch (e) {
+    el.innerHTML = loadErrorHtml('this card', 'dashLoad()', e);
+  } finally { el.style.opacity = ''; }
+}
+
+// The list's strip from the rollups (no list-only filter on): the flag-set histogram plus one row
+// for the AI-scored calls without a flag, the shape callsStripTotals reads from raw rows.
+function dashStripRows(scored, hist) {
+  const flagged = hist.reduce((n, h) => n + Number(h.n), 0);
+  return [...hist, { flags: [], suspicious_call: false, n: Math.max(Number(scored) - flagged, 0) }];
 }
 
 // ─── INSIGHTS TAB ─────────────────────────────────────────────────────────────
@@ -2918,17 +3216,14 @@ function insExpandContent(r,pA,pB){
 }
 
 // ─── CALL REPORTING TAB ───────────────────────────────────────────────────────
-let crDrpViewYear, crDrpViewMonth, crDrpPickStart=null, crDrpPickEnd=null, crDrpSelecting=false;
-// Days clicked in the open calendar. They become the range (crDrpPickStart/End) only on Apply, so a
-// half-picked range never reaches a filter change (filters apply as they change, see crApply).
-let crDrpDraftStart=null, crDrpDraftEnd=null;
+let crDrpPickStart = null, crDrpPickEnd = null;   // the page's date range: Mountain Time days, end inclusive (filter bar)
 let crRows = [], crOffset = 0, crPageSize = 25, crHasMore = false, crTotal = null, crLoadSeq = 0;   // crTotal null = exact count still loading
 let crSortCol = 'created_at', crSortDir = -1;
 // Exact scope from a deep link: the digest's "View flagged calls" (the calls that account's entry
 // counted: scored in the digest window, with one of its flags) or Scores' "View calls". The
 // account matches exactly, not as a substring of the Publisher/Advertiser box. Cleared from the
 // note above the table.
-let crLinkScope = null;   // { account, type, flags?, scoredFrom?, scoredTo? }
+let crLinkScope = null;   // { account, type, match?: 'substring', flags?, scoredFrom?, scoredTo? }
 
 // Column definitions: key, label, sortable, default-visible
 const CR_COLUMNS = [
@@ -2976,37 +3271,6 @@ function crBuildColPicker() {
 }
 
 // Date picker
-function crDrpToggle(e) {
-  e.stopPropagation();
-  const pop = document.getElementById('cr-drp-popover');
-  if (pop.classList.contains('open')) { pop.classList.remove('open'); return; }
-  const now = new Date(); crDrpViewYear = now.getFullYear(); crDrpViewMonth = now.getMonth();
-  crDrpDraftStart = crDrpPickStart; crDrpDraftEnd = crDrpPickEnd; crDrpSelecting = false;
-  crDrpRender(); pop.classList.add('open');
-}
-function crDrpNav(dir, e) {
-  if (e) e.stopPropagation();
-  crDrpViewMonth += dir;
-  if (crDrpViewMonth > 11) { crDrpViewMonth = 0; crDrpViewYear++; }
-  if (crDrpViewMonth < 0) { crDrpViewMonth = 11; crDrpViewYear--; }
-  crDrpRender();
-}
-function crDrpRender() {
-  const pop = document.getElementById('cr-drp-popover'); if (!pop) return;
-  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'],DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
-  const first=new Date(crDrpViewYear,crDrpViewMonth,1).getDay(),total=new Date(crDrpViewYear,crDrpViewMonth+1,0).getDate(),todayISO=toISO(new Date());
-  let grid=DAYS.map(d=>`<div class="drp-dow">${d}</div>`).join('');
-  for(let i=0;i<first;i++)grid+=`<div class="drp-day drp-empty"></div>`;
-  for(let d=1;d<=total;d++){const iso=crDrpViewYear+'-'+String(crDrpViewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');let cls='drp-day';if(iso===todayISO)cls+=' drp-today';if(crDrpDraftStart&&crDrpDraftEnd){if(iso===crDrpDraftStart&&iso===crDrpDraftEnd)cls+=' drp-selected';else if(iso===crDrpDraftStart)cls+=' drp-range-start';else if(iso===crDrpDraftEnd)cls+=' drp-range-end';else if(iso>crDrpDraftStart&&iso<crDrpDraftEnd)cls+=' drp-in-range';}else if(crDrpDraftStart&&iso===crDrpDraftStart)cls+=' drp-selected';grid+=`<div class="${cls}" data-iso="${iso}">${d}</div>`;}
-  const selText=!crDrpDraftStart?'Click a start date':!crDrpDraftEnd?fmtShortD(crDrpDraftStart)+' → ?':fmtShortD(crDrpDraftStart)+' – '+fmtShortD(crDrpDraftEnd);
-  pop.innerHTML=`<div class="drp-cal-header"><button class="drp-nav-btn" id="cr-drp-prev">‹</button><div class="drp-cal-title">${MONTHS[crDrpViewMonth]} ${crDrpViewYear}</div><button class="drp-nav-btn" id="cr-drp-next">›</button></div><div class="drp-grid">${grid}</div><div class="drp-footer"><div class="drp-selection">${selText}</div><button class="drp-apply" id="cr-drp-apply" ${!crDrpDraftEnd?'disabled':''}>Apply</button></div>`;
-  pop.querySelector('#cr-drp-prev').addEventListener('click',e=>{e.stopPropagation();crDrpNav(-1);});
-  pop.querySelector('#cr-drp-next').addEventListener('click',e=>{e.stopPropagation();crDrpNav(1);});
-  pop.querySelector('#cr-drp-apply').addEventListener('click',e=>{e.stopPropagation();crDrpApply();});
-  pop.querySelectorAll('.drp-day:not(.drp-empty)').forEach(el=>el.addEventListener('click',ev=>{ev.stopPropagation();crDrpClickDay(el.dataset.iso);}));
-}
-function crDrpClickDay(iso){if(!crDrpDraftStart||!crDrpSelecting){crDrpDraftStart=iso;crDrpDraftEnd=null;crDrpSelecting=true;}else{if(iso<crDrpDraftStart){crDrpDraftEnd=crDrpDraftStart;crDrpDraftStart=iso;}else crDrpDraftEnd=iso;crDrpSelecting=false;}crDrpRender();}
-function crDrpApply(){if(!crDrpDraftStart||!crDrpDraftEnd)return;crDrpPickStart=crDrpDraftStart;crDrpPickEnd=crDrpDraftEnd;document.getElementById('cr-drp-label').textContent=fmtShortD(crDrpPickStart)+' – '+fmtShortD(crDrpPickEnd);document.getElementById('cr-drp-popover').classList.remove('open');crApply();}
 
 // Vertical filter
 
@@ -3017,7 +3281,10 @@ function crFmtRev(v) { return v > 0 ? '$' + v.toFixed(2) : nullMark(); }
 function crDispoClass(d) { if(!d)return'cr-dispo-other';const l=d.toLowerCase();if(l.includes('connect'))return'cr-dispo-connected';if(l.includes('reject'))return'cr-dispo-rejected';return'cr-dispo-other'; }
 
 // ── Outcome groups: score sign per side, read from outcome_weights (loadOutcomeWeights) ──
+// Qualified Lead (MK-176, Q4) = dashboard_qualified_outcomes() in 064; keep the two the same.
+const QUALIFIED_OUTCOMES = ['appointment', 'sale', 'quoted_interested'];
 const CR_OUTCOME_GROUPS = [
+  { key:'qualified', members: QUALIFIED_OUTCOMES, label:'Qualified leads' },   // appointment, sale, quoted_interested
   { key:'adv_pos', side:'adv_score', sign: 1, label:'Positive advertiser outcomes' },
   { key:'adv_neu', side:'adv_score', sign: 0, label:'Neutral advertiser outcomes' },
   { key:'adv_neg', side:'adv_score', sign:-1, label:'Negative advertiser outcomes' },
@@ -3029,6 +3296,7 @@ const CR_OUTCOME_GROUPS = [
 (() => { const s = document.getElementById('cr-outcome-groups'); if (s) CR_OUTCOME_GROUPS.forEach(g => { const opt = document.createElement('option'); opt.value = 'group:' + g.key; opt.textContent = g.label; s.appendChild(opt); }); })();
 function crOutcomeGroupMembers(key) {
   const g = CR_OUTCOME_GROUPS.find(x => x.key === key);
+  if (g && g.members) return g.members;
   if (!g || !scoresWeights) return [];
   return Object.keys(scoresWeights).filter(o => Math.sign(Number(scoresWeights[o][g.side]) || 0) === g.sign);
 }
@@ -3043,38 +3311,14 @@ function crApply(delay = 0) {
   if (delay) crApplyTimer = setTimeout(run, delay); else run();
 }
 
-// ── Calls-tab vertical multi-select (mirrors the Insights one) ──
-let crPendingVerticals = null;   // deep-link selection waiting for the options to render
-function crVerticalToggle(e) { e.stopPropagation(); document.getElementById('cr-vertical-popover').classList.toggle('open'); }
-function crVerticalAll(cb) {
-  document.getElementById('cr-vertical-popover').querySelectorAll('input[type=checkbox]').forEach(c => c.checked = cb.checked);
-  crVerticalUpdateLabel();
-  crApply(400);
-}
-function crVerticalChange() { crVerticalSync(); crApply(400); }
-// "All" box + label from the ticked verticals (no reload: a deep link's crLoad applies them).
-function crVerticalSync() {
-  const pop = document.getElementById('cr-vertical-popover');
-  pop.querySelector('input[value="all"]').checked = [...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].every(c => c.checked);
-  crVerticalUpdateLabel();
-}
-// Empty array = no vertical filter (All checked, or nothing checked).
-function crSelectedVerticals() {
-  const pop = document.getElementById('cr-vertical-popover');
-  if (!pop || pop.querySelector('input[value="all"]')?.checked) return [];
-  return [...pop.querySelectorAll('input[type=checkbox]:not([value="all"])')].filter(c => c.checked).map(c => c.value);
-}
-function crVerticalUpdateLabel() {
-  const sel = crSelectedVerticals();
-  document.getElementById('cr-vertical-label').textContent = !sel.length ? 'All verticals' : sel.length === 1 ? sel[0] : sel.length + ' verticals';
-}
-function crApplyPendingVerticals() {
-  const pop = document.getElementById('cr-vertical-popover');
-  if (!crPendingVerticals || !pop || !pop.querySelector('input[value="all"]')) return;   // options not rendered yet
-  const want = new Set(crPendingVerticals);
-  pop.querySelectorAll('input[type=checkbox]:not([value="all"])').forEach(c => { c.checked = want.has(c.value); });
-  crVerticalSync();
-  crPendingVerticals = null;
+
+// A list-only filter is on (one the overview's rollups can't apply): the digest scope, outcome,
+// recording, search, and with includeFlagFilters the flag drill-downs.
+function crListOnly(includeFlagFilters) {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const on = id => !!document.getElementById(id)?.classList.contains('active');
+  return !!(crLinkScope || val('cr-outcome-filter') || val('cr-rec-filter') || val('cr-search')
+    || (includeFlagFilters && (val('cr-flag-filter') || on('cr-flagged-only') || on('cr-high-only'))));
 }
 
 // Filter portion of the Calls query (everything except select / order / pagination).
@@ -3082,15 +3326,16 @@ function crApplyPendingVerticals() {
 // the two flag drill-downs (Flagged-only, flag-type) so the metric strip stays a
 // meaningful ratio (flag rate over the scope, not forced to 100% when drilling in).
 function crBuildFilters(includeFlagFilters = true) {
-  const [from, to] = localDayRange(crDrpPickStart, crDrpPickEnd);
-  let q = `&created_at=gte.${encodeURIComponent(from)}&created_at=lt.${encodeURIComponent(to)}`;
-  const pub = document.getElementById('cr-pub-filter').value.trim();
-  if (pub) q += `&publisher_name=ilike.*${encodeURIComponent(pub)}*`;
-  const adv = document.getElementById('cr-adv-filter').value.trim();
-  if (adv) q += `&advertiser_name=ilike.*${encodeURIComponent(adv)}*`;
+  // The filter bar's scope, as the overview counts it: Mountain Time days, no test calls.
+  const [from, to] = dashMtRange(crDrpPickStart, crDrpPickEnd);
+  let q = `&created_at=gte.${encodeURIComponent(from)}&created_at=lt.${encodeURIComponent(to)}&is_test=not.is.true`;
+  const pubs = [...dashSel.publisher], advs = [...dashSel.advertiser];
+  if (pubs.length) q += `&publisher_name=in.(${encodeURIComponent(pubs.map(pgQuote).join(','))})`;
+  if (advs.length) q += `&advertiser_name=in.(${encodeURIComponent(advs.map(pgQuote).join(','))})`;
   const ls = crLinkScope;
   if (ls) {
-    q += `&${ls.type === 'advertiser' ? 'advertiser_name' : 'publisher_name'}=eq.${encodeURIComponent(ls.account)}`;
+    const col = ls.type === 'advertiser' ? 'advertiser_name' : 'publisher_name';
+    q += ls.match === 'substring' ? `&${col}=ilike.*${encodeURIComponent(ls.account)}*` : `&${col}=eq.${encodeURIComponent(ls.account)}`;
     if (ls.scoredFrom && ls.scoredTo) q += `&is_test=eq.false&ai_processed_at=gt.${encodeURIComponent(ls.scoredFrom)}&ai_processed_at=lte.${encodeURIComponent(ls.scoredTo)}`;
   }
   // One select: an outcome (its raw value) or an outcome group ("group:<key>").
@@ -3165,7 +3410,8 @@ async function crLoad(append=false) {
   await Promise.all([loadOutcomeWeights().catch(e => console.warn('outcome weights:', e.message)), ensureVerticals()]);
   if (!append) {
     if (seq !== crLoadSeq) return;
-    crApplied = { table: crBuildFilters(), strip: crBuildFilters(false), start: crDrpPickStart, end: crDrpPickEnd };
+    crApplied = { table: crBuildFilters(), strip: crBuildFilters(false), start: crDrpPickStart, end: crDrpPickEnd,
+      rollup: { table: !crListOnly(true), strip: !crListOnly(false), body: dashFilterBody() } };
     document.getElementById('cr-output').innerHTML = `<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>`;
   }
   try {
@@ -3337,18 +3583,13 @@ function crSort(col) {
 }
 
 let crAutoLoaded = false;
+// First open of the Calls page: the filter bar (30-day default), then the overview and the list.
+// A deep link (applyRoute) sets crAutoLoaded first and loads its own scope (applyCallsFilters).
 function crAutoLoad() {
+  dashInit();
   if (crAutoLoaded) return;
   crAutoLoaded = true;
-  if (!crDrpPickStart || !crDrpPickEnd) {
-    const end = new Date(); end.setHours(0,0,0,0); end.setDate(end.getDate() - 1);
-    const start = new Date(end); start.setDate(start.getDate() - 6);
-    crDrpPickStart = toISO(start);
-    crDrpPickEnd = toISO(end);
-    const lbl = document.getElementById('cr-drp-label');
-    if (lbl) lbl.textContent = fmtShortD(crDrpPickStart) + ' – ' + fmtShortD(crDrpPickEnd);
-  }
-  crLoad(false);
+  dashApply();
 }
 
 // Merged Calls tab: clicking a row opens the shared review drawer (transcript +
@@ -3375,9 +3616,14 @@ async function callsLoadSummary(seq) {
   ['calls-stat-total', 'calls-stat-flagged', 'calls-stat-rate', 'calls-stat-revenue'].forEach(id => set(id, '…'));
   flaggedTone(false); callsHighLine(null);
   callsFlagCounts = null; callsFlagBreakdownRender();
+  // Without list-only filters the overview's rollups hold both answers (fast at any range); with
+  // them, the calls themselves are counted.
+  const roll = crApplied.rollup || {};
   const [table, strip] = await Promise.allSettled([
-    sbFetch(`canoe_calls?select=n:count(),revenue:advertiser_payin.sum()${crApplied.table}`),
-    sbFetch(`canoe_calls?select=flags,suspicious_call,n:count()${crApplied.strip}&ai_processed_at=not.is.null`),
+    roll.table ? dashRpc('dashboard_summary', roll.body).then(s => [{ n: s.current.calls, revenue: s.current.revenue }])
+      : sbFetch(`canoe_calls?select=n:count(),revenue:advertiser_payin.sum()${crApplied.table}`),
+    roll.strip ? Promise.all([dashRpc('dashboard_summary', roll.body), dashRpc('dashboard_flags', roll.body)]).then(([s, hist]) => dashStripRows(s.current.scored, hist))
+      : sbFetch(`canoe_calls?select=flags,suspicious_call,n:count()${crApplied.strip}&ai_processed_at=not.is.null`),
   ]);
   if (seq !== crLoadSeq) return;   // superseded by a newer load
   const t = table.status === 'fulfilled' && table.value && table.value[0];
@@ -4398,11 +4644,9 @@ async function saveReview(){
   btn.disabled=false; btn.textContent='Save review';
 }
 
-// ─── CR FILTER INPUTS (search, Publisher, Advertiser: reload once typing pauses) ──
+// ─── CR FILTER INPUTS (search: reload once typing pauses) ──
 document.addEventListener('DOMContentLoaded', () => {
-  ['cr-search', 'cr-pub-filter', 'cr-adv-filter'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', () => crApply(400));
-  });
+  document.getElementById('cr-search')?.addEventListener('input', () => crApply(400));
 });
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
@@ -4690,19 +4934,17 @@ async function compInit() {
 // (legacy ?tab=compliance&sub=calllog links are rerouted here by applyRoute).
 function applyCallsFilters(params) {
   const account = params.get('account'), from = params.get('from'), to = params.get('to');
-  if (from) crDrpPickStart = from.slice(0,10);
-  if (to)   crDrpPickEnd   = to.slice(0,10);
-  if ((from || to) && crDrpPickStart && crDrpPickEnd) {
-    const lbl = document.getElementById('cr-drp-label');
-    if (lbl) lbl.textContent = fmtShortD(crDrpPickStart) + ' – ' + fmtShortD(crDrpPickEnd);
+  dashInit();   // the filter bar the link fills in
+  if (from || to) {
+    let start = (from || crDrpPickStart).slice(0, 10), end = (to || crDrpPickEnd).slice(0, 10);
+    if (start > end) [start, end] = [end, start];
+    dashSetRange(start, end, 'custom');
   }
   const type = params.get('type') === 'advertiser' ? 'advertiser' : 'publisher';
   const digest = params.get('digest') === '1';
   crLinkScope = null;
   if (account) {
-    const el = document.getElementById(type === 'advertiser' ? 'cr-adv-filter' : 'cr-pub-filter');
     if (digest || params.get('exact') === '1') {
-      if (el) el.value = '';
       crLinkScope = { account, type };
       if (digest) {
         const flags = (params.get('flags') || '').split(',').map(f => f.trim()).filter(Boolean);
@@ -4710,19 +4952,19 @@ function applyCallsFilters(params) {
         if (flags.length) crLinkScope.flags = flags;
         if (sf && st && !isNaN(Date.parse(sf)) && !isNaN(Date.parse(st))) Object.assign(crLinkScope, { scoredFrom: sf, scoredTo: st });
       }
-    } else if (el) el.value = account;   // older digest links: substring match, as before
+    } else crLinkScope = { account, type, match: 'substring' };   // older digest links: substring match, as before
   }
   crRenderLinkScope();
   const group = params.get('outcomeGroup');   // an outcome group sits in the Outcome select as "group:<key>"
   if (group && CR_OUTCOME_GROUPS.some(g => g.key === group)) document.getElementById('cr-outcome-filter').value = 'group:' + group;
   const verts = params.get('vertical');
-  if (verts) { crPendingVerticals = verts.split(',').map(v => v.trim()).filter(Boolean); crApplyPendingVerticals(); }
+  if (verts) { dashSel.vertical = new Set(verts.split(',').map(v => v.trim()).filter(Boolean)); dashMsLabel('vertical'); }
   if (params.get('flagged') === '1') {
     const t = document.getElementById('cr-flagged-only');
     if (t && !t.classList.contains('active')) { t.classList.add('active'); t.setAttribute?.('aria-pressed', 'true'); }
   }
-  crAutoLoaded = true;      // window is set explicitly; skip the default 7-day autoload
-  crLoad(false);
+  crAutoLoaded = true;      // the scope is set explicitly; skip the default first load
+  dashApply();
 }
 
 function crRenderLinkScope() {
@@ -4731,6 +4973,7 @@ function crRenderLinkScope() {
   if (!s) { box.style.display = 'none'; box.innerHTML = ''; return; }
   const what = s.flags
     ? `Digest view: calls for <strong>${esc(s.account)}</strong> (${s.type})${s.scoredFrom ? ` scored ${esc(fmtDateTime(s.scoredFrom))} to ${esc(fmtDateTime(s.scoredTo))}` : ''} with a flag the digest counts`
+    : s.match === 'substring' ? `Calls for ${s.type}s matching <strong>${esc(s.account)}</strong>`
     : `Calls for <strong>${esc(s.account)}</strong> (${s.type}, exact name)`;
   box.innerHTML = `<span>${what}.</span><button class="rv-btn" onclick="crClearLinkScope()">Show all calls</button>`;
   box.style.display = '';

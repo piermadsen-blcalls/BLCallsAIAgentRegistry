@@ -61,14 +61,15 @@ const param = (url, name) => new URLSearchParams(url.split('?')[1] ?? url.replac
 
 // ── Calls query ──────────────────────────────────────────────────────────────
 function callsCtx(over = {}) {
-  const values = { 'cr-rec-filter': '', 'cr-pub-filter': '', 'cr-adv-filter': '', 'cr-search': '', ...over.values };
+  const values = { 'cr-rec-filter': '', 'cr-search': '', ...over.values };
   return load({
     crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crSortCol: 'created_at', crSortDir: -1, crLinkScope: over.linkScope || null,
+    DASH_TZ: 'America/Denver', dashSel: { vertical: new Set(), publisher: new Set(over.publishers || []), advertiser: new Set(over.advertisers || []) },
     AGENTS: over.AGENTS || [], aliasesForAgent: ivr => (over.aliases || {})[ivr] || [],
     crOutcomeGroupMembers: () => [], crSelectedVerticals: () => over.verticals || [],
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: () => false } }) },
-  }, ['function localDayRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters(', 'function crBuildQuery('],
-  ['crBuildFilters', 'crBuildQuery', 'localDayRange']);
+  }, ['function dashAddDays(', 'function dashMtMidnight(', 'function dashMtRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters(', 'function crBuildQuery('],
+  ['crBuildFilters', 'crBuildQuery', 'dashMtRange']);
 }
 
 // A fake PostgREST that applies `order` like Postgres (asc nulls last, desc nulls first unless
@@ -121,11 +122,17 @@ test('Calls sort: Pub/Adv Score descending puts unscored calls last', () => {
   assert.match(ctx.crBuildQuery(0), /&order=created_at\.desc,id\.asc$/);
 });
 
-test('Calls date range: local-day bounds with an exclusive end (was UTC days, ~7 h off)', () => {
+test('Calls date range: Mountain Time days with an exclusive end, the overview\'s days, whatever the viewer\'s zone', () => {
   const ctx = callsCtx();
   assert.deepEqual(param(ctx.crBuildFilters(), 'created_at'), ['gte.2026-11-02T07:00:00.000Z', 'lt.2026-11-09T07:00:00.000Z']);
-  // Across the Nov 1 DST change: Oct 31 starts at MDT midnight, Nov 2 at MST midnight.
-  assert.deepEqual([...ctx.localDayRange('2026-10-31', '2026-11-01')], ['2026-10-31T06:00:00.000Z', '2026-11-02T07:00:00.000Z']);
+  assert.deepEqual(param(ctx.crBuildFilters(), 'is_test'), ['not.is.true'], 'no test calls, like the overview');
+  // Across both DST changes: Oct 31 starts at MDT midnight, Nov 2 at MST midnight; Mar 8 at MST.
+  assert.deepEqual([...ctx.dashMtRange('2026-10-31', '2026-11-01')], ['2026-10-31T06:00:00.000Z', '2026-11-02T07:00:00.000Z']);
+  assert.deepEqual([...ctx.dashMtRange('2026-03-08', '2026-03-08')], ['2026-03-08T07:00:00.000Z', '2026-03-09T06:00:00.000Z']);
+  // Publishers / advertisers picked in the filter bar: exact names, quoted.
+  const picked = callsCtx({ publishers: ['Pub, A (1)'], advertisers: ['Adv "X"'] }).crBuildFilters();
+  assert.deepEqual(pgItems(param(picked, 'publisher_name')[0].replace(/^in\.\((.*)\)$/, '$1')), ['Pub, A (1)']);
+  assert.deepEqual(pgItems(param(picked, 'advertiser_name')[0].replace(/^in\.\((.*)\)$/, '$1')), ['Adv "X"']);
 });
 
 test('Calls search is a server-side filter over the whole range, with quoted values', () => {

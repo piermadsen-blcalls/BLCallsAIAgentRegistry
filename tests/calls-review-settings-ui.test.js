@@ -79,7 +79,8 @@ test('S-34: every filter control is wired to apply on change, and the Load calls
   assert.doesNotMatch(html, /id="cr-run-btn"|>Load calls<|click <strong>Load calls/);
   assert.doesNotMatch(html, /cr-outcome-group-filter|crOutcomeChange|crOutcomeGroupChange/, 'one Outcome select');
 
-  // The text inputs: an `input` listener each, debounced through crApply(400).
+  // The search box: an `input` listener, debounced through crApply(400). Publisher and advertiser
+  // moved to the filter bar's pickers (tests/dashboard.test.js).
   const src = html.slice(html.indexOf('// ─── CR FILTER INPUTS'), html.indexOf('// ─── BOOT'));
   const inputs = {}, delays = [];
   let ready = null;
@@ -89,82 +90,42 @@ test('S-34: every filter control is wired to apply on change, and the Load calls
       getElementById: id => (inputs[id] = { handlers: {}, addEventListener(ev, fn) { this.handlers[ev] = fn; } }) },
   });
   ready();
-  assert.deepEqual(Object.keys(inputs).sort(), ['cr-adv-filter', 'cr-pub-filter', 'cr-search']);
-  Object.values(inputs).forEach(el => el.handlers.input());
-  assert.deepEqual(delays, [400, 400, 400]);
+  assert.deepEqual(Object.keys(inputs), ['cr-search']);
+  inputs['cr-search'].handlers.input();
+  assert.deepEqual(delays, [400]);
 });
 
-test('S-34: Flagged only is a pressed/unpressed toggle that applies; vertical ticks apply after a pause, a deep link\'s do not reload', () => {
+test('S-34: Flagged only is a pressed/unpressed toggle that applies', () => {
   const applied = [];
   const btn = { classList: classes(), attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
-  const boxes = ['Roofing', 'Solar', 'Legal'].map(value => ({ value, checked: false }));
-  const all = { value: 'all', checked: true };
-  const pop = { querySelector: () => all, querySelectorAll: sel => (sel.includes(':not') ? boxes : [all, ...boxes]) };
-  const label = { textContent: '' };
-  const ctx = load({ crApply: d => applied.push(d ?? 0), crPendingVerticals: null,
-    document: { getElementById: id => ({ 'cr-vertical-popover': pop, 'cr-vertical-label': label })[id] } },
-  ['function crToggleFlagged(', 'function crVerticalAll(', 'function crVerticalChange(', 'function crVerticalSync(', 'function crSelectedVerticals(',
-    'function crVerticalUpdateLabel(', 'function crApplyPendingVerticals('], ['crToggleFlagged', 'crVerticalChange', 'crApplyPendingVerticals']);
+  const ctx = load({ crApply: d => applied.push(d ?? 0) }, ['function crToggleFlagged('], ['crToggleFlagged']);
   ctx.crToggleFlagged(btn);
   assert.equal(btn.classList.contains('active'), true);
   assert.equal(btn.attrs['aria-pressed'], 'true');
   ctx.crToggleFlagged(btn);
   assert.equal(btn.attrs['aria-pressed'], 'false');
   assert.deepEqual(applied, [0, 0]);
-
-  ctx.crPendingVerticals = ['Solar'];   // ?vertical=Solar, options just rendered
-  ctx.crApplyPendingVerticals();
-  assert.equal(label.textContent, 'Solar');
-  assert.equal(all.checked, false);
-  assert.deepEqual(applied, [0, 0], 'the deep link\'s own crLoad applies it; no second load');
-  boxes[0].checked = true;
-  ctx.crVerticalChange();
-  assert.equal(label.textContent, '2 verticals');
-  assert.deepEqual(applied, [0, 0, 400]);
-});
-
-test('S-34: calendar clicks are a draft; Apply commits the range and loads, a half-picked range never leaks', () => {
-  const pop = { classList: classes(['open']) };
-  const els = { 'cr-drp-popover': pop, 'cr-drp-label': { textContent: 'Nov 2 – Nov 8' } };
-  let applies = 0;
-  const ctx = load({ crDrpPickStart: '2026-11-02', crDrpPickEnd: '2026-11-08', crDrpDraftStart: null, crDrpDraftEnd: null, crDrpSelecting: false,
-    crDrpViewYear: 0, crDrpViewMonth: 0, crDrpRender() {}, crApply() { applies++; }, fmtShortD: x => x, Date,
-    document: { getElementById: id => els[id] } },
-  ['function crDrpToggle(', 'function crDrpClickDay(', 'function crDrpApply('], ['crDrpToggle', 'crDrpClickDay', 'crDrpApply']);
-  const ev = { stopPropagation() {} };
-  pop.classList.remove('open');
-  ctx.crDrpToggle(ev);                       // open
-  ctx.crDrpClickDay('2026-10-20');            // start only, then close without Apply
-  ctx.crDrpToggle(ev);
-  assert.deepEqual([ctx.crDrpPickStart, ctx.crDrpPickEnd], ['2026-11-02', '2026-11-08'], 'the applied range is untouched');
-  ctx.crDrpApply();
-  assert.equal(applies, 0, 'nothing to apply from a half pick');
-  ctx.crDrpToggle(ev);                       // reopen: the draft restarts from the applied range
-  assert.deepEqual([ctx.crDrpDraftStart, ctx.crDrpDraftEnd], ['2026-11-02', '2026-11-08']);
-  ctx.crDrpClickDay('2026-10-25'); ctx.crDrpClickDay('2026-10-20');
-  ctx.crDrpApply();
-  assert.deepEqual([ctx.crDrpPickStart, ctx.crDrpPickEnd], ['2026-10-20', '2026-10-25']);
-  assert.equal(els['cr-drp-label'].textContent, '2026-10-20 – 2026-10-25');
-  assert.equal(pop.classList.contains('open'), false);
-  assert.equal(applies, 1, 'Apply loads the new range');
 });
 
 // One page for the deep-link + Outcome select tests: applyCallsFilters fills the inputs, crBuildFilters reads them.
 function linkPage(params, weights = null) {
-  const values = { 'cr-rec-filter': '', 'cr-pub-filter': '', 'cr-adv-filter': '', 'cr-search': '', 'cr-flag-filter': '', 'cr-outcome-filter': '' };
+  const values = { 'cr-rec-filter': '', 'cr-search': '', 'cr-flag-filter': '', 'cr-outcome-filter': '' };
   const flagged = { classList: classes(), attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
   const ctx = load({
-    crDrpPickStart: null, crDrpPickEnd: null, crLinkScope: null, crPendingVerticals: null, crAutoLoaded: false, verts: [], loads: 0,
+    crDrpPickStart: '2026-10-14', crDrpPickEnd: '2026-11-12', crLinkScope: null, crAutoLoaded: false, loads: 0,
     scoresWeights: weights, AGENTS: [], aliasesForAgent: () => [], fmtShortD: x => x, crRenderLinkScope() {},
-    crSelectedVerticals: () => ctx.verts, crApplyPendingVerticals() { ctx.verts = ctx.crPendingVerticals; },
-    crLoad() { ctx.loads++; }, values, flagged,
+    DASH_TZ: 'America/Denver', dashSel: { vertical: new Set(), publisher: new Set(), advertiser: new Set() },
+    crSelectedVerticals: () => [...ctx.dashSel.vertical], dashInit() {}, dashMsLabel() {},
+    dashSetRange(from, to) { ctx.crDrpPickStart = from; ctx.crDrpPickEnd = to; },
+    dashApply() { ctx.loads++; }, values, flagged,
     document: { getElementById: id => (id === 'cr-flagged-only' ? flagged
       : { get value() { return values[id] ?? ''; }, set value(v) { values[id] = v; }, classList: { contains: () => false } }) },
-  }, ['function localDayRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crOutcomeGroupMembers(', 'function crBuildFilters(', 'function applyCallsFilters('],
+  }, ['function dashAddDays(', 'function dashMtMidnight(', 'function dashMtRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crOutcomeGroupMembers(', 'function crBuildFilters(', 'function applyCallsFilters('],
   ['crBuildFilters', 'applyCallsFilters']);
   // crBuildFilters checks Flagged only through the same element.
   ctx.flagged.classList.contains = c => ctx.flagged.classList.set.has(c);
-  vm.runInNewContext('var CR_OUTCOME_GROUPS = ' + html.match(/const CR_OUTCOME_GROUPS = (\[[\s\S]*?\]);/)[1], ctx);
+  vm.runInNewContext('var QUALIFIED_OUTCOMES = ' + html.match(/const QUALIFIED_OUTCOMES = (\[[^\]]*\]);/)[1]
+    + '; var CR_OUTCOME_GROUPS = ' + html.match(/const CR_OUTCOME_GROUPS = (\[[\s\S]*?\n\]);/)[1], ctx);
   ctx.applyCallsFilters(new URLSearchParams(params));
   return ctx;
 }
@@ -175,9 +136,10 @@ test('S-34: the old deep link (?tab=calls&account&type&from&to&flagged=1&outcome
   assert.equal(p.values['cr-outcome-filter'], 'group:adv_neg', 'the group sits in the one Outcome select');
   assert.equal(p.flagged.classList.contains('active'), true);
   assert.equal(p.flagged.attrs['aria-pressed'], 'true');
-  assert.equal(p.values['cr-pub-filter'], 'Pub A');
-  assert.deepEqual([p.crDrpPickStart, p.crDrpPickEnd], ['2026-11-05', '2026-11-09']);
-  assert.equal(p.loads, 1, 'one load with all of it applied');
+  assert.deepEqual({ ...p.crLinkScope }, { account: 'Pub A', type: 'publisher', match: 'substring' }, 'the old substring match, as a scope');
+  assert.deepEqual([p.crDrpPickStart, p.crDrpPickEnd], ['2026-11-05', '2026-11-09'], 'Mountain days from the link');
+  assert.deepEqual([...p.dashSel.vertical], ['Roofing', 'Solar'], 'verticals land in the filter bar');
+  assert.equal(p.loads, 1, 'one load (overview + list) with all of it applied');
   const q = new URLSearchParams(p.crBuildFilters().slice(1));
   assert.deepEqual(q.getAll('created_at'), ['gte.2026-11-05T07:00:00.000Z', 'lt.2026-11-10T07:00:00.000Z']);
   assert.equal(q.get('publisher_name'), 'ilike.*Pub A*');
@@ -196,6 +158,10 @@ test('S-34: one Outcome select: a single outcome, a group, and an empty group th
   assert.equal(new URLSearchParams(p.crBuildFilters().slice(1)).get('our_outcome'), 'in.(sale)');
   p.scoresWeights = null;   // weights not loaded: a group must not silently drop the filter
   assert.equal(new URLSearchParams(p.crBuildFilters().slice(1)).get('our_outcome'), 'eq.__no_match__');
+  p.values['cr-outcome-filter'] = 'group:qualified';
+  assert.equal(new URLSearchParams(p.crBuildFilters().slice(1)).get('our_outcome'), 'in.(appointment,sale,quoted_interested)', 'fixed members, no weights needed');
+  const mig = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '064_dashboard_rollups.sql'), 'utf8');
+  assert.match(mig, /select array\['appointment', 'sale', 'quoted_interested'\]/, 'same as dashboard_qualified_outcomes()');
   p.values['cr-outcome-filter'] = '';
   assert.equal(new URLSearchParams(p.crBuildFilters().slice(1)).get('our_outcome'), null);
 
@@ -203,12 +169,14 @@ test('S-34: one Outcome select: a single outcome, a group, and an empty group th
   assert.match(html, /<select[^>]*id="cr-outcome-filter"[^>]*>\s*<option value="">All outcomes<\/option>\s*<optgroup label="Outcome groups" id="cr-outcome-groups"><\/optgroup>\s*<optgroup label="Outcomes" id="cr-outcome-list"><\/optgroup>\s*<\/select>/);
   const groups = { kids: [], appendChild(o) { this.kids.push(o); } }, list = { kids: [], appendChild(o) { this.kids.push(o); } };
   const ctx = { document: { getElementById: id => ({ 'cr-outcome-groups': groups, 'cr-outcome-list': list })[id], createElement: () => ({}) }, labelOf: v => v.replace(/_/g, ' ') };
-  vm.runInNewContext('var CR_OUTCOME_GROUPS = ' + html.match(/const CR_OUTCOME_GROUPS = (\[[\s\S]*?\]);/)[1] + ';\n'
+  vm.runInNewContext('var QUALIFIED_OUTCOMES = ' + html.match(/const QUALIFIED_OUTCOMES = (\[[^\]]*\]);/)[1]
+    + '; var CR_OUTCOME_GROUPS = ' + html.match(/const CR_OUTCOME_GROUPS = (\[[\s\S]*?\n\]);/)[1] + ';\n'
     + html.match(/\(\(\) => \{ const s = document\.getElementById\('cr-outcome-groups'\);[^\n]*/)[0] + '\n'
     + 'var REVIEW_OUTCOMES = ' + html.match(/const REVIEW_OUTCOMES = (\[[^\]]*\]);/)[1] + ';\n'
     + html.match(/\(\(\) => \{ const s = document\.getElementById\('cr-outcome-list'\);[^\n]*/)[0], ctx);
-  assert.deepEqual(groups.kids.map(o => o.value), ['group:adv_pos', 'group:adv_neu', 'group:adv_neg', 'group:pub_pos', 'group:pub_neu', 'group:pub_neg']);
-  assert.equal(groups.kids[2].textContent, 'Negative advertiser outcomes');
+  assert.deepEqual(groups.kids.map(o => o.value), ['group:qualified', 'group:adv_pos', 'group:adv_neu', 'group:adv_neg', 'group:pub_pos', 'group:pub_neu', 'group:pub_neg']);
+  assert.equal(groups.kids[3].textContent, 'Negative advertiser outcomes');
+  assert.equal(groups.kids[0].textContent, 'Qualified leads', 'the overview\'s Qualified Lead bar drills into this');
   assert.equal(list.kids[0].value, 'sale');
   assert.ok(list.kids.every(o => !o.value.startsWith('group:')));
 });

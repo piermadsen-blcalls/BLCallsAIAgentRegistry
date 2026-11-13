@@ -144,13 +144,13 @@ test('Insights fallback: a page that keeps timing out fails the run after 3 trie
 });
 
 test('Calls: "Has recording" means a Listen link (Canoe recording_url, else the ASCND recording)', () => {
-  const values = { 'cr-rec-filter': 'yes', 'cr-pub-filter': '', 'cr-adv-filter': '', 'cr-search': 'pest' };
+  const values = { 'cr-rec-filter': 'yes', 'cr-search': 'pest' };
   const ctx = {
     crDrpPickStart: '2026-11-01', crDrpPickEnd: '2026-11-11', crLinkScope: null, AGENTS: [], aliasesForAgent: () => [],
-    crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [],
+    crOutcomeGroupMembers: () => [], crSelectedVerticals: () => [], DASH_TZ: 'America/Denver', dashSel: { vertical: new Set(), publisher: new Set(), advertiser: new Set() },
     document: { getElementById: id => ({ value: values[id] ?? '', classList: { contains: () => false } }) },
   };
-  vm.runInNewContext(['function localDayRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters('].map(lift).join(';\n') + ';\nthis.crBuildFilters = crBuildFilters;', ctx);
+  vm.runInNewContext(['function dashAddDays(', 'function dashMtMidnight(', 'function dashMtRange(', 'function pgQuote(', 'function crSearchFilter(', 'function crBuildFilters('].map(lift).join(';\n') + ';\nthis.crBuildFilters = crBuildFilters;', ctx);
   const params = () => new URLSearchParams(ctx.crBuildFilters().replace(/^&/, ''));
   const has = 'or(recording_url.not.is.null,ascnd_recording_url.not.is.null)';
   assert.equal(params().getAll('and').length, 1, 'search and recording filter AND together');
