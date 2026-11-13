@@ -1095,3 +1095,15 @@ Continued from the 8/7 Scores work; large session. What moved:
   - outcome signs rendering before the weights loaded.
 - Tests: 190/190. The N6 export test now really exercises the export: since PR 30 it had been passing vacuously.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-13 (Pier) - MK-176: trend picker, collapsible overview (branch `fm/ivr-mk176`)
+- PR 32 (one Calls page) merged and live.
+  - The GitHub Pages copy (the repo homepage) serves it.
+  - Signed out: login screen, no Dashboard tab, no dashboard requests (only the pre-existing logo freshness 401).
+- **Trend picker** (MK-176 Phase 3). The trend card follows qualified leads (default, with the tier lines), a positive/negative outcome group, one outcome, any flag, high severity, or one flag including suspicious calls, all under the filter bar. It uses the live `dashboard_trend` / `dashboard_flag_trend`; no migration.
+  - The axis steps are round (2.5 / 5 / 7.5 / 10%), with finer steps for small rates.
+- **Captain's ask:** the top section is titled "Overview" and the list "Call list".
+  - One button collapses the overview, remembered per browser; the filter bar stays.
+  - While collapsed the cards don't load; opening loads what changed.
+- Checked at 1440 and 375 px on the synthetic preview. Tests: 192/192.
+- External sources (Wispr/Jira) not pulled this session.
