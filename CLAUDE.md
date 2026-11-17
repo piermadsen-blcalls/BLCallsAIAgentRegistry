@@ -6,7 +6,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 
 ## Architecture (map)
 - **`index.html`** — the ENTIRE frontend. One file, vanilla HTML/CSS/JS, **no
-  framework, no build step.** Tabs: Agents, Insights, Calls (MK-176 overview on top of the call list), Review, Scores, Settings.
+  framework, no build step.** Tabs: Agents, Insights, Calls (MK-176 overview on top of the call list), Review, Scores, Claude (connector setup + saved reports), Settings.
   Talks directly to Supabase REST via the `sbFetch()` helper; the Settings →
   model-calibration UI can dispatch the `process.yml` GitHub Action.
 - **`scripts/`** — Node jobs, run by GitHub Actions on a schedule (see `.github/workflows/`):
@@ -24,7 +24,8 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
     address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
     accounts, ignoring the enabled flag.
-- **`supabase/`** — `migrations/` and edge fn `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`).
+- **`supabase/`** — `migrations/` and edge fns `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`) and
+  `functions/mcp` (Claude connector: remote MCP server, reads via 066's `mcp_run_sql` as the signed-in user).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
   `028` partial + `029` GIN (`jsonb_path_ops`) index on `flags` (Calls-tab jsonb
