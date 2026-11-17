@@ -693,6 +693,31 @@
   .settings-key-banner { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px; background:var(--amber-bg); border-radius:var(--radius-sm); border:1px solid #E8C97A; margin-bottom:14px; font-size:12px; color:var(--amber); }
   .settings-invite-row { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
   .settings-users-empty { font-size:13px; color:var(--text-3); padding:20px 0; }
+
+  /* CLAUDE TAB (connector setup, connected apps, saved reports) + the OAuth consent card */
+  .cl-intro { font-size:13px; color:var(--text-2); line-height:1.55; max-width:720px; margin-bottom:16px; }
+  .cl-url { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .cl-url code { font-family:var(--mono); font-size:12px; color:var(--text); background:var(--tint); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; overflow-wrap:anywhere; min-width:0; flex:1 1 280px; max-width:560px; }
+  .cl-steps { font-size:13px; line-height:1.55; color:var(--text); padding-left:20px; max-width:720px; display:flex; flex-direction:column; gap:6px; }
+  .cl-steps b { font-weight:600; }
+  .cl-examples { list-style:none; display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; max-width:900px; }
+  .cl-examples li { font-size:12px; color:var(--text-2); background:var(--tint); border:1px solid var(--border); border-radius:100px; padding:5px 12px; }
+  .cl-muted { font-size:12px; color:var(--text-3); }
+  .cl-mono { font-family:var(--mono); font-size:11.5px; }
+  .cl-def { font-family:var(--mono); font-size:11.5px; white-space:pre-wrap; overflow-wrap:anywhere; background:var(--tint); border-radius:var(--radius-sm); padding:10px 12px; margin:0; max-height:280px; overflow:auto; }
+  .cl-actions { display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+  .settings-table td.cl-sql { max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .oauth-card { width:440px; }
+  .oauth-what { font-size:12.5px; color:var(--text-2); line-height:1.55; padding-left:18px; margin:0 0 18px; display:flex; flex-direction:column; gap:4px; }
+  .oauth-who { font-size:13px; color:var(--text); background:var(--tint); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:16px; line-height:1.5; overflow-wrap:anywhere; }
+  .oauth-who .cl-muted { display:block; }
+  .oauth-warn { font-size:12.5px; color:var(--coral); background:var(--coral-bg); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:12px; line-height:1.5; }
+  .login-btn.is-secondary { background:var(--surface); color:var(--text-2); border:1px solid var(--border-strong); }
+  @media (max-width:640px){
+    .oauth-card { width:calc(100vw - 32px); }
+    .settings-table td.cl-sql { max-width:200px; }
+    #tab-claude .settings-secondary-btn, #tab-claude .settings-delete-btn { min-height:32px; padding:6px 12px; }   /* tappable */
+  }
   /* Training (model compare + labeling): plain section labels. */
   .train-h { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; font-size:13px; font-weight:600; color:var(--text); }
   .train-h small { font-size:12px; font-weight:400; color:var(--text-3); }
@@ -942,6 +967,23 @@
   </div>
 </div>
 
+<!-- Claude connector consent (OAuth authorization path: /oauth/consent?authorization_id=...) -->
+<div class="login-overlay hidden" id="oauth-overlay">
+  <div class="login-card oauth-card" role="dialog" aria-labelledby="oauth-title">
+    <div class="login-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#1A2E4A"/>
+        <path d="M8 8h8c2.2 0 4 1.8 4 4s-1.8 4-4 4H8V8z" fill="#00C896"/>
+        <path d="M8 16h9c2.5 0 4.5 2 4.5 4.5S19.5 25 17 25H8V16z" fill="white" opacity="0.9"/>
+      </svg>
+      <span class="login-logo-text">buyerlink<span>calls</span></span>
+    </div>
+    <div class="login-title" id="oauth-title">Connect Claude</div>
+    <div id="oauth-body"><div class="login-sub">Loading…</div></div>
+    <div class="login-error" id="oauth-error"></div>
+  </div>
+</div>
+
 <!-- Change password (logged-in user, self-service) -->
 <div class="login-overlay hidden" id="changepw-overlay">
   <div class="login-card">
@@ -1089,6 +1131,7 @@
     <button class="nav-tab" onclick="switchTab('calls',this)">Calls</button>
     <button class="nav-tab" onclick="switchTab('review',this)">Review</button>
     <button class="nav-tab" onclick="switchTab('scores',this)">Scores</button>
+    <button class="nav-tab" onclick="switchTab('claude',this)">Claude</button>
     <button class="nav-tab" onclick="switchTab('settings',this)">Settings</button>
   </div>
 
@@ -1565,6 +1608,51 @@
     <div id="review-root"><div class="empty">Loading agents…</div></div>
   </div>
 
+  <!-- CLAUDE TAB: connect the call-data connector to your own Claude, see/revoke access, saved reports -->
+  <div id="tab-claude" class="tab-pane">
+    <div class="settings-section">
+      <div class="settings-section-header"><div class="settings-section-title">Ask Claude about the call data</div></div>
+      <p class="cl-intro">Add the registry as a connector in your own Claude, then ask questions in plain English: Claude queries the calls as you (read-only) and answers. Ask it to save any question as a report to run again later.</p>
+      <div class="cl-url">
+        <code id="claude-mcp-url"></code>
+        <button type="button" class="settings-secondary-btn" onclick="copyId(event, MCP_URL)">Copy</button>
+      </div>
+      <ol class="cl-steps">
+        <li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li>
+        <li>Name it <b>BL Calls</b> and paste the URL above. Leave the advanced settings empty.</li>
+        <li>Click <b>Connect</b>. Sign in with your registry email and password, then <b>Allow</b>.</li>
+        <li>In a chat, turn the connector on from the tools menu and ask away.</li>
+      </ol>
+      <ul class="cl-examples" aria-label="Example questions">
+        <li>Which publishers had the best connect rate last week?</li>
+        <li>Qualified-lead rate by vertical for October vs September</li>
+        <li>Show today's calls flagged outbound_dial with their summaries</li>
+        <li>Save that as my weekly publisher report</li>
+      </ul>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <div class="settings-section-title">Connected apps</div>
+        <button type="button" class="settings-secondary-btn" onclick="claudeLoadAccess()">Refresh</button>
+      </div>
+      <div id="claude-grants" class="settings-table-wrap"><div class="comp-loading">Loading…</div></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <div class="settings-section-title">My saved reports</div>
+        <button type="button" class="settings-secondary-btn" onclick="claudeLoadReports()">Refresh</button>
+      </div>
+      <div id="claude-reports" class="settings-table-wrap"><div class="comp-loading">Loading…</div></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-header"><div class="settings-section-title">My recent connector queries</div></div>
+      <div id="claude-activity" class="settings-table-wrap"><div class="comp-loading">Loading…</div></div>
+    </div>
+  </div>
+
   <!-- Manual CSV-upload panel removed from the UI — data now auto-syncs into canoe_calls
        via scripts/sync.js. Markup preserved in legacy/manual-upload.html for restoration. -->
 </div>
@@ -1573,6 +1661,11 @@
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const CONFIG = { supabaseUrl: 'https://wvnfcxhbztnefhzjhfgg.supabase.co', supabaseKey: 'sb_publishable_lW7L0lMP-BR056Ou9db-dA_ckEGhf8J' };
 const SB_URL = CONFIG.supabaseUrl, SB_KEY = CONFIG.supabaseKey;
+// The Claude connector (supabase/functions/mcp) and, on /oauth/consent, the sign-in Claude is asking
+// the user to approve (see CLAUDE CONNECTOR below).
+const MCP_URL = `${SB_URL}/functions/v1/mcp`;
+const OAUTH_AUTHZ_ID = new URLSearchParams(location.search).get('authorization_id');
+if (OAUTH_AUTHZ_ID) document.querySelector('#login-overlay .login-title').textContent = 'Sign in to connect Claude';
 
 // ─── SHARED STATE ─────────────────────────────────────────────────────────────
 let AGENTS = [], aliasMap = {}, VERTICALS = [];
@@ -1671,6 +1764,7 @@ function switchTab(id, el) {
   if (id === 'calls') crAutoLoad();
   if (id === 'review') reviewInit();
   if (id === 'scores') scoresInit();
+  if (id === 'claude') claudeInit();
   if (id === 'settings') ensureCompliance();
   if (!_suppressRoute) history.pushState({ tab: id }, '', '?tab=' + id);
 }
@@ -4837,6 +4931,7 @@ async function doLogin() {
     document.getElementById('login-overlay').classList.add('hidden');
     const em = document.getElementById('acct-email'); if (em) em.textContent = getAuthUser() || 'Account';
     startTokenRefreshTimer();
+    if (OAUTH_AUTHZ_ID) { await oauthConsentInit(); return; }   // signing in to connect Claude: consent, not the app
     const agentsReady = reloadAgentsData();
     await applyRoute();
     await agentsReady;
@@ -4972,7 +5067,7 @@ async function doSetPassword() {
 
 // check auth on load — refresh the session if possible so users sign in once, not every visit
 (async () => {
-  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); await applyRoute(); showNewIvrsForAdmins(true); }
+  if (await ensureAuth()) { checkAuth(); startTokenRefreshTimer(); if (OAUTH_AUTHZ_ID) return oauthConsentInit(); await applyRoute(); showNewIvrsForAdmins(true); }
   else { clearAuth(); checkAuth(); }
 })();
 window.addEventListener('popstate', applyRoute);
@@ -6441,6 +6536,219 @@ async function promptsRunABTest() {
   } catch(e) {
     statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
   }
+}
+
+// ── CLAUDE CONNECTOR ──────────────────────────────────────────
+// The MCP server is the `mcp` edge function (supabase/functions/mcp). Claude signs users in through
+// Supabase Auth's OAuth 2.1 server, which sends them here (/oauth/consent?authorization_id=...) to
+// approve; the Claude tab lists what they approved (OAuth grants), their saved reports (067) and
+// their recent connector queries (066's mcp_query_log). All of it is the signed-in user's own data.
+// Supabase Auth (GoTrue) calls with the user's session; JSON or null, throws with the server's message.
+async function authApi(path, init = {}) {
+  if (_refreshInFlight || sbTokenDue()) await refreshSession();
+  const res = await fetch(`${SB_URL}/auth/v1/${path}`, {
+    ...init,
+    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
+  });
+  const text = await res.text();
+  let body = null;
+  try { body = text ? JSON.parse(text) : null; } catch { body = { msg: text }; }
+  if (!res.ok) {
+    const e = new Error((body && (body.msg || body.message || body.error_description)) || `Auth ${res.status}`);
+    e.status = res.status; e.code = body && (body.error_code || body.code);
+    throw e;
+  }
+  return body;
+}
+const oauthOff = e => e && (e.code === 'feature_disabled' || e.status === 404);
+
+// Only Claude's own callbacks may receive a code from this page: claude.ai / claude.com, or a local
+// callback for Claude Code. Any other app that registered itself is refused here.
+function oauthRedirectAllowed(uri) {
+  let u;
+  try { u = new URL(uri); } catch { return false; }
+  if (u.protocol === 'https:' && /^(?:[a-z0-9-]+\.)*claude\.(?:ai|com)$/i.test(u.hostname)) return true;
+  return u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1');
+}
+
+function oauthConsentHtml(d, email) {
+  const host = (() => { try { return new URL(d.redirect_uri).host; } catch { return d.redirect_uri || ''; } })();
+  const allowed = oauthRedirectAllowed(d.redirect_uri);
+  const who = `<div class="oauth-who"><b>${esc(d.client && d.client.name || 'An app')}</b> at <span class="cl-mono">${esc(host)}</span>
+      <span class="cl-muted">wants to use the registry as ${esc(email || '')}</span></div>`;
+  if (!allowed) {
+    return who + `<div class="oauth-warn">This is not Claude's address, so the registry won't connect it. If you were trying to connect Claude, start again from Claude's Connectors settings.</div>
+      <button class="login-btn is-secondary" onclick="oauthDecide('deny')">Cancel</button>`;
+  }
+  return who + `<ul class="oauth-what">
+      <li>Read call data as you: calls, outcomes, flags, revenue, transcripts and recordings.</li>
+      <li>Save, change and delete your own saved reports.</li>
+      <li>It cannot change any call data. You can disconnect it any time on the Claude tab.</li>
+    </ul>
+    <button class="login-btn" id="oauth-allow" onclick="oauthDecide('approve')">Allow</button>
+    <button class="login-btn is-secondary" onclick="oauthDecide('deny')">Deny</button>`;
+}
+
+// Runs instead of the app once the user is signed in on /oauth/consent: approve or deny, then go back to Claude.
+async function oauthConsentInit() {
+  document.getElementById('oauth-overlay').classList.remove('hidden');
+  const body = document.getElementById('oauth-body');
+  try {
+    const d = await authApi(`oauth/authorizations/${encodeURIComponent(OAUTH_AUTHZ_ID)}`);
+    if (d && d.redirect_url && !d.authorization_id) { location.assign(d.redirect_url); return; }   // allowed before
+    body.innerHTML = oauthConsentHtml(d, getAuthUser());
+  } catch (e) {
+    body.innerHTML = `<div class="login-sub">${oauthOff(e) ? 'The Claude connector is not switched on yet.' : 'This sign-in link has expired or was already used. Start again from Claude.'}</div>
+      <a class="login-btn is-secondary" style="display:block;text-align:center;text-decoration:none" href="/">Open the registry</a>`;
+    console.warn('OAuth authorization:', e.message);
+  }
+}
+async function oauthDecide(action) {
+  const err = document.getElementById('oauth-error');
+  err.textContent = '';
+  document.querySelectorAll('#oauth-body .login-btn').forEach(b => { b.disabled = true; });
+  try {
+    const d = await authApi(`oauth/authorizations/${encodeURIComponent(OAUTH_AUTHZ_ID)}/consent`, { method: 'POST', body: JSON.stringify({ action }) });
+    location.assign(d.redirect_url);
+  } catch (e) {
+    err.textContent = e.message;
+    document.querySelectorAll('#oauth-body .login-btn').forEach(b => { b.disabled = false; });
+  }
+}
+
+function claudeInit() {
+  document.getElementById('claude-mcp-url').textContent = MCP_URL;
+  claudeLoadAccess();
+  claudeLoadReports();
+}
+const claudeDate = s => s ? new Date(s).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : nullMark();
+
+// Last use and query count per OAuth client, from the user's own query log rows (newest first).
+function claudeUsage(rows) {
+  const by = {};
+  (rows || []).forEach(r => {
+    const k = r.client_id || '';
+    if (!by[k]) by[k] = { last: r.created_at, count: 0 };
+    by[k].count++;
+  });
+  return by;
+}
+
+async function claudeLoadAccess() {
+  const gEl = document.getElementById('claude-grants'), aEl = document.getElementById('claude-activity');
+  gEl.innerHTML = aEl.innerHTML = '<div class="comp-loading">Loading…</div>';
+  const [grants, log] = await Promise.allSettled([
+    authApi('user/oauth/grants'),
+    sbFetch('mcp_query_log?select=client_id,created_at,tool,row_count,error,query&order=created_at.desc&limit=500'),
+  ]);
+  const rows = log.status === 'fulfilled' ? log.value || [] : [];
+  const usage = claudeUsage(rows);
+  if (grants.status === 'rejected') {
+    gEl.innerHTML = oauthOff(grants.reason)
+      ? '<div class="settings-users-empty" style="padding:16px 12px">The Claude connector is not switched on yet. Once it is, apps you connect show here.</div>'
+      : loadErrorHtml('connected apps', 'claudeLoadAccess()', grants.reason);
+  } else if (!(grants.value || []).length) {
+    gEl.innerHTML = '<div class="settings-users-empty" style="padding:16px 12px">No apps connected. Follow the steps above to connect Claude.</div>';
+  } else {
+    gEl.innerHTML = `<table class="settings-table"><thead><tr><th>App</th><th>Allowed</th><th>Last used</th><th>Queries</th><th></th></tr></thead><tbody>${
+      grants.value.map(g => { const u = usage[g.client.id] || {}; return `<tr>
+        <td>${esc(g.client.name || 'App')}${g.client.uri ? ` <span class="cl-muted">${esc(g.client.uri)}</span>` : ''}</td>
+        <td style="color:var(--text-2)">${claudeDate(g.granted_at)}</td>
+        <td style="color:var(--text-2)">${u.last ? claudeDate(u.last) : 'Not yet'}</td>
+        <td class="cl-mono">${u.count || 0}</td>
+        <td><div class="cl-actions"><button class="settings-delete-btn" onclick="claudeRevoke('${jsStr(g.client.id)}','${jsStr(g.client.name || 'this app')}')">Disconnect</button></div></td>
+      </tr>`; }).join('')}</tbody></table>`;
+  }
+  if (log.status === 'rejected') {
+    aEl.innerHTML = loadErrorHtml('recent queries', 'claudeLoadAccess()', log.reason);
+  } else if (!rows.length) {
+    aEl.innerHTML = '<div class="settings-users-empty" style="padding:16px 12px">No connector queries yet.</div>';
+  } else {
+    aEl.innerHTML = `<table class="settings-table"><thead><tr><th>When</th><th>Tool</th><th>Result</th><th>Query</th></tr></thead><tbody>${
+      rows.slice(0, 20).map(r => `<tr>
+        <td style="color:var(--text-2);white-space:nowrap">${claudeDate(r.created_at)}</td>
+        <td class="cl-mono">${esc(labelOf(r.tool))}</td>
+        <td style="white-space:nowrap">${r.error ? `<span style="color:var(--coral)" title="${esc(r.error)}">Error</span>` : r.row_count == null ? 'Plan' : `${r.row_count} rows`}</td>
+        <td class="cl-sql cl-mono" title="${esc(r.query)}">${esc(r.query)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+}
+
+async function claudeRevoke(clientId, name) {
+  if (!confirm(`Disconnect ${name}? It loses access right away; you can connect it again from Claude.`)) return;
+  try {
+    await authApi(`user/oauth/grants?client_id=${encodeURIComponent(clientId)}`, { method: 'DELETE' });
+  } catch (e) {
+    document.getElementById('claude-grants').insertAdjacentHTML('afterbegin', loadErrorHtml('the disconnect (try again)', '', e));
+    return;
+  }
+  claudeLoadAccess();
+}
+
+let claudeReports = [];
+function claudeReportsHtml(list, editId) {
+  if (!list.length) return '<div class="settings-users-empty" style="padding:16px 12px">No saved reports yet. In Claude, ask a question and then say "save this as a report".</div>';
+  return `<table class="settings-table"><thead><tr><th>Report</th><th>Type</th><th>Inputs</th><th>Updated</th><th></th></tr></thead><tbody>${
+    list.map(r => {
+      const params = (r.parameters || []).map(p => p.name + (p.default != null ? ` = ${p.default}` : '')).join(', ');
+      const def = r.kind === 'sql' ? (r.definition && r.definition.sql) || '' : JSON.stringify(r.definition, null, 2);
+      if (r.id === editId) return `<tr><td colspan="5"><div class="settings-add-form" style="margin:0">
+          <input class="settings-input" id="cl-rep-name" value="${esc(r.name)}" aria-label="Report name" style="flex:1 1 200px">
+          <input class="settings-input" id="cl-rep-desc" value="${esc(r.description || '')}" placeholder="Description" aria-label="Description" style="flex:2 1 260px">
+          <button class="settings-save-btn" onclick="claudeSaveReport('${jsStr(r.id)}')">Save</button>
+          <button class="settings-cancel-btn" onclick="claudeRenderReports()">Cancel</button>
+          <span id="cl-rep-err" style="font-size:12px;color:var(--coral)"></span></div></td></tr>`;
+      return `<tr>
+        <td><b style="font-weight:600">${esc(r.name)}</b>${r.description ? `<div class="cl-muted">${esc(r.description)}</div>` : ''}
+          <details><summary class="cl-muted" style="cursor:pointer">Query</summary><pre class="cl-def">${esc(def)}</pre></details></td>
+        <td>${esc({ sql: 'SQL', search: 'Search', aggregate: 'Aggregate' }[r.kind] || r.kind)}</td>
+        <td class="cl-mono">${params ? esc(params) : nullMark()}</td>
+        <td style="color:var(--text-2);white-space:nowrap">${claudeDate(r.updated_at)}</td>
+        <td><div class="cl-actions"><button class="settings-secondary-btn" onclick="claudeRenderReports('${jsStr(r.id)}')">Rename</button>
+          <button class="settings-delete-btn" onclick="claudeDeleteReport('${jsStr(r.id)}')">Delete</button></div></td>
+      </tr>`;
+    }).join('')}</tbody></table>
+    <div class="cl-muted" style="padding:10px 12px">To run or change a report's query, ask Claude ("run my weekly publisher report for last month").</div>`;
+}
+function claudeRenderReports(editId) { document.getElementById('claude-reports').innerHTML = claudeReportsHtml(claudeReports, editId); }
+
+async function claudeLoadReports() {
+  const el = document.getElementById('claude-reports');
+  el.innerHTML = '<div class="comp-loading">Loading…</div>';
+  try {
+    claudeReports = await sbFetch('rpc/mcp_reports_list', { method: 'POST', body: '{}' }) || [];
+    claudeRenderReports();
+  } catch (e) {
+    const notYet = /PGRST202|Supabase 404/.test(e.message);   // 067 not applied yet
+    el.innerHTML = notYet
+      ? '<div class="settings-users-empty" style="padding:16px 12px">Saved reports show here once the Claude connector is switched on.</div>'
+      : loadErrorHtml('saved reports', 'claudeLoadReports()', e);
+  }
+}
+async function claudeSaveReport(id) {
+  const name = document.getElementById('cl-rep-name').value.trim();
+  const description = document.getElementById('cl-rep-desc').value;
+  const err = document.getElementById('cl-rep-err');
+  if (!name) { err.textContent = 'Enter a name.'; return; }
+  try {
+    await sbFetch('rpc/mcp_report_save', { method: 'POST', body: JSON.stringify({ p_id: id, p_name: name, p_description: description }) });
+  } catch (e) {
+    err.textContent = /23505/.test(e.message) ? 'You already have a report with that name.' : "Couldn't save. Try again.";
+    console.warn('Save report:', e.message);
+    return;
+  }
+  claudeLoadReports();
+}
+async function claudeDeleteReport(id) {
+  const r = claudeReports.find(x => x.id === id);
+  if (!r || !confirm(`Delete the report "${r.name}"? This cannot be undone.`)) return;
+  try {
+    await sbFetch('rpc/mcp_report_delete', { method: 'POST', body: JSON.stringify({ p_id: id }) });
+  } catch (e) {
+    document.getElementById('claude-reports').insertAdjacentHTML('afterbegin', loadErrorHtml('the delete (try again)', '', e));
+    return;
+  }
+  claudeLoadReports();
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────

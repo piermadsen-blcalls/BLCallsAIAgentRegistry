@@ -2,3 +2,10 @@
 [build]
   publish = "."
   command = ""
+
+# The Claude connector's sign-in: Supabase Auth's OAuth 2.1 server sends people to
+# <site>/oauth/consent?authorization_id=... to approve; index.html shows the consent card.
+[[redirects]]
+  from = "/oauth/consent"
+  to = "/index.html"
+  status = 200

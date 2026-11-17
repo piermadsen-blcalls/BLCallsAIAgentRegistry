@@ -1107,3 +1107,28 @@ Continued from the 8/7 Scores work; large session. What moved:
   - While collapsed the cards don't load; opening loads what changed.
 - Checked at 1440 and 375 px on the synthetic preview. Tests: 192/192.
 - External sources (Wispr/Jira) not pulled this session.
+
+## Week of Nov 16, 2026
+
+### 2026-11-17 (Pier) - Claude connector for the call data (branch `fm/ivr-calls-mcp`)
+- **What:** registry users can add the registry to their own Claude as a custom connector and ask about the calls in plain English, or save a question as a report and re-run it later. The registry is where they connect, see or disconnect it, and manage their reports.
+- **Server:** new edge function `mcp`, a remote MCP server (Streamable HTTP, stateless). Tools:
+  - describe_data, search_calls, get_call, aggregate_calls, list_values, run_sql;
+  - list/run/create/update/delete reports.
+- **Auth:** Supabase Auth's OAuth 2.1 server. Claude signs the user in with their registry login on a new consent card at `/oauth/consent`. That card only approves Claude's own callbacks (claude.ai / claude.com, or local for Claude Code).
+  - Every query runs as that user through PostgREST. The function holds no service key.
+- **066 (security, needs the captain's go):** one read door, `mcp_run_sql`:
+  - a live-session check;
+  - SELECT/WITH only, with system functions blocked;
+  - runs as the new NOLOGIN role `mcp_reader` in a read-only sub-transaction that is always rolled back;
+  - reads only the `mcp` views; 1000-row cap; the 8 s timeout;
+  - logs every query to `mcp_query_log`.
+- **067:** `mcp_saved_reports` (owner-only RLS) and its list/save/delete functions.
+- **068:** a covering index so 90-day aggregates are index-only. Measured on prod: 6.7 s from the heap vs 0.41 s index-only.
+- **Page:** new Claude tab (connector URL and steps, connected apps with Disconnect and last use, saved reports with rename/delete, recent queries) and the consent card. Checked at 1440 and 375 px on a synthetic preview.
+- **Tested:**
+  - PGlite: the tests fail before the migrations and pass after; re-runnable; rollbacks restore the catalog exactly; 5 mutations are caught; the generated SQL reads the new index index-only.
+  - Deno: 23 tests. Page: 202/202.
+  - End to end: the real function code and real Claude, against two weeks of pseudonymized real calls. The answers matched prod exactly.
+- **Not applied or deployed:** waiting on the captain (066 grants and role, the OAuth server switch, the deploy).
+- External sources (Wispr/Jira) not pulled this session.
