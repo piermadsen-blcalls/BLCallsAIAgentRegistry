@@ -911,6 +911,30 @@
   .rv-ae-ev li span { font-style:normal; color:var(--text-3); font-size:11px; }
   .rv-ae-note { font-size:11.5px; color:var(--amber); }
   .rv-transcript mark { background:var(--amber-bg); color:var(--text); border-radius:2px; padding:0 1px; }
+  /* SCORES TAB (publisher/advertiser × vertical) */
+  #tab-scores .scores-row{cursor:pointer}
+  #tab-scores .scores-row:hover>td{background:var(--bg-2)}
+  #tab-scores .scores-row.open>td{background:var(--bg-2);font-weight:600}
+  #tab-scores .scores-detail{padding:12px 4px}
+  #tab-scores .scores-detail-headline{font-size:13px;margin-bottom:8px}
+  #tab-scores .scores-whatif-scores{display:flex;gap:18px;align-items:center;font-size:13px}
+  #tab-scores .scores-th{white-space:nowrap}
+  #tab-scores .scores-tier{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap}
+  #tab-scores .scores-tier-1{background:var(--teal-bg);color:var(--teal)}
+  #tab-scores .scores-tier-2{background:var(--blue-bg);color:var(--blue)}
+  #tab-scores .scores-tier-3{background:var(--amber-bg);color:var(--amber)}
+  #tab-scores .scores-tier-4{background:var(--coral-bg);color:var(--coral)}
+  @media (max-width:640px){ #scores-output{overflow-x:auto} }
+
+  /* Utility classes: one declaration each, on the :root tokens. These and the feature classes below replaced
+     the inline style="" attributes, so they keep inline precedence (!important) over context rules such as
+     ".settings-table td". display is the exception: JS shows and hides elements with inline display.
+     The few styles left inline are that display:none state or values computed per row. */
+  .pointer { cursor:pointer !important; }
+  .nowrap { white-space:nowrap !important; }
+  .pre-wrap { white-space:pre-wrap !important; }
+  /* Scores tab */
+  .scores-tx-modal { position:fixed !important; inset:0 !important; background:rgba(0,0,0,.4) !important; z-index:10000 !important; display:flex; align-items:center !important; justify-content:center !important; padding:40px !important; }
 </style>
 </head>
 <body>
@@ -1361,21 +1385,6 @@
 
   <!-- SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) -->
   <div id="tab-scores" class="tab-pane">
-    <style>
-      #tab-scores .scores-row{cursor:pointer}
-      #tab-scores .scores-row:hover>td{background:var(--bg-2)}
-      #tab-scores .scores-row.open>td{background:var(--bg-2);font-weight:600}
-      #tab-scores .scores-detail{padding:12px 4px}
-      #tab-scores .scores-detail-headline{font-size:13px;margin-bottom:8px}
-      #tab-scores .scores-whatif-scores{display:flex;gap:18px;align-items:center;font-size:13px}
-      #tab-scores .scores-th{white-space:nowrap}
-      #tab-scores .scores-tier{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap}
-      #tab-scores .scores-tier-1{background:var(--teal-bg);color:var(--teal)}
-      #tab-scores .scores-tier-2{background:var(--blue-bg);color:var(--blue)}
-      #tab-scores .scores-tier-3{background:var(--amber-bg);color:var(--amber)}
-      #tab-scores .scores-tier-4{background:var(--coral-bg);color:var(--coral)}
-      @media (max-width:640px){ #scores-output{overflow-x:auto} }
-    </style>
     <div class="cr-toolbar">
       <div class="cr-toolbar-left" style="align-items:center;gap:14px">
         <div class="seg scores-seg" data-seg="entity">
