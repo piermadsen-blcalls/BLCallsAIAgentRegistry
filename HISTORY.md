@@ -1132,3 +1132,8 @@ Continued from the 8/7 Scores work; large session. What moved:
   - End to end: the real function code and real Claude, against two weeks of pseudonymized real calls. The answers matched prod exactly.
 - **Not applied or deployed:** waiting on the captain (066 grants and role, the OAuth server switch, the deploy).
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-20 (Pier) - CLAUDE.md: stack statement + related systems (branch `fm/registry-claudemd`)
+- Added a short "Stack (keep it this way)" section and a "Related systems and projects" section (Canoe/RingPartner, ASCND, Supabase, Netlify URL, Jira MK) to `CLAUDE.md`.
+- Fixed stale facts: `agent_eval.js` job, `supabase/rollbacks` + `supabase/tests`, real test commands (`node --test`, `deno test`, SQL asserts), GitHub Pages noted as non-canonical.
+- Docs only, no code changes. External sources (Wispr/Jira) not pulled this session.
