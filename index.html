@@ -935,6 +935,10 @@
   .pre-wrap { white-space:pre-wrap !important; }
   /* Scores tab */
   .scores-tx-modal { position:fixed !important; inset:0 !important; background:rgba(0,0,0,.4) !important; z-index:10000 !important; display:flex; align-items:center !important; justify-content:center !important; padding:40px !important; }
+  /* Status lines (setTone): coral = failed, teal = done, muted = working. Last, so they win over a base color class. */
+  .tone-coral { color:var(--coral) !important; }
+  .tone-teal { color:var(--teal) !important; }
+  .tone-muted { color:var(--text-2) !important; }
 </style>
 </head>
 <body>
@@ -1695,6 +1699,8 @@ function loadErrorHtml(thing, retry, err) {
   if (err) console.warn(`Couldn't load ${thing}:`, err && err.message || err);
   return `<div class="load-error" role="alert"><span>Couldn't load ${esc(thing)}.</span>${retry ? `<button type="button" class="rv-btn" onclick="${retry}">Retry</button>` : ''}</div>`;
 }
+// Status-line color as a class (.tone-coral failed / .tone-teal done / .tone-muted working); replaces the last tone.
+function setTone(el, tone) { el.classList.remove('tone-coral', 'tone-teal', 'tone-muted'); el.classList.add('tone-' + tone); }
 function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : nullMark(); }
 // A value quoted for a PostgREST list or or=() filter. Unquoted values containing , ( ) or "
 // parse as syntax, so e.g. "Auto Insurance (Insured)" silently matched nothing.
@@ -4522,7 +4528,7 @@ async function saveObjective(){
     renderObjective(false);
   }catch(e){
     btn.disabled=false; btn.textContent='Save';
-    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message;
+    setTone(msg, 'coral'); msg.textContent='Save failed: '+e.message;
   }
 }
 
@@ -4554,7 +4560,7 @@ async function addAgentNote(){
     await sbFetch('agent_updates',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:resolveIvrName(RV.agent.ivrName),author:by,note})});
     ta.value='';
     await loadAgentNotes();
-  }catch(e){ msg.style.color='var(--coral)'; msg.textContent='Could not save: '+e.message; }
+  }catch(e){ setTone(msg, 'coral'); msg.textContent='Could not save: '+e.message; }
   btn.disabled=false;
 }
 
@@ -4812,7 +4818,7 @@ async function saveReview(){
   const a=RV.answers;
   const topChange=reviewFieldVal('rv-top-change'), details=reviewFieldVal('rv-details');
   const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
-  if(!RV_QUESTIONS.some(q=>a[q.key])&&!topChange&&!details){ msg.style.color='var(--coral)'; msg.textContent='Answer at least one question first.'; return; }
+  if(!RV_QUESTIONS.some(q=>a[q.key])&&!topChange&&!details){ setTone(msg, 'coral'); msg.textContent='Answer at least one question first.'; return; }
   btn.disabled=true; btn.textContent='Saving…';
   const nowISO=new Date().toISOString();
   const answers={ qualifying:a.qualifying, dropoff:a.dropoff, understanding:a.understanding, script:a.script, top_change:topChange, details };
@@ -4828,11 +4834,11 @@ async function saveReview(){
   try{
     await sbFetch('agent_reviews',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(review)});
     // The form keeps what you saved; the new review shows at the top of the history.
-    msg.style.color='var(--teal)'; msg.textContent='Review saved';
+    setTone(msg, 'teal'); msg.textContent='Review saved';
     reviewBoard.lastReview[resolveIvrName(RV.agent.ivrName)]=nowISO;
     await loadReviewHistory();
   }catch(e){
-    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message;
+    setTone(msg, 'coral'); msg.textContent='Save failed: '+e.message;
   }
   btn.disabled=false; btn.textContent='Save review';
 }
@@ -5761,7 +5767,7 @@ async function settingsInviteUser() {
   const email  = document.getElementById('s-invite-email').value.trim();
   const status = document.getElementById('s-invite-status');
   if (!email) return;
-  status.style.color = 'var(--teal)';
+  setTone(status, 'teal');
   status.textContent = 'Sending…';
   try {
     const res = await adminRequest('invite_user', { email });
@@ -5771,7 +5777,7 @@ async function settingsInviteUser() {
     setTimeout(() => { status.textContent = ''; }, 4000);
     settingsLoadUsers();
   } catch(e) {
-    status.style.color = 'var(--coral)';
+    setTone(status, 'coral');
     status.textContent = e.message;
   }
 }
@@ -6075,21 +6081,21 @@ async function modeltestRun() {
   const stratify   = document.getElementById('modeltest-stratify').checked;
   const statusEl  = document.getElementById('modeltest-run-status');
 
-  if (selected.length === 0) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select at least one model.'; return; }
+  if (selected.length === 0) { setTone(statusEl, 'coral'); statusEl.textContent = 'Select at least one model.'; return; }
 
   // Pin one call set up front so every model scores the identical calls.
   let callIds = [];
   if (stratify) {
-    statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Building length-stratified sample…';
+    setTone(statusEl, 'muted'); statusEl.textContent = 'Building length-stratified sample…';
     try {
       callIds = await modeltestSampleByLength(sampleSize);
     } catch(e) {
-      statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Sampling failed: ${e.message}`; return;
+      setTone(statusEl, 'coral'); statusEl.textContent = `Sampling failed: ${e.message}`; return;
     }
-    if (!callIds.length) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'No eligible calls to sample.'; return; }
+    if (!callIds.length) { setTone(statusEl, 'coral'); statusEl.textContent = 'No eligible calls to sample.'; return; }
   }
   const effectiveSize = callIds.length || sampleSize;
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length}-model test over ${effectiveSize} calls…`;
+  setTone(statusEl, 'muted'); statusEl.textContent = `Launching ${selected.length}-model test over ${effectiveSize} calls…`;
 
   // One model_tests row for the whole run. Every model writes its results under
   // this single test_id, so the comparison view shows them side by side.
@@ -6102,7 +6108,7 @@ async function modeltestRun() {
     });
     testId = Array.isArray(testRow) ? testRow[0].id : testRow.id;
   } catch(e) {
-    statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Could not create test: ${e.message}`; return;
+    setTone(statusEl, 'coral'); statusEl.textContent = `Could not create test: ${e.message}`; return;
   }
 
   const callIdsCsv = callIds.length ? callIds.join(',') : '';
@@ -6115,11 +6121,11 @@ async function modeltestRun() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub ${res.status}`); }
       launched++;
     } catch(e) {
-      statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Error on ${modelId}: ${e.message}`; return;
+      setTone(statusEl, 'coral'); statusEl.textContent = `Error on ${modelId}: ${e.message}`; return;
     }
   }
 
-  statusEl.style.color = 'var(--teal)'; statusEl.textContent = `Started ${launched} model${launched === 1 ? '' : 's'}. Results appear below.`;
+  setTone(statusEl, 'teal'); statusEl.textContent = `Started ${launched} model${launched === 1 ? '' : 's'}. Results appear below.`;
   await modeltestLoadHistory();
 }
 
@@ -6345,7 +6351,7 @@ async function reviewSave() {
   const outcome = document.getElementById('review-outcome').value;
   const reason  = document.getElementById('review-reason').value.trim();
   const status  = document.getElementById('review-save-status');
-  if (!outcome) { status.textContent = 'Pick the correct outcome first'; status.style.color = 'var(--coral)'; return; }
+  if (!outcome) { status.textContent = 'Pick the correct outcome first'; setTone(status, 'coral'); return; }
   try {
     await compPost('training_examples?on_conflict=call_id', {
       call_id: c.call_id,
@@ -6363,7 +6369,7 @@ async function reviewSave() {
     while (n < s.calls.length && s.calls[n].existing) n++;
     s.idx = n < s.calls.length ? n : s.idx;
     reviewRender();
-  } catch(e) { status.textContent = 'Save failed: ' + e.message; status.style.color = 'var(--coral)'; }
+  } catch(e) { status.textContent = 'Save failed: ' + e.message; setTone(status, 'coral'); }
 }
 
 // ── AI PROMPTS ────────────────────────────────────────────────
@@ -6446,22 +6452,22 @@ async function promptsSave() {
   const compliance_prompt = document.getElementById('prompt-editor-compliance').value.trim();
   const statusEl       = document.getElementById('prompt-editor-status');
 
-  if (!name)           { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Name is required.'; return; }
-  if (!outcome_prompt) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Outcome prompt is required.'; return; }
-  if (!compliance_prompt) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Compliance prompt is required.'; return; }
+  if (!name)           { setTone(statusEl, 'coral'); statusEl.textContent = 'Name is required.'; return; }
+  if (!outcome_prompt) { setTone(statusEl, 'coral'); statusEl.textContent = 'Outcome prompt is required.'; return; }
+  if (!compliance_prompt) { setTone(statusEl, 'coral'); statusEl.textContent = 'Compliance prompt is required.'; return; }
 
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Saving…';
+  setTone(statusEl, 'muted'); statusEl.textContent = 'Saving…';
   try {
     if (id) {
       await compPatch(`ai_prompts?id=eq.${id}`, { name, description, outcome_prompt, compliance_prompt });
     } else {
       await compPost('ai_prompts', { name, description, outcome_prompt, compliance_prompt, is_active: false });
     }
-    statusEl.style.color = 'var(--teal)'; statusEl.textContent = 'Saved';
+    setTone(statusEl, 'teal'); statusEl.textContent = 'Saved';
     setTimeout(promptsHideEditor, 1200);
     await promptsLoad();
   } catch(e) {
-    statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
+    setTone(statusEl, 'coral'); statusEl.textContent = e.message;
   }
 }
 
@@ -6494,15 +6500,15 @@ async function promptsRunABTest() {
   const batchSize = document.getElementById('ab-batch-size').value || '50';
   const statusEl  = document.getElementById('ab-status');
 
-  if (!promptId) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select a prompt.'; return; }
+  if (!promptId) { setTone(statusEl, 'coral'); statusEl.textContent = 'Select a prompt.'; return; }
 
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Triggering…';
+  setTone(statusEl, 'muted'); statusEl.textContent = 'Triggering…';
   try {
     const res = await adminRequest('dispatch_process', { inputs: { prompt_id: promptId, batch_size: batchSize } });
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub error ${res.status}`); }
-    statusEl.style.color = 'var(--teal)'; statusEl.textContent = 'Started. Progress is in GitHub Actions.';
+    setTone(statusEl, 'teal'); statusEl.textContent = 'Started. Progress is in GitHub Actions.';
   } catch(e) {
-    statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
+    setTone(statusEl, 'coral'); statusEl.textContent = e.message;
   }
 }
 
