@@ -4,6 +4,25 @@ Internal dashboard + data pipeline for BL Calls' AI phone agents: syncs call dat
 from Canoe (RingPartner Exchange), AI-analyzes transcripts for outcome +
 compliance, and surfaces it in a single-page registry. Live on Netlify.
 
+## Stack (keep it this way)
+- **Front end:** one static `index.html`, plain HTML/CSS/JS. No framework, no build step, no bundler.
+- **Back end + data:** Supabase only - Postgres (numbered migrations, RLS, RPCs, pg_cron rollups) and
+  Deno edge functions. No other server or database.
+- **Jobs:** Node 24 scripts (CommonJS), **zero npm packages** (Node built-ins + `fetch` only), run on
+  GitHub Actions cron. No `package.json`.
+- **AI:** Gemini native Batch API for production scoring; OpenRouter for model comparisons/calibration.
+- **Hosting:** Netlify is the only real host. GitHub Pages also serves `main` (public repo); it is not
+  canonical - don't rely on it or change its settings.
+- **Tests:** `node --test tests/`, `deno test` for edge functions, SQL assert files in `supabase/tests/`.
+
+## Related systems and projects
+- **Canoe / RingPartner Exchange** - the call source; `sync.js` pulls from `exchange-gateway.ringpartner.com`.
+- **ASCND** (AI voice agents, on GHL) - posts calls to `hl-call-webhook` → `hl_call_data`, paired onto
+  `canoe_calls` (the agent transcripts `agent_eval.js` grades); its webhook also sends the alert emails.
+- **Supabase** project `wvnfcxhbztnefhzjhfgg`. **Netlify** site: https://blcallsaiagentregistry.netlify.app
+- **Jira:** project MK at replydev.atlassian.net (tickets cited as `MK-nnn` in commits and `HISTORY.md`).
+- No sibling repo is a code dependency; this repo is self-contained.
+
 ## Architecture (map)
 - **`index.html`** — the ENTIRE frontend. One file, vanilla HTML/CSS/JS, **no
   framework, no build step.** Tabs: Agents, Insights, Calls (MK-176 overview on top of the call list), Review, Scores, Claude (connector setup + saved reports), Settings.
@@ -24,7 +43,10 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
     managers via the ASCND webhook. `ALERT_OVERRIDE_EMAIL` previews all output to one
     address; `ALERT_ALL_MANAGERS=true` (preview-only) includes every manager with
     accounts, ignoring the enabled flag.
-- **`supabase/`** — `migrations/` and edge fns `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`) and
+  - `agent_eval.js` — grades the AI agent's own side of ASCND calls into `agent_call_evals`
+    (same two-phase Gemini batch; run by the process-submit/ingest workflows; never writes `canoe_calls`).
+- **`supabase/`** — `migrations/`, `rollbacks/` + `tests/` (down scripts and SQL asserts for recent
+  migrations), and edge fns `functions/hl-call-webhook` (ASCND/GHL webhook → `hl_call_data`) and
   `functions/mcp` (Claude connector: remote MCP server, reads via 066's `mcp_run_sql` as the signed-in user).
   Project ref: `wvnfcxhbztnefhzjhfgg`. Notables: `002` RLS, `004` ai_prompts,
   `022` agent_metrics/agent_breakdown RPCs, `027` gemini_batch_jobs (batch tracking),
@@ -68,6 +90,11 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 - **Deploy:** push to `main` → Netlify auto-publishes (static, no build).
 
 ## Verify
+- `node --test tests/` (page + script tests); edge functions:
+  `deno test --allow-env --allow-read supabase/functions/mcp/test/` and
+  `deno test --allow-env --import-map=supabase/functions/hl-call-webhook/test/import_map.json supabase/functions/hl-call-webhook/test/`.
+- SQL tests in `supabase/tests/` raise on failure and roll back; run them off prod (PGlite or a branch)
+  when they write fixtures.
 - Load `index.html`; confirm tabs render and Supabase reads succeed (watch console).
 - For scripts: run with `DRY_RUN` / small `BATCH_SIZE`. Note there is **no separate
   test DB** — script writes hit the live `canoe_calls`, so tread carefully.
