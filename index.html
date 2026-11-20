@@ -930,9 +930,13 @@
      the inline style="" attributes, so they keep inline precedence (!important) over context rules such as
      ".settings-table td". display is the exception: JS shows and hides elements with inline display.
      The few styles left inline are that display:none state or values computed per row. */
+  .ta-l { text-align:left !important; }
   .ta-r { text-align:right !important; }
+  .mono { font-family:var(--mono) !important; }
   .fs-12 { font-size:12px !important; }
   .fw-500 { font-weight:500 !important; }
+  .c-text { color:var(--text) !important; }
+  .c-text-2 { color:var(--text-2) !important; }
   .c-text-3 { color:var(--text-3) !important; }
   .c-teal { color:var(--teal) !important; }
   .c-amber { color:var(--amber) !important; }
@@ -941,8 +945,10 @@
   .nowrap { white-space:nowrap !important; }
   .pre-wrap { white-space:pre-wrap !important; }
   .scroll-x { overflow-x:auto !important; }
+  .o-40 { opacity:.4 !important; }
   .span-all { grid-column:1/-1 !important; }
   .w-200 { width:200px !important; }
+  .mt-8 { margin-top:8px !important; }
   .mt-10 { margin-top:10px !important; }
   .mb-2 { margin-bottom:2px !important; }
   .mb-20 { margin-bottom:20px !important; }
@@ -954,6 +960,7 @@
   .row-gap-8 { display:flex; align-items:center !important; gap:8px !important; }
   .note-xs { font-size:11px !important; color:var(--text-3) !important; }
   .section-split { margin-top:24px !important; border-top:1px solid var(--border) !important; padding-top:20px !important; }
+  .clip-140 { max-width:140px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .clip-160 { max-width:160px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .clip-180 { max-width:180px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .num-xs { text-align:right !important; font-family:var(--mono) !important; font-size:11px !important; }
@@ -974,7 +981,16 @@
   .cr-outcome-cell { font-size:11px !important; color:var(--text-2) !important; white-space:nowrap !important; }
   .drawer-canoe-sum { margin-top:10px !important; padding-top:10px !important; border-top:1px solid var(--border) !important; }
   /* Scores tab */
+  .scores-toolbar-left { align-items:center !important; gap:14px !important; }
+  .scores-toolbar-right { gap:8px !important; align-items:center !important; }
+  .scores-low { font-size:11px !important; opacity:.7 !important; }
+  .scores-check { cursor:pointer !important; display:flex; gap:6px !important; align-items:center !important; }
+  .scores-low-note { margin-bottom:10px !important; padding:8px 12px !important; border:1px dashed var(--border) !important; border-radius:var(--radius-sm) !important; font-size:12px !important; color:var(--text-2) !important; }
+  .scores-dis-head { margin-top:16px !important; display:flex; flex-wrap:wrap !important; gap:8px 12px !important; align-items:center !important; }
   .scores-tx-modal { position:fixed !important; inset:0 !important; background:rgba(0,0,0,.4) !important; z-index:10000 !important; display:flex; align-items:center !important; justify-content:center !important; padding:40px !important; }
+  .scores-tx-card { background:var(--surface) !important; max-width:680px !important; width:100% !important; max-height:80vh !important; overflow:auto !important; border-radius:var(--radius) !important; padding:20px !important; box-shadow:0 8px 24px rgba(0,0,0,.2) !important; }
+  .scores-tx-head { display:flex; justify-content:space-between !important; align-items:center !important; margin-bottom:10px !important; }
+  .scores-tx-text { white-space:pre-wrap !important; font-size:13px !important; line-height:1.55 !important; color:var(--text) !important; }
   /* Status lines (setTone): coral = failed, teal = done, muted = working. Last, so they win over a base color class. */
   .tone-coral { color:var(--coral) !important; }
   .tone-teal { color:var(--teal) !important; }
@@ -1430,7 +1446,7 @@
   <!-- SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) -->
   <div id="tab-scores" class="tab-pane">
     <div class="cr-toolbar">
-      <div class="cr-toolbar-left" style="align-items:center;gap:14px">
+      <div class="cr-toolbar-left scores-toolbar-left">
         <div class="seg scores-seg" data-seg="entity">
           <button class="seg-btn scores-seg-btn active" data-val="publisher" onclick="scoresSetEntity('publisher')">Publishers</button>
           <button class="seg-btn scores-seg-btn" data-val="advertiser" onclick="scoresSetEntity('advertiser')">Advertisers</button>
@@ -1440,8 +1456,8 @@
           <button class="seg-btn scores-seg-btn" data-val="window" onclick="scoresSetWindow('window')">Agents range</button>
         </div>
       </div>
-      <div class="cr-toolbar-right" style="gap:8px;align-items:center">
-        <input class="cr-filter-input" type="text" id="scores-search" placeholder="Search name or vertical…" oninput="scoresSetSearch(this.value)" style="width:200px">
+      <div class="cr-toolbar-right scores-toolbar-right">
+        <input class="cr-filter-input w-200" type="text" id="scores-search" placeholder="Search name or vertical…" oninput="scoresSetSearch(this.value)">
         <button class="run-btn" onclick="scoresLoad()">Refresh</button>
       </div>
     </div>
@@ -2045,7 +2061,7 @@ function scoresRenderTable() {
       : `<div class="ins-loading">No calls with both a Canoe and a Registry outcome in this window.</div>`;
     return;
   }
-  const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
+  const th = (key, label, extra = '', title = '') => `<th class="scores-th pointer ${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
   const lowMark = `<span class="null-mark" title="Score hidden until ${SCORES_MIN_CALLS}+ scored calls">-</span>`;
   const tierTitle = 'Best tier whose bars all pass (Registry outcomes), else Tier 4: '
     + SCORES_TIERS[scoresEntity].map(t => `Tier ${t.tier} = avg ${t.minAvg >= 0 ? '+' : ''}${t.minAvg}+, defect ≤${Math.round(t.maxDefect * 100)}%, conv-adj ≥${Math.round(t.minConv * 100)}%`).join('; ');
@@ -2054,25 +2070,25 @@ function scoresRenderTable() {
     return `
     <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" data-key="${esc(r.key)}" onclick="scoresToggleDetail(this.dataset.key)">
       <td>${esc(r.entity)}</td>
-      <td style="color:var(--text-2)">${esc(r.vertical)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.oursScore)}</td>
-      <td style="text-align:right;font-family:var(--mono);color:${low || r.gap == null ? 'var(--text-3)' : Math.abs(r.gap) >= 2 ? 'var(--coral)' : 'var(--text)'}">${low ? lowMark : (r.gap == null ? nullMark() : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1))}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresPct(r.defect)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresPct(r.conv)}</td>
-      <td style="text-align:right">${low || r.tier == null ? lowMark : `<span class="scores-tier scores-tier-${r.tier}">Tier ${r.tier}</span>`}</td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${r.n.toLocaleString()}${low ? ' <span style="font-size:11px;opacity:.7">low volume</span>' : ''}</td>
+      <td class="c-text-2">${esc(r.vertical)}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresFmt(r.oursScore)}</td>
+      <td class="ta-r mono ${low || r.gap == null ? 'c-text-3' : Math.abs(r.gap) >= 2 ? 'c-coral' : 'c-text'}">${low ? lowMark : (r.gap == null ? nullMark() : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1))}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresPct(r.defect)}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresPct(r.conv)}</td>
+      <td class="ta-r">${low || r.tier == null ? lowMark : `<span class="scores-tier scores-tier-${r.tier}">Tier ${r.tier}</span>`}</td>
+      <td class="ta-r mono c-text-3">${r.n.toLocaleString()}${low ? ' <span class="scores-low">low volume</span>' : ''}</td>
     </tr>
     ${scoresOpenKey === r.key ? `<tr class="scores-detail-row"><td colspan="9">${scoresRenderDetail(r)}</td></tr>` : ''}
   `;
   }).join('');
   out.innerHTML = `<table class="canoe-table scores-table">
     <thead><tr>
-      ${th('entity', entLabel, 'text-align:left')}${th('vertical', 'Vertical', 'text-align:left')}
-      ${th('canoe', 'Canoe', 'text-align:right', 'Weighted score from Canoe outcomes')}${th('ours', 'Registry', 'text-align:right', 'Weighted score from Registry AI outcomes')}
-      ${th('gap', 'Gap', 'text-align:right', 'Registry minus Canoe')}
-      ${th('defect', 'Defect', 'text-align:right', 'Share of calls with a negative-weight Registry outcome')}${th('conv', 'Conv-adj', 'text-align:right', 'Share of calls with a Registry outcome weighted 2+ (quoted interested/undecided, appointment, sale)')}
-      ${th('tier', 'Tier', 'text-align:right', tierTitle)}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
+      ${th('entity', entLabel, 'ta-l')}${th('vertical', 'Vertical', 'ta-l')}
+      ${th('canoe', 'Canoe', 'ta-r', 'Weighted score from Canoe outcomes')}${th('ours', 'Registry', 'ta-r', 'Weighted score from Registry AI outcomes')}
+      ${th('gap', 'Gap', 'ta-r', 'Registry minus Canoe')}
+      ${th('defect', 'Defect', 'ta-r', 'Share of calls with a negative-weight Registry outcome')}${th('conv', 'Conv-adj', 'ta-r', 'Share of calls with a Registry outcome weighted 2+ (quoted interested/undecided, appointment, sale)')}
+      ${th('tier', 'Tier', 'ta-r', tierTitle)}${th('n', 'Calls', 'ta-r', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -2099,11 +2115,11 @@ async function scoresShowTranscript(id) {
   let box = document.getElementById('scores-tx-modal');
   if (!box) {
     box = document.createElement('div'); box.id = 'scores-tx-modal';
-    box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:flex;align-items:center;justify-content:center;padding:40px';
+    box.className = 'scores-tx-modal';
     box.addEventListener('click', e => { if (e.target === box) box.remove(); });
     document.body.appendChild(box);
   }
-  box.innerHTML = `<div style="background:var(--surface);max-width:680px;width:100%;max-height:80vh;overflow:auto;border-radius:var(--radius);padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.2)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>Transcript</strong><button class="btn-close" onclick="document.getElementById('scores-tx-modal').remove()">Close</button></div><div id="scores-tx-body" style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:var(--text)">Loading…</div></div>`;
+  box.innerHTML = `<div class="scores-tx-card"><div class="scores-tx-head"><strong>Transcript</strong><button class="btn-close" onclick="document.getElementById('scores-tx-modal').remove()">Close</button></div><div id="scores-tx-body" class="scores-tx-text">Loading…</div></div>`;
   try {
     const rows = await sbFetch(`canoe_calls?select=transcription,ascnd_transcript&id=eq.${encodeURIComponent(id)}`);
     const t = rows && rows[0] ? (rows[0].transcription || rows[0].ascnd_transcript || '(no transcript on this call)') : '(call not found)';
@@ -2136,33 +2152,33 @@ function scoresRenderDetail(r) {
     : `Canoe and Registry agree on the outcome mix here.`;
   const rowsHtml = ranked.map(x => {
     const excl = scoresExcluded.has(x.o);
-    return `<tr style="${excl ? 'opacity:.4' : ''}">
-      <td><label style="cursor:pointer;display:flex;gap:6px;align-items:center"><input type="checkbox" ${excl ? '' : 'checked'} data-key="${esc(r.key)}" data-outcome="${esc(x.o)}" onclick="event.stopPropagation();scoresToggleOutcome(this.dataset.key,this.dataset.outcome)"><span style="font-family:var(--mono)">${esc(labelOf(x.o))}</span></label></td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${x.w}</td>
-      <td style="text-align:right;font-family:var(--mono)">${x.cN || ''}</td>
-      <td style="text-align:right;font-family:var(--mono)">${x.oN || ''}</td>
+    return `<tr class="${excl ? 'o-40' : ''}">
+      <td><label class="scores-check"><input type="checkbox" ${excl ? '' : 'checked'} data-key="${esc(r.key)}" data-outcome="${esc(x.o)}" onclick="event.stopPropagation();scoresToggleOutcome(this.dataset.key,this.dataset.outcome)"><span class="mono">${esc(labelOf(x.o))}</span></label></td>
+      <td class="ta-r mono c-text-3">${x.w}</td>
+      <td class="ta-r mono">${x.cN || ''}</td>
+      <td class="ta-r mono">${x.oN || ''}</td>
     </tr>`;
   }).join('');
   const fmtD = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const dis = r._dis, disCount = Array.isArray(dis) ? dis.length : null;
   const disHtml = dis == null
-    ? '<div class="canoe-none" style="padding:8px 0">Loading calls…</div>'
+    ? '<div class="canoe-none p-8-0">Loading calls…</div>'
     : dis.length === 0
-      ? '<div class="canoe-none" style="padding:8px 0">No individual disagreements in this window.</div>'
-      : `<table class="canoe-table"><thead><tr><th>Date</th><th style="text-align:left">Publisher</th><th style="text-align:left">Advertiser</th><th style="text-align:right">Dur</th><th style="text-align:left">Disposition</th><th style="text-align:left">Canoe</th><th style="text-align:left">Registry</th><th style="text-align:right">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3);white-space:nowrap">${fmtD(c.created_at)}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'')}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'')}</td><td style="text-align:right;font-family:var(--mono)">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'')}</td><td style="font-family:var(--mono)">${esc(labelOf(c.canoe_outcome))}</td><td style="font-family:var(--mono)">${esc(labelOf(c.our_outcome))}</td><td style="text-align:right;white-space:nowrap">${httpUrl(c.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(c.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresShowTranscript('${jsStr(c.id)}')">Transcript</a> · <a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresCopyId('${jsStr(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
+      ? '<div class="canoe-none p-8-0">No individual disagreements in this window.</div>'
+      : `<table class="canoe-table"><thead><tr><th>Date</th><th class="ta-l">Publisher</th><th class="ta-l">Advertiser</th><th class="ta-r">Dur</th><th class="ta-l">Disposition</th><th class="ta-l">Canoe</th><th class="ta-l">Registry</th><th class="ta-r">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td class="c-text-3 nowrap">${fmtD(c.created_at)}</td><td class="clip-140" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'')}</td><td class="clip-140" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'')}</td><td class="ta-r mono">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'')}</td><td class="mono">${esc(labelOf(c.canoe_outcome))}</td><td class="mono">${esc(labelOf(c.our_outcome))}</td><td class="ta-r nowrap">${httpUrl(c.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(c.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link pointer" onclick="event.stopPropagation();scoresShowTranscript('${jsStr(c.id)}')">Transcript</a> · <a class="cr-link pointer" onclick="event.stopPropagation();scoresCopyId('${jsStr(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
   return `<div class="scores-detail">
-    ${(r.n || 0) < SCORES_MIN_CALLS ? `<div style="margin-bottom:10px;padding:8px 12px;border:1px dashed var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">Under ${SCORES_MIN_CALLS} scored calls, so the score is hidden.</div>` : ''}
+    ${(r.n || 0) < SCORES_MIN_CALLS ? `<div class="scores-low-note">Under ${SCORES_MIN_CALLS} scored calls, so the score is hidden.</div>` : ''}
     <div class="scores-detail-headline">${headline}</div>
     <div class="scores-whatif-scores">
-      <span>Canoe <strong style="font-family:var(--mono)">${scoresFmt(cScore)}</strong></span>
-      <span>Registry <strong style="font-family:var(--mono)">${scoresFmt(oScore)}</strong></span>
-      ${scoresExcluded.size ? `<span style="color:var(--text-3);font-size:12px">recomputed with ${scoresExcluded.size} outcome(s) removed</span>` : ''}
+      <span>Canoe <strong class="mono">${scoresFmt(cScore)}</strong></span>
+      <span>Registry <strong class="mono">${scoresFmt(oScore)}</strong></span>
+      ${scoresExcluded.size ? `<span class="c-text-3 fs-12">recomputed with ${scoresExcluded.size} outcome(s) removed</span>` : ''}
     </div>
-    <table class="canoe-table" style="margin-top:8px">
-      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Registry n</th></tr></thead>
+    <table class="canoe-table mt-8">
+      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th class="ta-r">Weight</th><th class="ta-r">Canoe n</th><th class="ta-r">Registry n</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
-    <div class="scores-detail-headline" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}
+    <div class="scores-detail-headline scores-dis-head">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}
       <button class="rv-btn" data-entity="${esc(r.entity)}" data-vertical="${esc(r.vertical)}" onclick="event.stopPropagation();scoresViewCalls(this.dataset.entity,this.dataset.vertical)">View all calls in Calls</button></div>
     ${disHtml}
   </div>`;
