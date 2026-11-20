@@ -930,9 +930,49 @@
      the inline style="" attributes, so they keep inline precedence (!important) over context rules such as
      ".settings-table td". display is the exception: JS shows and hides elements with inline display.
      The few styles left inline are that display:none state or values computed per row. */
+  .ta-r { text-align:right !important; }
+  .fs-12 { font-size:12px !important; }
+  .fw-500 { font-weight:500 !important; }
+  .c-text-3 { color:var(--text-3) !important; }
+  .c-teal { color:var(--teal) !important; }
+  .c-amber { color:var(--amber) !important; }
+  .c-coral { color:var(--coral) !important; }
   .pointer { cursor:pointer !important; }
   .nowrap { white-space:nowrap !important; }
   .pre-wrap { white-space:pre-wrap !important; }
+  .scroll-x { overflow-x:auto !important; }
+  .span-all { grid-column:1/-1 !important; }
+  .w-200 { width:200px !important; }
+  .mt-10 { margin-top:10px !important; }
+  .mb-2 { margin-bottom:2px !important; }
+  .mb-20 { margin-bottom:20px !important; }
+  .ml-12 { margin-left:12px !important; }
+  .m-4-0-18 { margin:4px 0 18px !important; }
+  .m-22-0-0 { margin:22px 0 0 !important; }
+  .p-8-0 { padding:8px 0 !important; }
+  /* Shared */
+  .row-gap-8 { display:flex; align-items:center !important; gap:8px !important; }
+  .note-xs { font-size:11px !important; color:var(--text-3) !important; }
+  .section-split { margin-top:24px !important; border-top:1px solid var(--border) !important; padding-top:20px !important; }
+  .clip-160 { max-width:160px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .clip-180 { max-width:180px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .num-xs { text-align:right !important; font-family:var(--mono) !important; font-size:11px !important; }
+  .empty-note-sm { font-size:12px !important; color:var(--text-3) !important; font-style:italic !important; }
+  /* Agents tab (details drawer) */
+  .ag-link-icon { flex-shrink:0 !important; color:var(--brand-navy) !important; }
+  .ag-objective { font-size:13px !important; color:var(--text-2) !important; line-height:1.5 !important; white-space:pre-wrap !important; }
+  .ag-perf-strip { margin-top:12px !important; padding-top:0 !important; border-top:none !important; }
+  /* Insights tab */
+  .ins-sub-mono { font-size:12px !important; font-family:var(--mono) !important; color:var(--text-2) !important; }
+  /* Calls tab */
+  .cr-export { background:var(--surface) !important; color:var(--brand-navy) !important; border:1px solid var(--border-strong) !important; }
+  .cr-connected { font-size:11px !important; font-weight:500 !important; }
+  .cr-id-cell { font-size:11px !important; color:var(--text-3) !important; max-width:120px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .cr-agent-cell { font-size:12px !important; max-width:160px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .cr-acct-cell { font-size:12px !important; max-width:140px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .cr-disp-cell { font-size:11px !important; max-width:200px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; color:var(--text-2) !important; }
+  .cr-outcome-cell { font-size:11px !important; color:var(--text-2) !important; white-space:nowrap !important; }
+  .drawer-canoe-sum { margin-top:10px !important; padding-top:10px !important; border-top:1px solid var(--border) !important; }
   /* Scores tab */
   .scores-tx-modal { position:fixed !important; inset:0 !important; background:rgba(0,0,0,.4) !important; z-index:10000 !important; display:flex; align-items:center !important; justify-content:center !important; padding:40px !important; }
   /* Status lines (setTone): coral = failed, teal = done, muted = working. Last, so they win over a base color class. */
@@ -1327,7 +1367,7 @@
     <section class="dash-card dash-wide" id="dash-cpa" aria-label="Cost per acquisition"></section>
     </div>
     <div class="section-header dash-list-head" id="calls-list"><div class="section-title">Call list</div></div>
-    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
+    <div class="summary-strip mb-20" id="calls-summary-strip">
       <div class="summary-item" title="AI-scored calls in this scope. Ignores the Flagged only and flag-type filters, so the flag rate stays a real ratio."><div class="summary-val" id="calls-stat-total"><span class="null-mark">-</span></div><div class="summary-lbl">AI-scored calls</div></div>
       <div class="summary-item flag-card" id="calls-flag-card" role="button" tabindex="0" aria-expanded="false" aria-controls="calls-flag-breakdown" title="Show flags by type" onclick="callsFlagBreakdownToggle(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();callsFlagBreakdownToggle(event);}"><div class="summary-val" id="calls-stat-flagged"><span class="null-mark">-</span></div><div class="summary-lbl">flagged</div><div class="summary-sub" id="calls-stat-high"></div><div id="calls-flag-breakdown" class="flag-tip" role="dialog" aria-label="Flags by type" style="display:none" onclick="event.stopPropagation()"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate"><span class="null-mark">-</span></div><div class="summary-lbl">flag rate</div></div>
@@ -1367,7 +1407,7 @@
         <!-- Search -->
         <div class="search-wrap">
           <svg class="search-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.75" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <input class="search-input" type="text" id="cr-search" placeholder="Search agent, phone…" style="width:200px">
+          <input class="search-input w-200" type="text" id="cr-search" placeholder="Search agent, phone…">
         </div>
       </div>
       <div class="cr-toolbar-right">
@@ -1378,7 +1418,7 @@
           </button>
           <div class="ins-vertical-popover" id="cr-colpicker-popover"></div>
         </div>
-        <button class="run-btn" id="cr-export-btn" onclick="crExportAll()" style="background:var(--surface);color:var(--brand-navy);border:1px solid var(--border-strong)">Export CSV</button>
+        <button class="run-btn cr-export" id="cr-export-btn" onclick="crExportAll()">Export CSV</button>
       </div>
     </div>
     <div class="cr-link-scope" id="cr-link-scope" style="display:none"></div>
@@ -2325,7 +2365,7 @@ async function loadAgentActivity(){try{const rows=await sbFetch('rpc/agent_last_
 let testCallMap={};
 async function loadTestCalls(){try{const rows=await sbFetch('agent_test_calls?select=ivr_name,url');if(rows)rows.forEach(r=>{if(r.ivr_name&&r.url)testCallMap[r.ivr_name]=r.url;});}catch(e){console.warn('test calls:',e.message);}}
 async function saveTestCall(ivrName,url){await sbFetch('agent_test_calls?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,url:url||null,updated_at:new Date().toISOString()})});testCallMap[ivrName]=url;}
-function renderTestCallRow(ivrName){const url=httpUrl(testCallMap[ivrName]);return url?`<div class="card-test-call"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--brand-navy)"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg><a class="card-test-link" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a></div>`:'';}
+function renderTestCallRow(ivrName){const url=httpUrl(testCallMap[ivrName]);return url?`<div class="card-test-call"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" class="ag-link-icon"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg><a class="card-test-link" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a></div>`:'';}
 // The open agent's test call, in its details: link + Edit, or Add. tcEdit holds the draft while editing.
 let tcEdit=null;   // {ivr, draft} or null
 function renderDrawerTestCall(a){
@@ -2365,12 +2405,12 @@ function renderDrawer(a){const hasQual=(a.qualifying||[]).length>0;const tg=a.ta
 const mkTargetTable=(heads,rows,total,noun,calls,emptyMsg)=>{if(agentTargetsFailed)return'<div class="canoe-none">Couldn\'t load. Reload the page to try again.</div>';if(!rows.length)return`<div class="canoe-none">${emptyMsg}</div>`;const shown=total>rows.length?`Top ${rows.length} of ${total} ${noun}s`:`${total} ${noun}${total!==1?'s':''}`;return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table tgt-table"><thead><tr><th>${heads[0]}</th><th>${heads[1]}</th><th class="num">Calls</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2].toLocaleString()}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2">${shown} · last ${tgDays} days</td><td class="num">${calls.toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const pcTable=mkTargetTable(['Campaign','Publisher'],(tg?tg.publisher_campaigns:[]).map(p=>[esc(p.campaign),esc(p.publisher),p.calls]),tg?tg.publisher_campaigns_total:0,'campaign',tg?tg.calls:0,`No calls in the last ${tgDays} days`);
 const ivrTable=mkTargetTable(['Advertiser','Campaign'],(tg?tg.buyer_targets:[]).map(t=>[esc(t.advertiser),`${t.campaign?esc(t.campaign):'<span class="tgt-sub">No campaign</span>'}<span class="tgt-sub">${esc(t.vertical)}${t.other_verticals?` +${t.other_verticals} more vertical${t.other_verticals!==1?'s':''}`:''}</span>`,t.calls]),tg?tg.buyer_targets_total:0,'target',tg?tg.routed_calls:0,tg&&tg.calls?`No calls reached a buyer in the last ${tgDays} days`:`No calls in the last ${tgDays} days`);const qualSection=hasQual&&getEffectiveStatus(a)!=='test'?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">None</div>';
-const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No calls in this range</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=fmtPct(totPaid,totRaw);const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>Total (${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''})</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
+const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none p-8-0">No calls in this range</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=fmtPct(totPaid,totRaw);const bodyRows=rows.map(p=>`<tr><td class="clip-160" title="${esc(p.name)}">${esc(p.name)}</td><td class="num-xs">${p.raw_calls.toLocaleString()}</td><td class="num-xs">${p.sent_calls||0}</td><td class="num-xs">${p.paid_calls}</td><td class="num-xs">${fmtPct(p.paid_calls,p.raw_calls)}</td><td class="num-xs">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th class="ta-r">Raw</th><th class="ta-r">Sent</th><th class="ta-r">Paid</th><th class="ta-r">Conv.</th><th class="ta-r">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>Total (${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''})</td><td class="ta-r">${totRaw.toLocaleString()}</td><td class="ta-r">${totSent.toLocaleString()}</td><td class="ta-r">${totPaid.toLocaleString()}</td><td class="ta-r">${avgConv}</td><td class="ta-r">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const nd=metricsFailed,sentOverRaw=nd?nullMark():fmtPct(a.sent_calls,a.raw_calls),margin=nd?nullMark():'$'+Math.round(a.margin||0).toLocaleString();
-return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${esc(a.notes)}</em>`:''}</div><div class="drawer-meta">${esc(activeRange.label||'')} · Sent / raw <span class="drawer-num">${sentOverRaw}</span> · Direct margin <span class="drawer-num">${margin}</span></div>${renderDrawerTestCall(a)}</div><button class="btn-close" onclick="closeDrawer(event)">Close</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Buyer targets</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div>${aeDrawerHtml(a)}</div></div>`;}
+return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em class="c-amber">${esc(a.notes)}</em>`:''}</div><div class="drawer-meta">${esc(activeRange.label||'')} · Sent / raw <span class="drawer-num">${sentOverRaw}</span> · Direct margin <span class="drawer-num">${margin}</span></div>${renderDrawerTestCall(a)}</div><button class="btn-close" onclick="closeDrawer(event)">Close</button></div>${a.objective?`<div class="dsec m-4-0-18"><div class="dsec-title">IVR objective</div><div class="ag-objective">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Buyer targets</div>${ivrTable}</div></div></div><div class="drawer-sections section-split"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div>${aeDrawerHtml(a)}</div></div>`;}
 
 function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);if(s==='defects')return aeDefectRate(b)-aeDefectRate(a)||(b.raw_calls||0)-(a.raw_calls||0);return 0;});}
-function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim(),grid=document.getElementById('agents-grid'),drawer=document.getElementById('drawer-container');if(!keepOpen){drawer.innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered),active=sorted.filter(a=>!isInactive(a)),inactive=sorted.filter(isInactive).sort(byLastCall);grid.innerHTML=active.length?active.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):agentsLoadFailed?`<div style="grid-column:1/-1">${loadErrorHtml('agents','retryAgentsLoad()')}</div>`:`<div class="empty">${inactive.length?'No active agents match.':'No agents match.'}</div>`;const sec=document.getElementById('agents-inactive');if(sec){sec.hidden=!inactive.length;if(q&&inactive.length)sec.open=true;document.getElementById('agents-inactive-count').textContent=inactive.length;document.getElementById('agents-inactive-grid').innerHTML=inactive.map(a=>renderCard(a,AGENTS.indexOf(a))).join('');}placeOpenAgentDrawer(drawer);}
+function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim(),grid=document.getElementById('agents-grid'),drawer=document.getElementById('drawer-container');if(!keepOpen){drawer.innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered),active=sorted.filter(a=>!isInactive(a)),inactive=sorted.filter(isInactive).sort(byLastCall);grid.innerHTML=active.length?active.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):agentsLoadFailed?`<div class="span-all">${loadErrorHtml('agents','retryAgentsLoad()')}</div>`:`<div class="empty">${inactive.length?'No active agents match.':'No agents match.'}</div>`;const sec=document.getElementById('agents-inactive');if(sec){sec.hidden=!inactive.length;if(q&&inactive.length)sec.open=true;document.getElementById('agents-inactive-count').textContent=inactive.length;document.getElementById('agents-inactive-grid').innerHTML=inactive.map(a=>renderCard(a,AGENTS.indexOf(a))).join('');}placeOpenAgentDrawer(drawer);}
 // The open agent's details are a full-width grid item right after the row holding its card, so they
 // open under the card instead of below every card. Re-placed on each grid render and when the grid's
 // width (so its column count) changes; parked after the grid while closed.
@@ -2435,8 +2475,8 @@ async function loadAgentBreakdown(a){
 // Placeholder for a breakdown table that isn't filled yet: loading, or a failure with Retry.
 function bdPending(a){
   return a._bdErr
-    ? `<div class="canoe-none" style="padding:8px 0;">Couldn't load this breakdown. <button class="rv-btn" onclick="event.stopPropagation();retryAgentBreakdown()">Retry</button></div>`
-    : '<div class="canoe-none" style="padding:8px 0;">Loading…</div>';
+    ? `<div class="canoe-none p-8-0">Couldn't load this breakdown. <button class="rv-btn" onclick="event.stopPropagation();retryAgentBreakdown()">Retry</button></div>`
+    : '<div class="canoe-none p-8-0">Loading…</div>';
 }
 async function retryAgentBreakdown(){
   if(openAgent==null) return;
@@ -3316,10 +3356,10 @@ function insRenderResults({dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}){
   const pn=v=>v>=0?'pos':'neg';
   document.getElementById('ins-output').innerHTML=`<div class="anim">
     <div class="summary-strip">
-      <div class="summary-item"><div class="summary-val ${pn(dRev)}">${insFmtDelta(dRev,'$')}</div><div class="summary-lbl">Revenue (after vs before)</div><div class="summary-sub" style="color:${dRev>=0?'var(--teal)':'var(--coral)'}">${dRevPct!=null?(dRev>=0?'+':'')+dRevPct+'%':nullMark()}</div></div>
-      <div class="summary-item"><div class="summary-val ${pn(dMar)}">${insFmtDelta(dMar,'$')}</div><div class="summary-lbl">Direct margin (after vs before)</div><div class="summary-sub" style="color:${dMar>=0?'var(--teal)':'var(--coral)'}">${dMarPct!=null?(dMar>=0?'+':'')+dMarPct+'%':nullMark()}</div></div>
-      <div class="summary-item"><div class="summary-val ${pn(dConvTot)}">${insFmtDelta(dConvTot,'pp')}</div><div class="summary-lbl">Conversion rate (after vs before)</div><div class="summary-sub" style="color:var(--text-3)">${insFmtConv(totPaidA,totRawA)} → ${insFmtConv(totPaidB,totRawB)}</div></div>
-      <div class="summary-item"><div class="summary-val ${pn(totRawB-totRawA)}">${totRawB-totRawA>=0?'+':''}${(totRawB-totRawA).toLocaleString()}</div><div class="summary-lbl">Raw call volume (after vs before)</div><div class="summary-sub" style="color:var(--text-3)">${totRawA.toLocaleString()} → ${totRawB.toLocaleString()}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(dRev)}">${insFmtDelta(dRev,'$')}</div><div class="summary-lbl">Revenue (after vs before)</div><div class="summary-sub ${dRev>=0?'c-teal':'c-coral'}">${dRevPct!=null?(dRev>=0?'+':'')+dRevPct+'%':nullMark()}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(dMar)}">${insFmtDelta(dMar,'$')}</div><div class="summary-lbl">Direct margin (after vs before)</div><div class="summary-sub ${dMar>=0?'c-teal':'c-coral'}">${dMarPct!=null?(dMar>=0?'+':'')+dMarPct+'%':nullMark()}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(dConvTot)}">${insFmtDelta(dConvTot,'pp')}</div><div class="summary-lbl">Conversion rate (after vs before)</div><div class="summary-sub c-text-3">${insFmtConv(totPaidA,totRawA)} → ${insFmtConv(totPaidB,totRawB)}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(totRawB-totRawA)}">${totRawB-totRawA>=0?'+':''}${(totRawB-totRawA).toLocaleString()}</div><div class="summary-lbl">Raw call volume (after vs before)</div><div class="summary-sub c-text-3">${totRawA.toLocaleString()} → ${totRawB.toLocaleString()}</div></div>
     </div>
     ${insRenderSection('pub','Publishers',pubM,pA,pB)}
     ${insRenderSection('adv','Advertisers',advM,pA,pB)}
@@ -3373,7 +3413,7 @@ function insRenderSection(sect,title,movers,pA,pB){
       <td class="delta-cell"><span class="${dc(r.dRev)}">${insFmtDelta(r.dRev,'$')}</span>${dRevPctStr?` <span class="delta-pill ${pc(r.dRevPct)}">${dRevPctStr}</span>`:''}</td>
       <td class="delta-cell ${dc(r.dMargin)}">${insFmtDelta(r.dMargin,'$')}</td>
       <td class="delta-cell ${dc(r.dConv)}">${insFmtDelta(r.dConv,'pp')}</td>
-      <td style="text-align:right"><span class="ins-chevron"><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></td>
+      <td class="ta-r"><span class="ins-chevron"><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></td>
     </tr>
     <tr class="expand-row" id="ins-exp-${sect}-${safeKey}"><td colspan="7">${expand}</td></tr>`;
   }).join('');
@@ -3398,17 +3438,17 @@ function insRenderSection(sect,title,movers,pA,pB){
 function insExpandContent(r,pA,pB){
   const allAgents=new Set([...Object.keys(r.a.byAgent||{}),...Object.keys(r.b.byAgent||{})]);
   const agRows=[...allAgents].map(ag=>{const aa=r.a.byAgent[ag]||{raw:0,paid:0,rev:0},ab=r.b.byAgent[ag]||{raw:0,paid:0,rev:0};return{ag,aa,ab,dRev:ab.rev-aa.rev};}).sort((x,y)=>Math.abs(y.dRev)-Math.abs(x.dRev)).slice(0,10);
-  const agTable=agRows.length?`<table class="mini-table"><tr style="font-size:11px;color:var(--text-3)"><td>Agent</td><td>Raw before</td><td>Raw after</td><td>Rev before</td><td>Rev after</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.ag)}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td style="color:${a.dRev>=0?'var(--teal)':'var(--coral)'};font-weight:500">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div style="font-size:12px;color:var(--text-3);font-style:italic">No agent breakdown available.</div>';
+  const agTable=agRows.length?`<table class="mini-table"><tr class="note-xs"><td>Agent</td><td>Raw before</td><td>Raw after</td><td>Rev before</td><td>Rev after</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td class="clip-180">${esc(a.ag)}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td class="fw-500 ${a.dRev>=0?'c-teal':'c-coral'}">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div class="empty-note-sm">No agent breakdown available.</div>';
   return`<div class="expand-inner"><div class="expand-grid">
     <div>
       <div class="expand-col-title">Before: ${insPeriodLabel(pA)}</div>
-      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2)">${r.a.raw.toLocaleString()} raw · ${r.a.paid.toLocaleString()} paid · ${insFmtConv(r.a.paid,r.a.raw)} conv · ${insFmtRev(r.a.rev)}</div>
+      <div class="ins-sub-mono">${r.a.raw.toLocaleString()} raw · ${r.a.paid.toLocaleString()} paid · ${insFmtConv(r.a.paid,r.a.raw)} conv · ${insFmtRev(r.a.rev)}</div>
     </div>
     <div>
       <div class="expand-col-title">After: ${insPeriodLabel(pB)}</div>
-      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2)">${r.b.raw.toLocaleString()} raw · ${r.b.paid.toLocaleString()} paid · ${insFmtConv(r.b.paid,r.b.raw)} conv · ${insFmtRev(r.b.rev)}</div>
+      <div class="ins-sub-mono">${r.b.raw.toLocaleString()} raw · ${r.b.paid.toLocaleString()} paid · ${insFmtConv(r.b.paid,r.b.raw)} conv · ${insFmtRev(r.b.rev)}</div>
     </div>
-    <div style="grid-column:1/-1">
+    <div class="span-all">
       <div class="expand-col-title">Agent breakdown (top movers)</div>${agTable}
     </div>
   </div></div>`;
@@ -3704,7 +3744,7 @@ function crRender() {
     const vertical = r.vertical || (agent ? agent.vertical : '') || '';
     switch (c.key) {
       case 'id':
-        return `<td class="cr-mono" style="font-size:11px;color:var(--text-3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.id||'')}">${esc(r.id||'')}</td>`;
+        return `<td class="cr-mono cr-id-cell" title="${esc(r.id||'')}">${esc(r.id||'')}</td>`;
       case 'created_at':
         return `<td class="cr-mono">${crFmtDateTime(r.created_at)}</td>`;
       case 'recording':
@@ -3714,15 +3754,15 @@ function crRender() {
           : httpUrl(r.ascnd_recording_url) ? `<a class="cr-link" href="${esc(httpUrl(r.ascnd_recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="ASCND AI-agent recording">Listen (AI agent)</a>`
           : ''}</td>`;
       case 'sent':
-        return `<td><span style="font-size:11px;font-weight:500;color:${(r.connect_duration||0)>0?'var(--teal)':'var(--text-3)'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
+        return `<td><span class="cr-connected ${(r.connect_duration||0)>0?'c-teal':'c-text-3'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
       case 'vertical':
         return `<td>${vertical ? `<span class="card-vtag ${vClass(vertical)}">${esc(vertical)}</span>` : ''}</td>`;
       case 'ivr_name':
-        return `<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(agentName)}">${esc(agentName)}</td>`;
+        return `<td class="cr-agent-cell" title="${esc(agentName)}">${esc(agentName)}</td>`;
       case 'publisher_name':
-        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.publisher_name||'')}">${esc(r.publisher_name||'')}</td>`;
+        return `<td class="cr-acct-cell" title="${esc(r.publisher_name||'')}">${esc(r.publisher_name||'')}</td>`;
       case 'advertiser_name':
-        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.advertiser_name||'')}">${esc(r.advertiser_name||'')}</td>`;
+        return `<td class="cr-acct-cell" title="${esc(r.advertiser_name||'')}">${esc(r.advertiser_name||'')}</td>`;
       case 'phone':
         return `<td class="cr-mono">${esc(r.phone||'')}</td>`;
       case 'ivr_duration':
@@ -3730,33 +3770,33 @@ function crRender() {
       case 'disposition':
         return `<td><span class="${crDispoClass(r.disposition)}">${esc(r.disposition||'')}</span></td>`;
       case 'disposition_description':
-        return `<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${esc(r.disposition_description||'')}">${esc(r.disposition_description||'')}</td>`;
+        return `<td class="cr-disp-cell" title="${esc(r.disposition_description||'')}">${esc(r.disposition_description||'')}</td>`;
       case 'advertiser_payin':
-        return `<td class="cr-mono" style="text-align:right">${crFmtRev(r.advertiser_payin)}</td>`;
+        return `<td class="cr-mono ta-r">${crFmtRev(r.advertiser_payin)}</td>`;
       case 'outcome':          // Registry (our_outcome)
         return `<td>${outcomeBadge(r.our_outcome)}</td>`;
       case 'canoe_outcome':
-        return `<td style="font-size:11px;color:var(--text-2);white-space:nowrap">${r.canoe_outcome ? esc(labelOf(r.canoe_outcome)) : nullMark()}</td>`;
+        return `<td class="cr-outcome-cell">${r.canoe_outcome ? esc(labelOf(r.canoe_outcome)) : nullMark()}</td>`;
       // 0 is a real score (e.g. `other`, `not_interested`) — only null means unscored,
       // so don't collapse the two with a falsy check.
       case 'publisher_score':
       case 'advertiser_score': {
         const v = r[c.key];
-        if (v === null || v === undefined) return `<td class="cr-mono" style="text-align:right">${nullMark()}</td>`;
+        if (v === null || v === undefined) return `<td class="cr-mono ta-r">${nullMark()}</td>`;
         const n = Number(v);
-        const color = n > 0 ? 'var(--teal)' : n < 0 ? 'var(--coral)' : 'var(--text-3)';
-        return `<td class="cr-mono" style="text-align:right;color:${color}">${n > 0 ? '+' : ''}${n}</td>`;
+        const tone = n > 0 ? 'c-teal' : n < 0 ? 'c-coral' : 'c-text-3';
+        return `<td class="cr-mono ta-r ${tone}">${n > 0 ? '+' : ''}${n}</td>`;
       }
       case 'flags':
         return `<td>${flagBadges(callFlags(r))}</td>`;
       case 'reviewed':
-        return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span style="color:var(--teal)">reviewed</span>' : '<span style="color:var(--amber)">pending</span>') : ''}</td>`;
+        return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span class="c-teal">reviewed</span>' : '<span class="c-amber">pending</span>') : ''}</td>`;
       default:
         return `<td></td>`;
     }
   }
 
-  const tbody = rows.map(r => `<tr class="cr-row" style="cursor:pointer" data-id="${esc(r.id)}" onclick="crOpenDrawer(this.dataset.id)">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
+  const tbody = rows.map(r => `<tr class="cr-row pointer" data-id="${esc(r.id)}" onclick="crOpenDrawer(this.dataset.id)">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
 
   // "Showing 25 rows" until the total is counted (or if the count failed), then "Showing 25 of 1,240".
   const footerText = crTotal == null
@@ -3766,13 +3806,13 @@ function crRender() {
 
   document.getElementById('cr-output').innerHTML = `
     <div class="cr-table-wrap">
-      <div style="overflow-x:auto">
+      <div class="scroll-x">
         <table class="cr-table">
           <thead><tr>${headHtml}</tr></thead>
           <tbody>${tbody}</tbody>
         </table>
       </div>
-      <div class="cr-footer"><span>${footerText}</span><span style="display:flex;gap:8px;align-items:center">${loadMoreBtn}</span></div>
+      <div class="cr-footer"><span>${footerText}</span><span class="row-gap-8">${loadMoreBtn}</span></div>
     </div>`;
 }
 
@@ -4044,13 +4084,13 @@ function aeCardLine(a){
 function aeDrawerHtml(a){
   if(!aeAvailable) return '';
   const q=a.q, noRules=!(a.qualifying||[]).length;
-  const head=`<div class="dsec-title" style="margin:22px 0 0">Agent quality</div>`;
-  if(!q||!q.scored) return head+'<div class="canoe-none" style="margin-top:10px">No calls scored in this period yet.</div>';
+  const head=`<div class="dsec-title m-22-0-0">Agent quality</div>`;
+  if(!q||!q.scored) return head+'<div class="canoe-none mt-10">No calls scored in this period yet.</div>';
   const tile=(v,l,zero)=>`<div class="perf-item"><div class="perf-val${zero?' zero':''}">${v}</div><div class="perf-lbl">${l}</div></div>`;
   const pctS=(n)=>fmtPct(n,q.scored);
   const issues=a._tiKey===(activeRange.label||'')&&(a._topIssues||[]).length
     ? `<div class="ae-issues"><div class="ae-issues-t">Recent fixes</div>${a._topIssues.map(r=>`<div class="ae-issue">${esc(r.top_issue)} <span>${fmtDate(new Date(r.call_at))}</span></div>`).join('')}</div>` : '';
-  return head+`<div class="perf-strip" style="margin-top:12px;padding-top:0;border-top:none">
+  return head+`<div class="perf-strip ag-perf-strip">
     ${tile(q.scored.toLocaleString(),'Calls scored')}
     ${tile(fmtPct(q.good,q.conversations),'Handled well',!q.good)}
     ${tile(fmtPct(q.major,q.conversations),'Defect rate',!q.major)}
@@ -5236,8 +5276,8 @@ function openCallDrawer(call) {
   // Source, then value: "Registry [sale]   Canoe quoted interested".
   document.getElementById('drawer-outcome-row').innerHTML =
     '<span class="drawer-src">Registry</span>' +
-    (call.our_outcome ? outcomeBadge(call.our_outcome) : '<span style="font-size:12px;color:var(--text-3)">Not yet processed</span>') +
-    (call.canoe_outcome ? `<span class="drawer-src" style="margin-left:12px">Canoe</span><span class="drawer-canoe-outcome">${esc(labelOf(call.canoe_outcome))}</span>` : '');
+    (call.our_outcome ? outcomeBadge(call.our_outcome) : '<span class="fs-12 c-text-3">Not yet processed</span>') +
+    (call.canoe_outcome ? `<span class="drawer-src ml-12">Canoe</span><span class="drawer-canoe-outcome">${esc(labelOf(call.canoe_outcome))}</span>` : '');
 
   const flagsEl = document.getElementById('drawer-flags');
   const shownFlags = callFlags({ flags: compDrawerFlags, suspicious_call: call.suspicious_call });
@@ -5246,10 +5286,10 @@ function openCallDrawer(call) {
     : '<div class="drawer-no-flags">No compliance flags</div>';
 
   const summaryEl = document.getElementById('drawer-summary');
-  const canoeSum = () => `<div class="drawer-src" style="margin-bottom:2px">Canoe</div><div style="font-size:12px">${esc(call.canoe_summary)}</div>`;
+  const canoeSum = () => `<div class="drawer-src mb-2">Canoe</div><div class="fs-12">${esc(call.canoe_summary)}</div>`;
   if (call.our_summary) {
     summaryEl.innerHTML = `<div>${esc(call.our_summary)}</div>` +
-      (call.canoe_summary ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${canoeSum()}</div>` : '');
+      (call.canoe_summary ? `<div class="drawer-canoe-sum">${canoeSum()}</div>` : '');
   } else if (call.canoe_summary) {
     summaryEl.innerHTML = canoeSum();
   } else {
