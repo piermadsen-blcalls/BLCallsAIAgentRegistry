@@ -1166,3 +1166,12 @@ Continued from the 8/7 Scores work; large session. What moved:
 - **Tested:** Deno 25 (allow/deny per action, input checks). Page 206/206. Settings flows checked in a browser against a stubbed function.
 - **Deployed** after the captain set `GITHUB_DISPATCH_TOKEN`; live gate checks (401s, preflight, prod `is_admin()`) are in the PR. The real 200/403 need a signed-in check.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-20 (Pier) - MK-195 Suspicious tab (branch `fm/registry-suspicious-tab`)
+- **What:** new read-only **Suspicious** tab, a coached-caller triage queue built from Luke's mock: Repeat callers, Same script, Odd timing. Every row opens to Listen → Read → Decide; Decide = Agree / Disagree / Unknown, one verdict per person per phone number, shared with the team, removable by its owner. Hide decided (on by default) with a toggle.
+- **Migration `069`:** `coached_verdicts` (RLS: team reads, own writes), read RPCs `suspicious_repeat_callers` / `suspicious_conversions` / `suspicious_similar_transcripts`, `script_matches` + `refresh_script_matches()`. The 07:45 UTC `refresh-dashboard-rollup` job now calls a procedure that commits the dashboard refresh, then runs the matching in its own transaction (a matching failure or timeout cannot undo the dashboard). No new cron job.
+- **Calibration finding (read-only on prod):** raw pg_trgm similarity at the ticket's 55% matched ~9.5k pairs/week in Dentist alone, all buyer IVR greetings. Shipped: drop lines repeated word-for-word in 3+ calls (recordings), then 3-word-sequence overlap; same 55% / same vertical / 40 words. Result: 65 pairs/week across all verticals, ~8 s. Calls the AI flagged `coached_call` did not resemble each other, so expect a short Same-script queue.
+- **Window:** 7/14/30 days. 90 days took 7.3 s for repeat callers (8 s limit); needs an index if wanted.
+- **Tested:** SQL test + rollback + re-run in PGlite, plus the nightly procedure's failure isolation; node 214/214; browser check in the signed-in registry (desktop + 390 px) with a temporary shim for the unapplied RPCs.
+- **Not applied:** 069 adds RLS and grants (captain's call). Follow-up: feed verdicts into training examples / MK-186.
+- External sources (Wispr/Jira) not pulled this session.
