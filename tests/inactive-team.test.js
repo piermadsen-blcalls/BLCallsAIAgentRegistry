@@ -100,8 +100,8 @@ test('Review board: inactive agents leave the table and the Needs review count',
   ctx.setLastCall({ Active: daysAgo(1), Due: daysAgo(3), Gone: daysAgo(40) });
   ctx.renderReviewBoard();
   const out = unhtml(rootHtml);
-  assert.match(out, /All <span style="opacity:.65">2<\/span>/, 'All counts active non-test agents only');
-  assert.match(out, /Needs review <span style="opacity:.65">1<\/span>/, 'Due counts; Gone/Never do not');
+  assert.match(out, /All <span class="o-65">2<\/span>/, 'All counts active non-test agents only');
+  assert.match(out, /Needs review <span class="o-65">1<\/span>/, 'Due counts; Gone/Never do not');
   const [table, inactive] = out.split('<details class="inactive-section"');
   assert.ok(inactive, 'collapsed Inactive section is rendered');
   assert.doesNotMatch(table, /Gone agent|Never agent|Test agent/);
@@ -115,7 +115,7 @@ test('Review board: inactive agents leave the table and the Needs review count',
   ctx.setLastCall({ Active: daysAgo(1), Due: daysAgo(3), Gone: daysAgo(0) });
   ctx.renderReviewBoard();
   const after = unhtml(rootHtml);
-  assert.match(after, /Needs review <span style="opacity:.65">2<\/span>/);
+  assert.match(after, /Needs review <span class="o-65">2<\/span>/);
   assert.match(after.split('<details')[0], /Gone agent/);
 });
 

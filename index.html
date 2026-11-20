@@ -946,8 +946,11 @@
   .pre-wrap { white-space:pre-wrap !important; }
   .scroll-x { overflow-x:auto !important; }
   .o-40 { opacity:.4 !important; }
+  .o-65 { opacity:.65 !important; }
   .span-all { grid-column:1/-1 !important; }
   .w-200 { width:200px !important; }
+  .minw-0 { min-width:0 !important; }
+  .mt-6 { margin-top:6px !important; }
   .mt-8 { margin-top:8px !important; }
   .mt-10 { margin-top:10px !important; }
   .mb-2 { margin-bottom:2px !important; }
@@ -956,6 +959,8 @@
   .m-4-0-18 { margin:4px 0 18px !important; }
   .m-22-0-0 { margin:22px 0 0 !important; }
   .p-8-0 { padding:8px 0 !important; }
+  .p-24 { padding:24px !important; }
+  .p-12-16 { padding:12px 16px !important; }
   /* Shared */
   .row-gap-8 { display:flex; align-items:center !important; gap:8px !important; }
   .note-xs { font-size:11px !important; color:var(--text-3) !important; }
@@ -965,6 +970,7 @@
   .clip-180 { max-width:180px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .num-xs { text-align:right !important; font-family:var(--mono) !important; font-size:11px !important; }
   .empty-note-sm { font-size:12px !important; color:var(--text-3) !important; font-style:italic !important; }
+  .chev-icon { margin-left:4px !important; vertical-align:middle !important; }
   /* Agents tab (details drawer) */
   .ag-link-icon { flex-shrink:0 !important; color:var(--brand-navy) !important; }
   .ag-objective { font-size:13px !important; color:var(--text-2) !important; line-height:1.5 !important; white-space:pre-wrap !important; }
@@ -4279,14 +4285,14 @@ function renderReviewBoard(){
   const sideMgrs=b.managers.filter(m=>b.acctAssign.some(a=>a.manager_id===m.id&&a.account_type===dr.side));
   const mgrOpts=[`<option value="">All ${drAdv?'account':'supply'} managers</option>`]
     .concat(sideMgrs.map(m=>`<option value="${m.id}" ${dr.mgr===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
-  const acctList=acctOpts.map(n=>`<label class="ins-vertical-opt" data-name="${esc(n.toLowerCase())}"><input type="checkbox" value="${esc(n)}" ${picked.has(n)?'checked':''} onchange="rvAcctToggle(this)"><span>${esc(n)} <span style="color:var(--text-3)">(${acctIvrs[n]} IVR${acctIvrs[n]===1?'':'s'})</span></span></label>`).join('')
+  const acctList=acctOpts.map(n=>`<label class="ins-vertical-opt" data-name="${esc(n.toLowerCase())}"><input type="checkbox" value="${esc(n)}" ${picked.has(n)?'checked':''} onchange="rvAcctToggle(this)"><span>${esc(n)} <span class="c-text-3">(${acctIvrs[n]} IVR${acctIvrs[n]===1?'':'s'})</span></span></label>`).join('')
     || `<div class="rv-acct-none">No ${drNoun} with IVR calls in the last 30 days.</div>`;
   const sideBtn=(side,label)=>`<button class="seg-btn${dr.side===side?' active':''}" onclick="rvDraftSide('${side}')">${label}</button>`;
   const dirty=JSON.stringify(dr)!==JSON.stringify(ap);
 
-  const fbtn=(f,label,n)=>`<button class="seg-btn${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span style="opacity:.65">${n}</span></button>`;
+  const fbtn=(f,label,n)=>`<button class="seg-btn${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span class="o-65">${n}</span></button>`;
   const acctCell=x=>{ const shown=x.accts.slice(0,2).join(', '), more=x.accts.length-2;
-    return `<td class="rv-board-accts" title="${esc(x.accts.join(', '))}">${esc(shown)}${more>0?` <span style="color:var(--text-3)">+${more}</span>`:''}</td>`; };
+    return `<td class="rv-board-accts" title="${esc(x.accts.join(', '))}">${esc(shown)}${more>0?` <span class="c-text-3">+${more}</span>`:''}</td>`; };
   const emptyMsg = scopeSet ? `No agents ${apAdv?'sent calls to':'took calls from'} these ${apAdv?'advertisers':'publishers'} in the last 30 days.`
     : 'No agents in this view.';
   root.innerHTML=
@@ -4294,7 +4300,7 @@ function renderReviewBoard(){
        <div class="seg">${sideBtn('advertiser','Account Manager')}${sideBtn('publisher','Supply Manager')}</div>
        <select class="rv-board-reviewer" aria-label="${drAdv?'Account':'Supply'} manager" onchange="rvDraftMgr(this.value)">${mgrOpts}</select>
        <div class="ins-vertical-wrap" id="rv-acct-wrap">
-         <button class="rv-board-reviewer rv-acct-trigger" onclick="rvAcctToggleOpen(event)"><span id="rv-acct-label">${esc(rvAcctLabel(dr))}</span><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true" style="margin-left:4px;vertical-align:middle"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+         <button class="rv-board-reviewer rv-acct-trigger" onclick="rvAcctToggleOpen(event)"><span id="rv-acct-label">${esc(rvAcctLabel(dr))}</span><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true" class="chev-icon"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
          <div class="ins-vertical-popover rv-acct-popover" id="rv-acct-popover">
            <div class="rv-acct-tools"><input type="search" class="rv-acct-search" placeholder="Search ${drNoun}…" value="${esc(b.acctSearch)}" oninput="rvAcctSearch(this.value)">
              <button class="rv-btn" onclick="rvAcctClear()">Clear</button></div>
@@ -4315,7 +4321,7 @@ function renderReviewBoard(){
          return `
          <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
            <td class="rv-board-name">${esc(x.a.name)}</td>
-           <td style="color:var(--text-2)">${esc(x.a.vertical||'')}</td>
+           <td class="c-text-2">${esc(x.a.vertical||'')}</td>
            ${scopeSet?acctCell(x):''}
            <td class="rv-board-calls">${cells}</td>
            <td class="rv-board-calls">${issues}</td>
@@ -4326,7 +4332,7 @@ function renderReviewBoard(){
 }
 
 function rvInactiveSection(list){
-  const muted=t=>`<span style="color:var(--text-3)">${t}</span>`;
+  const muted=t=>`<span class="c-text-3">${t}</span>`;
   return `<details class="inactive-section" ${reviewBoard.inactiveOpen?'open':''} ontoggle="reviewBoard.inactiveOpen=this.open">
     <summary><span class="inactive-title">Inactive (no calls in 30 days)</span><span class="inactive-count">${list.length}</span>
       <span class="inactive-note">Not counted in Needs review. Moves back on its next call.</span></summary>
@@ -4337,7 +4343,7 @@ function rvInactiveSection(list){
           <td class="rv-board-name">${esc(a.name)}</td>
           <td class="rv-board-calls">${d?fmtDate(new Date(d+'T00:00:00')):muted('Never')}</td>
           <td class="rv-board-calls rv-hide-sm">${lr?fmtDate(new Date(lr)):nullMark()}</td>
-          <td class="rv-hide-sm" style="color:var(--text-2)">${esc(a.vertical||'')}</td>
+          <td class="rv-hide-sm c-text-2">${esc(a.vertical||'')}</td>
         </tr>`; }).join('')}</tbody>
     </table></div>
   </details>`;
@@ -4517,7 +4523,7 @@ function renderReviewWorkspace(){
   document.getElementById('review-root').innerHTML=`
     <button class="rv-back" onclick="renderReviewPicker()">← All agents</button>
     <div class="rv-head">
-      <div style="min-width:0">
+      <div class="minw-0">
         <div class="rv-title">${esc(a.name)}</div>
         <div class="rv-sub">${esc(a.vertical||'')} · ${esc(rtLabel(a.routingType))}${aliasNote}</div>
       </div>
@@ -4533,7 +4539,7 @@ function renderReviewWorkspace(){
       <div class="rv-panel">
         <div class="rv-panel-head"><span class="t">Calls</span><span class="n" id="rv-count">loading…</span></div>
         <div class="rv-ae-filters" id="rv-ae-filters"></div>
-        <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
+        <div class="rv-list" id="rv-calls"><div class="empty p-24">Loading calls…</div></div>
       </div>
       <div class="rv-side">
         <div class="rv-panel">
@@ -4674,10 +4680,10 @@ function rvSeg(key,val,btn){
 
 function renderReviewCalls(){
   const box=document.getElementById('rv-calls'); if(!box) return;
-  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':RV.aiFilter&&RV.aiFilter!=='all'?'No calls match this filter in this window.':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
+  if(!RV.calls.length){ box.innerHTML='<div class="empty p-24">'+(RV.loading?'Loading calls…':RV.aiFilter&&RV.aiFilter!=='all'?'No calls match this filter in this window.':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
   else {
     box.innerHTML=RV.calls.map((c,i)=>reviewCallRow(c,i)).join('')+
-      (RV.done?'':`<div style="padding:12px 16px"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
+      (RV.done?'':`<div class="p-12-16"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
   }
   const cnt=document.getElementById('rv-count'); if(cnt) cnt.textContent=`${RV.calls.length}${RV.done?'':'+'} loaded`;
 }
@@ -4715,7 +4721,7 @@ function reviewCallRow(c,i){
       <button class="rv-btn" onclick="rvShowNote(${i})">${saved?'Edit note':'Note'}</button>
       <button type="button" class="rv-check${chk.on?' on':''}" id="rv-chk-${i}" aria-pressed="${chk.on}" title="${esc(chk.title)}"${chk.locked?' disabled':''} onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${esc(chk.label)}</button>
     </div>
-    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
+    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn mt-6" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
     <div class="rv-x" id="rv-x-${i}" style="display:none">
       ${moreChips?`<div class="rv-meta">${moreChips}</div>`:''}
       ${desc}
@@ -4819,7 +4825,7 @@ function renderAeFilters(){
   if(!aeAvailable){ box.innerHTML=''; box.style.display='none'; return; }
   box.style.display='';
   const t=RV.metrics&&RV.metrics.ai, raw=RV.metrics?RV.metrics.raw:0;
-  box.innerHTML=AE_FILTERS.map(f=>`<button class="pill${(RV.aiFilter||'all')===f.k?' active':''}" onclick="rvSetAeFilter('${f.k}')">${f.l}${t&&f.n?` <span style="opacity:.65">${f.n(t,raw)}</span>`:''}</button>`).join('');
+  box.innerHTML=AE_FILTERS.map(f=>`<button class="pill${(RV.aiFilter||'all')===f.k?' active':''}" onclick="rvSetAeFilter('${f.k}')">${f.l}${t&&f.n?` <span class="o-65">${f.n(t,raw)}</span>`:''}</button>`).join('');
 }
 function rvSetAeFilter(k){
   if(!RV||(RV.aiFilter||'all')===k) return;
