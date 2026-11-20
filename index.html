@@ -1726,6 +1726,14 @@ async function sbCount(path, mode='planned') {
   const n = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
   return isNaN(n) ? null : n;
 }
+// Supabase Auth (GoTrue): every /auth/v1 call goes through here. Sends the publishable key, plus JSON
+// Content-Type when there is a body; callers add Authorization. Returns the raw Response.
+function authFetch(path, init = {}) {
+  return fetch(`${SB_URL}/auth/v1/${path}`, {
+    ...init,
+    headers: { 'apikey': SB_KEY, ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(init.headers || {}) },
+  });
+}
 
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
 // ── ROUTER ────────────────────────────────────────────────────
@@ -4870,9 +4878,8 @@ async function doRefreshSession() {
   const rt = localStorage.getItem('sb_refresh_token');
   if (!rt) return false;
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST', headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: rt }),
+    const res = await authFetch('token?grant_type=refresh_token', {
+      method: 'POST', body: JSON.stringify({ refresh_token: rt }),
     });
     if (!res.ok) { clearAuth(); return false; }
     saveSession(await res.json());
@@ -4905,9 +4912,8 @@ async function doLogin() {
   if (!email || !password) { errEl.textContent = 'Enter your email and password.'; return; }
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+    const res = await authFetch('token?grant_type=password', {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -4971,9 +4977,9 @@ async function doChangePassword() {
   if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
   btn.disabled = true; btn.textContent = 'Updating…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+    const res = await authFetch('user', {
       method: 'PUT',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({ password: pw1 }),
     });
     const data = await res.json();
@@ -5027,9 +5033,9 @@ async function doSetPassword() {
   if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+    const res = await authFetch('user', {
       method: 'PUT',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Authorization': `Bearer ${window._inviteToken}` },
+      headers: { 'Authorization': `Bearer ${window._inviteToken}` },
       body: JSON.stringify({ password: pw1 }),
     });
     const data = await res.json();
@@ -6499,9 +6505,9 @@ async function promptsRunABTest() {
 // Supabase Auth (GoTrue) calls with the user's session; JSON or null, throws with the server's message.
 async function authApi(path, init = {}) {
   if (_refreshInFlight || sbTokenDue()) await refreshSession();
-  const res = await fetch(`${SB_URL}/auth/v1/${path}`, {
+  const res = await authFetch(path, {
     ...init,
-    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
+    headers: { 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
   });
   const text = await res.text();
   let body = null;
