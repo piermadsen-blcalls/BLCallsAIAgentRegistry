@@ -369,8 +369,8 @@ test('Review board: agents waiting for setup are off the board and out of Needs 
     ';\nthis.renderReviewBoard = renderReviewBoard;', ctx);
   ctx.renderReviewBoard();
   const out = unhtml(rootHtml);
-  assert.match(out, /All <span style="opacity:.65">2<\/span>/);
-  assert.match(out, /Needs review <span style="opacity:.65">1<\/span>/);
+  assert.match(out, /All <span class="o-65">2<\/span>/);
+  assert.match(out, /Needs review <span class="o-65">1<\/span>/);
   assert.doesNotMatch(out, /New agent|Test agent/);
   assert.match(out, /1 new IVR is waiting for setup and not counted here/);
 });

@@ -911,6 +911,224 @@
   .rv-ae-ev li span { font-style:normal; color:var(--text-3); font-size:11px; }
   .rv-ae-note { font-size:11.5px; color:var(--amber); }
   .rv-transcript mark { background:var(--amber-bg); color:var(--text); border-radius:2px; padding:0 1px; }
+  /* SCORES TAB (publisher/advertiser × vertical) */
+  #tab-scores .scores-row{cursor:pointer}
+  #tab-scores .scores-row:hover>td{background:var(--bg-2)}
+  #tab-scores .scores-row.open>td{background:var(--bg-2);font-weight:600}
+  #tab-scores .scores-detail{padding:12px 4px}
+  #tab-scores .scores-detail-headline{font-size:13px;margin-bottom:8px}
+  #tab-scores .scores-whatif-scores{display:flex;gap:18px;align-items:center;font-size:13px}
+  #tab-scores .scores-th{white-space:nowrap}
+  #tab-scores .scores-tier{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap}
+  #tab-scores .scores-tier-1{background:var(--teal-bg);color:var(--teal)}
+  #tab-scores .scores-tier-2{background:var(--blue-bg);color:var(--blue)}
+  #tab-scores .scores-tier-3{background:var(--amber-bg);color:var(--amber)}
+  #tab-scores .scores-tier-4{background:var(--coral-bg);color:var(--coral)}
+  @media (max-width:640px){ #scores-output{overflow-x:auto} }
+
+  /* Utility classes: one declaration each, on the :root tokens. These and the feature classes below replaced
+     the inline style="" attributes, so they keep inline precedence (!important) over context rules such as
+     ".settings-table td". display is the exception: JS shows and hides elements with inline display.
+     The few styles left inline are that display:none state or values computed per row. */
+  .ta-l { text-align:left !important; }
+  .ta-c { text-align:center !important; }
+  .ta-r { text-align:right !important; }
+  .mono { font-family:var(--mono) !important; }
+  .fs-12 { font-size:12px !important; }
+  .fs-13 { font-size:13px !important; }
+  .fw-500 { font-weight:500 !important; }
+  .fw-600 { font-weight:600 !important; }
+  .c-text { color:var(--text) !important; }
+  .c-text-2 { color:var(--text-2) !important; }
+  .c-text-3 { color:var(--text-3) !important; }
+  .c-teal { color:var(--teal) !important; }
+  .c-amber { color:var(--amber) !important; }
+  .c-coral { color:var(--coral) !important; }
+  .bg-2 { background:var(--bg-2) !important; }
+  .bg-amber { background:var(--amber-bg) !important; }
+  .bb-line { border-bottom:1px solid var(--border) !important; }
+  .pointer { cursor:pointer !important; }
+  .nowrap { white-space:nowrap !important; }
+  .pre-wrap { white-space:pre-wrap !important; }
+  .scroll-x { overflow-x:auto !important; }
+  .o-40 { opacity:.4 !important; }
+  .o-65 { opacity:.65 !important; }
+  .flex-1 { flex:1 !important; }
+  .flex-200 { flex:1 1 200px !important; }
+  .flex2-260 { flex:2 1 260px !important; }
+  .span-all { grid-column:1/-1 !important; }
+  .w-full { width:100% !important; }
+  .w-80 { width:80px !important; }
+  .w-90 { width:90px !important; }
+  .w-200 { width:200px !important; }
+  .w-220 { width:220px !important; }
+  .minw-0 { min-width:0 !important; }
+  .minw-160 { min-width:160px !important; }
+  .minw-180 { min-width:180px !important; }
+  .minw-200 { min-width:200px !important; }
+  .m-0 { margin:0 !important; }
+  .mt-2 { margin-top:2px !important; }
+  .mt-4 { margin-top:4px !important; }
+  .mt-6 { margin-top:6px !important; }
+  .mt-8 { margin-top:8px !important; }
+  .mt-10 { margin-top:10px !important; }
+  .mt-28 { margin-top:28px !important; }
+  .mb-2 { margin-bottom:2px !important; }
+  .mb-8 { margin-bottom:8px !important; }
+  .mb-12 { margin-bottom:12px !important; }
+  .mb-16 { margin-bottom:16px !important; }
+  .mb-20 { margin-bottom:20px !important; }
+  .ml-auto { margin-left:auto !important; }
+  .ml-12 { margin-left:12px !important; }
+  .mr-6 { margin-right:6px !important; }
+  .m-4-0-18 { margin:4px 0 18px !important; }
+  .m-20-0-8 { margin:20px 0 8px !important; }
+  .m-22-0-0 { margin:22px 0 0 !important; }
+  .m-24-0-8 { margin:24px 0 8px !important; }
+  .p-8-0 { padding:8px 0 !important; }
+  .p-24 { padding:24px !important; }
+  .p-6-10 { padding:6px 10px !important; }
+  .p-10-12 { padding:10px 12px !important; }
+  .p-12-16 { padding:12px 16px !important; }
+  .p-16-12 { padding:16px 12px !important; }
+  /* Shared */
+  .row-center { display:flex; align-items:center !important; }
+  .row-gap-8 { display:flex; align-items:center !important; gap:8px !important; }
+  .note-xs { font-size:11px !important; color:var(--text-3) !important; }
+  .meta-xs { font-size:11px !important; color:var(--text-2) !important; }
+  .field-hint { font-size:11px !important; color:var(--text-3) !important; margin-top:4px !important; }
+  .grow2-200 { flex:2 !important; min-width:200px !important; }
+  .check-14 { accent-color:var(--brand-navy) !important; width:14px !important; height:14px !important; }
+  .check-16 { width:16px !important; height:16px !important; cursor:pointer !important; }
+  .section-split { margin-top:24px !important; border-top:1px solid var(--border) !important; padding-top:20px !important; }
+  .clip-140 { max-width:140px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .clip-160 { max-width:160px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .clip-180 { max-width:180px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .num-xs { text-align:right !important; font-family:var(--mono) !important; font-size:11px !important; }
+  .empty-note { padding:16px !important; font-size:13px !important; color:var(--text-3) !important; font-style:italic !important; }
+  .empty-note-sm { font-size:12px !important; color:var(--text-3) !important; font-style:italic !important; }
+  .table-full { width:100% !important; border-collapse:collapse !important; }
+  .req-note { color:var(--text-3) !important; font-weight:400 !important; }
+  .chev-icon { margin-left:4px !important; vertical-align:middle !important; }
+  /* Change password, account menu, consent */
+  .cp-cancel { background:var(--surface) !important; color:var(--text-2) !important; border:1px solid var(--border-strong) !important; margin-top:8px !important; }
+  .cp-success { color:var(--teal) !important; font-size:13px !important; margin-top:10px !important; text-align:center !important; }
+  .acct-menu-pos { margin-left:auto !important; position:relative !important; }
+  .oauth-open { display:block; text-align:center !important; text-decoration:none !important; }
+  /* Agents tab (details drawer) */
+  .ag-link-icon { flex-shrink:0 !important; color:var(--brand-navy) !important; }
+  .ag-objective { font-size:13px !important; color:var(--text-2) !important; line-height:1.5 !important; white-space:pre-wrap !important; }
+  .ag-perf-strip { margin-top:12px !important; padding-top:0 !important; border-top:none !important; }
+  /* Insights tab */
+  .ins-sub-mono { font-size:12px !important; font-family:var(--mono) !important; color:var(--text-2) !important; }
+  /* Calls tab */
+  .cr-export { background:var(--surface) !important; color:var(--brand-navy) !important; border:1px solid var(--border-strong) !important; }
+  .cr-connected { font-size:11px !important; font-weight:500 !important; }
+  .cr-id-cell { font-size:11px !important; color:var(--text-3) !important; max-width:120px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .cr-agent-cell { font-size:12px !important; max-width:160px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .cr-acct-cell { font-size:12px !important; max-width:140px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  .cr-disp-cell { font-size:11px !important; max-width:200px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; color:var(--text-2) !important; }
+  .cr-outcome-cell { font-size:11px !important; color:var(--text-2) !important; white-space:nowrap !important; }
+  .drawer-canoe-sum { margin-top:10px !important; padding-top:10px !important; border-top:1px solid var(--border) !important; }
+  /* Scores tab */
+  .scores-toolbar-left { align-items:center !important; gap:14px !important; }
+  .scores-toolbar-right { gap:8px !important; align-items:center !important; }
+  .scores-low { font-size:11px !important; opacity:.7 !important; }
+  .scores-check { cursor:pointer !important; display:flex; gap:6px !important; align-items:center !important; }
+  .scores-low-note { margin-bottom:10px !important; padding:8px 12px !important; border:1px dashed var(--border) !important; border-radius:var(--radius-sm) !important; font-size:12px !important; color:var(--text-2) !important; }
+  .scores-dis-head { margin-top:16px !important; display:flex; flex-wrap:wrap !important; gap:8px 12px !important; align-items:center !important; }
+  .scores-tx-modal { position:fixed !important; inset:0 !important; background:rgba(0,0,0,.4) !important; z-index:10000 !important; display:flex; align-items:center !important; justify-content:center !important; padding:40px !important; }
+  .scores-tx-card { background:var(--surface) !important; max-width:680px !important; width:100% !important; max-height:80vh !important; overflow:auto !important; border-radius:var(--radius) !important; padding:20px !important; box-shadow:0 8px 24px rgba(0,0,0,.2) !important; }
+  .scores-tx-head { display:flex; justify-content:space-between !important; align-items:center !important; margin-bottom:10px !important; }
+  .scores-tx-text { white-space:pre-wrap !important; font-size:13px !important; line-height:1.55 !important; color:var(--text) !important; }
+  /* Settings: accounts and outcome weights */
+  .sa-toolbar { display:flex; gap:8px !important; align-items:center !important; margin-bottom:14px !important; flex-wrap:wrap !important; }
+  .wt-actions { margin-top:16px !important; display:flex; align-items:center !important; gap:12px !important; flex-wrap:wrap !important; }
+  .wt-status { font-size:13px !important; color:var(--text-2) !important; }
+  .wt-table { width:100% !important; border-collapse:collapse !important; border:1px solid var(--border) !important; border-radius:var(--radius) !important; overflow:hidden !important; }
+  .wt-th { padding:8px 10px !important; text-align:left !important; font-size:12px !important; color:var(--text-2) !important; font-weight:600 !important; border-bottom:1px solid var(--border) !important; }
+  .wt-th-num { padding:8px 8px !important; text-align:center !important; font-size:12px !important; color:var(--text-2) !important; font-weight:600 !important; border-bottom:1px solid var(--border) !important; width:90px !important; }
+  .wt-group { padding:6px 10px !important; font-size:12px !important; font-weight:600 !important; color:var(--text-2) !important; }
+  .wt-outcome { padding:6px 10px !important; font-size:13px !important; color:var(--text) !important; font-family:var(--mono) !important; }
+  .wt-cell { padding:6px 8px !important; text-align:center !important; }
+  .wt-input { width:64px !important; text-align:center !important; padding:4px 6px !important; font-size:13px !important; }
+  .saved-note { font-size:11px !important; color:var(--teal) !important; }
+  .status-note { font-size:12px !important; color:var(--teal) !important; }
+  /* Settings: prompts and A/B test */
+  .pe-panel { margin-top:16px !important; background:var(--bg-2) !important; border:1px solid var(--border) !important; border-radius:var(--radius) !important; padding:20px !important; }
+  .pe-row { display:flex; gap:12px !important; margin-bottom:12px !important; flex-wrap:wrap !important; }
+  .pe-textarea-tall { width:100% !important; height:260px !important; font-family:var(--mono) !important; font-size:12px !important; padding:10px !important; border:1px solid var(--border) !important; border-radius:var(--radius-sm) !important; background:var(--tint) !important; color:var(--text) !important; resize:vertical !important; box-sizing:border-box !important; }
+  .pe-textarea { width:100% !important; height:200px !important; font-family:var(--mono) !important; font-size:12px !important; padding:10px !important; border:1px solid var(--border) !important; border-radius:var(--radius-sm) !important; background:var(--tint) !important; color:var(--text) !important; resize:vertical !important; box-sizing:border-box !important; }
+  .pe-actions { display:flex; gap:10px !important; align-items:center !important; }
+  .ab-title { font-size:13px !important; margin-bottom:12px !important; }
+  .ab-row { display:flex; gap:12px !important; flex-wrap:wrap !important; align-items:flex-end !important; }
+  .pr-loading { padding:12px !important; font-size:13px !important; color:var(--text-3) !important; }
+  .pr-empty { padding:12px !important; font-size:13px !important; color:var(--text-3) !important; font-style:italic !important; }
+  .pr-desc { color:var(--text-2) !important; font-size:12px !important; }
+  .pr-active { font-size:12px !important; font-weight:600 !important; color:var(--teal) !important; }
+  .pr-count { text-align:right !important; color:var(--text-2) !important; }
+  /* Settings: model calibration (Training) */
+  .calib-intro { color:var(--text-2) !important; font-size:13px !important; margin:0 0 20px !important; }
+  .mt-config { display:flex; gap:24px !important; flex-wrap:wrap !important; align-items:flex-start !important; margin-bottom:24px !important; }
+  .mt-model-list { display:flex; flex-direction:column !important; gap:8px !important; margin-top:6px !important; }
+  .mt-model-opt { display:flex; flex-wrap:wrap !important; align-items:center !important; gap:8px !important; font-size:13px !important; cursor:pointer !important; user-select:none !important; }
+  .mt-provider { font-size:11px !important; background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:4px !important; padding:1px 6px !important; }
+  .mt-price { font-size:11px !important; color:var(--text-3) !important; font-family:var(--mono) !important; }
+  .mt-stratify { display:flex; gap:6px !important; align-items:center !important; font-size:12px !important; margin-top:8px !important; cursor:pointer !important; }
+  .mt-run-col { display:flex; flex-direction:column !important; justify-content:flex-end !important; gap:8px !important; }
+  .mt-empty { color:var(--text-3) !important; font-size:13px !important; margin:0 !important; }
+  .mt-hist-title { font-size:12px !important; font-weight:500 !important; color:var(--text-2) !important; margin-bottom:8px !important; }
+  .mt-hist-row { display:flex; align-items:center !important; gap:12px !important; padding:9px 0 !important; border-bottom:1px solid var(--border) !important; flex-wrap:wrap !important; }
+  .mt-hist-model { font-size:13px !important; flex:1 !important; min-width:160px !important; font-family:var(--mono) !important; }
+  .mt-bar { display:inline-block; width:70px !important; height:5px !important; border-radius:3px !important; background:var(--tint) !important; border:1px solid var(--border) !important; overflow:hidden !important; vertical-align:middle !important; }
+  .mt-bar-fill { display:block; height:100% !important; background:var(--brand-mint) !important; }
+  .mt-status { font-size:11px !important; background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:4px !important; padding:2px 8px !important; }
+  .mt-hist-label { font-family:var(--sans) !important; font-size:12px !important; color:#fff !important; background:var(--brand-navy) !important; border:1px solid var(--brand-navy) !important; border-radius:var(--radius-sm) !important; padding:3px 12px !important; cursor:pointer !important; font-weight:500 !important; }
+  .mt-hist-view { font-family:var(--sans) !important; font-size:12px !important; color:var(--brand-navy) !important; background:var(--brand-mint-bg) !important; border:1px solid var(--brand-mint) !important; border-radius:var(--radius-sm) !important; padding:3px 10px !important; cursor:pointer !important; }
+  .mt-result-head { display:flex; align-items:center !important; gap:12px !important; margin-bottom:16px !important; }
+  .mt-label-btn { font-family:var(--sans) !important; font-size:11px !important; color:var(--brand-navy) !important; background:var(--brand-mint-bg) !important; border:1px solid var(--brand-mint) !important; border-radius:var(--radius-sm) !important; padding:3px 10px !important; cursor:pointer !important; margin-left:auto !important; }
+  .mt-muted { color:var(--text-3) !important; font-size:13px !important; }
+  .mt-card { background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:var(--radius-sm) !important; padding:8px 12px !important; min-width:130px !important; }
+  .mt-card-model { font-family:var(--mono) !important; font-size:11px !important; color:var(--brand-navy) !important; margin-bottom:2px !important; }
+  .mt-th-model { padding:6px 8px !important; font-size:11px !important; font-weight:500 !important; color:var(--text-2) !important; }
+  .mt-td { padding:6px 8px !important; font-size:12px !important; vertical-align:top !important; }
+  .mt-table-wrap { overflow-x:auto !important; margin-bottom:8px !important; }
+  .mt-th { text-align:left !important; padding:6px 8px !important; font-size:11px !important; color:var(--text-2) !important; }
+  .mt-call-id { padding:6px 8px !important; font-family:var(--mono) !important; font-size:11px !important; cursor:pointer !important; color:var(--brand-navy) !important; }
+  .mt-tx-box { background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:6px !important; padding:8px 10px !important; max-height:240px !important; overflow:auto !important; font-size:11px !important; line-height:1.5 !important; }
+  .mt-tx-links { margin-bottom:6px !important; font-size:12px !important; }
+  .mt-cards { display:flex; gap:8px !important; flex-wrap:wrap !important; margin-bottom:16px !important; }
+  .mt-summary { font-size:12px !important; color:var(--text-2) !important; margin-bottom:6px !important; }
+  .mt-hl { background:var(--amber-bg) !important; padding:0 4px !important; border-radius:3px !important; }
+  /* Settings: model calibration review (label calls) */
+  .mtr-head { display:flex; align-items:center !important; gap:12px !important; margin-bottom:6px !important; }
+  .mtr-act { flex-shrink:0 !important; font-size:11px !important; font-weight:500 !important; padding:5px 11px !important; border-radius:var(--radius-sm) !important; border:1px solid var(--brand-navy) !important; background:var(--surface) !important; color:var(--brand-navy) !important; cursor:pointer !important; white-space:nowrap !important; }
+  .mtr-act.is-on { border:1px solid var(--teal) !important; background:var(--teal) !important; color:#fff !important; }
+  .mtr-field-label { font-size:11px !important; font-weight:600 !important; color:var(--text-3) !important; }
+  .mtr-field-val { font-family:var(--mono) !important; font-size:12.5px !important; color:var(--text) !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .mtr-field { flex:1 !important; min-width:0 !important; }
+  .mtr-card { border:1px solid var(--border) !important; border-radius:8px !important; padding:10px 11px !important; min-width:0 !important; background:var(--surface) !important; display:flex; flex-direction:column !important; gap:8px !important; }
+  .mtr-card-model { font-family:var(--mono) !important; font-size:11px !important; color:var(--brand-navy) !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .mtr-toggle { cursor:pointer !important; font-size:11px !important; color:var(--brand-navy) !important; user-select:none !important; }
+  .mtr-summary { font-size:11.5px !important; color:var(--text-2) !important; line-height:1.5 !important; margin-top:6px !important; padding-top:6px !important; border-top:1px dashed var(--border) !important; }
+  .mtr-flag { font-size:11px !important; padding:4px 10px !important; border-radius:100px !important; border:1px solid var(--border-strong) !important; cursor:pointer !important; background:var(--surface) !important; color:var(--text) !important; }
+  .mtr-flag.is-on { background:var(--brand-navy) !important; color:#fff !important; }
+  .mtr-meta { display:flex; gap:16px !important; flex-wrap:wrap !important; font-size:12px !important; color:var(--text-2) !important; margin-bottom:10px !important; }
+  .mtr-tx { background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:6px !important; padding:10px 12px !important; max-height:200px !important; overflow:auto !important; font-size:12px !important; line-height:1.5 !important; margin-bottom:14px !important; }
+  .mtr-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)) !important; gap:10px !important; margin-bottom:16px !important; }
+  .mtr-outcome { min-width:250px !important; max-width:100% !important; margin-top:8px !important; }
+  .mtr-flags { display:flex; gap:6px !important; flex-wrap:wrap !important; margin-bottom:4px !important; }
+  .mtr-hint { font-size:11px !important; color:var(--text-3) !important; margin-bottom:12px !important; }
+  .mtr-truth { display:flex; flex-wrap:wrap !important; gap:8px 18px !important; background:var(--brand-mint-bg) !important; border:1px solid var(--brand-mint) !important; border-radius:var(--radius-sm) !important; padding:9px 13px !important; margin-bottom:12px !important; font-size:13px !important; }
+  .mtr-truth-label { color:var(--text-3) !important; font-weight:600 !important; font-size:11px !important; margin-right:6px !important; }
+  .mtr-truth-val { font-family:var(--mono) !important; color:var(--brand-navy) !important; font-weight:500 !important; }
+  .mtr-reason { width:100% !important; min-height:50px !important; margin-bottom:10px !important; }
+  .mtr-btn { font-size:12px !important; padding:5px 12px !important; border:1px solid var(--border-strong) !important; border-radius:var(--radius-sm) !important; background:var(--surface) !important; cursor:pointer !important; }
+  .mtr-btn-primary { font-size:12px !important; padding:5px 14px !important; border:none !important; border-radius:var(--radius-sm) !important; background:var(--brand-navy) !important; color:#fff !important; cursor:pointer !important; }
+  /* Status lines (setTone): coral = failed, teal = done, muted = working. Last, so they win over a base color class. */
+  .tone-coral { color:var(--coral) !important; }
+  .tone-teal { color:var(--teal) !important; }
+  .tone-muted { color:var(--text-2) !important; }
 </style>
 </head>
 <body>
@@ -987,7 +1205,7 @@
 <div class="login-overlay hidden" id="changepw-overlay">
   <div class="login-card">
     <div class="login-title">Change your password</div>
-    <div class="login-sub">Set a new password for <span id="changepw-email" style="color:var(--text)"></span>.</div>
+    <div class="login-sub">Set a new password for <span id="changepw-email" class="c-text"></span>.</div>
     <div class="login-field">
       <label class="login-label" for="changepw-input">New password</label>
       <input class="login-input" type="password" id="changepw-input" placeholder="At least 6 characters" autocomplete="new-password">
@@ -997,9 +1215,9 @@
       <input class="login-input" type="password" id="changepw-confirm" placeholder="Repeat password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doChangePassword()">
     </div>
     <button class="login-btn" id="changepw-btn" onclick="doChangePassword()">Update password</button>
-    <button class="login-btn" onclick="closeChangePw()" style="background:var(--surface);color:var(--text-2);border:1px solid var(--border-strong);margin-top:8px">Cancel</button>
+    <button class="login-btn cp-cancel" onclick="closeChangePw()">Cancel</button>
     <div class="login-error" id="changepw-error"></div>
-    <div id="changepw-success" style="display:none;color:var(--teal);font-size:13px;margin-top:10px;text-align:center">Password updated.</div>
+    <div id="changepw-success" class="cp-success" style="display:none">Password updated.</div>
   </div>
 </div>
 
@@ -1039,7 +1257,7 @@
       <div class="drawer-section-title">Correct this call</div>
       <div class="correction-form" id="correction-form">
         <div class="correction-row">
-          <div style="flex:1">
+          <div class="flex-1">
             <label class="correction-label">Outcome</label>
             <select class="correction-select" id="correction-outcome">
               <option value="">No change</option>
@@ -1073,7 +1291,7 @@
             </select>
           </div>
         </div>
-        <div style="margin-bottom:12px">
+        <div class="mb-12">
           <label class="correction-label">Compliance flags</label>
           <div class="correction-flags" id="correction-flags">
             <button class="correction-flag-btn" data-flag="outbound_dial">outbound dial</button>
@@ -1085,11 +1303,11 @@
             <button class="correction-flag-btn" data-flag="coached_call">coached call</button>
           </div>
         </div>
-        <div style="margin-bottom:12px">
-          <label class="correction-label">Note <span style="color:var(--text-3);font-weight:400">(required)</span></label>
+        <div class="mb-12">
+          <label class="correction-label">Note <span class="req-note">(required)</span></label>
           <textarea class="correction-textarea" id="correction-note" placeholder="e.g. Caller dialed in themselves, so outbound dial is wrong"></textarea>
         </div>
-        <div style="display:flex;align-items:center">
+        <div class="row-center">
           <button class="correction-save-btn" id="correction-save-btn" onclick="saveCorrection()">Save correction</button>
           <span class="correction-saved" id="correction-saved" style="display:none">Saved</span>
         </div>
@@ -1112,7 +1330,7 @@
     <div class="logo-divider"></div>
     <span class="logo-product">AI Agent Registry</span>
     <span class="logo-freshness" id="freshness-label"></span>
-    <div class="acct-menu" id="acct-menu" style="margin-left:auto;position:relative">
+    <div class="acct-menu acct-menu-pos" id="acct-menu">
       <button class="acct-btn" onclick="toggleAcctMenu(event)">
         <span id="acct-email">Account</span>
         <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -1299,7 +1517,7 @@
     <section class="dash-card dash-wide" id="dash-cpa" aria-label="Cost per acquisition"></section>
     </div>
     <div class="section-header dash-list-head" id="calls-list"><div class="section-title">Call list</div></div>
-    <div class="summary-strip" id="calls-summary-strip" style="margin-bottom:20px">
+    <div class="summary-strip mb-20" id="calls-summary-strip">
       <div class="summary-item" title="AI-scored calls in this scope. Ignores the Flagged only and flag-type filters, so the flag rate stays a real ratio."><div class="summary-val" id="calls-stat-total"><span class="null-mark">-</span></div><div class="summary-lbl">AI-scored calls</div></div>
       <div class="summary-item flag-card" id="calls-flag-card" role="button" tabindex="0" aria-expanded="false" aria-controls="calls-flag-breakdown" title="Show flags by type" onclick="callsFlagBreakdownToggle(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();callsFlagBreakdownToggle(event);}"><div class="summary-val" id="calls-stat-flagged"><span class="null-mark">-</span></div><div class="summary-lbl">flagged</div><div class="summary-sub" id="calls-stat-high"></div><div id="calls-flag-breakdown" class="flag-tip" role="dialog" aria-label="Flags by type" style="display:none" onclick="event.stopPropagation()"></div></div>
       <div class="summary-item"><div class="summary-val" id="calls-stat-rate"><span class="null-mark">-</span></div><div class="summary-lbl">flag rate</div></div>
@@ -1339,7 +1557,7 @@
         <!-- Search -->
         <div class="search-wrap">
           <svg class="search-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.75" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <input class="search-input" type="text" id="cr-search" placeholder="Search agent, phone…" style="width:200px">
+          <input class="search-input w-200" type="text" id="cr-search" placeholder="Search agent, phone…">
         </div>
       </div>
       <div class="cr-toolbar-right">
@@ -1350,7 +1568,7 @@
           </button>
           <div class="ins-vertical-popover" id="cr-colpicker-popover"></div>
         </div>
-        <button class="run-btn" id="cr-export-btn" onclick="crExportAll()" style="background:var(--surface);color:var(--brand-navy);border:1px solid var(--border-strong)">Export CSV</button>
+        <button class="run-btn cr-export" id="cr-export-btn" onclick="crExportAll()">Export CSV</button>
       </div>
     </div>
     <div class="cr-link-scope" id="cr-link-scope" style="display:none"></div>
@@ -1361,23 +1579,8 @@
 
   <!-- SCORES TAB (publisher/advertiser × vertical: Canoe vs Registry) -->
   <div id="tab-scores" class="tab-pane">
-    <style>
-      #tab-scores .scores-row{cursor:pointer}
-      #tab-scores .scores-row:hover>td{background:var(--bg-2)}
-      #tab-scores .scores-row.open>td{background:var(--bg-2);font-weight:600}
-      #tab-scores .scores-detail{padding:12px 4px}
-      #tab-scores .scores-detail-headline{font-size:13px;margin-bottom:8px}
-      #tab-scores .scores-whatif-scores{display:flex;gap:18px;align-items:center;font-size:13px}
-      #tab-scores .scores-th{white-space:nowrap}
-      #tab-scores .scores-tier{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap}
-      #tab-scores .scores-tier-1{background:var(--teal-bg);color:var(--teal)}
-      #tab-scores .scores-tier-2{background:var(--blue-bg);color:var(--blue)}
-      #tab-scores .scores-tier-3{background:var(--amber-bg);color:var(--amber)}
-      #tab-scores .scores-tier-4{background:var(--coral-bg);color:var(--coral)}
-      @media (max-width:640px){ #scores-output{overflow-x:auto} }
-    </style>
     <div class="cr-toolbar">
-      <div class="cr-toolbar-left" style="align-items:center;gap:14px">
+      <div class="cr-toolbar-left scores-toolbar-left">
         <div class="seg scores-seg" data-seg="entity">
           <button class="seg-btn scores-seg-btn active" data-val="publisher" onclick="scoresSetEntity('publisher')">Publishers</button>
           <button class="seg-btn scores-seg-btn" data-val="advertiser" onclick="scoresSetEntity('advertiser')">Advertisers</button>
@@ -1387,8 +1590,8 @@
           <button class="seg-btn scores-seg-btn" data-val="window" onclick="scoresSetWindow('window')">Agents range</button>
         </div>
       </div>
-      <div class="cr-toolbar-right" style="gap:8px;align-items:center">
-        <input class="cr-filter-input" type="text" id="scores-search" placeholder="Search name or vertical…" oninput="scoresSetSearch(this.value)" style="width:200px">
+      <div class="cr-toolbar-right scores-toolbar-right">
+        <input class="cr-filter-input w-200" type="text" id="scores-search" placeholder="Search name or vertical…" oninput="scoresSetSearch(this.value)">
         <button class="run-btn" onclick="scoresLoad()">Refresh</button>
       </div>
     </div>
@@ -1421,8 +1624,8 @@
           <button class="settings-add-btn" id="settings-add-mgr-btn" style="display:none" onclick="settingsShowAddManager(true)">+ Add Manager</button>
         </div>
         <div id="settings-add-manager" class="settings-add-form" style="display:none">
-          <input class="settings-input" id="s-mgr-name" placeholder="Full name" style="flex:1">
-          <input class="settings-input" id="s-mgr-email" type="email" placeholder="Email" style="flex:1">
+          <input class="settings-input flex-1" id="s-mgr-name" placeholder="Full name">
+          <input class="settings-input flex-1" id="s-mgr-email" type="email" placeholder="Email">
           <button class="settings-save-btn" onclick="settingsAddManager()">Add</button>
           <button class="settings-cancel-btn" onclick="settingsShowAddManager(false)">Cancel</button>
         </div>
@@ -1436,15 +1639,15 @@
         <div class="settings-section-header">
           <div class="settings-section-title">Publisher &amp; Advertiser Assignments</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-          <input class="settings-input" id="s-accounts-search" placeholder="Search accounts…" oninput="settingsFilterAccounts()" style="width:220px">
+        <div class="sa-toolbar">
+          <input class="settings-input w-220" id="s-accounts-search" placeholder="Search accounts…" oninput="settingsFilterAccounts()">
           <div class="seg">
             <button id="s-tab-unassigned" class="seg-btn s-acct-tab active"  onclick="settingsSetAccountTab('unassigned')">Unassigned</button>
             <button id="s-tab-all"        class="seg-btn s-acct-tab"         onclick="settingsSetAccountTab('all')">All</button>
             <button id="s-tab-publisher"  class="seg-btn s-acct-tab"         onclick="settingsSetAccountTab('publisher')">Publishers</button>
             <button id="s-tab-advertiser" class="seg-btn s-acct-tab"         onclick="settingsSetAccountTab('advertiser')">Advertisers</button>
           </div>
-          <span style="font-size:11px;color:var(--text-3)" id="s-accounts-count"></span>
+          <span class="note-xs" id="s-accounts-count"></span>
         </div>
         <div id="settings-accounts-table" class="settings-table-wrap">
           <div class="comp-loading">Loading…</div>
@@ -1465,9 +1668,9 @@
           <div class="settings-section-title">Outcome Weights</div>
         </div>
         <div id="settings-weights-table"></div>
-        <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="wt-actions">
           <button class="settings-save-btn" id="weights-execute-btn" onclick="weightsExecute()" disabled style="opacity:.5;cursor:default">Save (counting calls…)</button>
-          <span id="weights-execute-status" style="font-size:13px;color:var(--text-2)"></span>
+          <span id="weights-execute-status" class="wt-status"></span>
         </div>
       </div>
 
@@ -1478,31 +1681,31 @@
         <div class="settings-section-header">
           <div class="settings-section-title">Model Calibration Run</div>
         </div>
-        <p style="color:var(--text-2);font-size:13px;margin:0 0 20px">
-          Scores a sample with each selected model. Production calls are not touched.<span id="calib-queue-note" style="color:var(--text-3)"></span>
+        <p class="calib-intro">
+          Scores a sample with each selected model. Production calls are not touched.<span id="calib-queue-note" class="c-text-3"></span>
         </p>
 
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:24px">
+        <div class="mt-config">
           <div>
             <label class="settings-label">Models to run</label>
-            <div id="modeltest-checkboxes" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+            <div id="modeltest-checkboxes" class="mt-model-list"></div>
           </div>
           <div>
             <label class="settings-label">Sample size</label>
-            <input class="settings-input" id="modeltest-sample-size" type="number" value="100" min="5" max="200" style="width:80px">
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">total calls</div>
+            <input class="settings-input w-80" id="modeltest-sample-size" type="number" value="100" min="5" max="200">
+            <div class="field-hint">total calls</div>
           </div>
           <div>
             <label class="settings-label">Sampling</label>
-            <label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:8px;cursor:pointer">
-              <input type="checkbox" id="modeltest-stratify" checked style="accent-color:var(--brand-navy);width:14px;height:14px">
+            <label class="mt-stratify">
+              <input type="checkbox" id="modeltest-stratify" checked class="check-14">
               stratify by call length
             </label>
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">even short/med/long, pinned for all models</div>
+            <div class="field-hint">even short/med/long, pinned for all models</div>
           </div>
-          <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
+          <div class="mt-run-col">
             <button class="settings-save-btn" onclick="modeltestRun()">Run calibration</button>
-            <span id="modeltest-run-status" style="font-size:12px;color:var(--teal)"></span>
+            <span id="modeltest-run-status" class="status-note"></span>
           </div>
         </div>
         </div><!-- /calib-run-controls (admin only) -->
@@ -1511,22 +1714,22 @@
         <div id="modeltest-history"></div>
 
         <!-- Results panel -->
-        <div id="modeltest-comparison" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-            <div class="settings-section-title" style="font-size:13px" id="modeltest-comparison-title">Results</div>
-            <span id="mt-save-status" style="font-size:12px"></span>
-            <button onclick="reviewOpen(mtState.testId)" style="font-family:var(--sans);font-size:11px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer;margin-left:auto">Label one by one</button>
+        <div id="modeltest-comparison" class="section-split" style="display:none">
+          <div class="mt-result-head">
+            <div class="settings-section-title fs-13" id="modeltest-comparison-title">Results</div>
+            <span id="mt-save-status" class="fs-12"></span>
+            <button onclick="reviewOpen(mtState.testId)" class="mt-label-btn">Label one by one</button>
             <button class="btn-close" onclick="modeltestCloseComparison()">Close</button>
           </div>
           <div id="modeltest-comparison-table"></div>
         </div>
 
         <!-- Review / training panel -->
-        <div id="modeltest-review" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-            <div class="settings-section-title" style="font-size:13px" id="review-title">Label calls</div>
-            <span id="review-progress" style="font-size:12px;color:var(--text-3)"></span>
-            <button class="btn-close" onclick="reviewClose()" style="margin-left:auto">Close</button>
+        <div id="modeltest-review" class="section-split" style="display:none">
+          <div class="mtr-head">
+            <div class="settings-section-title fs-13" id="review-title">Label calls</div>
+            <span id="review-progress" class="fs-12 c-text-3"></span>
+            <button class="btn-close ml-auto" onclick="reviewClose()">Close</button>
           </div>
           <div id="review-body"></div>
         </div>
@@ -1541,47 +1744,47 @@
         <div id="settings-prompts-list"></div>
 
         <!-- inline editor -->
-        <div id="settings-prompt-editor" style="display:none;margin-top:16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <div id="settings-prompt-editor" class="pe-panel" style="display:none">
           <input type="hidden" id="prompt-editor-id">
-          <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-            <div style="flex:1;min-width:200px">
+          <div class="pe-row">
+            <div class="flex-1 minw-200">
               <label class="settings-label">Prompt name</label>
-              <input class="settings-input" id="prompt-editor-name" type="text" placeholder="e.g. v2: stricter outbound detection" style="width:100%">
+              <input class="settings-input w-full" id="prompt-editor-name" type="text" placeholder="e.g. v2: stricter outbound detection">
             </div>
-            <div style="flex:2;min-width:200px">
+            <div class="grow2-200">
               <label class="settings-label">Description</label>
-              <input class="settings-input" id="prompt-editor-desc" type="text" placeholder="What's different about this version?" style="width:100%">
+              <input class="settings-input w-full" id="prompt-editor-desc" type="text" placeholder="What's different about this version?">
             </div>
           </div>
-          <div style="margin-bottom:12px">
+          <div class="mb-12">
             <label class="settings-label">Outcome prompt</label>
-            <textarea id="prompt-editor-outcome" style="width:100%;height:260px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--tint);color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+            <textarea id="prompt-editor-outcome" class="pe-textarea-tall"></textarea>
           </div>
-          <div style="margin-bottom:16px">
+          <div class="mb-16">
             <label class="settings-label">Compliance prompt</label>
-            <textarea id="prompt-editor-compliance" style="width:100%;height:200px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--tint);color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+            <textarea id="prompt-editor-compliance" class="pe-textarea"></textarea>
           </div>
-          <div style="display:flex;gap:10px;align-items:center">
+          <div class="pe-actions">
             <button class="settings-save-btn" onclick="promptsSave()">Save</button>
             <button class="settings-delete-btn" onclick="promptsHideEditor()">Cancel</button>
-            <span id="prompt-editor-status" style="font-size:12px;color:var(--teal)"></span>
+            <span id="prompt-editor-status" class="status-note"></span>
           </div>
         </div>
 
         <!-- A/B test runner -->
-        <div style="margin-top:28px">
-          <div class="settings-section-title" style="font-size:13px;margin-bottom:12px">A/B Test Runner</div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="mt-28">
+          <div class="settings-section-title ab-title">A/B Test Runner</div>
+          <div class="ab-row">
             <div>
               <label class="settings-label">Prompt to test</label>
-              <select class="settings-input" id="ab-prompt-select" style="min-width:200px"></select>
+              <select class="settings-input minw-200" id="ab-prompt-select"></select>
             </div>
             <div>
               <label class="settings-label">Batch size</label>
-              <input class="settings-input" id="ab-batch-size" type="number" value="50" min="1" max="500" style="width:90px">
+              <input class="settings-input w-90" id="ab-batch-size" type="number" value="50" min="1" max="500">
             </div>
             <button class="settings-save-btn" onclick="promptsRunABTest()">Run test batch</button>
-            <span id="ab-status" style="font-size:12px;color:var(--teal)"></span>
+            <span id="ab-status" class="status-note"></span>
           </div>
         </div>
       </div>
@@ -1686,6 +1889,8 @@ function loadErrorHtml(thing, retry, err) {
   if (err) console.warn(`Couldn't load ${thing}:`, err && err.message || err);
   return `<div class="load-error" role="alert"><span>Couldn't load ${esc(thing)}.</span>${retry ? `<button type="button" class="rv-btn" onclick="${retry}">Retry</button>` : ''}</div>`;
 }
+// Status-line color as a class (.tone-coral failed / .tone-teal done / .tone-muted working); replaces the last tone.
+function setTone(el, tone) { el.classList.remove('tone-coral', 'tone-teal', 'tone-muted'); el.classList.add('tone-' + tone); }
 function fmtPct(num, den) { return den > 0 ? ((num/den)*100).toFixed(1) + '%' : nullMark(); }
 // A value quoted for a PostgREST list or or=() filter. Unquoted values containing , ( ) or "
 // parse as syntax, so e.g. "Auto Insurance (Insured)" silently matched nothing.
@@ -1725,6 +1930,14 @@ async function sbCount(path, mode='planned') {
   if (!res.ok) throw new Error(`Supabase ${res.status}`);
   const n = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
   return isNaN(n) ? null : n;
+}
+// Supabase Auth (GoTrue): every /auth/v1 call goes through here. Sends the publishable key, plus JSON
+// Content-Type when there is a body; callers add Authorization. Returns the raw Response.
+function authFetch(path, init = {}) {
+  return fetch(`${SB_URL}/auth/v1/${path}`, {
+    ...init,
+    headers: { 'apikey': SB_KEY, ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(init.headers || {}) },
+  });
 }
 
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
@@ -1982,7 +2195,7 @@ function scoresRenderTable() {
       : `<div class="ins-loading">No calls with both a Canoe and a Registry outcome in this window.</div>`;
     return;
   }
-  const th = (key, label, extra = '', title = '') => `<th class="scores-th" style="cursor:pointer;${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
+  const th = (key, label, extra = '', title = '') => `<th class="scores-th pointer ${extra}"${title ? ` title="${title}"` : ''} onclick="scoresSetSort('${key}')">${label}${scoresSort.key === key ? (scoresSort.dir < 0 ? ' ↓' : ' ↑') : ''}</th>`;
   const lowMark = `<span class="null-mark" title="Score hidden until ${SCORES_MIN_CALLS}+ scored calls">-</span>`;
   const tierTitle = 'Best tier whose bars all pass (Registry outcomes), else Tier 4: '
     + SCORES_TIERS[scoresEntity].map(t => `Tier ${t.tier} = avg ${t.minAvg >= 0 ? '+' : ''}${t.minAvg}+, defect ≤${Math.round(t.maxDefect * 100)}%, conv-adj ≥${Math.round(t.minConv * 100)}%`).join('; ');
@@ -1991,25 +2204,25 @@ function scoresRenderTable() {
     return `
     <tr class="scores-row ${scoresOpenKey === r.key ? 'open' : ''}" data-key="${esc(r.key)}" onclick="scoresToggleDetail(this.dataset.key)">
       <td>${esc(r.entity)}</td>
-      <td style="color:var(--text-2)">${esc(r.vertical)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresFmt(r.oursScore)}</td>
-      <td style="text-align:right;font-family:var(--mono);color:${low || r.gap == null ? 'var(--text-3)' : Math.abs(r.gap) >= 2 ? 'var(--coral)' : 'var(--text)'}">${low ? lowMark : (r.gap == null ? nullMark() : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1))}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresPct(r.defect)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${low ? lowMark : scoresPct(r.conv)}</td>
-      <td style="text-align:right">${low || r.tier == null ? lowMark : `<span class="scores-tier scores-tier-${r.tier}">Tier ${r.tier}</span>`}</td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${r.n.toLocaleString()}${low ? ' <span style="font-size:11px;opacity:.7">low volume</span>' : ''}</td>
+      <td class="c-text-2">${esc(r.vertical)}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresFmt(r.canoeScore)}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresFmt(r.oursScore)}</td>
+      <td class="ta-r mono ${low || r.gap == null ? 'c-text-3' : Math.abs(r.gap) >= 2 ? 'c-coral' : 'c-text'}">${low ? lowMark : (r.gap == null ? nullMark() : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1))}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresPct(r.defect)}</td>
+      <td class="ta-r mono">${low ? lowMark : scoresPct(r.conv)}</td>
+      <td class="ta-r">${low || r.tier == null ? lowMark : `<span class="scores-tier scores-tier-${r.tier}">Tier ${r.tier}</span>`}</td>
+      <td class="ta-r mono c-text-3">${r.n.toLocaleString()}${low ? ' <span class="scores-low">low volume</span>' : ''}</td>
     </tr>
     ${scoresOpenKey === r.key ? `<tr class="scores-detail-row"><td colspan="9">${scoresRenderDetail(r)}</td></tr>` : ''}
   `;
   }).join('');
   out.innerHTML = `<table class="canoe-table scores-table">
     <thead><tr>
-      ${th('entity', entLabel, 'text-align:left')}${th('vertical', 'Vertical', 'text-align:left')}
-      ${th('canoe', 'Canoe', 'text-align:right', 'Weighted score from Canoe outcomes')}${th('ours', 'Registry', 'text-align:right', 'Weighted score from Registry AI outcomes')}
-      ${th('gap', 'Gap', 'text-align:right', 'Registry minus Canoe')}
-      ${th('defect', 'Defect', 'text-align:right', 'Share of calls with a negative-weight Registry outcome')}${th('conv', 'Conv-adj', 'text-align:right', 'Share of calls with a Registry outcome weighted 2+ (quoted interested/undecided, appointment, sale)')}
-      ${th('tier', 'Tier', 'text-align:right', tierTitle)}${th('n', 'Calls', 'text-align:right', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
+      ${th('entity', entLabel, 'ta-l')}${th('vertical', 'Vertical', 'ta-l')}
+      ${th('canoe', 'Canoe', 'ta-r', 'Weighted score from Canoe outcomes')}${th('ours', 'Registry', 'ta-r', 'Weighted score from Registry AI outcomes')}
+      ${th('gap', 'Gap', 'ta-r', 'Registry minus Canoe')}
+      ${th('defect', 'Defect', 'ta-r', 'Share of calls with a negative-weight Registry outcome')}${th('conv', 'Conv-adj', 'ta-r', 'Share of calls with a Registry outcome weighted 2+ (quoted interested/undecided, appointment, sale)')}
+      ${th('tier', 'Tier', 'ta-r', tierTitle)}${th('n', 'Calls', 'ta-r', 'Comparable calls (both a Canoe and a Registry outcome) the score is based on')}
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -2036,11 +2249,11 @@ async function scoresShowTranscript(id) {
   let box = document.getElementById('scores-tx-modal');
   if (!box) {
     box = document.createElement('div'); box.id = 'scores-tx-modal';
-    box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:flex;align-items:center;justify-content:center;padding:40px';
+    box.className = 'scores-tx-modal';
     box.addEventListener('click', e => { if (e.target === box) box.remove(); });
     document.body.appendChild(box);
   }
-  box.innerHTML = `<div style="background:var(--surface);max-width:680px;width:100%;max-height:80vh;overflow:auto;border-radius:var(--radius);padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.2)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>Transcript</strong><button class="btn-close" onclick="document.getElementById('scores-tx-modal').remove()">Close</button></div><div id="scores-tx-body" style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:var(--text)">Loading…</div></div>`;
+  box.innerHTML = `<div class="scores-tx-card"><div class="scores-tx-head"><strong>Transcript</strong><button class="btn-close" onclick="document.getElementById('scores-tx-modal').remove()">Close</button></div><div id="scores-tx-body" class="scores-tx-text">Loading…</div></div>`;
   try {
     const rows = await sbFetch(`canoe_calls?select=transcription,ascnd_transcript&id=eq.${encodeURIComponent(id)}`);
     const t = rows && rows[0] ? (rows[0].transcription || rows[0].ascnd_transcript || '(no transcript on this call)') : '(call not found)';
@@ -2073,33 +2286,33 @@ function scoresRenderDetail(r) {
     : `Canoe and Registry agree on the outcome mix here.`;
   const rowsHtml = ranked.map(x => {
     const excl = scoresExcluded.has(x.o);
-    return `<tr style="${excl ? 'opacity:.4' : ''}">
-      <td><label style="cursor:pointer;display:flex;gap:6px;align-items:center"><input type="checkbox" ${excl ? '' : 'checked'} data-key="${esc(r.key)}" data-outcome="${esc(x.o)}" onclick="event.stopPropagation();scoresToggleOutcome(this.dataset.key,this.dataset.outcome)"><span style="font-family:var(--mono)">${esc(labelOf(x.o))}</span></label></td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--text-3)">${x.w}</td>
-      <td style="text-align:right;font-family:var(--mono)">${x.cN || ''}</td>
-      <td style="text-align:right;font-family:var(--mono)">${x.oN || ''}</td>
+    return `<tr class="${excl ? 'o-40' : ''}">
+      <td><label class="scores-check"><input type="checkbox" ${excl ? '' : 'checked'} data-key="${esc(r.key)}" data-outcome="${esc(x.o)}" onclick="event.stopPropagation();scoresToggleOutcome(this.dataset.key,this.dataset.outcome)"><span class="mono">${esc(labelOf(x.o))}</span></label></td>
+      <td class="ta-r mono c-text-3">${x.w}</td>
+      <td class="ta-r mono">${x.cN || ''}</td>
+      <td class="ta-r mono">${x.oN || ''}</td>
     </tr>`;
   }).join('');
   const fmtD = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const dis = r._dis, disCount = Array.isArray(dis) ? dis.length : null;
   const disHtml = dis == null
-    ? '<div class="canoe-none" style="padding:8px 0">Loading calls…</div>'
+    ? '<div class="canoe-none p-8-0">Loading calls…</div>'
     : dis.length === 0
-      ? '<div class="canoe-none" style="padding:8px 0">No individual disagreements in this window.</div>'
-      : `<table class="canoe-table"><thead><tr><th>Date</th><th style="text-align:left">Publisher</th><th style="text-align:left">Advertiser</th><th style="text-align:right">Dur</th><th style="text-align:left">Disposition</th><th style="text-align:left">Canoe</th><th style="text-align:left">Registry</th><th style="text-align:right">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td style="color:var(--text-3);white-space:nowrap">${fmtD(c.created_at)}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'')}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'')}</td><td style="text-align:right;font-family:var(--mono)">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'')}</td><td style="font-family:var(--mono)">${esc(labelOf(c.canoe_outcome))}</td><td style="font-family:var(--mono)">${esc(labelOf(c.our_outcome))}</td><td style="text-align:right;white-space:nowrap">${httpUrl(c.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(c.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresShowTranscript('${jsStr(c.id)}')">Transcript</a> · <a class="cr-link" style="cursor:pointer" onclick="event.stopPropagation();scoresCopyId('${jsStr(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
+      ? '<div class="canoe-none p-8-0">No individual disagreements in this window.</div>'
+      : `<table class="canoe-table"><thead><tr><th>Date</th><th class="ta-l">Publisher</th><th class="ta-l">Advertiser</th><th class="ta-r">Dur</th><th class="ta-l">Disposition</th><th class="ta-l">Canoe</th><th class="ta-l">Registry</th><th class="ta-r">Links</th></tr></thead><tbody>${dis.map(c => `<tr><td class="c-text-3 nowrap">${fmtD(c.created_at)}</td><td class="clip-140" title="${esc(c.publisher_name||'')}">${esc(c.publisher_name||'')}</td><td class="clip-140" title="${esc(c.advertiser_name||'')}">${esc(c.advertiser_name||'')}</td><td class="ta-r mono">${crFmtDuration(c.ivr_duration)}</td><td>${esc(c.disposition||'')}</td><td class="mono">${esc(labelOf(c.canoe_outcome))}</td><td class="mono">${esc(labelOf(c.our_outcome))}</td><td class="ta-r nowrap">${httpUrl(c.recording_url) ? `<a class="cr-link" href="${esc(httpUrl(c.recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Listen</a> · ` : ''}<a class="cr-link pointer" onclick="event.stopPropagation();scoresShowTranscript('${jsStr(c.id)}')">Transcript</a> · <a class="cr-link pointer" onclick="event.stopPropagation();scoresCopyId('${jsStr(c.id)}',this)">copy id</a></td></tr>`).join('')}</tbody></table>`;
   return `<div class="scores-detail">
-    ${(r.n || 0) < SCORES_MIN_CALLS ? `<div style="margin-bottom:10px;padding:8px 12px;border:1px dashed var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">Under ${SCORES_MIN_CALLS} scored calls, so the score is hidden.</div>` : ''}
+    ${(r.n || 0) < SCORES_MIN_CALLS ? `<div class="scores-low-note">Under ${SCORES_MIN_CALLS} scored calls, so the score is hidden.</div>` : ''}
     <div class="scores-detail-headline">${headline}</div>
     <div class="scores-whatif-scores">
-      <span>Canoe <strong style="font-family:var(--mono)">${scoresFmt(cScore)}</strong></span>
-      <span>Registry <strong style="font-family:var(--mono)">${scoresFmt(oScore)}</strong></span>
-      ${scoresExcluded.size ? `<span style="color:var(--text-3);font-size:12px">recomputed with ${scoresExcluded.size} outcome(s) removed</span>` : ''}
+      <span>Canoe <strong class="mono">${scoresFmt(cScore)}</strong></span>
+      <span>Registry <strong class="mono">${scoresFmt(oScore)}</strong></span>
+      ${scoresExcluded.size ? `<span class="c-text-3 fs-12">recomputed with ${scoresExcluded.size} outcome(s) removed</span>` : ''}
     </div>
-    <table class="canoe-table" style="margin-top:8px">
-      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th style="text-align:right">Weight</th><th style="text-align:right">Canoe n</th><th style="text-align:right">Registry n</th></tr></thead>
+    <table class="canoe-table mt-8">
+      <thead><tr><th>Outcome (uncheck to simulate removing)</th><th class="ta-r">Weight</th><th class="ta-r">Canoe n</th><th class="ta-r">Registry n</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
-    <div class="scores-detail-headline" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}
+    <div class="scores-detail-headline scores-dis-head">Calls where Canoe and Registry disagree${disCount != null ? ` (${disCount})` : ''}
       <button class="rv-btn" data-entity="${esc(r.entity)}" data-vertical="${esc(r.vertical)}" onclick="event.stopPropagation();scoresViewCalls(this.dataset.entity,this.dataset.vertical)">View all calls in Calls</button></div>
     ${disHtml}
   </div>`;
@@ -2302,7 +2515,7 @@ async function loadAgentActivity(){try{const rows=await sbFetch('rpc/agent_last_
 let testCallMap={};
 async function loadTestCalls(){try{const rows=await sbFetch('agent_test_calls?select=ivr_name,url');if(rows)rows.forEach(r=>{if(r.ivr_name&&r.url)testCallMap[r.ivr_name]=r.url;});}catch(e){console.warn('test calls:',e.message);}}
 async function saveTestCall(ivrName,url){await sbFetch('agent_test_calls?on_conflict=ivr_name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({ivr_name:ivrName,url:url||null,updated_at:new Date().toISOString()})});testCallMap[ivrName]=url;}
-function renderTestCallRow(ivrName){const url=httpUrl(testCallMap[ivrName]);return url?`<div class="card-test-call"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--brand-navy)"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg><a class="card-test-link" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a></div>`:'';}
+function renderTestCallRow(ivrName){const url=httpUrl(testCallMap[ivrName]);return url?`<div class="card-test-call"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" class="ag-link-icon"><path d="M2 4a2 2 0 0 1 2-2h2a1 1 0 0 1 0 2H4v8h8v-2a1 1 0 1 1 2 0v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z" fill="currentColor"/><path d="M10 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V3.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 2H11a1 1 0 0 1-1-1z" fill="currentColor"/></svg><a class="card-test-link" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Test call</a></div>`:'';}
 // The open agent's test call, in its details: link + Edit, or Add. tcEdit holds the draft while editing.
 let tcEdit=null;   // {ivr, draft} or null
 function renderDrawerTestCall(a){
@@ -2342,12 +2555,12 @@ function renderDrawer(a){const hasQual=(a.qualifying||[]).length>0;const tg=a.ta
 const mkTargetTable=(heads,rows,total,noun,calls,emptyMsg)=>{if(agentTargetsFailed)return'<div class="canoe-none">Couldn\'t load. Reload the page to try again.</div>';if(!rows.length)return`<div class="canoe-none">${emptyMsg}</div>`;const shown=total>rows.length?`Top ${rows.length} of ${total} ${noun}s`:`${total} ${noun}${total!==1?'s':''}`;return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table tgt-table"><thead><tr><th>${heads[0]}</th><th>${heads[1]}</th><th class="num">Calls</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2].toLocaleString()}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2">${shown} · last ${tgDays} days</td><td class="num">${calls.toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const pcTable=mkTargetTable(['Campaign','Publisher'],(tg?tg.publisher_campaigns:[]).map(p=>[esc(p.campaign),esc(p.publisher),p.calls]),tg?tg.publisher_campaigns_total:0,'campaign',tg?tg.calls:0,`No calls in the last ${tgDays} days`);
 const ivrTable=mkTargetTable(['Advertiser','Campaign'],(tg?tg.buyer_targets:[]).map(t=>[esc(t.advertiser),`${t.campaign?esc(t.campaign):'<span class="tgt-sub">No campaign</span>'}<span class="tgt-sub">${esc(t.vertical)}${t.other_verticals?` +${t.other_verticals} more vertical${t.other_verticals!==1?'s':''}`:''}</span>`,t.calls]),tg?tg.buyer_targets_total:0,'target',tg?tg.routed_calls:0,tg&&tg.calls?`No calls reached a buyer in the last ${tgDays} days`:`No calls in the last ${tgDays} days`);const qualSection=hasQual&&getEffectiveStatus(a)!=='test'?`<div class="qual-list">${a.qualifying.map(q=>`<div class="qual-item"><div class="qual-dot"></div>${esc(q)}</div>`).join('')}</div>${a.disqualify?`<div class="qual-disqualify">Disqualifies: ${esc(a.disqualify)}</div>`:''}`:'<div class="canoe-none">None</div>';
-const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none" style="padding:8px 0;">No calls in this range</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=fmtPct(totPaid,totRaw);const bodyRows=rows.map(p=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.name)}">${esc(p.name)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.raw_calls.toLocaleString()}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.sent_calls||0}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${p.paid_calls}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">${fmtPct(p.paid_calls,p.raw_calls)}</td><td style="text-align:right;font-family:var(--mono);font-size:11px;">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th style="text-align:right">Raw</th><th style="text-align:right">Sent</th><th style="text-align:right">Paid</th><th style="text-align:right">Conv.</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>Total (${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''})</td><td style="text-align:right">${totRaw.toLocaleString()}</td><td style="text-align:right">${totSent.toLocaleString()}</td><td style="text-align:right">${totPaid.toLocaleString()}</td><td style="text-align:right">${avgConv}</td><td style="text-align:right">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
+const mkBreakdownTable=(rows,firstColLabel)=>{if(!rows.length)return'<div class="canoe-none p-8-0">No calls in this range</div>';const totRaw=rows.reduce((s,r)=>s+r.raw_calls,0),totSent=rows.reduce((s,r)=>s+(r.sent_calls||0),0),totPaid=rows.reduce((s,r)=>s+r.paid_calls,0),totRev=rows.reduce((s,r)=>s+r.revenue,0),avgConv=fmtPct(totPaid,totRaw);const bodyRows=rows.map(p=>`<tr><td class="clip-160" title="${esc(p.name)}">${esc(p.name)}</td><td class="num-xs">${p.raw_calls.toLocaleString()}</td><td class="num-xs">${p.sent_calls||0}</td><td class="num-xs">${p.paid_calls}</td><td class="num-xs">${fmtPct(p.paid_calls,p.raw_calls)}</td><td class="num-xs">$${Math.round(p.revenue).toLocaleString()}</td></tr>`).join('');return`<div class="breakdown-table-wrap"><div class="breakdown-table-scroll"><table class="canoe-table"><thead><tr><th>${firstColLabel}</th><th class="ta-r">Raw</th><th class="ta-r">Sent</th><th class="ta-r">Paid</th><th class="ta-r">Conv.</th><th class="ta-r">Revenue</th></tr></thead><tbody>${bodyRows}</tbody><tfoot><tr><td>Total (${rows.length} ${firstColLabel.toLowerCase()}${rows.length!==1?'s':''})</td><td class="ta-r">${totRaw.toLocaleString()}</td><td class="ta-r">${totSent.toLocaleString()}</td><td class="ta-r">${totPaid.toLocaleString()}</td><td class="ta-r">${avgConv}</td><td class="ta-r">$${Math.round(totRev).toLocaleString()}</td></tr></tfoot></table></div></div>`;};
 const nd=metricsFailed,sentOverRaw=nd?nullMark():fmtPct(a.sent_calls,a.raw_calls),margin=nd?nullMark():'$'+Math.round(a.margin||0).toLocaleString();
-return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em style="color:var(--amber)">${esc(a.notes)}</em>`:''}</div><div class="drawer-meta">${esc(activeRange.label||'')} · Sent / raw <span class="drawer-num">${sentOverRaw}</span> · Direct margin <span class="drawer-num">${margin}</span></div>${renderDrawerTestCall(a)}</div><button class="btn-close" onclick="closeDrawer(event)">Close</button></div>${a.objective?`<div class="dsec" style="margin:4px 0 18px"><div class="dsec-title">IVR objective</div><div style="font-size:13px;color:var(--text-2);line-height:1.5;white-space:pre-wrap">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Buyer targets</div>${ivrTable}</div></div></div><div class="drawer-sections" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div>${aeDrawerHtml(a)}</div></div>`;}
+return`<div class="detail-drawer"><div class="drawer-inner"><div class="drawer-top"><div><div class="drawer-title">${esc(a.name)}</div><div class="drawer-meta">${esc(a.vertical||'')} · ${rtLabel(a.routingType)}${a.notes?` · <em class="c-amber">${esc(a.notes)}</em>`:''}</div><div class="drawer-meta">${esc(activeRange.label||'')} · Sent / raw <span class="drawer-num">${sentOverRaw}</span> · Direct margin <span class="drawer-num">${margin}</span></div>${renderDrawerTestCall(a)}</div><button class="btn-close" onclick="closeDrawer(event)">Close</button></div>${a.objective?`<div class="dsec m-4-0-18"><div class="dsec-title">IVR objective</div><div class="ag-objective">${esc(a.objective)}</div></div>`:''}<div class="drawer-sections"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Qualifying for</div>${qualSection}</div><div class="dsec"><div class="dsec-title">Publisher campaign IVRs</div>${pcTable}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Buyer targets</div>${ivrTable}</div></div></div><div class="drawer-sections section-split"><div class="drawer-col"><div class="dsec"><div class="dsec-title">Publishers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.pubBreakdown||[],'Publisher'):bdPending(a)}</div></div><div class="drawer-col"><div class="dsec"><div class="dsec-title">Advertisers</div>${a._bdKey===activeRange.label?mkBreakdownTable(a.advBreakdown||[],'Advertiser'):bdPending(a)}</div></div></div>${aeDrawerHtml(a)}</div></div>`;}
 
 function getSorted(arr){const s=document.getElementById('sort-select').value;return[...arr].sort((a,b)=>{if(s==='name')return a.name.localeCompare(b.name);if(s==='revenue')return(b.revenue||0)-(a.revenue||0);if(s==='margin')return(b.margin||0)-(a.margin||0);if(s==='calls')return(b.raw_calls||0)-(a.raw_calls||0);if(s==='conversion')return(b.conversion||0)-(a.conversion||0);if(s==='defects')return aeDefectRate(b)-aeDefectRate(a)||(b.raw_calls||0)-(a.raw_calls||0);return 0;});}
-function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim(),grid=document.getElementById('agents-grid'),drawer=document.getElementById('drawer-container');if(!keepOpen){drawer.innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered),active=sorted.filter(a=>!isInactive(a)),inactive=sorted.filter(isInactive).sort(byLastCall);grid.innerHTML=active.length?active.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):agentsLoadFailed?`<div style="grid-column:1/-1">${loadErrorHtml('agents','retryAgentsLoad()')}</div>`:`<div class="empty">${inactive.length?'No active agents match.':'No agents match.'}</div>`;const sec=document.getElementById('agents-inactive');if(sec){sec.hidden=!inactive.length;if(q&&inactive.length)sec.open=true;document.getElementById('agents-inactive-count').textContent=inactive.length;document.getElementById('agents-inactive-grid').innerHTML=inactive.map(a=>renderCard(a,AGENTS.indexOf(a))).join('');}placeOpenAgentDrawer(drawer);}
+function applyFilters(keepOpen){const q=document.getElementById('search-input').value.toLowerCase().trim(),grid=document.getElementById('agents-grid'),drawer=document.getElementById('drawer-container');if(!keepOpen){drawer.innerHTML='';openAgent=null;}const filtered=AGENTS.filter(a=>{if(activeFilter!=='all'&&a.vertical!==activeFilter)return false;if(!q)return true;const parts=[a.name,a.vertical,a.routingType,a.notes||'',...(a.publisherCampaigns||[]).flatMap(p=>[p.campaign,p.publisher]),...(a.ivrTargets||[]).flatMap(t=>[t.publisher,t.advertiser,t.vertical]),...(a.qualifying||[]),...aliasesForAgent(a.ivrName)];return parts.filter(Boolean).join(' ').toLowerCase().includes(q);});const sorted=getSorted(filtered),active=sorted.filter(a=>!isInactive(a)),inactive=sorted.filter(isInactive).sort(byLastCall);grid.innerHTML=active.length?active.map(a=>renderCard(a,AGENTS.indexOf(a))).join(''):agentsLoadFailed?`<div class="span-all">${loadErrorHtml('agents','retryAgentsLoad()')}</div>`:`<div class="empty">${inactive.length?'No active agents match.':'No agents match.'}</div>`;const sec=document.getElementById('agents-inactive');if(sec){sec.hidden=!inactive.length;if(q&&inactive.length)sec.open=true;document.getElementById('agents-inactive-count').textContent=inactive.length;document.getElementById('agents-inactive-grid').innerHTML=inactive.map(a=>renderCard(a,AGENTS.indexOf(a))).join('');}placeOpenAgentDrawer(drawer);}
 // The open agent's details are a full-width grid item right after the row holding its card, so they
 // open under the card instead of below every card. Re-placed on each grid render and when the grid's
 // width (so its column count) changes; parked after the grid while closed.
@@ -2412,8 +2625,8 @@ async function loadAgentBreakdown(a){
 // Placeholder for a breakdown table that isn't filled yet: loading, or a failure with Retry.
 function bdPending(a){
   return a._bdErr
-    ? `<div class="canoe-none" style="padding:8px 0;">Couldn't load this breakdown. <button class="rv-btn" onclick="event.stopPropagation();retryAgentBreakdown()">Retry</button></div>`
-    : '<div class="canoe-none" style="padding:8px 0;">Loading…</div>';
+    ? `<div class="canoe-none p-8-0">Couldn't load this breakdown. <button class="rv-btn" onclick="event.stopPropagation();retryAgentBreakdown()">Retry</button></div>`
+    : '<div class="canoe-none p-8-0">Loading…</div>';
 }
 async function retryAgentBreakdown(){
   if(openAgent==null) return;
@@ -3293,10 +3506,10 @@ function insRenderResults({dA,dB,thrCalls,thrRevPct,thrConv,pA,pB}){
   const pn=v=>v>=0?'pos':'neg';
   document.getElementById('ins-output').innerHTML=`<div class="anim">
     <div class="summary-strip">
-      <div class="summary-item"><div class="summary-val ${pn(dRev)}">${insFmtDelta(dRev,'$')}</div><div class="summary-lbl">Revenue (after vs before)</div><div class="summary-sub" style="color:${dRev>=0?'var(--teal)':'var(--coral)'}">${dRevPct!=null?(dRev>=0?'+':'')+dRevPct+'%':nullMark()}</div></div>
-      <div class="summary-item"><div class="summary-val ${pn(dMar)}">${insFmtDelta(dMar,'$')}</div><div class="summary-lbl">Direct margin (after vs before)</div><div class="summary-sub" style="color:${dMar>=0?'var(--teal)':'var(--coral)'}">${dMarPct!=null?(dMar>=0?'+':'')+dMarPct+'%':nullMark()}</div></div>
-      <div class="summary-item"><div class="summary-val ${pn(dConvTot)}">${insFmtDelta(dConvTot,'pp')}</div><div class="summary-lbl">Conversion rate (after vs before)</div><div class="summary-sub" style="color:var(--text-3)">${insFmtConv(totPaidA,totRawA)} → ${insFmtConv(totPaidB,totRawB)}</div></div>
-      <div class="summary-item"><div class="summary-val ${pn(totRawB-totRawA)}">${totRawB-totRawA>=0?'+':''}${(totRawB-totRawA).toLocaleString()}</div><div class="summary-lbl">Raw call volume (after vs before)</div><div class="summary-sub" style="color:var(--text-3)">${totRawA.toLocaleString()} → ${totRawB.toLocaleString()}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(dRev)}">${insFmtDelta(dRev,'$')}</div><div class="summary-lbl">Revenue (after vs before)</div><div class="summary-sub ${dRev>=0?'c-teal':'c-coral'}">${dRevPct!=null?(dRev>=0?'+':'')+dRevPct+'%':nullMark()}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(dMar)}">${insFmtDelta(dMar,'$')}</div><div class="summary-lbl">Direct margin (after vs before)</div><div class="summary-sub ${dMar>=0?'c-teal':'c-coral'}">${dMarPct!=null?(dMar>=0?'+':'')+dMarPct+'%':nullMark()}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(dConvTot)}">${insFmtDelta(dConvTot,'pp')}</div><div class="summary-lbl">Conversion rate (after vs before)</div><div class="summary-sub c-text-3">${insFmtConv(totPaidA,totRawA)} → ${insFmtConv(totPaidB,totRawB)}</div></div>
+      <div class="summary-item"><div class="summary-val ${pn(totRawB-totRawA)}">${totRawB-totRawA>=0?'+':''}${(totRawB-totRawA).toLocaleString()}</div><div class="summary-lbl">Raw call volume (after vs before)</div><div class="summary-sub c-text-3">${totRawA.toLocaleString()} → ${totRawB.toLocaleString()}</div></div>
     </div>
     ${insRenderSection('pub','Publishers',pubM,pA,pB)}
     ${insRenderSection('adv','Advertisers',advM,pA,pB)}
@@ -3350,7 +3563,7 @@ function insRenderSection(sect,title,movers,pA,pB){
       <td class="delta-cell"><span class="${dc(r.dRev)}">${insFmtDelta(r.dRev,'$')}</span>${dRevPctStr?` <span class="delta-pill ${pc(r.dRevPct)}">${dRevPctStr}</span>`:''}</td>
       <td class="delta-cell ${dc(r.dMargin)}">${insFmtDelta(r.dMargin,'$')}</td>
       <td class="delta-cell ${dc(r.dConv)}">${insFmtDelta(r.dConv,'pp')}</td>
-      <td style="text-align:right"><span class="ins-chevron"><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></td>
+      <td class="ta-r"><span class="ins-chevron"><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></td>
     </tr>
     <tr class="expand-row" id="ins-exp-${sect}-${safeKey}"><td colspan="7">${expand}</td></tr>`;
   }).join('');
@@ -3375,17 +3588,17 @@ function insRenderSection(sect,title,movers,pA,pB){
 function insExpandContent(r,pA,pB){
   const allAgents=new Set([...Object.keys(r.a.byAgent||{}),...Object.keys(r.b.byAgent||{})]);
   const agRows=[...allAgents].map(ag=>{const aa=r.a.byAgent[ag]||{raw:0,paid:0,rev:0},ab=r.b.byAgent[ag]||{raw:0,paid:0,rev:0};return{ag,aa,ab,dRev:ab.rev-aa.rev};}).sort((x,y)=>Math.abs(y.dRev)-Math.abs(x.dRev)).slice(0,10);
-  const agTable=agRows.length?`<table class="mini-table"><tr style="font-size:11px;color:var(--text-3)"><td>Agent</td><td>Raw before</td><td>Raw after</td><td>Rev before</td><td>Rev after</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.ag)}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td style="color:${a.dRev>=0?'var(--teal)':'var(--coral)'};font-weight:500">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div style="font-size:12px;color:var(--text-3);font-style:italic">No agent breakdown available.</div>';
+  const agTable=agRows.length?`<table class="mini-table"><tr class="note-xs"><td>Agent</td><td>Raw before</td><td>Raw after</td><td>Rev before</td><td>Rev after</td><td>∆ Rev</td></tr>${agRows.map(a=>`<tr><td class="clip-180">${esc(a.ag)}</td><td>${a.aa.raw}</td><td>${a.ab.raw}</td><td>${insFmtRev(a.aa.rev)}</td><td>${insFmtRev(a.ab.rev)}</td><td class="fw-500 ${a.dRev>=0?'c-teal':'c-coral'}">${insFmtDelta(a.dRev,'$')}</td></tr>`).join('')}</table>`:'<div class="empty-note-sm">No agent breakdown available.</div>';
   return`<div class="expand-inner"><div class="expand-grid">
     <div>
       <div class="expand-col-title">Before: ${insPeriodLabel(pA)}</div>
-      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2)">${r.a.raw.toLocaleString()} raw · ${r.a.paid.toLocaleString()} paid · ${insFmtConv(r.a.paid,r.a.raw)} conv · ${insFmtRev(r.a.rev)}</div>
+      <div class="ins-sub-mono">${r.a.raw.toLocaleString()} raw · ${r.a.paid.toLocaleString()} paid · ${insFmtConv(r.a.paid,r.a.raw)} conv · ${insFmtRev(r.a.rev)}</div>
     </div>
     <div>
       <div class="expand-col-title">After: ${insPeriodLabel(pB)}</div>
-      <div style="font-size:12px;font-family:var(--mono);color:var(--text-2)">${r.b.raw.toLocaleString()} raw · ${r.b.paid.toLocaleString()} paid · ${insFmtConv(r.b.paid,r.b.raw)} conv · ${insFmtRev(r.b.rev)}</div>
+      <div class="ins-sub-mono">${r.b.raw.toLocaleString()} raw · ${r.b.paid.toLocaleString()} paid · ${insFmtConv(r.b.paid,r.b.raw)} conv · ${insFmtRev(r.b.rev)}</div>
     </div>
-    <div style="grid-column:1/-1">
+    <div class="span-all">
       <div class="expand-col-title">Agent breakdown (top movers)</div>${agTable}
     </div>
   </div></div>`;
@@ -3681,7 +3894,7 @@ function crRender() {
     const vertical = r.vertical || (agent ? agent.vertical : '') || '';
     switch (c.key) {
       case 'id':
-        return `<td class="cr-mono" style="font-size:11px;color:var(--text-3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.id||'')}">${esc(r.id||'')}</td>`;
+        return `<td class="cr-mono cr-id-cell" title="${esc(r.id||'')}">${esc(r.id||'')}</td>`;
       case 'created_at':
         return `<td class="cr-mono">${crFmtDateTime(r.created_at)}</td>`;
       case 'recording':
@@ -3691,15 +3904,15 @@ function crRender() {
           : httpUrl(r.ascnd_recording_url) ? `<a class="cr-link" href="${esc(httpUrl(r.ascnd_recording_url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="ASCND AI-agent recording">Listen (AI agent)</a>`
           : ''}</td>`;
       case 'sent':
-        return `<td><span style="font-size:11px;font-weight:500;color:${(r.connect_duration||0)>0?'var(--teal)':'var(--text-3)'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
+        return `<td><span class="cr-connected ${(r.connect_duration||0)>0?'c-teal':'c-text-3'}">${(r.connect_duration||0)>0?'Yes':'No'}</span></td>`;
       case 'vertical':
         return `<td>${vertical ? `<span class="card-vtag ${vClass(vertical)}">${esc(vertical)}</span>` : ''}</td>`;
       case 'ivr_name':
-        return `<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(agentName)}">${esc(agentName)}</td>`;
+        return `<td class="cr-agent-cell" title="${esc(agentName)}">${esc(agentName)}</td>`;
       case 'publisher_name':
-        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.publisher_name||'')}">${esc(r.publisher_name||'')}</td>`;
+        return `<td class="cr-acct-cell" title="${esc(r.publisher_name||'')}">${esc(r.publisher_name||'')}</td>`;
       case 'advertiser_name':
-        return `<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.advertiser_name||'')}">${esc(r.advertiser_name||'')}</td>`;
+        return `<td class="cr-acct-cell" title="${esc(r.advertiser_name||'')}">${esc(r.advertiser_name||'')}</td>`;
       case 'phone':
         return `<td class="cr-mono">${esc(r.phone||'')}</td>`;
       case 'ivr_duration':
@@ -3707,33 +3920,33 @@ function crRender() {
       case 'disposition':
         return `<td><span class="${crDispoClass(r.disposition)}">${esc(r.disposition||'')}</span></td>`;
       case 'disposition_description':
-        return `<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)" title="${esc(r.disposition_description||'')}">${esc(r.disposition_description||'')}</td>`;
+        return `<td class="cr-disp-cell" title="${esc(r.disposition_description||'')}">${esc(r.disposition_description||'')}</td>`;
       case 'advertiser_payin':
-        return `<td class="cr-mono" style="text-align:right">${crFmtRev(r.advertiser_payin)}</td>`;
+        return `<td class="cr-mono ta-r">${crFmtRev(r.advertiser_payin)}</td>`;
       case 'outcome':          // Registry (our_outcome)
         return `<td>${outcomeBadge(r.our_outcome)}</td>`;
       case 'canoe_outcome':
-        return `<td style="font-size:11px;color:var(--text-2);white-space:nowrap">${r.canoe_outcome ? esc(labelOf(r.canoe_outcome)) : nullMark()}</td>`;
+        return `<td class="cr-outcome-cell">${r.canoe_outcome ? esc(labelOf(r.canoe_outcome)) : nullMark()}</td>`;
       // 0 is a real score (e.g. `other`, `not_interested`) — only null means unscored,
       // so don't collapse the two with a falsy check.
       case 'publisher_score':
       case 'advertiser_score': {
         const v = r[c.key];
-        if (v === null || v === undefined) return `<td class="cr-mono" style="text-align:right">${nullMark()}</td>`;
+        if (v === null || v === undefined) return `<td class="cr-mono ta-r">${nullMark()}</td>`;
         const n = Number(v);
-        const color = n > 0 ? 'var(--teal)' : n < 0 ? 'var(--coral)' : 'var(--text-3)';
-        return `<td class="cr-mono" style="text-align:right;color:${color}">${n > 0 ? '+' : ''}${n}</td>`;
+        const tone = n > 0 ? 'c-teal' : n < 0 ? 'c-coral' : 'c-text-3';
+        return `<td class="cr-mono ta-r ${tone}">${n > 0 ? '+' : ''}${n}</td>`;
       }
       case 'flags':
         return `<td>${flagBadges(callFlags(r))}</td>`;
       case 'reviewed':
-        return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span style="color:var(--teal)">reviewed</span>' : '<span style="color:var(--amber)">pending</span>') : ''}</td>`;
+        return `<td>${(r.flags && r.flags.length) ? (r.compliance_reviewed ? '<span class="c-teal">reviewed</span>' : '<span class="c-amber">pending</span>') : ''}</td>`;
       default:
         return `<td></td>`;
     }
   }
 
-  const tbody = rows.map(r => `<tr class="cr-row" style="cursor:pointer" data-id="${esc(r.id)}" onclick="crOpenDrawer(this.dataset.id)">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
+  const tbody = rows.map(r => `<tr class="cr-row pointer" data-id="${esc(r.id)}" onclick="crOpenDrawer(this.dataset.id)">${visCols.map(c => renderCell(c, r)).join('')}</tr>`).join('');
 
   // "Showing 25 rows" until the total is counted (or if the count failed), then "Showing 25 of 1,240".
   const footerText = crTotal == null
@@ -3743,13 +3956,13 @@ function crRender() {
 
   document.getElementById('cr-output').innerHTML = `
     <div class="cr-table-wrap">
-      <div style="overflow-x:auto">
+      <div class="scroll-x">
         <table class="cr-table">
           <thead><tr>${headHtml}</tr></thead>
           <tbody>${tbody}</tbody>
         </table>
       </div>
-      <div class="cr-footer"><span>${footerText}</span><span style="display:flex;gap:8px;align-items:center">${loadMoreBtn}</span></div>
+      <div class="cr-footer"><span>${footerText}</span><span class="row-gap-8">${loadMoreBtn}</span></div>
     </div>`;
 }
 
@@ -4021,13 +4234,13 @@ function aeCardLine(a){
 function aeDrawerHtml(a){
   if(!aeAvailable) return '';
   const q=a.q, noRules=!(a.qualifying||[]).length;
-  const head=`<div class="dsec-title" style="margin:22px 0 0">Agent quality</div>`;
-  if(!q||!q.scored) return head+'<div class="canoe-none" style="margin-top:10px">No calls scored in this period yet.</div>';
+  const head=`<div class="dsec-title m-22-0-0">Agent quality</div>`;
+  if(!q||!q.scored) return head+'<div class="canoe-none mt-10">No calls scored in this period yet.</div>';
   const tile=(v,l,zero)=>`<div class="perf-item"><div class="perf-val${zero?' zero':''}">${v}</div><div class="perf-lbl">${l}</div></div>`;
   const pctS=(n)=>fmtPct(n,q.scored);
   const issues=a._tiKey===(activeRange.label||'')&&(a._topIssues||[]).length
     ? `<div class="ae-issues"><div class="ae-issues-t">Recent fixes</div>${a._topIssues.map(r=>`<div class="ae-issue">${esc(r.top_issue)} <span>${fmtDate(new Date(r.call_at))}</span></div>`).join('')}</div>` : '';
-  return head+`<div class="perf-strip" style="margin-top:12px;padding-top:0;border-top:none">
+  return head+`<div class="perf-strip ag-perf-strip">
     ${tile(q.scored.toLocaleString(),'Calls scored')}
     ${tile(fmtPct(q.good,q.conversations),'Handled well',!q.good)}
     ${tile(fmtPct(q.major,q.conversations),'Defect rate',!q.major)}
@@ -4200,14 +4413,14 @@ function renderReviewBoard(){
   const sideMgrs=b.managers.filter(m=>b.acctAssign.some(a=>a.manager_id===m.id&&a.account_type===dr.side));
   const mgrOpts=[`<option value="">All ${drAdv?'account':'supply'} managers</option>`]
     .concat(sideMgrs.map(m=>`<option value="${m.id}" ${dr.mgr===m.id?'selected':''}>${esc(m.manager_name)}</option>`)).join('');
-  const acctList=acctOpts.map(n=>`<label class="ins-vertical-opt" data-name="${esc(n.toLowerCase())}"><input type="checkbox" value="${esc(n)}" ${picked.has(n)?'checked':''} onchange="rvAcctToggle(this)"><span>${esc(n)} <span style="color:var(--text-3)">(${acctIvrs[n]} IVR${acctIvrs[n]===1?'':'s'})</span></span></label>`).join('')
+  const acctList=acctOpts.map(n=>`<label class="ins-vertical-opt" data-name="${esc(n.toLowerCase())}"><input type="checkbox" value="${esc(n)}" ${picked.has(n)?'checked':''} onchange="rvAcctToggle(this)"><span>${esc(n)} <span class="c-text-3">(${acctIvrs[n]} IVR${acctIvrs[n]===1?'':'s'})</span></span></label>`).join('')
     || `<div class="rv-acct-none">No ${drNoun} with IVR calls in the last 30 days.</div>`;
   const sideBtn=(side,label)=>`<button class="seg-btn${dr.side===side?' active':''}" onclick="rvDraftSide('${side}')">${label}</button>`;
   const dirty=JSON.stringify(dr)!==JSON.stringify(ap);
 
-  const fbtn=(f,label,n)=>`<button class="seg-btn${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span style="opacity:.65">${n}</span></button>`;
+  const fbtn=(f,label,n)=>`<button class="seg-btn${b.filter===f?' active':''}" onclick="reviewSetBoardFilter('${f}')">${label} <span class="o-65">${n}</span></button>`;
   const acctCell=x=>{ const shown=x.accts.slice(0,2).join(', '), more=x.accts.length-2;
-    return `<td class="rv-board-accts" title="${esc(x.accts.join(', '))}">${esc(shown)}${more>0?` <span style="color:var(--text-3)">+${more}</span>`:''}</td>`; };
+    return `<td class="rv-board-accts" title="${esc(x.accts.join(', '))}">${esc(shown)}${more>0?` <span class="c-text-3">+${more}</span>`:''}</td>`; };
   const emptyMsg = scopeSet ? `No agents ${apAdv?'sent calls to':'took calls from'} these ${apAdv?'advertisers':'publishers'} in the last 30 days.`
     : 'No agents in this view.';
   root.innerHTML=
@@ -4215,7 +4428,7 @@ function renderReviewBoard(){
        <div class="seg">${sideBtn('advertiser','Account Manager')}${sideBtn('publisher','Supply Manager')}</div>
        <select class="rv-board-reviewer" aria-label="${drAdv?'Account':'Supply'} manager" onchange="rvDraftMgr(this.value)">${mgrOpts}</select>
        <div class="ins-vertical-wrap" id="rv-acct-wrap">
-         <button class="rv-board-reviewer rv-acct-trigger" onclick="rvAcctToggleOpen(event)"><span id="rv-acct-label">${esc(rvAcctLabel(dr))}</span><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true" style="margin-left:4px;vertical-align:middle"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+         <button class="rv-board-reviewer rv-acct-trigger" onclick="rvAcctToggleOpen(event)"><span id="rv-acct-label">${esc(rvAcctLabel(dr))}</span><svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true" class="chev-icon"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
          <div class="ins-vertical-popover rv-acct-popover" id="rv-acct-popover">
            <div class="rv-acct-tools"><input type="search" class="rv-acct-search" placeholder="Search ${drNoun}…" value="${esc(b.acctSearch)}" oninput="rvAcctSearch(this.value)">
              <button class="rv-btn" onclick="rvAcctClear()">Clear</button></div>
@@ -4236,7 +4449,7 @@ function renderReviewBoard(){
          return `
          <tr onclick="openReview('${jsStr(x.a.ivrName)}')">
            <td class="rv-board-name">${esc(x.a.name)}</td>
-           <td style="color:var(--text-2)">${esc(x.a.vertical||'')}</td>
+           <td class="c-text-2">${esc(x.a.vertical||'')}</td>
            ${scopeSet?acctCell(x):''}
            <td class="rv-board-calls">${cells}</td>
            <td class="rv-board-calls">${issues}</td>
@@ -4247,7 +4460,7 @@ function renderReviewBoard(){
 }
 
 function rvInactiveSection(list){
-  const muted=t=>`<span style="color:var(--text-3)">${t}</span>`;
+  const muted=t=>`<span class="c-text-3">${t}</span>`;
   return `<details class="inactive-section" ${reviewBoard.inactiveOpen?'open':''} ontoggle="reviewBoard.inactiveOpen=this.open">
     <summary><span class="inactive-title">Inactive (no calls in 30 days)</span><span class="inactive-count">${list.length}</span>
       <span class="inactive-note">Not counted in Needs review. Moves back on its next call.</span></summary>
@@ -4258,7 +4471,7 @@ function rvInactiveSection(list){
           <td class="rv-board-name">${esc(a.name)}</td>
           <td class="rv-board-calls">${d?fmtDate(new Date(d+'T00:00:00')):muted('Never')}</td>
           <td class="rv-board-calls rv-hide-sm">${lr?fmtDate(new Date(lr)):nullMark()}</td>
-          <td class="rv-hide-sm" style="color:var(--text-2)">${esc(a.vertical||'')}</td>
+          <td class="rv-hide-sm c-text-2">${esc(a.vertical||'')}</td>
         </tr>`; }).join('')}</tbody>
     </table></div>
   </details>`;
@@ -4438,7 +4651,7 @@ function renderReviewWorkspace(){
   document.getElementById('review-root').innerHTML=`
     <button class="rv-back" onclick="renderReviewPicker()">← All agents</button>
     <div class="rv-head">
-      <div style="min-width:0">
+      <div class="minw-0">
         <div class="rv-title">${esc(a.name)}</div>
         <div class="rv-sub">${esc(a.vertical||'')} · ${esc(rtLabel(a.routingType))}${aliasNote}</div>
       </div>
@@ -4454,7 +4667,7 @@ function renderReviewWorkspace(){
       <div class="rv-panel">
         <div class="rv-panel-head"><span class="t">Calls</span><span class="n" id="rv-count">loading…</span></div>
         <div class="rv-ae-filters" id="rv-ae-filters"></div>
-        <div class="rv-list" id="rv-calls"><div class="empty" style="padding:24px">Loading calls…</div></div>
+        <div class="rv-list" id="rv-calls"><div class="empty p-24">Loading calls…</div></div>
       </div>
       <div class="rv-side">
         <div class="rv-panel">
@@ -4505,7 +4718,7 @@ async function saveObjective(){
     renderObjective(false);
   }catch(e){
     btn.disabled=false; btn.textContent='Save';
-    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message;
+    setTone(msg, 'coral'); msg.textContent='Save failed: '+e.message;
   }
 }
 
@@ -4537,7 +4750,7 @@ async function addAgentNote(){
     await sbFetch('agent_updates',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({ivr_name:resolveIvrName(RV.agent.ivrName),author:by,note})});
     ta.value='';
     await loadAgentNotes();
-  }catch(e){ msg.style.color='var(--coral)'; msg.textContent='Could not save: '+e.message; }
+  }catch(e){ setTone(msg, 'coral'); msg.textContent='Could not save: '+e.message; }
   btn.disabled=false;
 }
 
@@ -4595,10 +4808,10 @@ function rvSeg(key,val,btn){
 
 function renderReviewCalls(){
   const box=document.getElementById('rv-calls'); if(!box) return;
-  if(!RV.calls.length){ box.innerHTML='<div class="empty" style="padding:24px">'+(RV.loading?'Loading calls…':RV.aiFilter&&RV.aiFilter!=='all'?'No calls match this filter in this window.':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
+  if(!RV.calls.length){ box.innerHTML='<div class="empty p-24">'+(RV.loading?'Loading calls…':RV.aiFilter&&RV.aiFilter!=='all'?'No calls match this filter in this window.':'No calls with an ASCND transcript in this window yet.')+'</div>'; }
   else {
     box.innerHTML=RV.calls.map((c,i)=>reviewCallRow(c,i)).join('')+
-      (RV.done?'':`<div style="padding:12px 16px"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
+      (RV.done?'':`<div class="p-12-16"><button class="rv-btn" onclick="loadReviewCalls(false)">Load more</button></div>`);
   }
   const cnt=document.getElementById('rv-count'); if(cnt) cnt.textContent=`${RV.calls.length}${RV.done?'':'+'} loaded`;
 }
@@ -4636,7 +4849,7 @@ function reviewCallRow(c,i){
       <button class="rv-btn" onclick="rvShowNote(${i})">${saved?'Edit note':'Note'}</button>
       <button type="button" class="rv-check${chk.on?' on':''}" id="rv-chk-${i}" aria-pressed="${chk.on}" title="${esc(chk.title)}"${chk.locked?' disabled':''} onclick="toggleCallReviewed('${jsStr(c.id)}',this)">${esc(chk.label)}</button>
     </div>
-    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn" style="margin-top:6px" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
+    <div id="rv-note-wrap-${i}" style="display:none"><textarea class="rv-note-in" id="rv-note-in-${i}" placeholder="Note about this call…">${saved?esc(saved.note):''}</textarea><button class="rv-btn mt-6" onclick="rvSaveNote('${jsStr(c.id)}',${i})">Save note</button></div>
     <div class="rv-x" id="rv-x-${i}" style="display:none">
       ${moreChips?`<div class="rv-meta">${moreChips}</div>`:''}
       ${desc}
@@ -4740,7 +4953,7 @@ function renderAeFilters(){
   if(!aeAvailable){ box.innerHTML=''; box.style.display='none'; return; }
   box.style.display='';
   const t=RV.metrics&&RV.metrics.ai, raw=RV.metrics?RV.metrics.raw:0;
-  box.innerHTML=AE_FILTERS.map(f=>`<button class="pill${(RV.aiFilter||'all')===f.k?' active':''}" onclick="rvSetAeFilter('${f.k}')">${f.l}${t&&f.n?` <span style="opacity:.65">${f.n(t,raw)}</span>`:''}</button>`).join('');
+  box.innerHTML=AE_FILTERS.map(f=>`<button class="pill${(RV.aiFilter||'all')===f.k?' active':''}" onclick="rvSetAeFilter('${f.k}')">${f.l}${t&&f.n?` <span class="o-65">${f.n(t,raw)}</span>`:''}</button>`).join('');
 }
 function rvSetAeFilter(k){
   if(!RV||(RV.aiFilter||'all')===k) return;
@@ -4795,7 +5008,7 @@ async function saveReview(){
   const a=RV.answers;
   const topChange=reviewFieldVal('rv-top-change'), details=reviewFieldVal('rv-details');
   const btn=document.getElementById('rv-save-btn'), msg=document.getElementById('rv-save-msg');
-  if(!RV_QUESTIONS.some(q=>a[q.key])&&!topChange&&!details){ msg.style.color='var(--coral)'; msg.textContent='Answer at least one question first.'; return; }
+  if(!RV_QUESTIONS.some(q=>a[q.key])&&!topChange&&!details){ setTone(msg, 'coral'); msg.textContent='Answer at least one question first.'; return; }
   btn.disabled=true; btn.textContent='Saving…';
   const nowISO=new Date().toISOString();
   const answers={ qualifying:a.qualifying, dropoff:a.dropoff, understanding:a.understanding, script:a.script, top_change:topChange, details };
@@ -4811,11 +5024,11 @@ async function saveReview(){
   try{
     await sbFetch('agent_reviews',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(review)});
     // The form keeps what you saved; the new review shows at the top of the history.
-    msg.style.color='var(--teal)'; msg.textContent='Review saved';
+    setTone(msg, 'teal'); msg.textContent='Review saved';
     reviewBoard.lastReview[resolveIvrName(RV.agent.ivrName)]=nowISO;
     await loadReviewHistory();
   }catch(e){
-    msg.style.color='var(--coral)'; msg.textContent='Save failed: '+e.message;
+    setTone(msg, 'coral'); msg.textContent='Save failed: '+e.message;
   }
   btn.disabled=false; btn.textContent='Save review';
 }
@@ -4870,9 +5083,8 @@ async function doRefreshSession() {
   const rt = localStorage.getItem('sb_refresh_token');
   if (!rt) return false;
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST', headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: rt }),
+    const res = await authFetch('token?grant_type=refresh_token', {
+      method: 'POST', body: JSON.stringify({ refresh_token: rt }),
     });
     if (!res.ok) { clearAuth(); return false; }
     saveSession(await res.json());
@@ -4905,9 +5117,8 @@ async function doLogin() {
   if (!email || !password) { errEl.textContent = 'Enter your email and password.'; return; }
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+    const res = await authFetch('token?grant_type=password', {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -4971,9 +5182,9 @@ async function doChangePassword() {
   if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
   btn.disabled = true; btn.textContent = 'Updating…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+    const res = await authFetch('user', {
       method: 'PUT',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({ password: pw1 }),
     });
     const data = await res.json();
@@ -5027,9 +5238,9 @@ async function doSetPassword() {
   if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+    const res = await authFetch('user', {
       method: 'PUT',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Authorization': `Bearer ${window._inviteToken}` },
+      headers: { 'Authorization': `Bearer ${window._inviteToken}` },
       body: JSON.stringify({ password: pw1 }),
     });
     const data = await res.json();
@@ -5215,8 +5426,8 @@ function openCallDrawer(call) {
   // Source, then value: "Registry [sale]   Canoe quoted interested".
   document.getElementById('drawer-outcome-row').innerHTML =
     '<span class="drawer-src">Registry</span>' +
-    (call.our_outcome ? outcomeBadge(call.our_outcome) : '<span style="font-size:12px;color:var(--text-3)">Not yet processed</span>') +
-    (call.canoe_outcome ? `<span class="drawer-src" style="margin-left:12px">Canoe</span><span class="drawer-canoe-outcome">${esc(labelOf(call.canoe_outcome))}</span>` : '');
+    (call.our_outcome ? outcomeBadge(call.our_outcome) : '<span class="fs-12 c-text-3">Not yet processed</span>') +
+    (call.canoe_outcome ? `<span class="drawer-src ml-12">Canoe</span><span class="drawer-canoe-outcome">${esc(labelOf(call.canoe_outcome))}</span>` : '');
 
   const flagsEl = document.getElementById('drawer-flags');
   const shownFlags = callFlags({ flags: compDrawerFlags, suspicious_call: call.suspicious_call });
@@ -5225,10 +5436,10 @@ function openCallDrawer(call) {
     : '<div class="drawer-no-flags">No compliance flags</div>';
 
   const summaryEl = document.getElementById('drawer-summary');
-  const canoeSum = () => `<div class="drawer-src" style="margin-bottom:2px">Canoe</div><div style="font-size:12px">${esc(call.canoe_summary)}</div>`;
+  const canoeSum = () => `<div class="drawer-src mb-2">Canoe</div><div class="fs-12">${esc(call.canoe_summary)}</div>`;
   if (call.our_summary) {
     summaryEl.innerHTML = `<div>${esc(call.our_summary)}</div>` +
-      (call.canoe_summary ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${canoeSum()}</div>` : '');
+      (call.canoe_summary ? `<div class="drawer-canoe-sum">${canoeSum()}</div>` : '');
   } else if (call.canoe_summary) {
     summaryEl.innerHTML = canoeSum();
   } else {
@@ -5384,7 +5595,7 @@ async function compLoadTeam() {
     grid.innerHTML = renderTeam(compManagers, compAssignments, acctFlags, mgrFlags, digest, toISO(since), toISO(now));
   } catch(e) {
     console.warn('compLoadTeam:', e.message);
-    grid.innerHTML = `<div style="grid-column:1/-1">${loadErrorHtml('the team view', 'compLoadTeam()', e)}</div>`;
+    grid.innerHTML = `<div class="span-all">${loadErrorHtml('the team view', 'compLoadTeam()', e)}</div>`;
   }
 }
 
@@ -5396,7 +5607,7 @@ function teamGoAssignments() {
 function renderTeam(managers, assignments, acctFlags, mgrFlags, digest, fromISO, toISO_) {
   const goAssign = '<button class="comp-team-link" onclick="teamGoAssignments()">Admin &gt; Assignments</button>';
   if (!assignments.length) {
-    return `<div class="comp-empty" style="grid-column:1 / -1">No accounts are assigned to managers yet.<br>Admins can assign publishers and advertisers in ${goAssign}.</div>`;
+    return `<div class="comp-empty span-all">No accounts are assigned to managers yet.<br>Admins can assign publishers and advertisers in ${goAssign}.</div>`;
   }
   const byMgr = {};
   assignments.forEach(a => {
@@ -5422,7 +5633,7 @@ function renderTeam(managers, assignments, acctFlags, mgrFlags, digest, fromISO,
       return `
       <div class="comp-team-card">
         <div class="comp-team-head">
-          <div style="min-width:0">
+          <div class="minw-0">
             <div class="comp-team-name">${esc(m.manager_name)}</div>
             ${m.manager_email ? `<div class="comp-team-email">${esc(m.manager_email)}</div>` : ''}
           </div>
@@ -5524,18 +5735,18 @@ function settingsRenderManagers() {
   const rows = compManagers;
   settingsRefreshManagerSelect();
   if (!rows.length) {
-    el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
+    el.innerHTML = '<div class="empty-note">No managers yet.</div>';
     return;
   }
   const showAdmin = window.isAdmin;
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th style="text-align:center">Admin</th>' : ''}<th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th class="ta-c">Admin</th>' : ''}<th></th></tr></thead>
     <tbody>${rows.map(m => `
       <tr>
-        <td style="font-weight:500">${esc(m.manager_name)}</td>
-        <td style="color:var(--text-2)">${esc(m.manager_email || '')}</td>
-        ${showAdmin ? `<td style="text-align:center"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer"></td>` : ''}
-        <td style="text-align:right">${showAdmin ? `<button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button>` : ''}</td>
+        <td class="fw-500">${esc(m.manager_name)}</td>
+        <td class="c-text-2">${esc(m.manager_email || '')}</td>
+        ${showAdmin ? `<td class="ta-c"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" class="check-16"></td>` : ''}
+        <td class="ta-r">${showAdmin ? `<button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button>` : ''}</td>
       </tr>`).join('')}
     </tbody></table>`;
 }
@@ -5636,12 +5847,12 @@ function settingsRenderAccountsTable() {
   if (countEl) countEl.textContent = `${rows.length.toLocaleString()} account${rows.length !== 1 ? 's' : ''}`;
 
   if (!rows.length) {
-    el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No accounts found.</div>';
+    el.innerHTML = '<div class="empty-note">No accounts found.</div>';
     return;
   }
 
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Account</th><th>Type</th><th style="min-width:180px">Assigned Manager</th></tr></thead>
+    <thead><tr><th>Account</th><th>Type</th><th class="minw-180">Assigned Manager</th></tr></thead>
     <tbody>${rows.map(r => {
       const assignment     = compAssignments.find(a => a.account_name === r.account_name && a.account_type === r.account_type);
       const currentMgrId   = assignment?.manager_id || '';
@@ -5651,15 +5862,15 @@ function settingsRenderAccountsTable() {
       const opts = `<option value="">Unassigned</option>` +
         compManagers.map(m => `<option value="${m.id}"${m.id === currentMgrId ? ' selected' : ''}>${esc(m.manager_name)}</option>`).join('');
       return `<tr>
-        <td style="font-weight:500">${esc(r.account_name)}</td>
+        <td class="fw-500">${esc(r.account_name)}</td>
         <td><span class="flag-badge" style="${typeColor}">${r.account_type}</span></td>
         <td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <select class="settings-select assign-mgr-select" style="min-width:160px"${window.isAdmin ? '' : ' disabled'}
+          <div class="row-gap-8">
+            <select class="settings-select assign-mgr-select minw-160"${window.isAdmin ? '' : ' disabled'}
               data-account="${esc(r.account_name)}" data-type="${r.account_type}">
               ${opts}
             </select>
-            <span class="assign-saved-indicator" style="font-size:11px;color:var(--teal);display:none">Saved</span>
+            <span class="assign-saved-indicator saved-note" style="display:none">Saved</span>
           </div>
         </td>
       </tr>`;
@@ -5720,9 +5931,9 @@ async function settingsLoadUsers() {
     const myEmail = getAuthUser();
     el.innerHTML = `
       <div class="settings-invite-row">
-        <input class="settings-input" id="s-invite-email" type="email" placeholder="Email to invite…" style="flex:1;min-width:200px">
+        <input class="settings-input flex-1 minw-200" id="s-invite-email" type="email" placeholder="Email to invite…">
         <button class="settings-save-btn" onclick="settingsInviteUser()">Send invite</button>
-        <span id="s-invite-status" style="font-size:12px;color:var(--teal)"></span>
+        <span id="s-invite-status" class="status-note"></span>
       </div>
       <div class="settings-table-wrap">
         <table class="settings-table">
@@ -5730,9 +5941,9 @@ async function settingsLoadUsers() {
           <tbody>${users.map(u => `
             <tr>
               <td>${esc(u.email || '')}</td>
-              <td style="color:var(--text-2)">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : nullMark()}</td>
-              <td style="color:var(--text-2)">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
-              <td style="text-align:right">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${jsStr(u.id)}','${jsStr(u.email)}')">Remove</button>` : '<span style="font-size:11px;color:var(--text-3)">you</span>'}</td>
+              <td class="c-text-2">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : nullMark()}</td>
+              <td class="c-text-2">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
+              <td class="ta-r">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${jsStr(u.id)}','${jsStr(u.email)}')">Remove</button>` : '<span class="note-xs">you</span>'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -5746,7 +5957,7 @@ async function settingsInviteUser() {
   const email  = document.getElementById('s-invite-email').value.trim();
   const status = document.getElementById('s-invite-status');
   if (!email) return;
-  status.style.color = 'var(--teal)';
+  setTone(status, 'teal');
   status.textContent = 'Sending…';
   try {
     const res = await adminRequest('invite_user', { email });
@@ -5756,7 +5967,7 @@ async function settingsInviteUser() {
     setTimeout(() => { status.textContent = ''; }, 4000);
     settingsLoadUsers();
   } catch(e) {
-    status.style.color = 'var(--coral)';
+    setTone(status, 'coral');
     status.textContent = e.message;
   }
 }
@@ -5833,30 +6044,30 @@ function weightsRender() {
     const groupRows = group.outcomes.map(outcome => {
       const w = weightsData[outcome] || { pub_score: 0, adv_score: 0 };
       return `<tr>
-        <td style="padding:6px 10px;font-size:13px;color:var(--text);font-family:var(--mono)">${esc(labelOf(outcome))}</td>
-        <td style="padding:6px 8px;text-align:center">
-          <input type="number" class="settings-input" data-outcome="${esc(outcome)}" data-field="pub_score"
-            value="${w.pub_score}" style="width:64px;text-align:center;padding:4px 6px;font-size:13px"
+        <td class="wt-outcome">${esc(labelOf(outcome))}</td>
+        <td class="wt-cell">
+          <input type="number" class="settings-input wt-input" data-outcome="${esc(outcome)}" data-field="pub_score"
+            value="${w.pub_score}"
             onchange="weightsDirty()">
         </td>
-        <td style="padding:6px 8px;text-align:center">
-          <input type="number" class="settings-input" data-outcome="${esc(outcome)}" data-field="adv_score"
-            value="${w.adv_score}" style="width:64px;text-align:center;padding:4px 6px;font-size:13px"
+        <td class="wt-cell">
+          <input type="number" class="settings-input wt-input" data-outcome="${esc(outcome)}" data-field="adv_score"
+            value="${w.adv_score}"
             onchange="weightsDirty()">
         </td>
       </tr>`;
     }).join('');
-    return `<tr style="background:var(--bg-2)">
-        <td colspan="3" style="padding:6px 10px;font-size:12px;font-weight:600;color:var(--text-2)">${esc(group.label)}</td>
+    return `<tr class="bg-2">
+        <td colspan="3" class="wt-group">${esc(group.label)}</td>
       </tr>${groupRows}`;
   }).join('');
 
-  el.innerHTML = `<table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+  el.innerHTML = `<table class="wt-table">
     <thead>
-      <tr style="background:var(--bg-2)">
-        <th style="padding:8px 10px;text-align:left;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border)">Outcome</th>
-        <th style="padding:8px 8px;text-align:center;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);width:90px">Pub Score</th>
-        <th style="padding:8px 8px;text-align:center;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);width:90px">Adv Score</th>
+      <tr class="bg-2">
+        <th class="wt-th">Outcome</th>
+        <th class="wt-th-num">Pub Score</th>
+        <th class="wt-th-num">Adv Score</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
@@ -5958,11 +6169,11 @@ async function calibInit() {
     if (wrap) {
       wrap.innerHTML = MODEL_CATALOG.map(m => {
         const providerColor = m.provider === 'NVIDIA' ? 'var(--blue)' : 'var(--purple)';
-        return `<label style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
-          <input type="checkbox" value="${m.id}" class="modeltest-checkbox" style="accent-color:var(--brand-navy);width:14px;height:14px">
-          <span style="min-width:180px">${m.label}</span>
-          <span style="font-size:11px;color:${providerColor};background:var(--tint);border:1px solid var(--border);border-radius:4px;padding:1px 6px">${m.provider}</span>
-          <span style="font-size:11px;color:var(--text-3);font-family:var(--mono)">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
+        return `<label class="mt-model-opt">
+          <input type="checkbox" value="${m.id}" class="modeltest-checkbox check-14">
+          <span class="minw-180">${m.label}</span>
+          <span class="mt-provider" style="color:${providerColor}">${m.provider}</span>
+          <span class="mt-price">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
         </label>`;
       }).join('');
     }
@@ -5978,7 +6189,7 @@ async function modeltestLoadHistory() {
   try {
     const rows = await compFetch('model_tests?select=id,created_at,model,sample_size,status&order=created_at.desc&limit=20');
     if (!rows || rows.length === 0) {
-      wrap.innerHTML = '<p style="color:var(--text-3);font-size:13px;margin:0">No tests run yet.</p>';
+      wrap.innerHTML = '<p class="mt-empty">No tests run yet.</p>';
       return;
     }
 
@@ -5996,8 +6207,8 @@ async function modeltestLoadHistory() {
       return total ? Math.min(100, Math.round((counts[r.id] || 0) / total * 100)) : null;
     };
 
-    wrap.innerHTML = `<div style="margin-top:4px">
-      <div style="font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:8px">Recent tests</div>
+    wrap.innerHTML = `<div class="mt-4">
+      <div class="mt-hist-title">Recent tests</div>
       ${rows.map(r => {
         const statusColor = r.status === 'completed' ? 'var(--teal)' : r.status === 'failed' ? 'var(--coral)' : 'var(--amber)';
         const date = new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
@@ -6005,15 +6216,15 @@ async function modeltestLoadHistory() {
         const pct = live ? pctOf(r) : null;
         const statusLabel = (pct !== null) ? `${r.status} · ${pct}%` : r.status;
         const bar = (pct !== null)
-          ? `<span style="display:inline-block;width:70px;height:5px;border-radius:3px;background:var(--tint);border:1px solid var(--border);overflow:hidden;vertical-align:middle" title="${counts[r.id]||0} of ${(r.sample_size||0)*Math.max(1,String(r.model||'').split('·').length)} calls"><span style="display:block;height:100%;width:${pct}%;background:var(--brand-mint)"></span></span>`
+          ? `<span class="mt-bar" title="${counts[r.id]||0} of ${(r.sample_size||0)*Math.max(1,String(r.model||'').split('·').length)} calls"><span class="mt-bar-fill" style="width:${pct}%"></span></span>`
           : '';
-        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
-          <span style="font-size:13px;flex:1;min-width:160px;font-family:var(--mono)">${r.model}</span>
-          <span style="font-size:12px;color:var(--text-3)">${r.sample_size} calls</span>
+        return `<div class="mt-hist-row">
+          <span class="mt-hist-model">${r.model}</span>
+          <span class="fs-12 c-text-3">${r.sample_size} calls</span>
           ${bar}
-          <span style="font-size:11px;background:var(--tint);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${statusLabel}</span>
-          <span style="font-size:11px;color:var(--text-3)">${date}</span>
-          ${(r.status === 'completed' || r.status === 'failed') ? `<button onclick="reviewOpen('${r.id}')" style="font-family:var(--sans);font-size:12px;color:#fff;background:var(--brand-navy);border:1px solid var(--brand-navy);border-radius:var(--radius-sm);padding:3px 12px;cursor:pointer;font-weight:500">Label calls</button><button onclick="modeltestViewResults('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">Compare models</button>` : ''}
+          <span class="mt-status" style="color:${statusColor}">${statusLabel}</span>
+          <span class="note-xs">${date}</span>
+          ${(r.status === 'completed' || r.status === 'failed') ? `<button onclick="reviewOpen('${r.id}')" class="mt-hist-label">Label calls</button><button onclick="modeltestViewResults('${r.id}')" class="mt-hist-view">Compare models</button>` : ''}
         </div>`;
       }).join('')}
     </div>`;
@@ -6060,21 +6271,21 @@ async function modeltestRun() {
   const stratify   = document.getElementById('modeltest-stratify').checked;
   const statusEl  = document.getElementById('modeltest-run-status');
 
-  if (selected.length === 0) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select at least one model.'; return; }
+  if (selected.length === 0) { setTone(statusEl, 'coral'); statusEl.textContent = 'Select at least one model.'; return; }
 
   // Pin one call set up front so every model scores the identical calls.
   let callIds = [];
   if (stratify) {
-    statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Building length-stratified sample…';
+    setTone(statusEl, 'muted'); statusEl.textContent = 'Building length-stratified sample…';
     try {
       callIds = await modeltestSampleByLength(sampleSize);
     } catch(e) {
-      statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Sampling failed: ${e.message}`; return;
+      setTone(statusEl, 'coral'); statusEl.textContent = `Sampling failed: ${e.message}`; return;
     }
-    if (!callIds.length) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'No eligible calls to sample.'; return; }
+    if (!callIds.length) { setTone(statusEl, 'coral'); statusEl.textContent = 'No eligible calls to sample.'; return; }
   }
   const effectiveSize = callIds.length || sampleSize;
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = `Launching ${selected.length}-model test over ${effectiveSize} calls…`;
+  setTone(statusEl, 'muted'); statusEl.textContent = `Launching ${selected.length}-model test over ${effectiveSize} calls…`;
 
   // One model_tests row for the whole run. Every model writes its results under
   // this single test_id, so the comparison view shows them side by side.
@@ -6087,7 +6298,7 @@ async function modeltestRun() {
     });
     testId = Array.isArray(testRow) ? testRow[0].id : testRow.id;
   } catch(e) {
-    statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Could not create test: ${e.message}`; return;
+    setTone(statusEl, 'coral'); statusEl.textContent = `Could not create test: ${e.message}`; return;
   }
 
   const callIdsCsv = callIds.length ? callIds.join(',') : '';
@@ -6100,11 +6311,11 @@ async function modeltestRun() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub ${res.status}`); }
       launched++;
     } catch(e) {
-      statusEl.style.color = 'var(--coral)'; statusEl.textContent = `Error on ${modelId}: ${e.message}`; return;
+      setTone(statusEl, 'coral'); statusEl.textContent = `Error on ${modelId}: ${e.message}`; return;
     }
   }
 
-  statusEl.style.color = 'var(--teal)'; statusEl.textContent = `Started ${launched} model${launched === 1 ? '' : 's'}. Results appear below.`;
+  setTone(statusEl, 'teal'); statusEl.textContent = `Started ${launched} model${launched === 1 ? '' : 's'}. Results appear below.`;
   await modeltestLoadHistory();
 }
 
@@ -6125,12 +6336,12 @@ async function modeltestViewResults(testId) {
   document.getElementById('modeltest-review').style.display = 'none';
   document.getElementById('modeltest-comparison-title').textContent = 'Model comparison';
   const tableWrap = document.getElementById('modeltest-comparison-table');
-  tableWrap.innerHTML = '<div style="color:var(--text-3);font-size:13px">Loading…</div>';
+  tableWrap.innerHTML = '<div class="mt-muted">Loading…</div>';
   wrap.style.display = 'block';
   wrap.scrollIntoView({ behavior:'smooth', block:'nearest' });
   try {
     const rows = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags,input_tokens,output_tokens`);
-    if (!rows || !rows.length) { tableWrap.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results yet.</p>'; return; }
+    if (!rows || !rows.length) { tableWrap.innerHTML = '<p class="mt-muted">No results yet.</p>'; return; }
     const byCall = {}, models = new Set();
     for (const r of rows) { models.add(r.model); (byCall[r.call_id] = byCall[r.call_id] || {})[r.model] = { outcome:r.our_outcome, flags:r.flags||[], in:r.input_tokens||0, out:r.output_tokens||0 }; }
     const callIds = Object.keys(byCall), info = {}, existing = {};
@@ -6161,13 +6372,13 @@ function mtRender() {
     for (const c of labeled) { const d = c.byModel[m]; if (d && d.outcome === c.truthOutcome) correct++; }
     const price = MT_PRICES[m];
     const cost = !price ? 'price n/a' : '$' + ((n ? (tin/n*price[0]/1e6) + (tout/n*price[1]/1e6) : 0) * 1000).toFixed(2) + '/1k';
-    return `<div style="background:var(--tint);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;min-width:130px">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);margin-bottom:2px">${esc(mtShort(m))}</div>
-      <div style="font-size:13px;font-weight:600">${labeled.length ? Math.round(correct/labeled.length*100)+'% acc' : nullMark()}</div>
-      <div style="font-size:11px;color:var(--text-2)">${cost} · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
+    return `<div class="mt-card">
+      <div class="mt-card-model">${esc(mtShort(m))}</div>
+      <div class="fs-13 fw-600">${labeled.length ? Math.round(correct/labeled.length*100)+'% acc' : nullMark()}</div>
+      <div class="meta-xs">${cost} · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
     </div>`;
   }).join('');
-  const oHdr = s.models.map(m => `<th style="padding:6px 8px;font-size:11px;font-weight:500;color:var(--text-2)">${esc(mtShort(m))}</th>`).join('');
+  const oHdr = s.models.map(m => `<th class="mt-th-model">${esc(mtShort(m))}</th>`).join('');
   const cell = (c, i, m, kind) => {
     const d = c.byModel[m];
     const val = kind === 'outcome' ? (d?.outcome ? esc(labelOf(d.outcome)) : nullMark()) : ((d?.flags||[]).length ? esc(d.flags.map(labelOf).join(', ')) : nullMark());
@@ -6176,34 +6387,34 @@ function mtRender() {
     if (truthSet && d) {
       const ok = kind === 'outcome' ? d.outcome === c.truthOutcome
                                     : JSON.stringify([...(d.flags||[])].sort()) === JSON.stringify([...(c.truthFlags||[])].sort());
-      mark = ok ? '<span style="color:var(--teal)">✓</span>' : '<span style="color:var(--coral)">✗</span>';
+      mark = ok ? '<span class="c-teal">✓</span>' : '<span class="c-coral">✗</span>';
     }
-    return `<td style="padding:6px 8px;font-size:12px;vertical-align:top">${val} ${mark}</td>`;
+    return `<td class="mt-td">${val} ${mark}</td>`;
   };
   const table = (kind) => {
     const colspan = s.models.length + 1;
-    return `<div style="overflow-x:auto;margin-bottom:8px"><table style="width:100%;border-collapse:collapse">
-    <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text-2)">Call</th>${oHdr}</tr></thead>
+    return `<div class="mt-table-wrap"><table class="table-full">
+    <thead><tr class="bb-line"><th class="mt-th">Call</th>${oHdr}</tr></thead>
     <tbody>${s.calls.map((c,i) => {
       const disagree = kind === 'outcome'
         ? new Set(s.models.map(m => c.byModel[m]?.outcome).filter(v => v != null)).size > 1
         : new Set(s.models.map(m => c.byModel[m] ? JSON.stringify([...(c.byModel[m].flags||[])].sort()) : null).filter(v => v != null)).size > 1;
-      return `<tr${disagree ? ' style="background:var(--amber-bg)"' : ''}>
-        <td style="padding:6px 8px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">${esc(c.id.slice(0,8))}…</td>
+      return `<tr${disagree ? ' class="bg-amber"' : ''}>
+        <td class="mt-call-id" onclick="mtToggleTx(${i})" title="${esc(c.id)}">${esc(c.id.slice(0,8))}…</td>
         ${s.models.map(m=>cell(c,i,m,kind)).join('')}
       </tr>
-      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" style="padding:6px 10px"><div style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
-        <div style="margin-bottom:6px;font-size:12px">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">Call recording</a>`:'<span style="color:var(--text-3)">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">AI-agent recording</a>`:''}</div>
-        <div id="mt-txt-${kind}-${i}" style="white-space:pre-wrap">${c.tx===undefined?'Loading transcript…':esc(c.tx||'(no transcript)')}</div>
+      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" class="p-6-10"><div class="mt-tx-box">
+        <div class="mt-tx-links">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">Call recording</a>`:'<span class="c-text-3">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">AI-agent recording</a>`:''}</div>
+        <div id="mt-txt-${kind}-${i}" class="pre-wrap">${c.tx===undefined?'Loading transcript…':esc(c.tx||'(no transcript)')}</div>
       </div></td></tr>`;
     }).join('')}</tbody></table></div>`;
   };
   tw.innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${summary}</div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">${s.calls.length} calls · ${labeled.length} labeled. Accuracy is measured against calls labeled in <strong>Label calls</strong>. <span style="background:var(--amber-bg);padding:0 4px;border-radius:3px">Highlighted rows</span>: models disagree. Click a Call id to read the transcript.</div>
-    <div class="train-h" style="margin:20px 0 8px">Outcomes <small>each model's answer · ✓/✗ vs the labeled correct outcome</small></div>
+    <div class="mt-cards">${summary}</div>
+    <div class="mt-summary">${s.calls.length} calls · ${labeled.length} labeled. Accuracy is measured against calls labeled in <strong>Label calls</strong>. <span class="mt-hl">Highlighted rows</span>: models disagree. Click a Call id to read the transcript.</div>
+    <div class="train-h m-20-0-8">Outcomes <small>each model's answer · ✓/✗ vs the labeled correct outcome</small></div>
     ${table('outcome')}
-    <div class="train-h" style="margin:24px 0 8px">Compliance flags <small>each model's flags · ✓/✗ vs the labeled correct flags</small></div>
+    <div class="train-h m-24-0-8">Compliance flags <small>each model's flags · ✓/✗ vs the labeled correct flags</small></div>
     ${table('flags')}`;
 }
 
@@ -6242,7 +6453,7 @@ async function reviewOpen(testId) {
   body.innerHTML = '<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>';
   try {
     const results = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags,raw_response&order=call_id.asc`);
-    if (!results || !results.length) { body.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results to review.</p>'; return; }
+    if (!results || !results.length) { body.innerHTML = '<p class="mt-muted">No results to review.</p>'; return; }
     const byCall = {};
     for (const r of results) (byCall[r.call_id] = byCall[r.call_id] || []).push(r);
     const callIds = Object.keys(byCall);
@@ -6272,46 +6483,46 @@ function reviewRender() {
     const summary = (m.raw_response && m.raw_response.summary) || '';
     const ocOn = truthOutcome && m.our_outcome === truthOutcome;
     const flOn = c._flagsSet && rvSameFlags(flags, c._draftFlags);
-    const btn = (on, click) => `onclick="${click}" title="click again to undo" style="flex-shrink:0;font-size:11px;font-weight:500;padding:5px 11px;border-radius:var(--radius-sm);border:1px solid ${on?'var(--teal)':'var(--brand-navy)'};background:${on?'var(--teal)':'var(--surface)'};color:${on?'#fff':'var(--brand-navy)'};cursor:pointer;white-space:nowrap"`;
-    const kv = (label, val) => `<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:var(--text-3)">${label}</div><div style="font-family:var(--mono);font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${val}</div></div>`;
-    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 11px;min-width:0;background:var(--surface);display:flex;flex-direction:column;gap:8px">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(short)}</div>
-      <div style="display:flex;align-items:center;gap:8px">${kv('Outcome', m.our_outcome ? esc(labelOf(m.our_outcome)) : nullMark())}<button ${btn(ocOn, `reviewPickOutcome('${m.our_outcome||''}')`)}>correct</button></div>
-      <div style="display:flex;align-items:center;gap:8px">${kv('Compliance flags', esc(flText))}<button ${btn(flOn, `reviewPickFlags(${mi})`)}>correct</button></div>
-      <div style="margin-top:2px"><span onclick="reviewToggleSummaries()" style="cursor:pointer;font-size:11px;color:var(--brand-navy);user-select:none">${s.showSummaries?'Hide summary':'Show summary'}</span>${s.showSummaries ? `<div style="font-size:11.5px;color:var(--text-2);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">${summary ? esc(summary) : '<span style="color:var(--text-3)">(no summary)</span>'}</div>` : ''}</div>
+    const btn = (on, click) => `onclick="${click}" title="click again to undo" class="mtr-act${on ? ' is-on' : ''}"`;
+    const kv = (label, val) => `<div class="mtr-field"><div class="mtr-field-label">${label}</div><div class="mtr-field-val">${val}</div></div>`;
+    return `<div class="mtr-card">
+      <div class="mtr-card-model">${esc(short)}</div>
+      <div class="row-gap-8">${kv('Outcome', m.our_outcome ? esc(labelOf(m.our_outcome)) : nullMark())}<button ${btn(ocOn, `reviewPickOutcome('${m.our_outcome||''}')`)}>correct</button></div>
+      <div class="row-gap-8">${kv('Compliance flags', esc(flText))}<button ${btn(flOn, `reviewPickFlags(${mi})`)}>correct</button></div>
+      <div class="mt-2"><span onclick="reviewToggleSummaries()" class="mtr-toggle">${s.showSummaries?'Hide summary':'Show summary'}</span>${s.showSummaries ? `<div class="mtr-summary">${summary ? esc(summary) : '<span class="c-text-3">(no summary)</span>'}</div>` : ''}</div>
     </div>`;
   }).join('');
   const outcomeOpts = ['<option value="">Pick the correct outcome</option>'].concat(REVIEW_OUTCOMES.map(o => `<option value="${o}" ${o===truthOutcome?'selected':''}>${labelOf(o)}</option>`)).join('');
-  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:4px 10px;border-radius:100px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${labelOf(f)}</button>`).join(' ');
+  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" class="mtr-flag${c._draftFlags.includes(f) ? ' is-on' : ''}">${labelOf(f)}</button>`).join(' ');
   const ctx = c.call;
   const reasonVal = c._draftReason !== undefined ? c._draftReason : (c.existing?.reason || '');
   const roFlags = c._draftFlags.length ? c._draftFlags.map(labelOf).join(', ') : 'none';
   document.getElementById('review-body').innerHTML = `
-    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-bottom:10px">
+    <div class="mtr-meta">
       <span>vertical: <strong>${ctx.vertical_name ? esc(ctx.vertical_name) : nullMark()}</strong></span>
       <span>zip: <strong>${ctx.zip ? esc(ctx.zip) : nullMark()}</strong></span>
       <span>duration: <strong>${ctx.duration||0}s</strong></span>
       <span>canoe: <strong>${ctx.canoe_outcome ? esc(labelOf(ctx.canoe_outcome)) : nullMark()}</strong></span>
-      ${c.existing ? '<span style="color:var(--teal)">already labeled</span>' : ''}
+      ${c.existing ? '<span class="c-teal">already labeled</span>' : ''}
     </div>
-    <div style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:200px;overflow:auto;font-size:12px;line-height:1.5;margin-bottom:14px"><div style="white-space:pre-wrap">${esc(ctx.transcription||'(no transcript)')}</div></div>
-    <div class="train-h" style="margin-bottom:8px">What each model said</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:16px">${modelCards}</div>
+    <div class="mtr-tx"><div class="pre-wrap">${esc(ctx.transcription||'(no transcript)')}</div></div>
+    <div class="train-h mb-8">What each model said</div>
+    <div class="mtr-cards">${modelCards}</div>
     <label class="train-h" for="review-outcome">Correct outcome</label>
-    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select" style="min-width:250px;max-width:100%;margin-top:8px">${outcomeOpts}</select>
-    <div class="train-h" style="margin:20px 0 8px">Correct compliance flags</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${flagBtns}</div>
-    <div style="font-size:11px;color:var(--text-3);margin-bottom:12px">None selected = no flags.</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:9px 13px;margin-bottom:12px;font-size:13px">
-      <span><span style="color:var(--text-3);font-weight:600;font-size:11px;margin-right:6px">Saving</span><span style="font-family:var(--mono);color:var(--brand-navy);font-weight:500">${truthOutcome ? esc(labelOf(truthOutcome)) : nullMark()}</span></span>
-      <span><span style="color:var(--text-3);font-weight:600;font-size:11px;margin-right:6px">Flags</span><span style="font-family:var(--mono);color:var(--brand-navy);font-weight:500">${esc(roFlags)}</span></span>
+    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select mtr-outcome">${outcomeOpts}</select>
+    <div class="train-h m-20-0-8">Correct compliance flags</div>
+    <div class="mtr-flags">${flagBtns}</div>
+    <div class="mtr-hint">None selected = no flags.</div>
+    <div class="mtr-truth">
+      <span><span class="mtr-truth-label">Saving</span><span class="mtr-truth-val">${truthOutcome ? esc(labelOf(truthOutcome)) : nullMark()}</span></span>
+      <span><span class="mtr-truth-label">Flags</span><span class="mtr-truth-val">${esc(roFlags)}</span></span>
     </div>
-    <textarea id="review-reason" placeholder="Explain why your selected outcome / flags are correct (optional)" class="correction-textarea" style="width:100%;min-height:50px;margin-bottom:10px">${esc(reasonVal)}</textarea>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button onclick="reviewNav(-1)" ${s.idx===0?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">‹ Prev</button>
-      <button onclick="reviewSave()" style="font-size:12px;padding:5px 14px;border:none;border-radius:var(--radius-sm);background:var(--brand-navy);color:#fff;cursor:pointer">Save &amp; next</button>
-      <button onclick="reviewNav(1)" ${s.idx>=s.calls.length-1?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">Skip ›</button>
-      <span id="review-save-status" style="font-size:12px"></span>
+    <textarea id="review-reason" placeholder="Explain why your selected outcome / flags are correct (optional)" class="correction-textarea mtr-reason">${esc(reasonVal)}</textarea>
+    <div class="row-gap-8">
+      <button onclick="reviewNav(-1)" ${s.idx===0?'disabled':''} class="mtr-btn">‹ Prev</button>
+      <button onclick="reviewSave()" class="mtr-btn-primary">Save &amp; next</button>
+      <button onclick="reviewNav(1)" ${s.idx>=s.calls.length-1?'disabled':''} class="mtr-btn">Skip ›</button>
+      <span id="review-save-status" class="fs-12"></span>
     </div>`;
 }
 
@@ -6330,7 +6541,7 @@ async function reviewSave() {
   const outcome = document.getElementById('review-outcome').value;
   const reason  = document.getElementById('review-reason').value.trim();
   const status  = document.getElementById('review-save-status');
-  if (!outcome) { status.textContent = 'Pick the correct outcome first'; status.style.color = 'var(--coral)'; return; }
+  if (!outcome) { status.textContent = 'Pick the correct outcome first'; setTone(status, 'coral'); return; }
   try {
     await compPost('training_examples?on_conflict=call_id', {
       call_id: c.call_id,
@@ -6348,7 +6559,7 @@ async function reviewSave() {
     while (n < s.calls.length && s.calls[n].existing) n++;
     s.idx = n < s.calls.length ? n : s.idx;
     reviewRender();
-  } catch(e) { status.textContent = 'Save failed: ' + e.message; status.style.color = 'var(--coral)'; }
+  } catch(e) { status.textContent = 'Save failed: ' + e.message; setTone(status, 'coral'); }
 }
 
 // ── AI PROMPTS ────────────────────────────────────────────────
@@ -6361,7 +6572,7 @@ async function promptsInit() {
 
 async function promptsLoad() {
   const el = document.getElementById('settings-prompts-list');
-  el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3)">Loading…</div>';
+  el.innerHTML = '<div class="pr-loading">Loading…</div>';
   let prompts;
   try {
     prompts = await compFetch('ai_prompts?select=*&order=created_at.asc') || [];
@@ -6382,19 +6593,19 @@ async function promptsLoad() {
 function promptsRender(prompts, countMap) {
   const el = document.getElementById('settings-prompts-list');
   if (!prompts.length) {
-    el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3);font-style:italic">No prompts yet.</div>';
+    el.innerHTML = '<div class="pr-empty">No prompts yet.</div>';
     return;
   }
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Name</th><th>Description</th><th style="text-align:center">Active</th><th style="text-align:right">Calls</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Description</th><th class="ta-c">Active</th><th class="ta-r">Calls</th><th></th></tr></thead>
     <tbody>${prompts.map(p => `
       <tr>
-        <td style="font-weight:500">${esc(p.name)}</td>
-        <td style="color:var(--text-2);font-size:12px">${esc(p.description || '')}</td>
-        <td style="text-align:center">${p.is_active ? '<span style="font-size:12px;font-weight:600;color:var(--teal)">Active</span>' : `<button class="settings-secondary-btn" onclick="promptsSetActive('${p.id}')">Set active</button>`}</td>
-        <td style="text-align:right;color:var(--text-2)" title="${countMap[p.id] != null ? 'Planner estimate' : ''}">${!(p.id in countMap) ? '…' : countMap[p.id] == null ? nullMark() : '≈ ' + countMap[p.id].toLocaleString()}</td>
-        <td style="text-align:right;white-space:nowrap">
-          <button class="settings-secondary-btn" style="margin-right:6px" onclick="promptsShowEditor('${p.id}')">Edit</button>
+        <td class="fw-500">${esc(p.name)}</td>
+        <td class="pr-desc">${esc(p.description || '')}</td>
+        <td class="ta-c">${p.is_active ? '<span class="pr-active">Active</span>' : `<button class="settings-secondary-btn" onclick="promptsSetActive('${p.id}')">Set active</button>`}</td>
+        <td class="pr-count" title="${countMap[p.id] != null ? 'Planner estimate' : ''}">${!(p.id in countMap) ? '…' : countMap[p.id] == null ? nullMark() : '≈ ' + countMap[p.id].toLocaleString()}</td>
+        <td class="ta-r nowrap">
+          <button class="settings-secondary-btn mr-6" onclick="promptsShowEditor('${p.id}')">Edit</button>
           ${!p.is_active ? `<button class="settings-delete-btn" onclick="promptsDelete('${p.id}')">Delete</button>` : ''}
         </td>
       </tr>`).join('')}
@@ -6431,22 +6642,22 @@ async function promptsSave() {
   const compliance_prompt = document.getElementById('prompt-editor-compliance').value.trim();
   const statusEl       = document.getElementById('prompt-editor-status');
 
-  if (!name)           { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Name is required.'; return; }
-  if (!outcome_prompt) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Outcome prompt is required.'; return; }
-  if (!compliance_prompt) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Compliance prompt is required.'; return; }
+  if (!name)           { setTone(statusEl, 'coral'); statusEl.textContent = 'Name is required.'; return; }
+  if (!outcome_prompt) { setTone(statusEl, 'coral'); statusEl.textContent = 'Outcome prompt is required.'; return; }
+  if (!compliance_prompt) { setTone(statusEl, 'coral'); statusEl.textContent = 'Compliance prompt is required.'; return; }
 
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Saving…';
+  setTone(statusEl, 'muted'); statusEl.textContent = 'Saving…';
   try {
     if (id) {
       await compPatch(`ai_prompts?id=eq.${id}`, { name, description, outcome_prompt, compliance_prompt });
     } else {
       await compPost('ai_prompts', { name, description, outcome_prompt, compliance_prompt, is_active: false });
     }
-    statusEl.style.color = 'var(--teal)'; statusEl.textContent = 'Saved';
+    setTone(statusEl, 'teal'); statusEl.textContent = 'Saved';
     setTimeout(promptsHideEditor, 1200);
     await promptsLoad();
   } catch(e) {
-    statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
+    setTone(statusEl, 'coral'); statusEl.textContent = e.message;
   }
 }
 
@@ -6479,15 +6690,15 @@ async function promptsRunABTest() {
   const batchSize = document.getElementById('ab-batch-size').value || '50';
   const statusEl  = document.getElementById('ab-status');
 
-  if (!promptId) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select a prompt.'; return; }
+  if (!promptId) { setTone(statusEl, 'coral'); statusEl.textContent = 'Select a prompt.'; return; }
 
-  statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Triggering…';
+  setTone(statusEl, 'muted'); statusEl.textContent = 'Triggering…';
   try {
     const res = await adminRequest('dispatch_process', { inputs: { prompt_id: promptId, batch_size: batchSize } });
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub error ${res.status}`); }
-    statusEl.style.color = 'var(--teal)'; statusEl.textContent = 'Started. Progress is in GitHub Actions.';
+    setTone(statusEl, 'teal'); statusEl.textContent = 'Started. Progress is in GitHub Actions.';
   } catch(e) {
-    statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
+    setTone(statusEl, 'coral'); statusEl.textContent = e.message;
   }
 }
 
@@ -6499,9 +6710,9 @@ async function promptsRunABTest() {
 // Supabase Auth (GoTrue) calls with the user's session; JSON or null, throws with the server's message.
 async function authApi(path, init = {}) {
   if (_refreshInFlight || sbTokenDue()) await refreshSession();
-  const res = await fetch(`${SB_URL}/auth/v1/${path}`, {
+  const res = await authFetch(path, {
     ...init,
-    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
+    headers: { 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
   });
   const text = await res.text();
   let body = null;
@@ -6552,7 +6763,7 @@ async function oauthConsentInit() {
     body.innerHTML = oauthConsentHtml(d, getAuthUser());
   } catch (e) {
     body.innerHTML = `<div class="login-sub">${oauthOff(e) ? 'The Claude connector is not switched on yet.' : 'This sign-in link has expired or was already used. Start again from Claude.'}</div>
-      <a class="login-btn is-secondary" style="display:block;text-align:center;text-decoration:none" href="/">Open the registry</a>`;
+      <a class="login-btn is-secondary oauth-open" href="/">Open the registry</a>`;
     console.warn('OAuth authorization:', e.message);
   }
 }
@@ -6598,16 +6809,16 @@ async function claudeLoadAccess() {
   const usage = claudeUsage(rows);
   if (grants.status === 'rejected') {
     gEl.innerHTML = oauthOff(grants.reason)
-      ? '<div class="settings-users-empty" style="padding:16px 12px">The Claude connector is not switched on yet. Once it is, apps you connect show here.</div>'
+      ? '<div class="settings-users-empty p-16-12">The Claude connector is not switched on yet. Once it is, apps you connect show here.</div>'
       : loadErrorHtml('connected apps', 'claudeLoadAccess()', grants.reason);
   } else if (!(grants.value || []).length) {
-    gEl.innerHTML = '<div class="settings-users-empty" style="padding:16px 12px">No apps connected. Follow the steps above to connect Claude.</div>';
+    gEl.innerHTML = '<div class="settings-users-empty p-16-12">No apps connected. Follow the steps above to connect Claude.</div>';
   } else {
     gEl.innerHTML = `<table class="settings-table"><thead><tr><th>App</th><th>Allowed</th><th>Last used</th><th>Queries</th><th></th></tr></thead><tbody>${
       grants.value.map(g => { const u = usage[g.client.id] || {}; return `<tr>
         <td>${esc(g.client.name || 'App')}${g.client.uri ? ` <span class="cl-muted">${esc(g.client.uri)}</span>` : ''}</td>
-        <td style="color:var(--text-2)">${claudeDate(g.granted_at)}</td>
-        <td style="color:var(--text-2)">${u.last ? claudeDate(u.last) : 'Not yet'}</td>
+        <td class="c-text-2">${claudeDate(g.granted_at)}</td>
+        <td class="c-text-2">${u.last ? claudeDate(u.last) : 'Not yet'}</td>
         <td class="cl-mono">${u.count || 0}</td>
         <td><div class="cl-actions"><button class="settings-delete-btn" onclick="claudeRevoke('${jsStr(g.client.id)}','${jsStr(g.client.name || 'this app')}')">Disconnect</button></div></td>
       </tr>`; }).join('')}</tbody></table>`;
@@ -6615,13 +6826,13 @@ async function claudeLoadAccess() {
   if (log.status === 'rejected') {
     aEl.innerHTML = loadErrorHtml('recent queries', 'claudeLoadAccess()', log.reason);
   } else if (!rows.length) {
-    aEl.innerHTML = '<div class="settings-users-empty" style="padding:16px 12px">No connector queries yet.</div>';
+    aEl.innerHTML = '<div class="settings-users-empty p-16-12">No connector queries yet.</div>';
   } else {
     aEl.innerHTML = `<table class="settings-table"><thead><tr><th>When</th><th>Tool</th><th>Result</th><th>Query</th></tr></thead><tbody>${
       rows.slice(0, 20).map(r => `<tr>
-        <td style="color:var(--text-2);white-space:nowrap">${claudeDate(r.created_at)}</td>
+        <td class="c-text-2 nowrap">${claudeDate(r.created_at)}</td>
         <td class="cl-mono">${esc(labelOf(r.tool))}</td>
-        <td style="white-space:nowrap">${r.error ? `<span style="color:var(--coral)" title="${esc(r.error)}">Error</span>` : r.row_count == null ? 'Plan' : `${r.row_count} rows`}</td>
+        <td class="nowrap">${r.error ? `<span class="c-coral" title="${esc(r.error)}">Error</span>` : r.row_count == null ? 'Plan' : `${r.row_count} rows`}</td>
         <td class="cl-sql cl-mono" title="${esc(r.query)}">${esc(r.query)}</td>
       </tr>`).join('')}</tbody></table>`;
   }
@@ -6640,28 +6851,28 @@ async function claudeRevoke(clientId, name) {
 
 let claudeReports = [];
 function claudeReportsHtml(list, editId) {
-  if (!list.length) return '<div class="settings-users-empty" style="padding:16px 12px">No saved reports yet. In Claude, ask a question and then say "save this as a report".</div>';
+  if (!list.length) return '<div class="settings-users-empty p-16-12">No saved reports yet. In Claude, ask a question and then say "save this as a report".</div>';
   return `<table class="settings-table"><thead><tr><th>Report</th><th>Type</th><th>Inputs</th><th>Updated</th><th></th></tr></thead><tbody>${
     list.map(r => {
       const params = (r.parameters || []).map(p => p.name + (p.default != null ? ` = ${p.default}` : '')).join(', ');
       const def = r.kind === 'sql' ? (r.definition && r.definition.sql) || '' : JSON.stringify(r.definition, null, 2);
-      if (r.id === editId) return `<tr><td colspan="5"><div class="settings-add-form" style="margin:0">
-          <input class="settings-input" id="cl-rep-name" value="${esc(r.name)}" aria-label="Report name" style="flex:1 1 200px">
-          <input class="settings-input" id="cl-rep-desc" value="${esc(r.description || '')}" placeholder="Description" aria-label="Description" style="flex:2 1 260px">
+      if (r.id === editId) return `<tr><td colspan="5"><div class="settings-add-form m-0">
+          <input class="settings-input flex-200" id="cl-rep-name" value="${esc(r.name)}" aria-label="Report name">
+          <input class="settings-input flex2-260" id="cl-rep-desc" value="${esc(r.description || '')}" placeholder="Description" aria-label="Description">
           <button class="settings-save-btn" onclick="claudeSaveReport('${jsStr(r.id)}')">Save</button>
           <button class="settings-cancel-btn" onclick="claudeRenderReports()">Cancel</button>
-          <span id="cl-rep-err" style="font-size:12px;color:var(--coral)"></span></div></td></tr>`;
+          <span id="cl-rep-err" class="fs-12 c-coral"></span></div></td></tr>`;
       return `<tr>
-        <td><b style="font-weight:600">${esc(r.name)}</b>${r.description ? `<div class="cl-muted">${esc(r.description)}</div>` : ''}
-          <details><summary class="cl-muted" style="cursor:pointer">Query</summary><pre class="cl-def">${esc(def)}</pre></details></td>
+        <td><b class="fw-600">${esc(r.name)}</b>${r.description ? `<div class="cl-muted">${esc(r.description)}</div>` : ''}
+          <details><summary class="cl-muted pointer">Query</summary><pre class="cl-def">${esc(def)}</pre></details></td>
         <td>${esc({ sql: 'SQL', search: 'Search', aggregate: 'Aggregate' }[r.kind] || r.kind)}</td>
         <td class="cl-mono">${params ? esc(params) : nullMark()}</td>
-        <td style="color:var(--text-2);white-space:nowrap">${claudeDate(r.updated_at)}</td>
+        <td class="c-text-2 nowrap">${claudeDate(r.updated_at)}</td>
         <td><div class="cl-actions"><button class="settings-secondary-btn" onclick="claudeRenderReports('${jsStr(r.id)}')">Rename</button>
           <button class="settings-delete-btn" onclick="claudeDeleteReport('${jsStr(r.id)}')">Delete</button></div></td>
       </tr>`;
     }).join('')}</tbody></table>
-    <div class="cl-muted" style="padding:10px 12px">To run or change a report's query, ask Claude ("run my weekly publisher report for last month").</div>`;
+    <div class="cl-muted p-10-12">To run or change a report's query, ask Claude ("run my weekly publisher report for last month").</div>`;
 }
 function claudeRenderReports(editId) { document.getElementById('claude-reports').innerHTML = claudeReportsHtml(claudeReports, editId); }
 
@@ -6674,7 +6885,7 @@ async function claudeLoadReports() {
   } catch (e) {
     const notYet = /PGRST202|Supabase 404/.test(e.message);   // 067 not applied yet
     el.innerHTML = notYet
-      ? '<div class="settings-users-empty" style="padding:16px 12px">Saved reports show here once the Claude connector is switched on.</div>'
+      ? '<div class="settings-users-empty p-16-12">Saved reports show here once the Claude connector is switched on.</div>'
       : loadErrorHtml('saved reports', 'claudeLoadReports()', e);
   }
 }

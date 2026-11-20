@@ -71,7 +71,7 @@ test('Users and test runs go through adminRequest with the same inputs as before
 
 test('A/B run: no PAT needed; a server error shows its message', async () => {
   const els = {
-    'ab-prompt-select': { value: 'p1' }, 'ab-batch-size': { value: '25' }, 'ab-status': { style: {}, textContent: '' },
+    'ab-prompt-select': { value: 'p1' }, 'ab-batch-size': { value: '25' }, 'ab-status': { classList: { remove() {}, add() {} }, textContent: '' },
   };
   const calls = [];
   let reply = { ok: true, status: 204 };
@@ -79,7 +79,7 @@ test('A/B run: no PAT needed; a server error shows its message', async () => {
     document: { getElementById: id => els[id] },
     adminRequest: async (action, payload) => { calls.push([action, payload]); return reply; },
   };
-  vm.runInNewContext(`${lift('async function promptsRunABTest(')}; this.run = promptsRunABTest;`, ctx);
+  vm.runInNewContext(`${lift('function setTone(')}; ${lift('async function promptsRunABTest(')}; this.run = promptsRunABTest;`, ctx);
   await ctx.run();
   assert.deepEqual(JSON.parse(JSON.stringify(calls)), [['dispatch_process', { inputs: { prompt_id: 'p1', batch_size: '25' } }]]);
   assert.equal(els['ab-status'].textContent, 'Started. Progress is in GitHub Actions.');

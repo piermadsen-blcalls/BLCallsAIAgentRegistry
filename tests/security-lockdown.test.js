@@ -119,7 +119,7 @@ test('Settings: account assignment dropdowns are read-only for non-admins', () =
       allAccounts: [{ account_name: 'Pub A', account_type: 'publisher' }] };
     vm.runInNewContext(lift('function esc(') + ';\n' + lift('function settingsRenderAccountsTable(') + ';\nthis.render = settingsRenderAccountsTable;', ctx);
     ctx.render();
-    assert.equal(/assign-mgr-select" style="min-width:160px" disabled/.test(doc.els['settings-accounts-table'].innerHTML), isAdmin !== true, `isAdmin=${isAdmin}`);
+    assert.equal(/assign-mgr-select minw-160" disabled/.test(doc.els['settings-accounts-table'].innerHTML), isAdmin !== true, `isAdmin=${isAdmin}`);
   }
 });
 

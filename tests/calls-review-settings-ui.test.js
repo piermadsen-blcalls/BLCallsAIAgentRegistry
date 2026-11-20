@@ -368,7 +368,7 @@ test('Pass 3 copy: drawer, Review, Scores and Settings wording', () => {
     '<label class="rv-q-label" for="rv-top-change">Top fix</label>', 'Details <span class="rv-q-hint">(optional)</span>',         // S-45
     "'Save (call count unavailable)'", 'Save and rescore ${', 'Save (counting calls…)', "'Save (weights did not load)'",           // S-49
     'Scores a sample with each selected model. Production calls are not touched.', '` Unprocessed: ${',                           // S-50
-    'None selected = no flags.', '<div class="train-h" style="margin:20px 0 8px">Outcomes', '>Correct outcome</label>',           // S-51
+    'None selected = no flags.', '<div class="train-h m-20-0-8">Outcomes', '>Correct outcome</label>',           // S-51
     '>Label calls</button>', '>Compare models</button>', '>Label one by one</button>', 'id="review-title">Label calls<',          // S-52
   ];
   for (const s of has) assert.ok(html.includes(s), s);
