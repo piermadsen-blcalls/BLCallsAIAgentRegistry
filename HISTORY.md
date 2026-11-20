@@ -1156,3 +1156,13 @@ Continued from the 8/7 Scores work; large session. What moved:
   - Node 202/202, Deno 23/23, `deno lint` clean.
 - **Not applied yet:** the captain approves the merge first. Then: 066-068 for real, the SQL and anon checks, the OAuth server settings, the `mcp` deploy, and the end-to-end check.
 - External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-20 (Pier) - No secrets in the browser: admin edge function (branch `fm/registry-admin-edge`)
+- **What:** Settings no longer asks for the Supabase service-role key (Dashboard Users) or a GitHub PAT (model calibration, A/B test runner). Those boxes are gone; admins just see the user list.
+- **Server:** new edge function `admin`. It checks `public.is_admin()` with the caller's own session (401 signed out/expired, 403 non-admin) and holds the service key and a GitHub dispatch token server-side.
+  - Actions: list users, invite, remove; dispatch `process.yml` (only its declared inputs, on `main`).
+  - Upstream status and messages come back unchanged, so the page shows the same results.
+- **No fallback to the paste-key path:** deploy the function and set its token before merging, so there is no gap.
+- **Tested:** Deno 25 (allow/deny per action, input checks). Page 206/206. Settings flows checked in a browser against a stubbed function.
+- **Deployed** after the captain set `GITHUB_DISPATCH_TOKEN`; live gate checks (401s, preflight, prod `is_admin()`) are in the PR. The real 200/403 need a signed-in check.
+- External sources (Wispr/Jira) not pulled this session.

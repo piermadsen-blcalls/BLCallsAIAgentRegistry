@@ -66,7 +66,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
   framework, or bundler without a real reason — Netlify serves the repo root as-is.
 - **Frontend uses the Supabase *publishable* key** (client-safe, RLS-gated — see
   `migrations/063_security_lockdown.sql`). The **service-role key is never in the client** (the
-  Settings admin UI takes it session-only; scripts read it from env). Never commit
+  Settings admin actions go through the `admin` edge function; scripts read it from env). Never commit
   a service key.
 - **Secrets live in `scripts/.env` (gitignored) + GitHub Actions secrets** — never
   commit: `CANOE_API_KEY`, `SUPABASE_SERVICE_KEY`, `OPENROUTER_API_KEY`,
