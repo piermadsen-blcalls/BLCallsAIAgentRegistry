@@ -954,6 +954,8 @@
   .o-40 { opacity:.4 !important; }
   .o-65 { opacity:.65 !important; }
   .flex-1 { flex:1 !important; }
+  .flex-200 { flex:1 1 200px !important; }
+  .flex2-260 { flex:2 1 260px !important; }
   .span-all { grid-column:1/-1 !important; }
   .w-full { width:100% !important; }
   .w-80 { width:80px !important; }
@@ -964,6 +966,7 @@
   .minw-160 { min-width:160px !important; }
   .minw-180 { min-width:180px !important; }
   .minw-200 { min-width:200px !important; }
+  .m-0 { margin:0 !important; }
   .mt-2 { margin-top:2px !important; }
   .mt-4 { margin-top:4px !important; }
   .mt-6 { margin-top:6px !important; }
@@ -985,8 +988,11 @@
   .p-8-0 { padding:8px 0 !important; }
   .p-24 { padding:24px !important; }
   .p-6-10 { padding:6px 10px !important; }
+  .p-10-12 { padding:10px 12px !important; }
   .p-12-16 { padding:12px 16px !important; }
+  .p-16-12 { padding:16px 12px !important; }
   /* Shared */
+  .row-center { display:flex; align-items:center !important; }
   .row-gap-8 { display:flex; align-items:center !important; gap:8px !important; }
   .note-xs { font-size:11px !important; color:var(--text-3) !important; }
   .meta-xs { font-size:11px !important; color:var(--text-2) !important; }
@@ -1002,7 +1008,13 @@
   .empty-note { padding:16px !important; font-size:13px !important; color:var(--text-3) !important; font-style:italic !important; }
   .empty-note-sm { font-size:12px !important; color:var(--text-3) !important; font-style:italic !important; }
   .table-full { width:100% !important; border-collapse:collapse !important; }
+  .req-note { color:var(--text-3) !important; font-weight:400 !important; }
   .chev-icon { margin-left:4px !important; vertical-align:middle !important; }
+  /* Change password, account menu, consent */
+  .cp-cancel { background:var(--surface) !important; color:var(--text-2) !important; border:1px solid var(--border-strong) !important; margin-top:8px !important; }
+  .cp-success { color:var(--teal) !important; font-size:13px !important; margin-top:10px !important; text-align:center !important; }
+  .acct-menu-pos { margin-left:auto !important; position:relative !important; }
+  .oauth-open { display:block; text-align:center !important; text-decoration:none !important; }
   /* Agents tab (details drawer) */
   .ag-link-icon { flex-shrink:0 !important; color:var(--brand-navy) !important; }
   .ag-objective { font-size:13px !important; color:var(--text-2) !important; line-height:1.5 !important; white-space:pre-wrap !important; }
@@ -1193,7 +1205,7 @@
 <div class="login-overlay hidden" id="changepw-overlay">
   <div class="login-card">
     <div class="login-title">Change your password</div>
-    <div class="login-sub">Set a new password for <span id="changepw-email" style="color:var(--text)"></span>.</div>
+    <div class="login-sub">Set a new password for <span id="changepw-email" class="c-text"></span>.</div>
     <div class="login-field">
       <label class="login-label" for="changepw-input">New password</label>
       <input class="login-input" type="password" id="changepw-input" placeholder="At least 6 characters" autocomplete="new-password">
@@ -1203,9 +1215,9 @@
       <input class="login-input" type="password" id="changepw-confirm" placeholder="Repeat password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doChangePassword()">
     </div>
     <button class="login-btn" id="changepw-btn" onclick="doChangePassword()">Update password</button>
-    <button class="login-btn" onclick="closeChangePw()" style="background:var(--surface);color:var(--text-2);border:1px solid var(--border-strong);margin-top:8px">Cancel</button>
+    <button class="login-btn cp-cancel" onclick="closeChangePw()">Cancel</button>
     <div class="login-error" id="changepw-error"></div>
-    <div id="changepw-success" style="display:none;color:var(--teal);font-size:13px;margin-top:10px;text-align:center">Password updated.</div>
+    <div id="changepw-success" class="cp-success" style="display:none">Password updated.</div>
   </div>
 </div>
 
@@ -1245,7 +1257,7 @@
       <div class="drawer-section-title">Correct this call</div>
       <div class="correction-form" id="correction-form">
         <div class="correction-row">
-          <div style="flex:1">
+          <div class="flex-1">
             <label class="correction-label">Outcome</label>
             <select class="correction-select" id="correction-outcome">
               <option value="">No change</option>
@@ -1279,7 +1291,7 @@
             </select>
           </div>
         </div>
-        <div style="margin-bottom:12px">
+        <div class="mb-12">
           <label class="correction-label">Compliance flags</label>
           <div class="correction-flags" id="correction-flags">
             <button class="correction-flag-btn" data-flag="outbound_dial">outbound dial</button>
@@ -1291,11 +1303,11 @@
             <button class="correction-flag-btn" data-flag="coached_call">coached call</button>
           </div>
         </div>
-        <div style="margin-bottom:12px">
-          <label class="correction-label">Note <span style="color:var(--text-3);font-weight:400">(required)</span></label>
+        <div class="mb-12">
+          <label class="correction-label">Note <span class="req-note">(required)</span></label>
           <textarea class="correction-textarea" id="correction-note" placeholder="e.g. Caller dialed in themselves, so outbound dial is wrong"></textarea>
         </div>
-        <div style="display:flex;align-items:center">
+        <div class="row-center">
           <button class="correction-save-btn" id="correction-save-btn" onclick="saveCorrection()">Save correction</button>
           <span class="correction-saved" id="correction-saved" style="display:none">Saved</span>
         </div>
@@ -1318,7 +1330,7 @@
     <div class="logo-divider"></div>
     <span class="logo-product">AI Agent Registry</span>
     <span class="logo-freshness" id="freshness-label"></span>
-    <div class="acct-menu" id="acct-menu" style="margin-left:auto;position:relative">
+    <div class="acct-menu acct-menu-pos" id="acct-menu">
       <button class="acct-btn" onclick="toggleAcctMenu(event)">
         <span id="acct-email">Account</span>
         <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -6751,7 +6763,7 @@ async function oauthConsentInit() {
     body.innerHTML = oauthConsentHtml(d, getAuthUser());
   } catch (e) {
     body.innerHTML = `<div class="login-sub">${oauthOff(e) ? 'The Claude connector is not switched on yet.' : 'This sign-in link has expired or was already used. Start again from Claude.'}</div>
-      <a class="login-btn is-secondary" style="display:block;text-align:center;text-decoration:none" href="/">Open the registry</a>`;
+      <a class="login-btn is-secondary oauth-open" href="/">Open the registry</a>`;
     console.warn('OAuth authorization:', e.message);
   }
 }
@@ -6797,16 +6809,16 @@ async function claudeLoadAccess() {
   const usage = claudeUsage(rows);
   if (grants.status === 'rejected') {
     gEl.innerHTML = oauthOff(grants.reason)
-      ? '<div class="settings-users-empty" style="padding:16px 12px">The Claude connector is not switched on yet. Once it is, apps you connect show here.</div>'
+      ? '<div class="settings-users-empty p-16-12">The Claude connector is not switched on yet. Once it is, apps you connect show here.</div>'
       : loadErrorHtml('connected apps', 'claudeLoadAccess()', grants.reason);
   } else if (!(grants.value || []).length) {
-    gEl.innerHTML = '<div class="settings-users-empty" style="padding:16px 12px">No apps connected. Follow the steps above to connect Claude.</div>';
+    gEl.innerHTML = '<div class="settings-users-empty p-16-12">No apps connected. Follow the steps above to connect Claude.</div>';
   } else {
     gEl.innerHTML = `<table class="settings-table"><thead><tr><th>App</th><th>Allowed</th><th>Last used</th><th>Queries</th><th></th></tr></thead><tbody>${
       grants.value.map(g => { const u = usage[g.client.id] || {}; return `<tr>
         <td>${esc(g.client.name || 'App')}${g.client.uri ? ` <span class="cl-muted">${esc(g.client.uri)}</span>` : ''}</td>
-        <td style="color:var(--text-2)">${claudeDate(g.granted_at)}</td>
-        <td style="color:var(--text-2)">${u.last ? claudeDate(u.last) : 'Not yet'}</td>
+        <td class="c-text-2">${claudeDate(g.granted_at)}</td>
+        <td class="c-text-2">${u.last ? claudeDate(u.last) : 'Not yet'}</td>
         <td class="cl-mono">${u.count || 0}</td>
         <td><div class="cl-actions"><button class="settings-delete-btn" onclick="claudeRevoke('${jsStr(g.client.id)}','${jsStr(g.client.name || 'this app')}')">Disconnect</button></div></td>
       </tr>`; }).join('')}</tbody></table>`;
@@ -6814,13 +6826,13 @@ async function claudeLoadAccess() {
   if (log.status === 'rejected') {
     aEl.innerHTML = loadErrorHtml('recent queries', 'claudeLoadAccess()', log.reason);
   } else if (!rows.length) {
-    aEl.innerHTML = '<div class="settings-users-empty" style="padding:16px 12px">No connector queries yet.</div>';
+    aEl.innerHTML = '<div class="settings-users-empty p-16-12">No connector queries yet.</div>';
   } else {
     aEl.innerHTML = `<table class="settings-table"><thead><tr><th>When</th><th>Tool</th><th>Result</th><th>Query</th></tr></thead><tbody>${
       rows.slice(0, 20).map(r => `<tr>
-        <td style="color:var(--text-2);white-space:nowrap">${claudeDate(r.created_at)}</td>
+        <td class="c-text-2 nowrap">${claudeDate(r.created_at)}</td>
         <td class="cl-mono">${esc(labelOf(r.tool))}</td>
-        <td style="white-space:nowrap">${r.error ? `<span style="color:var(--coral)" title="${esc(r.error)}">Error</span>` : r.row_count == null ? 'Plan' : `${r.row_count} rows`}</td>
+        <td class="nowrap">${r.error ? `<span class="c-coral" title="${esc(r.error)}">Error</span>` : r.row_count == null ? 'Plan' : `${r.row_count} rows`}</td>
         <td class="cl-sql cl-mono" title="${esc(r.query)}">${esc(r.query)}</td>
       </tr>`).join('')}</tbody></table>`;
   }
@@ -6839,28 +6851,28 @@ async function claudeRevoke(clientId, name) {
 
 let claudeReports = [];
 function claudeReportsHtml(list, editId) {
-  if (!list.length) return '<div class="settings-users-empty" style="padding:16px 12px">No saved reports yet. In Claude, ask a question and then say "save this as a report".</div>';
+  if (!list.length) return '<div class="settings-users-empty p-16-12">No saved reports yet. In Claude, ask a question and then say "save this as a report".</div>';
   return `<table class="settings-table"><thead><tr><th>Report</th><th>Type</th><th>Inputs</th><th>Updated</th><th></th></tr></thead><tbody>${
     list.map(r => {
       const params = (r.parameters || []).map(p => p.name + (p.default != null ? ` = ${p.default}` : '')).join(', ');
       const def = r.kind === 'sql' ? (r.definition && r.definition.sql) || '' : JSON.stringify(r.definition, null, 2);
-      if (r.id === editId) return `<tr><td colspan="5"><div class="settings-add-form" style="margin:0">
-          <input class="settings-input" id="cl-rep-name" value="${esc(r.name)}" aria-label="Report name" style="flex:1 1 200px">
-          <input class="settings-input" id="cl-rep-desc" value="${esc(r.description || '')}" placeholder="Description" aria-label="Description" style="flex:2 1 260px">
+      if (r.id === editId) return `<tr><td colspan="5"><div class="settings-add-form m-0">
+          <input class="settings-input flex-200" id="cl-rep-name" value="${esc(r.name)}" aria-label="Report name">
+          <input class="settings-input flex2-260" id="cl-rep-desc" value="${esc(r.description || '')}" placeholder="Description" aria-label="Description">
           <button class="settings-save-btn" onclick="claudeSaveReport('${jsStr(r.id)}')">Save</button>
           <button class="settings-cancel-btn" onclick="claudeRenderReports()">Cancel</button>
-          <span id="cl-rep-err" style="font-size:12px;color:var(--coral)"></span></div></td></tr>`;
+          <span id="cl-rep-err" class="fs-12 c-coral"></span></div></td></tr>`;
       return `<tr>
-        <td><b style="font-weight:600">${esc(r.name)}</b>${r.description ? `<div class="cl-muted">${esc(r.description)}</div>` : ''}
-          <details><summary class="cl-muted" style="cursor:pointer">Query</summary><pre class="cl-def">${esc(def)}</pre></details></td>
+        <td><b class="fw-600">${esc(r.name)}</b>${r.description ? `<div class="cl-muted">${esc(r.description)}</div>` : ''}
+          <details><summary class="cl-muted pointer">Query</summary><pre class="cl-def">${esc(def)}</pre></details></td>
         <td>${esc({ sql: 'SQL', search: 'Search', aggregate: 'Aggregate' }[r.kind] || r.kind)}</td>
         <td class="cl-mono">${params ? esc(params) : nullMark()}</td>
-        <td style="color:var(--text-2);white-space:nowrap">${claudeDate(r.updated_at)}</td>
+        <td class="c-text-2 nowrap">${claudeDate(r.updated_at)}</td>
         <td><div class="cl-actions"><button class="settings-secondary-btn" onclick="claudeRenderReports('${jsStr(r.id)}')">Rename</button>
           <button class="settings-delete-btn" onclick="claudeDeleteReport('${jsStr(r.id)}')">Delete</button></div></td>
       </tr>`;
     }).join('')}</tbody></table>
-    <div class="cl-muted" style="padding:10px 12px">To run or change a report's query, ask Claude ("run my weekly publisher report for last month").</div>`;
+    <div class="cl-muted p-10-12">To run or change a report's query, ask Claude ("run my weekly publisher report for last month").</div>`;
 }
 function claudeRenderReports(editId) { document.getElementById('claude-reports').innerHTML = claudeReportsHtml(claudeReports, editId); }
 
@@ -6873,7 +6885,7 @@ async function claudeLoadReports() {
   } catch (e) {
     const notYet = /PGRST202|Supabase 404/.test(e.message);   // 067 not applied yet
     el.innerHTML = notYet
-      ? '<div class="settings-users-empty" style="padding:16px 12px">Saved reports show here once the Claude connector is switched on.</div>'
+      ? '<div class="settings-users-empty p-16-12">Saved reports show here once the Claude connector is switched on.</div>'
       : loadErrorHtml('saved reports', 'claudeLoadReports()', e);
   }
 }
