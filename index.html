@@ -931,45 +931,77 @@
      ".settings-table td". display is the exception: JS shows and hides elements with inline display.
      The few styles left inline are that display:none state or values computed per row. */
   .ta-l { text-align:left !important; }
+  .ta-c { text-align:center !important; }
   .ta-r { text-align:right !important; }
   .mono { font-family:var(--mono) !important; }
   .fs-12 { font-size:12px !important; }
+  .fs-13 { font-size:13px !important; }
   .fw-500 { font-weight:500 !important; }
+  .fw-600 { font-weight:600 !important; }
   .c-text { color:var(--text) !important; }
   .c-text-2 { color:var(--text-2) !important; }
   .c-text-3 { color:var(--text-3) !important; }
   .c-teal { color:var(--teal) !important; }
   .c-amber { color:var(--amber) !important; }
   .c-coral { color:var(--coral) !important; }
+  .bg-2 { background:var(--bg-2) !important; }
+  .bg-amber { background:var(--amber-bg) !important; }
+  .bb-line { border-bottom:1px solid var(--border) !important; }
   .pointer { cursor:pointer !important; }
   .nowrap { white-space:nowrap !important; }
   .pre-wrap { white-space:pre-wrap !important; }
   .scroll-x { overflow-x:auto !important; }
   .o-40 { opacity:.4 !important; }
   .o-65 { opacity:.65 !important; }
+  .flex-1 { flex:1 !important; }
   .span-all { grid-column:1/-1 !important; }
+  .w-full { width:100% !important; }
+  .w-80 { width:80px !important; }
+  .w-90 { width:90px !important; }
   .w-200 { width:200px !important; }
+  .w-220 { width:220px !important; }
   .minw-0 { min-width:0 !important; }
+  .minw-160 { min-width:160px !important; }
+  .minw-180 { min-width:180px !important; }
+  .minw-200 { min-width:200px !important; }
+  .mt-2 { margin-top:2px !important; }
+  .mt-4 { margin-top:4px !important; }
   .mt-6 { margin-top:6px !important; }
   .mt-8 { margin-top:8px !important; }
   .mt-10 { margin-top:10px !important; }
+  .mt-28 { margin-top:28px !important; }
   .mb-2 { margin-bottom:2px !important; }
+  .mb-8 { margin-bottom:8px !important; }
+  .mb-12 { margin-bottom:12px !important; }
+  .mb-16 { margin-bottom:16px !important; }
   .mb-20 { margin-bottom:20px !important; }
+  .ml-auto { margin-left:auto !important; }
   .ml-12 { margin-left:12px !important; }
+  .mr-6 { margin-right:6px !important; }
   .m-4-0-18 { margin:4px 0 18px !important; }
+  .m-20-0-8 { margin:20px 0 8px !important; }
   .m-22-0-0 { margin:22px 0 0 !important; }
+  .m-24-0-8 { margin:24px 0 8px !important; }
   .p-8-0 { padding:8px 0 !important; }
   .p-24 { padding:24px !important; }
+  .p-6-10 { padding:6px 10px !important; }
   .p-12-16 { padding:12px 16px !important; }
   /* Shared */
   .row-gap-8 { display:flex; align-items:center !important; gap:8px !important; }
   .note-xs { font-size:11px !important; color:var(--text-3) !important; }
+  .meta-xs { font-size:11px !important; color:var(--text-2) !important; }
+  .field-hint { font-size:11px !important; color:var(--text-3) !important; margin-top:4px !important; }
+  .grow2-200 { flex:2 !important; min-width:200px !important; }
+  .check-14 { accent-color:var(--brand-navy) !important; width:14px !important; height:14px !important; }
+  .check-16 { width:16px !important; height:16px !important; cursor:pointer !important; }
   .section-split { margin-top:24px !important; border-top:1px solid var(--border) !important; padding-top:20px !important; }
   .clip-140 { max-width:140px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .clip-160 { max-width:160px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .clip-180 { max-width:180px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
   .num-xs { text-align:right !important; font-family:var(--mono) !important; font-size:11px !important; }
+  .empty-note { padding:16px !important; font-size:13px !important; color:var(--text-3) !important; font-style:italic !important; }
   .empty-note-sm { font-size:12px !important; color:var(--text-3) !important; font-style:italic !important; }
+  .table-full { width:100% !important; border-collapse:collapse !important; }
   .chev-icon { margin-left:4px !important; vertical-align:middle !important; }
   /* Agents tab (details drawer) */
   .ag-link-icon { flex-shrink:0 !important; color:var(--brand-navy) !important; }
@@ -997,6 +1029,90 @@
   .scores-tx-card { background:var(--surface) !important; max-width:680px !important; width:100% !important; max-height:80vh !important; overflow:auto !important; border-radius:var(--radius) !important; padding:20px !important; box-shadow:0 8px 24px rgba(0,0,0,.2) !important; }
   .scores-tx-head { display:flex; justify-content:space-between !important; align-items:center !important; margin-bottom:10px !important; }
   .scores-tx-text { white-space:pre-wrap !important; font-size:13px !important; line-height:1.55 !important; color:var(--text) !important; }
+  /* Settings: accounts and outcome weights */
+  .sa-toolbar { display:flex; gap:8px !important; align-items:center !important; margin-bottom:14px !important; flex-wrap:wrap !important; }
+  .wt-actions { margin-top:16px !important; display:flex; align-items:center !important; gap:12px !important; flex-wrap:wrap !important; }
+  .wt-status { font-size:13px !important; color:var(--text-2) !important; }
+  .wt-table { width:100% !important; border-collapse:collapse !important; border:1px solid var(--border) !important; border-radius:var(--radius) !important; overflow:hidden !important; }
+  .wt-th { padding:8px 10px !important; text-align:left !important; font-size:12px !important; color:var(--text-2) !important; font-weight:600 !important; border-bottom:1px solid var(--border) !important; }
+  .wt-th-num { padding:8px 8px !important; text-align:center !important; font-size:12px !important; color:var(--text-2) !important; font-weight:600 !important; border-bottom:1px solid var(--border) !important; width:90px !important; }
+  .wt-group { padding:6px 10px !important; font-size:12px !important; font-weight:600 !important; color:var(--text-2) !important; }
+  .wt-outcome { padding:6px 10px !important; font-size:13px !important; color:var(--text) !important; font-family:var(--mono) !important; }
+  .wt-cell { padding:6px 8px !important; text-align:center !important; }
+  .wt-input { width:64px !important; text-align:center !important; padding:4px 6px !important; font-size:13px !important; }
+  .saved-note { font-size:11px !important; color:var(--teal) !important; }
+  .status-note { font-size:12px !important; color:var(--teal) !important; }
+  /* Settings: prompts and A/B test */
+  .pe-panel { margin-top:16px !important; background:var(--bg-2) !important; border:1px solid var(--border) !important; border-radius:var(--radius) !important; padding:20px !important; }
+  .pe-row { display:flex; gap:12px !important; margin-bottom:12px !important; flex-wrap:wrap !important; }
+  .pe-textarea-tall { width:100% !important; height:260px !important; font-family:var(--mono) !important; font-size:12px !important; padding:10px !important; border:1px solid var(--border) !important; border-radius:var(--radius-sm) !important; background:var(--tint) !important; color:var(--text) !important; resize:vertical !important; box-sizing:border-box !important; }
+  .pe-textarea { width:100% !important; height:200px !important; font-family:var(--mono) !important; font-size:12px !important; padding:10px !important; border:1px solid var(--border) !important; border-radius:var(--radius-sm) !important; background:var(--tint) !important; color:var(--text) !important; resize:vertical !important; box-sizing:border-box !important; }
+  .pe-actions { display:flex; gap:10px !important; align-items:center !important; }
+  .ab-title { font-size:13px !important; margin-bottom:12px !important; }
+  .ab-row { display:flex; gap:12px !important; flex-wrap:wrap !important; align-items:flex-end !important; }
+  .pr-loading { padding:12px !important; font-size:13px !important; color:var(--text-3) !important; }
+  .pr-empty { padding:12px !important; font-size:13px !important; color:var(--text-3) !important; font-style:italic !important; }
+  .pr-desc { color:var(--text-2) !important; font-size:12px !important; }
+  .pr-active { font-size:12px !important; font-weight:600 !important; color:var(--teal) !important; }
+  .pr-count { text-align:right !important; color:var(--text-2) !important; }
+  /* Settings: model calibration (Training) */
+  .calib-intro { color:var(--text-2) !important; font-size:13px !important; margin:0 0 20px !important; }
+  .mt-config { display:flex; gap:24px !important; flex-wrap:wrap !important; align-items:flex-start !important; margin-bottom:24px !important; }
+  .mt-model-list { display:flex; flex-direction:column !important; gap:8px !important; margin-top:6px !important; }
+  .mt-model-opt { display:flex; flex-wrap:wrap !important; align-items:center !important; gap:8px !important; font-size:13px !important; cursor:pointer !important; user-select:none !important; }
+  .mt-provider { font-size:11px !important; background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:4px !important; padding:1px 6px !important; }
+  .mt-price { font-size:11px !important; color:var(--text-3) !important; font-family:var(--mono) !important; }
+  .mt-stratify { display:flex; gap:6px !important; align-items:center !important; font-size:12px !important; margin-top:8px !important; cursor:pointer !important; }
+  .mt-run-col { display:flex; flex-direction:column !important; justify-content:flex-end !important; gap:8px !important; }
+  .mt-empty { color:var(--text-3) !important; font-size:13px !important; margin:0 !important; }
+  .mt-hist-title { font-size:12px !important; font-weight:500 !important; color:var(--text-2) !important; margin-bottom:8px !important; }
+  .mt-hist-row { display:flex; align-items:center !important; gap:12px !important; padding:9px 0 !important; border-bottom:1px solid var(--border) !important; flex-wrap:wrap !important; }
+  .mt-hist-model { font-size:13px !important; flex:1 !important; min-width:160px !important; font-family:var(--mono) !important; }
+  .mt-bar { display:inline-block; width:70px !important; height:5px !important; border-radius:3px !important; background:var(--tint) !important; border:1px solid var(--border) !important; overflow:hidden !important; vertical-align:middle !important; }
+  .mt-bar-fill { display:block; height:100% !important; background:var(--brand-mint) !important; }
+  .mt-status { font-size:11px !important; background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:4px !important; padding:2px 8px !important; }
+  .mt-hist-label { font-family:var(--sans) !important; font-size:12px !important; color:#fff !important; background:var(--brand-navy) !important; border:1px solid var(--brand-navy) !important; border-radius:var(--radius-sm) !important; padding:3px 12px !important; cursor:pointer !important; font-weight:500 !important; }
+  .mt-hist-view { font-family:var(--sans) !important; font-size:12px !important; color:var(--brand-navy) !important; background:var(--brand-mint-bg) !important; border:1px solid var(--brand-mint) !important; border-radius:var(--radius-sm) !important; padding:3px 10px !important; cursor:pointer !important; }
+  .mt-result-head { display:flex; align-items:center !important; gap:12px !important; margin-bottom:16px !important; }
+  .mt-label-btn { font-family:var(--sans) !important; font-size:11px !important; color:var(--brand-navy) !important; background:var(--brand-mint-bg) !important; border:1px solid var(--brand-mint) !important; border-radius:var(--radius-sm) !important; padding:3px 10px !important; cursor:pointer !important; margin-left:auto !important; }
+  .mt-muted { color:var(--text-3) !important; font-size:13px !important; }
+  .mt-card { background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:var(--radius-sm) !important; padding:8px 12px !important; min-width:130px !important; }
+  .mt-card-model { font-family:var(--mono) !important; font-size:11px !important; color:var(--brand-navy) !important; margin-bottom:2px !important; }
+  .mt-th-model { padding:6px 8px !important; font-size:11px !important; font-weight:500 !important; color:var(--text-2) !important; }
+  .mt-td { padding:6px 8px !important; font-size:12px !important; vertical-align:top !important; }
+  .mt-table-wrap { overflow-x:auto !important; margin-bottom:8px !important; }
+  .mt-th { text-align:left !important; padding:6px 8px !important; font-size:11px !important; color:var(--text-2) !important; }
+  .mt-call-id { padding:6px 8px !important; font-family:var(--mono) !important; font-size:11px !important; cursor:pointer !important; color:var(--brand-navy) !important; }
+  .mt-tx-box { background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:6px !important; padding:8px 10px !important; max-height:240px !important; overflow:auto !important; font-size:11px !important; line-height:1.5 !important; }
+  .mt-tx-links { margin-bottom:6px !important; font-size:12px !important; }
+  .mt-cards { display:flex; gap:8px !important; flex-wrap:wrap !important; margin-bottom:16px !important; }
+  .mt-summary { font-size:12px !important; color:var(--text-2) !important; margin-bottom:6px !important; }
+  .mt-hl { background:var(--amber-bg) !important; padding:0 4px !important; border-radius:3px !important; }
+  /* Settings: model calibration review (label calls) */
+  .mtr-head { display:flex; align-items:center !important; gap:12px !important; margin-bottom:6px !important; }
+  .mtr-act { flex-shrink:0 !important; font-size:11px !important; font-weight:500 !important; padding:5px 11px !important; border-radius:var(--radius-sm) !important; border:1px solid var(--brand-navy) !important; background:var(--surface) !important; color:var(--brand-navy) !important; cursor:pointer !important; white-space:nowrap !important; }
+  .mtr-act.is-on { border:1px solid var(--teal) !important; background:var(--teal) !important; color:#fff !important; }
+  .mtr-field-label { font-size:11px !important; font-weight:600 !important; color:var(--text-3) !important; }
+  .mtr-field-val { font-family:var(--mono) !important; font-size:12.5px !important; color:var(--text) !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .mtr-field { flex:1 !important; min-width:0 !important; }
+  .mtr-card { border:1px solid var(--border) !important; border-radius:8px !important; padding:10px 11px !important; min-width:0 !important; background:var(--surface) !important; display:flex; flex-direction:column !important; gap:8px !important; }
+  .mtr-card-model { font-family:var(--mono) !important; font-size:11px !important; color:var(--brand-navy) !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .mtr-toggle { cursor:pointer !important; font-size:11px !important; color:var(--brand-navy) !important; user-select:none !important; }
+  .mtr-summary { font-size:11.5px !important; color:var(--text-2) !important; line-height:1.5 !important; margin-top:6px !important; padding-top:6px !important; border-top:1px dashed var(--border) !important; }
+  .mtr-flag { font-size:11px !important; padding:4px 10px !important; border-radius:100px !important; border:1px solid var(--border-strong) !important; cursor:pointer !important; background:var(--surface) !important; color:var(--text) !important; }
+  .mtr-flag.is-on { background:var(--brand-navy) !important; color:#fff !important; }
+  .mtr-meta { display:flex; gap:16px !important; flex-wrap:wrap !important; font-size:12px !important; color:var(--text-2) !important; margin-bottom:10px !important; }
+  .mtr-tx { background:var(--tint) !important; border:1px solid var(--border) !important; border-radius:6px !important; padding:10px 12px !important; max-height:200px !important; overflow:auto !important; font-size:12px !important; line-height:1.5 !important; margin-bottom:14px !important; }
+  .mtr-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)) !important; gap:10px !important; margin-bottom:16px !important; }
+  .mtr-outcome { min-width:250px !important; max-width:100% !important; margin-top:8px !important; }
+  .mtr-flags { display:flex; gap:6px !important; flex-wrap:wrap !important; margin-bottom:4px !important; }
+  .mtr-hint { font-size:11px !important; color:var(--text-3) !important; margin-bottom:12px !important; }
+  .mtr-truth { display:flex; flex-wrap:wrap !important; gap:8px 18px !important; background:var(--brand-mint-bg) !important; border:1px solid var(--brand-mint) !important; border-radius:var(--radius-sm) !important; padding:9px 13px !important; margin-bottom:12px !important; font-size:13px !important; }
+  .mtr-truth-label { color:var(--text-3) !important; font-weight:600 !important; font-size:11px !important; margin-right:6px !important; }
+  .mtr-truth-val { font-family:var(--mono) !important; color:var(--brand-navy) !important; font-weight:500 !important; }
+  .mtr-reason { width:100% !important; min-height:50px !important; margin-bottom:10px !important; }
+  .mtr-btn { font-size:12px !important; padding:5px 12px !important; border:1px solid var(--border-strong) !important; border-radius:var(--radius-sm) !important; background:var(--surface) !important; cursor:pointer !important; }
+  .mtr-btn-primary { font-size:12px !important; padding:5px 14px !important; border:none !important; border-radius:var(--radius-sm) !important; background:var(--brand-navy) !important; color:#fff !important; cursor:pointer !important; }
   /* Status lines (setTone): coral = failed, teal = done, muted = working. Last, so they win over a base color class. */
   .tone-coral { color:var(--coral) !important; }
   .tone-teal { color:var(--teal) !important; }
@@ -1496,8 +1612,8 @@
           <button class="settings-add-btn" id="settings-add-mgr-btn" style="display:none" onclick="settingsShowAddManager(true)">+ Add Manager</button>
         </div>
         <div id="settings-add-manager" class="settings-add-form" style="display:none">
-          <input class="settings-input" id="s-mgr-name" placeholder="Full name" style="flex:1">
-          <input class="settings-input" id="s-mgr-email" type="email" placeholder="Email" style="flex:1">
+          <input class="settings-input flex-1" id="s-mgr-name" placeholder="Full name">
+          <input class="settings-input flex-1" id="s-mgr-email" type="email" placeholder="Email">
           <button class="settings-save-btn" onclick="settingsAddManager()">Add</button>
           <button class="settings-cancel-btn" onclick="settingsShowAddManager(false)">Cancel</button>
         </div>
@@ -1511,15 +1627,15 @@
         <div class="settings-section-header">
           <div class="settings-section-title">Publisher &amp; Advertiser Assignments</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-          <input class="settings-input" id="s-accounts-search" placeholder="Search accounts…" oninput="settingsFilterAccounts()" style="width:220px">
+        <div class="sa-toolbar">
+          <input class="settings-input w-220" id="s-accounts-search" placeholder="Search accounts…" oninput="settingsFilterAccounts()">
           <div class="seg">
             <button id="s-tab-unassigned" class="seg-btn s-acct-tab active"  onclick="settingsSetAccountTab('unassigned')">Unassigned</button>
             <button id="s-tab-all"        class="seg-btn s-acct-tab"         onclick="settingsSetAccountTab('all')">All</button>
             <button id="s-tab-publisher"  class="seg-btn s-acct-tab"         onclick="settingsSetAccountTab('publisher')">Publishers</button>
             <button id="s-tab-advertiser" class="seg-btn s-acct-tab"         onclick="settingsSetAccountTab('advertiser')">Advertisers</button>
           </div>
-          <span style="font-size:11px;color:var(--text-3)" id="s-accounts-count"></span>
+          <span class="note-xs" id="s-accounts-count"></span>
         </div>
         <div id="settings-accounts-table" class="settings-table-wrap">
           <div class="comp-loading">Loading…</div>
@@ -1540,9 +1656,9 @@
           <div class="settings-section-title">Outcome Weights</div>
         </div>
         <div id="settings-weights-table"></div>
-        <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="wt-actions">
           <button class="settings-save-btn" id="weights-execute-btn" onclick="weightsExecute()" disabled style="opacity:.5;cursor:default">Save (counting calls…)</button>
-          <span id="weights-execute-status" style="font-size:13px;color:var(--text-2)"></span>
+          <span id="weights-execute-status" class="wt-status"></span>
         </div>
       </div>
 
@@ -1553,31 +1669,31 @@
         <div class="settings-section-header">
           <div class="settings-section-title">Model Calibration Run</div>
         </div>
-        <p style="color:var(--text-2);font-size:13px;margin:0 0 20px">
-          Scores a sample with each selected model. Production calls are not touched.<span id="calib-queue-note" style="color:var(--text-3)"></span>
+        <p class="calib-intro">
+          Scores a sample with each selected model. Production calls are not touched.<span id="calib-queue-note" class="c-text-3"></span>
         </p>
 
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:24px">
+        <div class="mt-config">
           <div>
             <label class="settings-label">Models to run</label>
-            <div id="modeltest-checkboxes" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+            <div id="modeltest-checkboxes" class="mt-model-list"></div>
           </div>
           <div>
             <label class="settings-label">Sample size</label>
-            <input class="settings-input" id="modeltest-sample-size" type="number" value="100" min="5" max="200" style="width:80px">
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">total calls</div>
+            <input class="settings-input w-80" id="modeltest-sample-size" type="number" value="100" min="5" max="200">
+            <div class="field-hint">total calls</div>
           </div>
           <div>
             <label class="settings-label">Sampling</label>
-            <label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:8px;cursor:pointer">
-              <input type="checkbox" id="modeltest-stratify" checked style="accent-color:var(--brand-navy);width:14px;height:14px">
+            <label class="mt-stratify">
+              <input type="checkbox" id="modeltest-stratify" checked class="check-14">
               stratify by call length
             </label>
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">even short/med/long, pinned for all models</div>
+            <div class="field-hint">even short/med/long, pinned for all models</div>
           </div>
-          <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
+          <div class="mt-run-col">
             <button class="settings-save-btn" onclick="modeltestRun()">Run calibration</button>
-            <span id="modeltest-run-status" style="font-size:12px;color:var(--teal)"></span>
+            <span id="modeltest-run-status" class="status-note"></span>
           </div>
         </div>
         </div><!-- /calib-run-controls (admin only) -->
@@ -1586,22 +1702,22 @@
         <div id="modeltest-history"></div>
 
         <!-- Results panel -->
-        <div id="modeltest-comparison" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-            <div class="settings-section-title" style="font-size:13px" id="modeltest-comparison-title">Results</div>
-            <span id="mt-save-status" style="font-size:12px"></span>
-            <button onclick="reviewOpen(mtState.testId)" style="font-family:var(--sans);font-size:11px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer;margin-left:auto">Label one by one</button>
+        <div id="modeltest-comparison" class="section-split" style="display:none">
+          <div class="mt-result-head">
+            <div class="settings-section-title fs-13" id="modeltest-comparison-title">Results</div>
+            <span id="mt-save-status" class="fs-12"></span>
+            <button onclick="reviewOpen(mtState.testId)" class="mt-label-btn">Label one by one</button>
             <button class="btn-close" onclick="modeltestCloseComparison()">Close</button>
           </div>
           <div id="modeltest-comparison-table"></div>
         </div>
 
         <!-- Review / training panel -->
-        <div id="modeltest-review" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:20px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-            <div class="settings-section-title" style="font-size:13px" id="review-title">Label calls</div>
-            <span id="review-progress" style="font-size:12px;color:var(--text-3)"></span>
-            <button class="btn-close" onclick="reviewClose()" style="margin-left:auto">Close</button>
+        <div id="modeltest-review" class="section-split" style="display:none">
+          <div class="mtr-head">
+            <div class="settings-section-title fs-13" id="review-title">Label calls</div>
+            <span id="review-progress" class="fs-12 c-text-3"></span>
+            <button class="btn-close ml-auto" onclick="reviewClose()">Close</button>
           </div>
           <div id="review-body"></div>
         </div>
@@ -1616,47 +1732,47 @@
         <div id="settings-prompts-list"></div>
 
         <!-- inline editor -->
-        <div id="settings-prompt-editor" style="display:none;margin-top:16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <div id="settings-prompt-editor" class="pe-panel" style="display:none">
           <input type="hidden" id="prompt-editor-id">
-          <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-            <div style="flex:1;min-width:200px">
+          <div class="pe-row">
+            <div class="flex-1 minw-200">
               <label class="settings-label">Prompt name</label>
-              <input class="settings-input" id="prompt-editor-name" type="text" placeholder="e.g. v2: stricter outbound detection" style="width:100%">
+              <input class="settings-input w-full" id="prompt-editor-name" type="text" placeholder="e.g. v2: stricter outbound detection">
             </div>
-            <div style="flex:2;min-width:200px">
+            <div class="grow2-200">
               <label class="settings-label">Description</label>
-              <input class="settings-input" id="prompt-editor-desc" type="text" placeholder="What's different about this version?" style="width:100%">
+              <input class="settings-input w-full" id="prompt-editor-desc" type="text" placeholder="What's different about this version?">
             </div>
           </div>
-          <div style="margin-bottom:12px">
+          <div class="mb-12">
             <label class="settings-label">Outcome prompt</label>
-            <textarea id="prompt-editor-outcome" style="width:100%;height:260px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--tint);color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+            <textarea id="prompt-editor-outcome" class="pe-textarea-tall"></textarea>
           </div>
-          <div style="margin-bottom:16px">
+          <div class="mb-16">
             <label class="settings-label">Compliance prompt</label>
-            <textarea id="prompt-editor-compliance" style="width:100%;height:200px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--tint);color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+            <textarea id="prompt-editor-compliance" class="pe-textarea"></textarea>
           </div>
-          <div style="display:flex;gap:10px;align-items:center">
+          <div class="pe-actions">
             <button class="settings-save-btn" onclick="promptsSave()">Save</button>
             <button class="settings-delete-btn" onclick="promptsHideEditor()">Cancel</button>
-            <span id="prompt-editor-status" style="font-size:12px;color:var(--teal)"></span>
+            <span id="prompt-editor-status" class="status-note"></span>
           </div>
         </div>
 
         <!-- A/B test runner -->
-        <div style="margin-top:28px">
-          <div class="settings-section-title" style="font-size:13px;margin-bottom:12px">A/B Test Runner</div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="mt-28">
+          <div class="settings-section-title ab-title">A/B Test Runner</div>
+          <div class="ab-row">
             <div>
               <label class="settings-label">Prompt to test</label>
-              <select class="settings-input" id="ab-prompt-select" style="min-width:200px"></select>
+              <select class="settings-input minw-200" id="ab-prompt-select"></select>
             </div>
             <div>
               <label class="settings-label">Batch size</label>
-              <input class="settings-input" id="ab-batch-size" type="number" value="50" min="1" max="500" style="width:90px">
+              <input class="settings-input w-90" id="ab-batch-size" type="number" value="50" min="1" max="500">
             </div>
             <button class="settings-save-btn" onclick="promptsRunABTest()">Run test batch</button>
-            <span id="ab-status" style="font-size:12px;color:var(--teal)"></span>
+            <span id="ab-status" class="status-note"></span>
           </div>
         </div>
       </div>
@@ -5467,7 +5583,7 @@ async function compLoadTeam() {
     grid.innerHTML = renderTeam(compManagers, compAssignments, acctFlags, mgrFlags, digest, toISO(since), toISO(now));
   } catch(e) {
     console.warn('compLoadTeam:', e.message);
-    grid.innerHTML = `<div style="grid-column:1/-1">${loadErrorHtml('the team view', 'compLoadTeam()', e)}</div>`;
+    grid.innerHTML = `<div class="span-all">${loadErrorHtml('the team view', 'compLoadTeam()', e)}</div>`;
   }
 }
 
@@ -5479,7 +5595,7 @@ function teamGoAssignments() {
 function renderTeam(managers, assignments, acctFlags, mgrFlags, digest, fromISO, toISO_) {
   const goAssign = '<button class="comp-team-link" onclick="teamGoAssignments()">Admin &gt; Assignments</button>';
   if (!assignments.length) {
-    return `<div class="comp-empty" style="grid-column:1 / -1">No accounts are assigned to managers yet.<br>Admins can assign publishers and advertisers in ${goAssign}.</div>`;
+    return `<div class="comp-empty span-all">No accounts are assigned to managers yet.<br>Admins can assign publishers and advertisers in ${goAssign}.</div>`;
   }
   const byMgr = {};
   assignments.forEach(a => {
@@ -5505,7 +5621,7 @@ function renderTeam(managers, assignments, acctFlags, mgrFlags, digest, fromISO,
       return `
       <div class="comp-team-card">
         <div class="comp-team-head">
-          <div style="min-width:0">
+          <div class="minw-0">
             <div class="comp-team-name">${esc(m.manager_name)}</div>
             ${m.manager_email ? `<div class="comp-team-email">${esc(m.manager_email)}</div>` : ''}
           </div>
@@ -5607,18 +5723,18 @@ function settingsRenderManagers() {
   const rows = compManagers;
   settingsRefreshManagerSelect();
   if (!rows.length) {
-    el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No managers yet.</div>';
+    el.innerHTML = '<div class="empty-note">No managers yet.</div>';
     return;
   }
   const showAdmin = window.isAdmin;
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th style="text-align:center">Admin</th>' : ''}<th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Email</th>${showAdmin ? '<th class="ta-c">Admin</th>' : ''}<th></th></tr></thead>
     <tbody>${rows.map(m => `
       <tr>
-        <td style="font-weight:500">${esc(m.manager_name)}</td>
-        <td style="color:var(--text-2)">${esc(m.manager_email || '')}</td>
-        ${showAdmin ? `<td style="text-align:center"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" style="width:16px;height:16px;cursor:pointer"></td>` : ''}
-        <td style="text-align:right">${showAdmin ? `<button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button>` : ''}</td>
+        <td class="fw-500">${esc(m.manager_name)}</td>
+        <td class="c-text-2">${esc(m.manager_email || '')}</td>
+        ${showAdmin ? `<td class="ta-c"><input type="checkbox" ${m.is_admin ? 'checked' : ''} onchange="settingsSetAdmin('${m.id}', this.checked)" class="check-16"></td>` : ''}
+        <td class="ta-r">${showAdmin ? `<button class="settings-delete-btn" onclick="settingsDeleteManager('${m.id}')">Remove</button>` : ''}</td>
       </tr>`).join('')}
     </tbody></table>`;
 }
@@ -5719,12 +5835,12 @@ function settingsRenderAccountsTable() {
   if (countEl) countEl.textContent = `${rows.length.toLocaleString()} account${rows.length !== 1 ? 's' : ''}`;
 
   if (!rows.length) {
-    el.innerHTML = '<div style="padding:16px;font-size:13px;color:var(--text-3);font-style:italic">No accounts found.</div>';
+    el.innerHTML = '<div class="empty-note">No accounts found.</div>';
     return;
   }
 
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Account</th><th>Type</th><th style="min-width:180px">Assigned Manager</th></tr></thead>
+    <thead><tr><th>Account</th><th>Type</th><th class="minw-180">Assigned Manager</th></tr></thead>
     <tbody>${rows.map(r => {
       const assignment     = compAssignments.find(a => a.account_name === r.account_name && a.account_type === r.account_type);
       const currentMgrId   = assignment?.manager_id || '';
@@ -5734,15 +5850,15 @@ function settingsRenderAccountsTable() {
       const opts = `<option value="">Unassigned</option>` +
         compManagers.map(m => `<option value="${m.id}"${m.id === currentMgrId ? ' selected' : ''}>${esc(m.manager_name)}</option>`).join('');
       return `<tr>
-        <td style="font-weight:500">${esc(r.account_name)}</td>
+        <td class="fw-500">${esc(r.account_name)}</td>
         <td><span class="flag-badge" style="${typeColor}">${r.account_type}</span></td>
         <td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <select class="settings-select assign-mgr-select" style="min-width:160px"${window.isAdmin ? '' : ' disabled'}
+          <div class="row-gap-8">
+            <select class="settings-select assign-mgr-select minw-160"${window.isAdmin ? '' : ' disabled'}
               data-account="${esc(r.account_name)}" data-type="${r.account_type}">
               ${opts}
             </select>
-            <span class="assign-saved-indicator" style="font-size:11px;color:var(--teal);display:none">Saved</span>
+            <span class="assign-saved-indicator saved-note" style="display:none">Saved</span>
           </div>
         </td>
       </tr>`;
@@ -5803,9 +5919,9 @@ async function settingsLoadUsers() {
     const myEmail = getAuthUser();
     el.innerHTML = `
       <div class="settings-invite-row">
-        <input class="settings-input" id="s-invite-email" type="email" placeholder="Email to invite…" style="flex:1;min-width:200px">
+        <input class="settings-input flex-1 minw-200" id="s-invite-email" type="email" placeholder="Email to invite…">
         <button class="settings-save-btn" onclick="settingsInviteUser()">Send invite</button>
-        <span id="s-invite-status" style="font-size:12px;color:var(--teal)"></span>
+        <span id="s-invite-status" class="status-note"></span>
       </div>
       <div class="settings-table-wrap">
         <table class="settings-table">
@@ -5813,9 +5929,9 @@ async function settingsLoadUsers() {
           <tbody>${users.map(u => `
             <tr>
               <td>${esc(u.email || '')}</td>
-              <td style="color:var(--text-2)">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : nullMark()}</td>
-              <td style="color:var(--text-2)">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
-              <td style="text-align:right">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${jsStr(u.id)}','${jsStr(u.email)}')">Remove</button>` : '<span style="font-size:11px;color:var(--text-3)">you</span>'}</td>
+              <td class="c-text-2">${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : nullMark()}</td>
+              <td class="c-text-2">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'Never'}</td>
+              <td class="ta-r">${u.email !== myEmail ? `<button class="settings-delete-btn" onclick="settingsDeleteUser('${jsStr(u.id)}','${jsStr(u.email)}')">Remove</button>` : '<span class="note-xs">you</span>'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -5916,30 +6032,30 @@ function weightsRender() {
     const groupRows = group.outcomes.map(outcome => {
       const w = weightsData[outcome] || { pub_score: 0, adv_score: 0 };
       return `<tr>
-        <td style="padding:6px 10px;font-size:13px;color:var(--text);font-family:var(--mono)">${esc(labelOf(outcome))}</td>
-        <td style="padding:6px 8px;text-align:center">
-          <input type="number" class="settings-input" data-outcome="${esc(outcome)}" data-field="pub_score"
-            value="${w.pub_score}" style="width:64px;text-align:center;padding:4px 6px;font-size:13px"
+        <td class="wt-outcome">${esc(labelOf(outcome))}</td>
+        <td class="wt-cell">
+          <input type="number" class="settings-input wt-input" data-outcome="${esc(outcome)}" data-field="pub_score"
+            value="${w.pub_score}"
             onchange="weightsDirty()">
         </td>
-        <td style="padding:6px 8px;text-align:center">
-          <input type="number" class="settings-input" data-outcome="${esc(outcome)}" data-field="adv_score"
-            value="${w.adv_score}" style="width:64px;text-align:center;padding:4px 6px;font-size:13px"
+        <td class="wt-cell">
+          <input type="number" class="settings-input wt-input" data-outcome="${esc(outcome)}" data-field="adv_score"
+            value="${w.adv_score}"
             onchange="weightsDirty()">
         </td>
       </tr>`;
     }).join('');
-    return `<tr style="background:var(--bg-2)">
-        <td colspan="3" style="padding:6px 10px;font-size:12px;font-weight:600;color:var(--text-2)">${esc(group.label)}</td>
+    return `<tr class="bg-2">
+        <td colspan="3" class="wt-group">${esc(group.label)}</td>
       </tr>${groupRows}`;
   }).join('');
 
-  el.innerHTML = `<table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+  el.innerHTML = `<table class="wt-table">
     <thead>
-      <tr style="background:var(--bg-2)">
-        <th style="padding:8px 10px;text-align:left;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border)">Outcome</th>
-        <th style="padding:8px 8px;text-align:center;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);width:90px">Pub Score</th>
-        <th style="padding:8px 8px;text-align:center;font-size:12px;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);width:90px">Adv Score</th>
+      <tr class="bg-2">
+        <th class="wt-th">Outcome</th>
+        <th class="wt-th-num">Pub Score</th>
+        <th class="wt-th-num">Adv Score</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
@@ -6041,11 +6157,11 @@ async function calibInit() {
     if (wrap) {
       wrap.innerHTML = MODEL_CATALOG.map(m => {
         const providerColor = m.provider === 'NVIDIA' ? 'var(--blue)' : 'var(--purple)';
-        return `<label style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
-          <input type="checkbox" value="${m.id}" class="modeltest-checkbox" style="accent-color:var(--brand-navy);width:14px;height:14px">
-          <span style="min-width:180px">${m.label}</span>
-          <span style="font-size:11px;color:${providerColor};background:var(--tint);border:1px solid var(--border);border-radius:4px;padding:1px 6px">${m.provider}</span>
-          <span style="font-size:11px;color:var(--text-3);font-family:var(--mono)">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
+        return `<label class="mt-model-opt">
+          <input type="checkbox" value="${m.id}" class="modeltest-checkbox check-14">
+          <span class="minw-180">${m.label}</span>
+          <span class="mt-provider" style="color:${providerColor}">${m.provider}</span>
+          <span class="mt-price">$${m.inPer1M.toFixed(2)}/$${m.outPer1M.toFixed(2)} per 1M</span>
         </label>`;
       }).join('');
     }
@@ -6061,7 +6177,7 @@ async function modeltestLoadHistory() {
   try {
     const rows = await compFetch('model_tests?select=id,created_at,model,sample_size,status&order=created_at.desc&limit=20');
     if (!rows || rows.length === 0) {
-      wrap.innerHTML = '<p style="color:var(--text-3);font-size:13px;margin:0">No tests run yet.</p>';
+      wrap.innerHTML = '<p class="mt-empty">No tests run yet.</p>';
       return;
     }
 
@@ -6079,8 +6195,8 @@ async function modeltestLoadHistory() {
       return total ? Math.min(100, Math.round((counts[r.id] || 0) / total * 100)) : null;
     };
 
-    wrap.innerHTML = `<div style="margin-top:4px">
-      <div style="font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:8px">Recent tests</div>
+    wrap.innerHTML = `<div class="mt-4">
+      <div class="mt-hist-title">Recent tests</div>
       ${rows.map(r => {
         const statusColor = r.status === 'completed' ? 'var(--teal)' : r.status === 'failed' ? 'var(--coral)' : 'var(--amber)';
         const date = new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
@@ -6088,15 +6204,15 @@ async function modeltestLoadHistory() {
         const pct = live ? pctOf(r) : null;
         const statusLabel = (pct !== null) ? `${r.status} · ${pct}%` : r.status;
         const bar = (pct !== null)
-          ? `<span style="display:inline-block;width:70px;height:5px;border-radius:3px;background:var(--tint);border:1px solid var(--border);overflow:hidden;vertical-align:middle" title="${counts[r.id]||0} of ${(r.sample_size||0)*Math.max(1,String(r.model||'').split('·').length)} calls"><span style="display:block;height:100%;width:${pct}%;background:var(--brand-mint)"></span></span>`
+          ? `<span class="mt-bar" title="${counts[r.id]||0} of ${(r.sample_size||0)*Math.max(1,String(r.model||'').split('·').length)} calls"><span class="mt-bar-fill" style="width:${pct}%"></span></span>`
           : '';
-        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
-          <span style="font-size:13px;flex:1;min-width:160px;font-family:var(--mono)">${r.model}</span>
-          <span style="font-size:12px;color:var(--text-3)">${r.sample_size} calls</span>
+        return `<div class="mt-hist-row">
+          <span class="mt-hist-model">${r.model}</span>
+          <span class="fs-12 c-text-3">${r.sample_size} calls</span>
           ${bar}
-          <span style="font-size:11px;background:var(--tint);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:${statusColor}">${statusLabel}</span>
-          <span style="font-size:11px;color:var(--text-3)">${date}</span>
-          ${(r.status === 'completed' || r.status === 'failed') ? `<button onclick="reviewOpen('${r.id}')" style="font-family:var(--sans);font-size:12px;color:#fff;background:var(--brand-navy);border:1px solid var(--brand-navy);border-radius:var(--radius-sm);padding:3px 12px;cursor:pointer;font-weight:500">Label calls</button><button onclick="modeltestViewResults('${r.id}')" style="font-family:var(--sans);font-size:12px;color:var(--brand-navy);background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:3px 10px;cursor:pointer">Compare models</button>` : ''}
+          <span class="mt-status" style="color:${statusColor}">${statusLabel}</span>
+          <span class="note-xs">${date}</span>
+          ${(r.status === 'completed' || r.status === 'failed') ? `<button onclick="reviewOpen('${r.id}')" class="mt-hist-label">Label calls</button><button onclick="modeltestViewResults('${r.id}')" class="mt-hist-view">Compare models</button>` : ''}
         </div>`;
       }).join('')}
     </div>`;
@@ -6208,12 +6324,12 @@ async function modeltestViewResults(testId) {
   document.getElementById('modeltest-review').style.display = 'none';
   document.getElementById('modeltest-comparison-title').textContent = 'Model comparison';
   const tableWrap = document.getElementById('modeltest-comparison-table');
-  tableWrap.innerHTML = '<div style="color:var(--text-3);font-size:13px">Loading…</div>';
+  tableWrap.innerHTML = '<div class="mt-muted">Loading…</div>';
   wrap.style.display = 'block';
   wrap.scrollIntoView({ behavior:'smooth', block:'nearest' });
   try {
     const rows = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags,input_tokens,output_tokens`);
-    if (!rows || !rows.length) { tableWrap.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results yet.</p>'; return; }
+    if (!rows || !rows.length) { tableWrap.innerHTML = '<p class="mt-muted">No results yet.</p>'; return; }
     const byCall = {}, models = new Set();
     for (const r of rows) { models.add(r.model); (byCall[r.call_id] = byCall[r.call_id] || {})[r.model] = { outcome:r.our_outcome, flags:r.flags||[], in:r.input_tokens||0, out:r.output_tokens||0 }; }
     const callIds = Object.keys(byCall), info = {}, existing = {};
@@ -6244,13 +6360,13 @@ function mtRender() {
     for (const c of labeled) { const d = c.byModel[m]; if (d && d.outcome === c.truthOutcome) correct++; }
     const price = MT_PRICES[m];
     const cost = !price ? 'price n/a' : '$' + ((n ? (tin/n*price[0]/1e6) + (tout/n*price[1]/1e6) : 0) * 1000).toFixed(2) + '/1k';
-    return `<div style="background:var(--tint);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;min-width:130px">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);margin-bottom:2px">${esc(mtShort(m))}</div>
-      <div style="font-size:13px;font-weight:600">${labeled.length ? Math.round(correct/labeled.length*100)+'% acc' : nullMark()}</div>
-      <div style="font-size:11px;color:var(--text-2)">${cost} · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
+    return `<div class="mt-card">
+      <div class="mt-card-model">${esc(mtShort(m))}</div>
+      <div class="fs-13 fw-600">${labeled.length ? Math.round(correct/labeled.length*100)+'% acc' : nullMark()}</div>
+      <div class="meta-xs">${cost} · ${n?Math.round(tin/n):0}/${n?Math.round(tout/n):0} tok</div>
     </div>`;
   }).join('');
-  const oHdr = s.models.map(m => `<th style="padding:6px 8px;font-size:11px;font-weight:500;color:var(--text-2)">${esc(mtShort(m))}</th>`).join('');
+  const oHdr = s.models.map(m => `<th class="mt-th-model">${esc(mtShort(m))}</th>`).join('');
   const cell = (c, i, m, kind) => {
     const d = c.byModel[m];
     const val = kind === 'outcome' ? (d?.outcome ? esc(labelOf(d.outcome)) : nullMark()) : ((d?.flags||[]).length ? esc(d.flags.map(labelOf).join(', ')) : nullMark());
@@ -6259,34 +6375,34 @@ function mtRender() {
     if (truthSet && d) {
       const ok = kind === 'outcome' ? d.outcome === c.truthOutcome
                                     : JSON.stringify([...(d.flags||[])].sort()) === JSON.stringify([...(c.truthFlags||[])].sort());
-      mark = ok ? '<span style="color:var(--teal)">✓</span>' : '<span style="color:var(--coral)">✗</span>';
+      mark = ok ? '<span class="c-teal">✓</span>' : '<span class="c-coral">✗</span>';
     }
-    return `<td style="padding:6px 8px;font-size:12px;vertical-align:top">${val} ${mark}</td>`;
+    return `<td class="mt-td">${val} ${mark}</td>`;
   };
   const table = (kind) => {
     const colspan = s.models.length + 1;
-    return `<div style="overflow-x:auto;margin-bottom:8px"><table style="width:100%;border-collapse:collapse">
-    <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text-2)">Call</th>${oHdr}</tr></thead>
+    return `<div class="mt-table-wrap"><table class="table-full">
+    <thead><tr class="bb-line"><th class="mt-th">Call</th>${oHdr}</tr></thead>
     <tbody>${s.calls.map((c,i) => {
       const disagree = kind === 'outcome'
         ? new Set(s.models.map(m => c.byModel[m]?.outcome).filter(v => v != null)).size > 1
         : new Set(s.models.map(m => c.byModel[m] ? JSON.stringify([...(c.byModel[m].flags||[])].sort()) : null).filter(v => v != null)).size > 1;
-      return `<tr${disagree ? ' style="background:var(--amber-bg)"' : ''}>
-        <td style="padding:6px 8px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--brand-navy)" onclick="mtToggleTx(${i})" title="${esc(c.id)}">${esc(c.id.slice(0,8))}…</td>
+      return `<tr${disagree ? ' class="bg-amber"' : ''}>
+        <td class="mt-call-id" onclick="mtToggleTx(${i})" title="${esc(c.id)}">${esc(c.id.slice(0,8))}…</td>
         ${s.models.map(m=>cell(c,i,m,kind)).join('')}
       </tr>
-      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" style="padding:6px 10px"><div style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:240px;overflow:auto;font-size:11px;line-height:1.5">
-        <div style="margin-bottom:6px;font-size:12px">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">Call recording</a>`:'<span style="color:var(--text-3)">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">AI-agent recording</a>`:''}</div>
-        <div id="mt-txt-${kind}-${i}" style="white-space:pre-wrap">${c.tx===undefined?'Loading transcript…':esc(c.tx||'(no transcript)')}</div>
+      <tr id="mt-tx-${kind}-${i}" style="display:none"><td colspan="${colspan}" class="p-6-10"><div class="mt-tx-box">
+        <div class="mt-tx-links">${c.rec?`<a href="${esc(c.rec)}" target="_blank" rel="noopener">Call recording</a>`:'<span class="c-text-3">no call recording</span>'}${c.ascndRec?` &nbsp;·&nbsp; <a href="${esc(c.ascndRec)}" target="_blank" rel="noopener">AI-agent recording</a>`:''}</div>
+        <div id="mt-txt-${kind}-${i}" class="pre-wrap">${c.tx===undefined?'Loading transcript…':esc(c.tx||'(no transcript)')}</div>
       </div></td></tr>`;
     }).join('')}</tbody></table></div>`;
   };
   tw.innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${summary}</div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">${s.calls.length} calls · ${labeled.length} labeled. Accuracy is measured against calls labeled in <strong>Label calls</strong>. <span style="background:var(--amber-bg);padding:0 4px;border-radius:3px">Highlighted rows</span>: models disagree. Click a Call id to read the transcript.</div>
-    <div class="train-h" style="margin:20px 0 8px">Outcomes <small>each model's answer · ✓/✗ vs the labeled correct outcome</small></div>
+    <div class="mt-cards">${summary}</div>
+    <div class="mt-summary">${s.calls.length} calls · ${labeled.length} labeled. Accuracy is measured against calls labeled in <strong>Label calls</strong>. <span class="mt-hl">Highlighted rows</span>: models disagree. Click a Call id to read the transcript.</div>
+    <div class="train-h m-20-0-8">Outcomes <small>each model's answer · ✓/✗ vs the labeled correct outcome</small></div>
     ${table('outcome')}
-    <div class="train-h" style="margin:24px 0 8px">Compliance flags <small>each model's flags · ✓/✗ vs the labeled correct flags</small></div>
+    <div class="train-h m-24-0-8">Compliance flags <small>each model's flags · ✓/✗ vs the labeled correct flags</small></div>
     ${table('flags')}`;
 }
 
@@ -6325,7 +6441,7 @@ async function reviewOpen(testId) {
   body.innerHTML = '<div class="ins-loading"><span class="spinner"></span>Loading calls…</div>';
   try {
     const results = await compFetch(`model_test_results?test_id=eq.${testId}&select=call_id,model,our_outcome,flags,raw_response&order=call_id.asc`);
-    if (!results || !results.length) { body.innerHTML = '<p style="color:var(--text-3);font-size:13px">No results to review.</p>'; return; }
+    if (!results || !results.length) { body.innerHTML = '<p class="mt-muted">No results to review.</p>'; return; }
     const byCall = {};
     for (const r of results) (byCall[r.call_id] = byCall[r.call_id] || []).push(r);
     const callIds = Object.keys(byCall);
@@ -6355,46 +6471,46 @@ function reviewRender() {
     const summary = (m.raw_response && m.raw_response.summary) || '';
     const ocOn = truthOutcome && m.our_outcome === truthOutcome;
     const flOn = c._flagsSet && rvSameFlags(flags, c._draftFlags);
-    const btn = (on, click) => `onclick="${click}" title="click again to undo" style="flex-shrink:0;font-size:11px;font-weight:500;padding:5px 11px;border-radius:var(--radius-sm);border:1px solid ${on?'var(--teal)':'var(--brand-navy)'};background:${on?'var(--teal)':'var(--surface)'};color:${on?'#fff':'var(--brand-navy)'};cursor:pointer;white-space:nowrap"`;
-    const kv = (label, val) => `<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:var(--text-3)">${label}</div><div style="font-family:var(--mono);font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${val}</div></div>`;
-    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 11px;min-width:0;background:var(--surface);display:flex;flex-direction:column;gap:8px">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--brand-navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(short)}</div>
-      <div style="display:flex;align-items:center;gap:8px">${kv('Outcome', m.our_outcome ? esc(labelOf(m.our_outcome)) : nullMark())}<button ${btn(ocOn, `reviewPickOutcome('${m.our_outcome||''}')`)}>correct</button></div>
-      <div style="display:flex;align-items:center;gap:8px">${kv('Compliance flags', esc(flText))}<button ${btn(flOn, `reviewPickFlags(${mi})`)}>correct</button></div>
-      <div style="margin-top:2px"><span onclick="reviewToggleSummaries()" style="cursor:pointer;font-size:11px;color:var(--brand-navy);user-select:none">${s.showSummaries?'Hide summary':'Show summary'}</span>${s.showSummaries ? `<div style="font-size:11.5px;color:var(--text-2);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">${summary ? esc(summary) : '<span style="color:var(--text-3)">(no summary)</span>'}</div>` : ''}</div>
+    const btn = (on, click) => `onclick="${click}" title="click again to undo" class="mtr-act${on ? ' is-on' : ''}"`;
+    const kv = (label, val) => `<div class="mtr-field"><div class="mtr-field-label">${label}</div><div class="mtr-field-val">${val}</div></div>`;
+    return `<div class="mtr-card">
+      <div class="mtr-card-model">${esc(short)}</div>
+      <div class="row-gap-8">${kv('Outcome', m.our_outcome ? esc(labelOf(m.our_outcome)) : nullMark())}<button ${btn(ocOn, `reviewPickOutcome('${m.our_outcome||''}')`)}>correct</button></div>
+      <div class="row-gap-8">${kv('Compliance flags', esc(flText))}<button ${btn(flOn, `reviewPickFlags(${mi})`)}>correct</button></div>
+      <div class="mt-2"><span onclick="reviewToggleSummaries()" class="mtr-toggle">${s.showSummaries?'Hide summary':'Show summary'}</span>${s.showSummaries ? `<div class="mtr-summary">${summary ? esc(summary) : '<span class="c-text-3">(no summary)</span>'}</div>` : ''}</div>
     </div>`;
   }).join('');
   const outcomeOpts = ['<option value="">Pick the correct outcome</option>'].concat(REVIEW_OUTCOMES.map(o => `<option value="${o}" ${o===truthOutcome?'selected':''}>${labelOf(o)}</option>`)).join('');
-  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" style="font-size:11px;padding:4px 10px;border-radius:100px;border:1px solid var(--border-strong);cursor:pointer;background:${c._draftFlags.includes(f)?'var(--brand-navy)':'var(--surface)'};color:${c._draftFlags.includes(f)?'#fff':'var(--text)'}">${labelOf(f)}</button>`).join(' ');
+  const flagBtns = REVIEW_FLAGS.map(f => `<button onclick="reviewToggleFlag('${f}')" class="mtr-flag${c._draftFlags.includes(f) ? ' is-on' : ''}">${labelOf(f)}</button>`).join(' ');
   const ctx = c.call;
   const reasonVal = c._draftReason !== undefined ? c._draftReason : (c.existing?.reason || '');
   const roFlags = c._draftFlags.length ? c._draftFlags.map(labelOf).join(', ') : 'none';
   document.getElementById('review-body').innerHTML = `
-    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-bottom:10px">
+    <div class="mtr-meta">
       <span>vertical: <strong>${ctx.vertical_name ? esc(ctx.vertical_name) : nullMark()}</strong></span>
       <span>zip: <strong>${ctx.zip ? esc(ctx.zip) : nullMark()}</strong></span>
       <span>duration: <strong>${ctx.duration||0}s</strong></span>
       <span>canoe: <strong>${ctx.canoe_outcome ? esc(labelOf(ctx.canoe_outcome)) : nullMark()}</strong></span>
-      ${c.existing ? '<span style="color:var(--teal)">already labeled</span>' : ''}
+      ${c.existing ? '<span class="c-teal">already labeled</span>' : ''}
     </div>
-    <div style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:200px;overflow:auto;font-size:12px;line-height:1.5;margin-bottom:14px"><div style="white-space:pre-wrap">${esc(ctx.transcription||'(no transcript)')}</div></div>
-    <div class="train-h" style="margin-bottom:8px">What each model said</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:16px">${modelCards}</div>
+    <div class="mtr-tx"><div class="pre-wrap">${esc(ctx.transcription||'(no transcript)')}</div></div>
+    <div class="train-h mb-8">What each model said</div>
+    <div class="mtr-cards">${modelCards}</div>
     <label class="train-h" for="review-outcome">Correct outcome</label>
-    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select" style="min-width:250px;max-width:100%;margin-top:8px">${outcomeOpts}</select>
-    <div class="train-h" style="margin:20px 0 8px">Correct compliance flags</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${flagBtns}</div>
-    <div style="font-size:11px;color:var(--text-3);margin-bottom:12px">None selected = no flags.</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;background:var(--brand-mint-bg);border:1px solid var(--brand-mint);border-radius:var(--radius-sm);padding:9px 13px;margin-bottom:12px;font-size:13px">
-      <span><span style="color:var(--text-3);font-weight:600;font-size:11px;margin-right:6px">Saving</span><span style="font-family:var(--mono);color:var(--brand-navy);font-weight:500">${truthOutcome ? esc(labelOf(truthOutcome)) : nullMark()}</span></span>
-      <span><span style="color:var(--text-3);font-weight:600;font-size:11px;margin-right:6px">Flags</span><span style="font-family:var(--mono);color:var(--brand-navy);font-weight:500">${esc(roFlags)}</span></span>
+    <select id="review-outcome" onchange="reviewSetOutcome(this.value)" class="correction-select mtr-outcome">${outcomeOpts}</select>
+    <div class="train-h m-20-0-8">Correct compliance flags</div>
+    <div class="mtr-flags">${flagBtns}</div>
+    <div class="mtr-hint">None selected = no flags.</div>
+    <div class="mtr-truth">
+      <span><span class="mtr-truth-label">Saving</span><span class="mtr-truth-val">${truthOutcome ? esc(labelOf(truthOutcome)) : nullMark()}</span></span>
+      <span><span class="mtr-truth-label">Flags</span><span class="mtr-truth-val">${esc(roFlags)}</span></span>
     </div>
-    <textarea id="review-reason" placeholder="Explain why your selected outcome / flags are correct (optional)" class="correction-textarea" style="width:100%;min-height:50px;margin-bottom:10px">${esc(reasonVal)}</textarea>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button onclick="reviewNav(-1)" ${s.idx===0?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">‹ Prev</button>
-      <button onclick="reviewSave()" style="font-size:12px;padding:5px 14px;border:none;border-radius:var(--radius-sm);background:var(--brand-navy);color:#fff;cursor:pointer">Save &amp; next</button>
-      <button onclick="reviewNav(1)" ${s.idx>=s.calls.length-1?'disabled':''} style="font-size:12px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer">Skip ›</button>
-      <span id="review-save-status" style="font-size:12px"></span>
+    <textarea id="review-reason" placeholder="Explain why your selected outcome / flags are correct (optional)" class="correction-textarea mtr-reason">${esc(reasonVal)}</textarea>
+    <div class="row-gap-8">
+      <button onclick="reviewNav(-1)" ${s.idx===0?'disabled':''} class="mtr-btn">‹ Prev</button>
+      <button onclick="reviewSave()" class="mtr-btn-primary">Save &amp; next</button>
+      <button onclick="reviewNav(1)" ${s.idx>=s.calls.length-1?'disabled':''} class="mtr-btn">Skip ›</button>
+      <span id="review-save-status" class="fs-12"></span>
     </div>`;
 }
 
@@ -6444,7 +6560,7 @@ async function promptsInit() {
 
 async function promptsLoad() {
   const el = document.getElementById('settings-prompts-list');
-  el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3)">Loading…</div>';
+  el.innerHTML = '<div class="pr-loading">Loading…</div>';
   let prompts;
   try {
     prompts = await compFetch('ai_prompts?select=*&order=created_at.asc') || [];
@@ -6465,19 +6581,19 @@ async function promptsLoad() {
 function promptsRender(prompts, countMap) {
   const el = document.getElementById('settings-prompts-list');
   if (!prompts.length) {
-    el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-3);font-style:italic">No prompts yet.</div>';
+    el.innerHTML = '<div class="pr-empty">No prompts yet.</div>';
     return;
   }
   el.innerHTML = `<table class="settings-table">
-    <thead><tr><th>Name</th><th>Description</th><th style="text-align:center">Active</th><th style="text-align:right">Calls</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Description</th><th class="ta-c">Active</th><th class="ta-r">Calls</th><th></th></tr></thead>
     <tbody>${prompts.map(p => `
       <tr>
-        <td style="font-weight:500">${esc(p.name)}</td>
-        <td style="color:var(--text-2);font-size:12px">${esc(p.description || '')}</td>
-        <td style="text-align:center">${p.is_active ? '<span style="font-size:12px;font-weight:600;color:var(--teal)">Active</span>' : `<button class="settings-secondary-btn" onclick="promptsSetActive('${p.id}')">Set active</button>`}</td>
-        <td style="text-align:right;color:var(--text-2)" title="${countMap[p.id] != null ? 'Planner estimate' : ''}">${!(p.id in countMap) ? '…' : countMap[p.id] == null ? nullMark() : '≈ ' + countMap[p.id].toLocaleString()}</td>
-        <td style="text-align:right;white-space:nowrap">
-          <button class="settings-secondary-btn" style="margin-right:6px" onclick="promptsShowEditor('${p.id}')">Edit</button>
+        <td class="fw-500">${esc(p.name)}</td>
+        <td class="pr-desc">${esc(p.description || '')}</td>
+        <td class="ta-c">${p.is_active ? '<span class="pr-active">Active</span>' : `<button class="settings-secondary-btn" onclick="promptsSetActive('${p.id}')">Set active</button>`}</td>
+        <td class="pr-count" title="${countMap[p.id] != null ? 'Planner estimate' : ''}">${!(p.id in countMap) ? '…' : countMap[p.id] == null ? nullMark() : '≈ ' + countMap[p.id].toLocaleString()}</td>
+        <td class="ta-r nowrap">
+          <button class="settings-secondary-btn mr-6" onclick="promptsShowEditor('${p.id}')">Edit</button>
           ${!p.is_active ? `<button class="settings-delete-btn" onclick="promptsDelete('${p.id}')">Delete</button>` : ''}
         </td>
       </tr>`).join('')}
