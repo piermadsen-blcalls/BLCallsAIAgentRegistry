@@ -1,5 +1,6 @@
 // The Suspicious tab (MK-195): verdict chips and buttons per caller, one Decide per repeat caller,
-// Hide decided, the script-pair and timing filters, and saving/removing a verdict. The SQL side
+// Hide decided, the script-pair and long-conversation filters (sliders and agent picks), and
+// saving/removing a verdict. The SQL side
 // has its own test (supabase/tests/069_suspicious_callers_test.sql). Run: node --test tests/
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -25,9 +26,9 @@ function el(id, init = {}) {
 }
 function page({ me = 'me@example.com', fetch } = {}) {
   const els = {
-    'sus-days': el('sus-days', { value: '30' }), 'sus-fast': el('sus-fast', { value: '300' }), 'sus-long': el('sus-long', { value: '50' }),
+    'sus-days': el('sus-days', { value: '30' }), 'sus-sim': el('sus-sim', { value: '55' }), 'sus-len': el('sus-len', { value: '10' }),
     'sus-hidedec': el('sus-hidedec', { classes: ['active'] }), 'sus-cross': el('sus-cross', { classes: ['active'] }),
-    'sus-diff': el('sus-diff', { classes: ['active'] }),
+    'sus-diff': el('sus-diff', { classes: ['active'] }), 'sus-script-agent': el('sus-script-agent'), 'sus-timing-agent': el('sus-timing-agent'),
     'sus-pane-repeat': el('sus-pane-repeat'), 'sus-pane-script': el('sus-pane-script', { display: 'none' }), 'sus-pane-timing': el('sus-pane-timing', { display: 'none' }),
   };
   const calls = [], alerts = [];
@@ -42,12 +43,14 @@ function page({ me = 'me@example.com', fetch } = {}) {
     pgQuote: v => '"' + String(v) + '"',
     loadErrorHtml: (thing) => `<div class="load-error">Couldn't load ${thing}.</div>`,
     getAuthUser: () => me,
+    AGENTS: [{ ivrName: 'Pest IVR', name: 'Pest Pro' }],   // 'Roof IVR' has no agent row: shown by its IVR name
+    resolveIvrName: n => ({ 'Pest IVR old': 'Pest IVR' })[n] || n,
     alert: m => alerts.push(m),
     console: { warn() {} },
     sbFetch: async (p, o) => { calls.push([p, o && o.body ? JSON.parse(o.body) : null]); return fetch ? fetch(p, o) : []; },
     Promise, Date, JSON, Math, Set, parseInt, encodeURIComponent, String, Array, Object,
   };
-  vm.runInNewContext(SRC + '\nthis.api = { susVerdicts, susVStateHtml, susVerdictHtml, susVote, susLoadRepeat, susLoadSimilar, susLoadConv, susRenderSimilar, susRenderLong, susRenderFast, susRenderRepeat, susToggleHide, susToggleDiff, susStats, susExpandGroup, set: (k, v) => { if (k === "repeat") susRepeatRows = v; if (k === "similar") susSimilarRows = v; if (k === "conv") susConvRows = v; } };', ctx);
+  vm.runInNewContext(SRC + '\nthis.api = { susVerdicts, susVStateHtml, susVerdictHtml, susVote, susLoadRepeat, susLoadSimilar, susLoadConv, susRenderSimilar, susRenderLong, susRenderRepeat, susToggleHide, susToggleDiff, susStats, susExpandGroup, set: (k, v) => { if (k === "repeat") susRepeatRows = v; if (k === "similar") susSimilarRows = v; if (k === "conv") susConvRows = v; } };', ctx);
   return { ...ctx.api, els, calls, alerts };
 }
 
@@ -126,31 +129,67 @@ test('same script: different callers only, Hide decided hides a pair once both c
   assert.equal((p.els['sus-similar'].innerHTML.match(/data-susv="5550100002"/g) || []).length, 1);
 });
 
-test('odd timing: fast rows shortest first; the slider filters long rows live; decided callers hide', () => {
-  const p = page();
-  const row = (id, caller, extra) => ({ id, caller, called_from: '+1' + caller, vertical_name: 'Roofing', our_outcome: 'appointment', typical_secs: 400, vertical_n: 20, ...extra });
-  p.set('conv', [
-    row('f1', '5550100011', { is_fast: true, is_long: false, duration: 200, pct_above: -50 }),
-    row('f2', '5550100012', { is_fast: true, is_long: false, duration: 90, pct_above: -77 }),
-    row('l1', '5550100013', { is_fast: false, is_long: true, duration: 600, pct_above: 50 }),
-    row('l2', '5550100014', { is_fast: false, is_long: true, duration: 1600, pct_above: 300 }),
-  ]);
-  ['5550100011', '5550100012', '5550100013', '5550100014'].forEach(k => { p.susVerdicts[k] = []; });
-  p.susRenderFast(); p.susRenderLong();
-  const fast = p.els['sus-conv-fast'].innerHTML;
-  assert.ok(fast.indexOf('+15550100012') < fast.indexOf('+15550100011'), '90 s before 200 s');
-  assert.equal((p.els['sus-conv-long'].innerHTML.match(/<details/g) || []).length, 2, 'default 50%: both long rows');
-  assert.equal(p.els['sus-ct-timing'].textContent, '(4)');
-  p.els['sus-long'].value = '100';
-  p.susRenderLong();
-  assert.equal(p.els['sus-long-label'].textContent, '100%');
-  assert.equal((p.els['sus-conv-long'].innerHTML.match(/<details/g) || []).length, 1, '100%: only +300%');
-  assert.equal(p.els['sus-ct-timing'].textContent, '(3)');
-  assert.equal(p.els['sus-stat-timing'].innerHTML, '3');
-  p.susVerdicts['5550100012'] = [{ decided_by: 'luke@example.com', verdict: 'not_coached' }];
-  p.susRenderFast();
-  assert.equal((p.els['sus-conv-fast'].innerHTML.match(/<details/g) || []).length, 1, 'decided caller hidden');
-  assert.equal(p.els['sus-stat-await'].innerHTML, '2', 'callers with no verdict: 11 and 14');
+test('same script: highest match first; the match slider and the agent pick filter live', async () => {
+  const pairs = [
+    PAIR('5550100001', '5550100002', { similarity: 0.6, a_ivr_name: 'Pest IVR', b_ivr_name: 'Pest IVR old' }),
+    PAIR('5550100004', '5550100005', { similarity: 0.9, a_ivr_name: 'Roof IVR', b_ivr_name: 'Pest IVR' }),
+    PAIR('5550100006', '5550100007', { similarity: 0.4, a_ivr_name: 'Roof IVR', b_ivr_name: null }),
+  ];
+  const p = page({ fetch: path => path.startsWith('rpc/suspicious_similar') ? pairs : [] });
+  const count = () => (p.els['sus-similar'].innerHTML.match(/<details class="sus-row">/g) || []).length;
+  await p.susLoadSimilar();
+  assert.equal(p.calls[0][1].min_sim, 0.3, 'loaded from the stored floor, filtered on the page');
+  let h = p.els['sus-similar'].innerHTML;
+  assert.equal(count(), 2, 'default 55%: the 40% pair is out');
+  assert.ok(h.indexOf('+15550100004') < h.indexOf('+15550100001'), '90% before 60%');
+  assert.equal(p.els['sus-sim-label'].textContent, '55%');
+  assert.equal(p.els['sus-script-agent'].innerHTML, '<option value="">All agents</option><option value="Pest IVR">Pest Pro</option><option value="Roof IVR">Roof IVR</option>',
+    'the agents on the pairs, aliases resolved, by display name');
+  assert.match(text(h), /Pest · Roof IVR \/ Pest Pro/, 'both agents on the pair');
+  assert.match(text(p.els['sus-script-note'].textContent), /pairs kept from 30% up/);
+  p.els['sus-sim'].value = '0'; p.susRenderSimilar();
+  assert.equal(count(), 3); assert.equal(p.els['sus-sim-label'].textContent, '0%'); assert.equal(p.els['sus-ct-script'].textContent, '(3)');
+  p.els['sus-sim'].value = '95'; p.susRenderSimilar();
+  assert.equal(count(), 0);
+  assert.match(text(p.els['sus-similar'].innerHTML), /No transcript matches at 95% or more in the last 7 days. Slide left to widen./);
+  p.els['sus-sim'].value = '0'; p.els['sus-script-agent'].value = 'Roof IVR'; p.susRenderSimilar();
+  assert.equal(count(), 2, 'the agent on either side'); assert.equal(p.els['sus-stat-script'].innerHTML, '2');
+  p.els['sus-script-agent'].value = 'Pest IVR'; p.susRenderSimilar();
+  assert.equal(count(), 2, 'an alias counts as its agent');
+  p.els['sus-script-agent'].value = 'Pest IVR'; await p.susLoadSimilar();
+  assert.equal(p.els['sus-script-agent'].value, 'Pest IVR', 'a refresh keeps the pick');
+});
+
+test('odd timing: long conversions longest first; the call-length slider and agent pick filter live; decided callers hide', async () => {
+  const row = (id, caller, duration, extra) => ({ id, caller, called_from: '+1' + caller, ivr_name: 'Roof IVR', vertical_name: 'Roofing', our_outcome: 'appointment',
+    duration, typical_secs: 400, vertical_n: 20, pct_above: Math.floor((duration - 400) * 100 / 400), total: 4, ...extra });
+  const rows = [row('l2', '5550100012', 500), row('l1', '5550100011', 1600), row('l3', '5550100013', 900, { ivr_name: 'Pest IVR' }), row('l4', '5550100014', 150, { vertical_name: 'Tiny', vertical_n: 3 })];
+  const p = page({ fetch: path => path.startsWith('rpc/suspicious_conversions') ? rows : [] });
+  const count = () => (p.els['sus-conv-long'].innerHTML.match(/<details/g) || []).length;
+  await p.susLoadConv();
+  assert.equal(p.calls[0][1].min_secs, 120, 'loaded from the slider floor (2 min)');
+  assert.equal(p.calls[0][1].fast_secs, undefined);
+  let h = p.els['sus-conv-long'].innerHTML;
+  assert.equal(count(), 2, 'default 10 min: 1600 s and 900 s');
+  assert.ok(h.indexOf('+15550100011') < h.indexOf('+15550100013'), 'longest first');
+  assert.equal(p.els['sus-len-label'].textContent, '10 min');
+  assert.equal(p.els['sus-ct-timing'].textContent, '(2)');
+  assert.match(h, /sus-sev-hot">26m 40s</, '+300% above typical: hot');
+  assert.match(text(h), /Pest Pro · Roofing/, 'the agent on the row, by display name');
+  assert.match(text(h), /appointment in a 26m 40s call, 300% above the typical Roofing conversion \(6m 40s\)/);
+  p.els['sus-len'].value = '2'; p.susRenderLong();
+  assert.equal(count(), 4); assert.equal(p.els['sus-len-label'].textContent, '2 min'); assert.equal(p.els['sus-stat-timing'].innerHTML, '4');
+  assert.match(text(p.els['sus-conv-long'].innerHTML), /\(6m 40s, rough\)/, 'under 10 conversions the typical is rough');
+  p.els['sus-len'].value = '20'; p.susRenderLong();
+  assert.equal(count(), 1, '20 min: only 1600 s');
+  p.els['sus-len'].value = '30'; p.susRenderLong();
+  assert.match(text(p.els['sus-conv-long'].innerHTML), /No conversions of 30 minutes or more in this window. Slide left to widen./);
+  p.els['sus-len'].value = '2'; p.els['sus-timing-agent'].value = 'Pest IVR'; p.susRenderLong();
+  assert.equal(count(), 1, 'the picked agent only'); assert.equal(p.els['sus-ct-timing'].textContent, '(1)');
+  p.els['sus-timing-agent'].value = ''; p.susVerdicts['5550100011'] = [{ decided_by: 'luke@example.com', verdict: 'not_coached' }]; p.susRenderLong();
+  assert.equal(count(), 3, 'decided caller hidden');
+  assert.match(text(p.els['sus-conv-long'].innerHTML), /1 decided row is hidden/);
+  assert.equal(p.els['sus-stat-await'].innerHTML, '3', 'callers with no verdict: 12, 13 and 14');
 });
 
 test('repeat callers: one Decide per caller in the group, none on its calls; capped lists say so', async () => {
@@ -183,7 +222,7 @@ test('each section fails on its own with the standard load error', async () => {
   await Promise.all([p.susLoadRepeat(), p.susLoadSimilar(), p.susLoadConv()]);
   assert.match(p.els['sus-similar'].innerHTML, /Couldn't load transcript matches/);
   assert.match(text(p.els['sus-repeat'].innerHTML), /No cross-ZIP\/vertical\/publisher repeat callers in this window/);
-  assert.match(text(p.els['sus-conv-fast'].innerHTML), /No conversions booked this fast/);
+  assert.match(text(p.els['sus-conv-long'].innerHTML), /No conversions of 10 minutes or more in this window/);
   assert.equal(p.els['sus-stat-script'].innerHTML, '<span class="null-mark">-</span>');
 });
 

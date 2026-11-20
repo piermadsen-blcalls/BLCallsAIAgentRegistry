@@ -108,6 +108,8 @@ insert into canoe_calls (id, created_at, is_test, called_from, vertical_name, pu
 select v.id, now() - v.age, v.test, '+15550107299', 'ZZTEST Script', 'ZZTEST Pub A', 'ZZTEST Adv', 200, 'connected', '[]', false, t
 from zz_script, (values ('zztest-x12', interval '9 days', false), ('zztest-x13', interval '1 day', true)) v(id, age, test)
 where zz_script.id = 'zztest-x01';
+-- An agent on one long conversion and one side of a script pair (the page's agent picks).
+update canoe_calls set ivr_name = 'ZZTEST IVR' where id in ('zztest-t02', 'zztest-x01');
 
 do $$ begin assert refresh_script_matches() >= 2, 'the refresh returns the pair count'; end $$;
 do $$ begin assert refresh_script_matches() >= 2, 're-runnable: replaces, not appends'; end $$;
@@ -131,24 +133,26 @@ begin
   assert not exists (select 1 from suspicious_repeat_callers(now() - interval '1 day', now() + interval '1 minute', 3, false) where caller in ('5550107001', '5550107002')), 'min_calls';
   assert not exists (select 1 from suspicious_repeat_callers(now() - interval '150 minutes', now() + interval '1 minute') where caller = '5550107001'), 'window: one call left';
 
-  -- Odd timing
-  select count(*) into n from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 300, 10) where vertical_name in ('ZZTEST Timing', 'ZZTEST Tiny');
-  assert n = 3, format('fast 120 s + long 900 s + tiny fast 100 s, got %s', n);
-  select * into r from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 300, 10) where id = 'zztest-t01';
-  assert r.is_fast and not r.is_long and r.typical_secs = 400 and r.vertical_n = 11 and r.caller = '5550107101', format('fast row: %s', row_to_json(r));
-  select * into r from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 300, 10) where id = 'zztest-t02';
-  assert r.is_long and not r.is_fast and r.pct_above = 125, format('long row: %s', row_to_json(r));
-  select * into r from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 300, 10) where id = 'zztest-t21';
-  assert r.is_fast and r.vertical_n = 2, format('a fast call counts even in a small vertical: %s', row_to_json(r));
-  assert not exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 300, 10) where id = 'zztest-t22'), 'no "long" under 10 conversions';
-  assert not exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 300, 130) where id = 'zztest-t02'), 'min_long_pct';
-  assert not exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 100, 200) where id = 'zztest-t21'), 'fast_secs is strict';
-  assert not exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute') where id in ('zztest-t12', 'zztest-t13')), 'only conversions, no test traffic';
+  -- Odd timing: long conversions, longest first
+  select count(*) into n from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 600) where vertical_name in ('ZZTEST Timing', 'ZZTEST Tiny');
+  assert n = 2, format('900 s and 1000 s at 600 s+, got %s', n);
+  select * into r from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 600) where id = 'zztest-t02';
+  assert r.pct_above = 125 and r.typical_secs = 400 and r.vertical_n = 11 and r.caller = '5550107102' and r.ivr_name = 'ZZTEST IVR' and r.total >= 2,
+    format('long row with its vertical''s typical and its agent: %s', row_to_json(r));
+  select * into r from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 600) where id = 'zztest-t22';
+  assert r.vertical_n = 2 and r.typical_secs = 550 and r.pct_above = 81 and r.ivr_name is null, format('a small vertical still gets its (rough) typical: %s', row_to_json(r));
+  assert (select id from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 600) where vertical_name in ('ZZTEST Timing', 'ZZTEST Tiny') limit 1) = 'zztest-t22', 'longest first';
+  assert not exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 950) where id = 'zztest-t02'), 'min_secs';
+  assert exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 1000) where id = 'zztest-t22'), 'min_secs is inclusive';
+  assert exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 0) where id = 'zztest-t01'), 'nothing is "too fast" any more: every conversion over min_secs';
+  assert not exists (select 1 from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 0) where id in ('zztest-t12', 'zztest-t13')), 'only conversions, no test traffic';
+  assert (select count(*) from suspicious_conversions(now() - interval '1 day', now() + interval '1 minute', 0, 1)) = 1, 'max_rows';
 
   -- Same script
   select * into r from suspicious_similar_transcripts() where call_id_a = 'zztest-x01' and call_id_b = 'zztest-x02';
   assert r.similarity >= 0.55 and not r.same_caller and r.vertical = 'ZZTEST Script', format('x1/x2 match: %s', row_to_json(r));
   assert r.a_caller = '5550107201' and r.b_caller = '5550107202' and r.a_vertical = 'ZZTEST Script' and r.b_duration = 200, format('both calls'' details: %s', row_to_json(r));
+  assert r.a_ivr_name = 'ZZTEST IVR' and r.b_ivr_name is null, format('each call''s agent: %s', row_to_json(r));
   select * into r from suspicious_similar_transcripts() where call_id_a = 'zztest-x06' and call_id_b = 'zztest-x07';
   assert r.same_caller, format('x6/x7: one caller (two number formats): %s', row_to_json(r));
   assert not exists (select 1 from suspicious_similar_transcripts() where 'zztest-x05' in (call_id_a, call_id_b)), 'same vertical only';
@@ -157,7 +161,7 @@ begin
                                                                      or call_id_b in ('zztest-x04', 'zztest-x09', 'zztest-x10', 'zztest-x11')), 'a shared recording is not a script';
   assert not exists (select 1 from suspicious_similar_transcripts() where 'zztest-x12' in (call_id_a, call_id_b) or 'zztest-x13' in (call_id_a, call_id_b)), 'last 7 days, no test traffic';
   assert not exists (select 1 from suspicious_similar_transcripts(0.99) where call_id_a = 'zztest-x01' and call_id_b = 'zztest-x02'), 'min_sim';
-  assert not exists (select 1 from script_matches where similarity < 0.55), 'nothing stored under 55%';
+  assert not exists (select 1 from script_matches where similarity < 0.30), 'nothing stored under 30% (the page''s slider floor)';
 
   -- ── Verdicts: A records, changes; the number's format doesn't matter ──
   perform coached_verdict_set('+1 (555) 010-7001', 'coached', 'repeat', 'zztest-s01');

@@ -13,13 +13,14 @@
 --    with their ZIPs, verticals and publishers; cross_only keeps those spanning more than one.
 --    zip is not in canoe_calls_mcp_cover_idx, so the first pass reads that index only and the
 --    rows are fetched for repeat numbers alone.
--- 4) suspicious_conversions(from_ts, to_ts, fast_secs, min_long_pct): appointments and sales whose
---    whole call (duration) was under fast_secs, or min_long_pct+ above their vertical's median
---    conversion length in the window (verticals with 10+ conversions). Ticket defaults: 300 s, and
---    the page's slider starts at 50%.
+-- 4) suspicious_conversions(from_ts, to_ts, min_secs, max_rows): abnormally long conversions, the
+--    appointments and sales whose whole call (duration) ran min_secs or more, longest first, with
+--    the vertical's median conversion length in the window for context. (PR review: the page's
+--    Odd timing list is long calls only, behind a call-length slider and an agent pick.)
 -- 5) script_matches + refresh_script_matches(): near-identical transcripts within one vertical,
---    trailing 7 days, 40+ words, similarity 55%+ (ticket defaults). Precomputed nightly, read by
---    suspicious_similar_transcripts(min_sim).
+--    trailing 7 days, 40+ words (ticket defaults), stored from 30% similarity so the page's match
+--    slider (0-100%, starting at the ticket's 55%) has range. Precomputed nightly, read by
+--    suspicious_similar_transcripts(min_sim), which also returns each call's agent (ivr_name).
 --    How similarity is measured (calibrated read-only on prod, 2026-11-20, 7 days, ~4,300
 --    transcripts): a transcript carries the buyer's own IVR greeting and hold messages, so raw
 --    pg_trgm similarity put ~9,500 pairs over 55% in Dentist alone, all calls to the same office's
@@ -129,32 +130,34 @@ language sql stable set search_path = public, pg_temp as $$
   limit max_rows
 $$;
 
--- ── 4) Odd timing ──
+-- ── 4) Odd timing: abnormally long conversions ──
+-- Conversions whose whole call ran min_secs or more, longest first. typical_secs / vertical_n /
+-- pct_above describe the vertical's median conversion in the window (the page calls it rough under
+-- 10 conversions); total is the count before max_rows.
+drop function if exists suspicious_conversions(timestamptz, timestamptz, int, int);   -- return type changed
 create or replace function suspicious_conversions(from_ts timestamptz, to_ts timestamptz,
-  fast_secs int default 300, min_long_pct int default 10)
+  min_secs int default 600, max_rows int default 2000)
 returns table (id text, created_at timestamptz, caller text, called_from text, zip text, city text, state text,
-  vertical_name text, publisher_name text, advertiser_name text, duration int, our_outcome text,
-  recording_url text, ascnd_recording_url text, typical_secs int, vertical_n int, pct_above int,
-  is_fast boolean, is_long boolean)
+  ivr_name text, vertical_name text, publisher_name text, advertiser_name text, duration int, our_outcome text,
+  recording_url text, ascnd_recording_url text, typical_secs int, vertical_n int, pct_above int, total int)
 language sql stable set search_path = public, pg_temp as $$
   with c as materialized (
     select c.id, c.created_at, suspicious_caller_key(c.called_from) as caller, c.called_from, c.zip, c.city, c.state,
-      c.vertical_name, c.publisher_name, c.advertiser_name, c.duration, c.our_outcome, c.recording_url, c.ascnd_recording_url
+      c.ivr_name, c.vertical_name, c.publisher_name, c.advertiser_name, c.duration, c.our_outcome, c.recording_url, c.ascnd_recording_url
     from canoe_calls c
     where c.our_outcome = any(dashboard_conversion_outcomes())
       and c.created_at >= from_ts and c.created_at < to_ts and c.is_test is not true and c.duration > 0
   ), v as (
     select coalesce(vertical_name, '') as vk, percentile_cont(0.5) within group (order by duration) as typical, count(*)::int as n
     from c group by 1
-  ), r as (
-    select c.*, round(v.typical)::int as typical_secs, v.n as vertical_n,
-      floor((c.duration - v.typical) * 100 / v.typical)::int as pct_above
-    from c join v on v.vk = coalesce(c.vertical_name, '')
   )
-  select r.*, r.duration < fast_secs as is_fast, (r.vertical_n >= 10 and r.pct_above >= min_long_pct) as is_long
-  from r
-  where r.duration < fast_secs or (r.vertical_n >= 10 and r.pct_above >= min_long_pct)
-  order by r.created_at desc
+  select c.*, round(v.typical)::int as typical_secs, v.n as vertical_n,
+    floor((c.duration - v.typical) * 100 / v.typical)::int as pct_above,
+    (count(*) over ())::int as total
+  from c join v on v.vk = coalesce(c.vertical_name, '')
+  where c.duration >= min_secs
+  order by c.duration desc, c.created_at desc
+  limit max_rows
 $$;
 
 -- ── 5) Same script ──
@@ -174,8 +177,10 @@ grant select on table script_matches to authenticated;
 drop policy if exists "auth users can read script_matches" on script_matches;
 create policy "auth users can read script_matches" on script_matches for select to authenticated using (true);
 
--- Rebuilds script_matches from the trailing days_back days; returns the number of pairs.
-create or replace function refresh_script_matches(days_back int default 7, min_sim real default 0.55,
+-- Rebuilds script_matches from the trailing days_back days; returns the number of pairs. Pairs are
+-- kept from 30% so the page's match slider has range (the pair search costs the same at any floor;
+-- only the rows stored change). The page starts its slider at the ticket's 55%.
+create or replace function refresh_script_matches(days_back int default 7, min_sim real default 0.30,
   min_words int default 40, recording_calls int default 3)
 returns int language plpgsql security definer set search_path = public, pg_temp set work_mem = '64MB' as $$
 declare
@@ -226,25 +231,26 @@ $$;
 revoke execute on function refresh_script_matches(int, real, int, int) from public, anon, authenticated;
 grant execute on function refresh_script_matches(int, real, int, int) to service_role;
 
--- Stored matches with both calls' details, most similar first.
+-- Stored matches with both calls' details (including each call's agent), most similar first.
+drop function if exists suspicious_similar_transcripts(real);   -- return type changed
 create or replace function suspicious_similar_transcripts(min_sim real default 0.55)
 returns table (call_id_a text, call_id_b text, similarity real, same_caller boolean, vertical text, computed_at timestamptz,
   a_caller text, a_called_from text, a_publisher text, a_vertical text, a_created_at timestamptz, a_duration int,
-  a_recording_url text, a_ascnd_recording_url text, a_outcome text,
+  a_recording_url text, a_ascnd_recording_url text, a_outcome text, a_ivr_name text,
   b_caller text, b_called_from text, b_publisher text, b_vertical text, b_created_at timestamptz, b_duration int,
-  b_recording_url text, b_ascnd_recording_url text, b_outcome text)
+  b_recording_url text, b_ascnd_recording_url text, b_outcome text, b_ivr_name text)
 language sql stable set search_path = public, pg_temp as $$
   select m.call_id_a, m.call_id_b, m.similarity, m.same_caller, m.vertical, m.computed_at,
     suspicious_caller_key(a.called_from), a.called_from, a.publisher_name, a.vertical_name, a.created_at, a.duration,
-    a.recording_url, a.ascnd_recording_url, a.our_outcome,
+    a.recording_url, a.ascnd_recording_url, a.our_outcome, a.ivr_name,
     suspicious_caller_key(b.called_from), b.called_from, b.publisher_name, b.vertical_name, b.created_at, b.duration,
-    b.recording_url, b.ascnd_recording_url, b.our_outcome
+    b.recording_url, b.ascnd_recording_url, b.our_outcome, b.ivr_name
   from script_matches m
   join canoe_calls a on a.id = m.call_id_a
   join canoe_calls b on b.id = m.call_id_b
   where m.similarity >= min_sim
   order by m.similarity desc, a.created_at desc
-  limit 500
+  limit 1000
 $$;
 
 -- Signed-in only. (CREATE OR REPLACE keeps grants, so a re-run changes nothing.)
