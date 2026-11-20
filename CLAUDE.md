@@ -11,8 +11,8 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 - **Jobs:** Node 24 scripts (CommonJS), **zero npm packages** (Node built-ins + `fetch` only), run on
   GitHub Actions cron. No `package.json`.
 - **AI:** Gemini native Batch API for production scoring; OpenRouter for model comparisons/calibration.
-- **Hosting:** Netlify is the only real host. GitHub Pages also serves `main` (public repo); it is not
-  canonical - don't rely on it or change its settings.
+- **Hosting:** Netlify is the only host. GitHub Pages was turned off on 2026-11-20 (the captain's call);
+  don't turn it back on.
 - **Tests:** `node --test tests/`, `deno test` for edge functions, SQL assert files in `supabase/tests/`.
 
 ## Related systems and projects
