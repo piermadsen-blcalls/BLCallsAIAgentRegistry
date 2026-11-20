@@ -1137,3 +1137,22 @@ Continued from the 8/7 Scores work; large session. What moved:
 - Added a short "Stack (keep it this way)" section and a "Related systems and projects" section (Canoe/RingPartner, ASCND, Supabase, Netlify URL, Jira MK) to `CLAUDE.md`.
 - Fixed stale facts: `agent_eval.js` job, `supabase/rollbacks` + `supabase/tests`, real test commands (`node --test`, `deno test`, SQL asserts), GitHub Pages noted as non-canonical.
 - Docs only, no code changes. External sources (Wispr/Jira) not pulled this session.
+
+### 2026-11-20 (Pier) - Claude connector switch-on: 066 fixed before applying (branch `fm/registry-connector`)
+- **The captain approved switching the connector on.** The GitHub Pages copy is off (CLAUDE.md hosting line corrected); the Netlify consent card is the one in use.
+- **The merged 066 failed on prod:** `permission denied for schema mcp_private`. The transaction rolled back; prod was checked afterwards and nothing was left.
+  - **Cause:** on Supabase, `postgres` is not a superuser. A function's new owner needs CREATE on its schema, and `mcp_reader` had none on `mcp_private`.
+  - The PGlite tests ran as a superuser, which skips that check.
+- **Fix (066 was never applied anywhere, so it is corrected in place):**
+  - `mcp_reader` gets CREATE on `mcp_private` only for the owner change, revoked right after.
+  - The self-check now aborts if `mcp_reader` can create objects in any schema; the 066 test asserts the same.
+- **Tested:**
+  - On a PGlite stand-in where `postgres` is not a superuser, as on prod:
+    - the merged 066 fails with the prod error;
+    - the fixed 066 passes its test, re-runs cleanly, and 067 and its test pass;
+    - both rollbacks restore the catalog, and re-applying works;
+    - leaving out the revoke makes the self-check abort.
+  - **Prod dry run:** the corrected 066 ran to the end inside a transaction that cannot commit (owner `mcp_reader`, CREATE revoked). Nothing remained afterwards.
+  - Node 202/202, Deno 23/23, `deno lint` clean.
+- **Not applied yet:** the captain approves the merge first. Then: 066-068 for real, the SQL and anon checks, the OAuth server settings, the `mcp` deploy, and the end-to-end check.
+- External sources (Wispr/Jira) not pulled this session.

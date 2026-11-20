@@ -259,7 +259,11 @@ begin
   return jsonb_build_object('rows', to_jsonb(out_rows), 'row_count', least(n, p_max_rows), 'truncated', n > p_max_rows);
 end;
 $$;
+-- Supabase's postgres is not a superuser, so a new owner needs CREATE on the function's schema:
+-- granted for the owner change only, then revoked (the self-check below asserts it is gone).
+grant create on schema mcp_private to mcp_reader;
 alter function mcp_private.exec_readonly(text, integer, boolean) owner to mcp_reader;
+revoke create on schema mcp_private from mcp_reader;
 revoke all on function mcp_private.exec_readonly(text, integer, boolean) from public;
 
 -- ── Public entry points (authenticated only) ──
@@ -376,6 +380,11 @@ begin
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and has_function_privilege('mcp_reader', p.oid, 'execute');
   if bad is not null then raise exception '066: mcp_reader can execute: %', bad; end if;
+
+  select string_agg(n.nspname, ', ') into bad
+  from pg_namespace n
+  where has_schema_privilege('mcp_reader', n.oid, 'create');
+  if bad is not null then raise exception '066: mcp_reader can create objects in: %', bad; end if;
 
   if has_function_privilege('anon', 'public.mcp_run_sql(text, integer, boolean, text)', 'execute')
      or has_function_privilege('anon', 'public.mcp_whoami()', 'execute')

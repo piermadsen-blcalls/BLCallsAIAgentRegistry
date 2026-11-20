@@ -4,6 +4,8 @@
 -- Each request is played the way PostgREST does it: SET ROLE authenticated plus the JWT claims.
 -- Fixtures: auth users/sessions with ids 00000000-0000-4000-8000-0000000066xx, calls 'zztest-mcp*'.
 -- Run it off production (PGlite or a branch): it writes fixture rows into auth.users/sessions.
+-- On PGlite, apply 066 as a non-superuser postgres, as on Supabase: a superuser skips the schema
+-- CREATE check behind 066's owner change (the merged 066 failed on prod for that, 2026-11-20).
 -- ============================================================
 begin;
 
@@ -44,6 +46,7 @@ begin
   assert not has_function_privilege('anon', 'public.mcp_describe()', 'execute'), 'anon cannot run mcp_describe';
   assert not has_function_privilege('authenticated', 'mcp_private.exec_readonly(text, integer, boolean)', 'execute'), 'exec_readonly is private';
   assert (select pg_get_userbyid(proowner) from pg_proc where oid = 'mcp_private.exec_readonly(text, integer, boolean)'::regprocedure) = 'mcp_reader', 'exec_readonly runs as mcp_reader';
+  assert not has_schema_privilege('mcp_reader', 'mcp_private', 'create'), 'the CREATE needed for the owner change is revoked again';
   assert (select relrowsecurity from pg_class where oid = 'public.mcp_query_log'::regclass), 'RLS on mcp_query_log';
   assert not has_table_privilege('authenticated', 'public.mcp_query_log', 'insert, update, delete, truncate'), 'nobody signed in writes the log';
 end $$;
