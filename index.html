@@ -690,7 +690,6 @@
   .settings-table td { padding:9px 12px; vertical-align:middle; color:var(--text); }
   .settings-delete-btn { font-family:var(--sans); font-size:11px; padding:3px 10px; border-radius:4px; background:transparent; color:var(--coral); border:1px solid var(--coral); cursor:pointer; }
   .settings-delete-btn:hover { background:var(--coral-bg); }
-  .settings-key-banner { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px; background:var(--amber-bg); border-radius:var(--radius-sm); border:1px solid #E8C97A; margin-bottom:14px; font-size:12px; color:var(--amber); }
   .settings-invite-row { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
   .settings-users-empty { font-size:13px; color:var(--text-3); padding:20px 0; }
 
@@ -1457,11 +1456,6 @@
         <div class="settings-section-header">
           <div class="settings-section-title">Dashboard Users</div>
         </div>
-        <div id="settings-service-key-banner" class="settings-key-banner">
-          <span>Enter your Supabase service role key to manage logins (stored in session only).</span>
-          <input class="settings-input" id="s-service-key" type="password" placeholder="Service role key…" style="flex:1;min-width:220px">
-          <button class="settings-save-btn" onclick="settingsUnlockUsers()">Unlock</button>
-        </div>
         <div id="settings-users-content"></div>
       </div>
 
@@ -1505,10 +1499,6 @@
               stratify by call length
             </label>
             <div style="font-size:11px;color:var(--text-3);margin-top:4px">even short/med/long, pinned for all models</div>
-          </div>
-          <div style="flex:1;min-width:220px">
-            <label class="settings-label">GitHub PAT (stored in session only)</label>
-            <input class="settings-input" id="modeltest-pat" type="password" placeholder="ghp_…">
           </div>
           <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
             <button class="settings-save-btn" onclick="modeltestRun()">Run calibration</button>
@@ -1589,10 +1579,6 @@
             <div>
               <label class="settings-label">Batch size</label>
               <input class="settings-input" id="ab-batch-size" type="number" value="50" min="1" max="500" style="width:90px">
-            </div>
-            <div style="flex:1;min-width:220px">
-              <label class="settings-label">GitHub PAT (stored in session only)</label>
-              <input class="settings-input" id="ab-github-pat" type="password" placeholder="ghp_…">
             </div>
             <button class="settings-save-btn" onclick="promptsRunABTest()">Run test batch</button>
             <span id="ab-status" style="font-size:12px;color:var(--teal)"></span>
@@ -5514,14 +5500,8 @@ async function settingsInit() {
     document.getElementById('settings-weights-section').style.display = 'block';
     document.getElementById('settings-cost-section').style.display = 'block';
     calibInit();
-    const saved = sessionStorage.getItem('sb_service_key');
-    if (saved) {
-      settingsServiceKey = saved;
-      document.getElementById('settings-service-key-banner').style.display = 'none';
-      settingsLoadUsers();
-    }
-    const savedPat = sessionStorage.getItem('gh_pat');
-    if (savedPat) document.getElementById('ab-github-pat').value = savedPat;
+    sessionStorage.removeItem('sb_service_key'); sessionStorage.removeItem('gh_pat');   // pasted by the old key/PAT boxes
+    settingsLoadUsers();
     await Promise.all([promptsInit(), weightsInit()]);
   }
 }
@@ -5714,31 +5694,27 @@ async function assignAccount(accountName, accountType, managerId, selectEl) {
 
 // Users ─────────────────────────────────
 
-let settingsServiceKey = null;
-
-function settingsUnlockUsers() {
-  const key = document.getElementById('s-service-key').value.trim();
-  if (!key) return;
-  settingsServiceKey = key;
-  sessionStorage.setItem('sb_service_key', key);
-  document.getElementById('settings-service-key-banner').style.display = 'none';
-  settingsLoadUsers();
+// The admin edge function (supabase/functions/admin) holds the service key and the GitHub token,
+// and runs only for a signed-in admin. Sends the user's session; returns the raw Response.
+const ADMIN_URL = `${SB_URL}/functions/v1/admin`;
+async function adminRequest(action, payload = {}) {
+  if (_refreshInFlight || sbTokenDue()) await refreshSession();
+  const send = () => fetch(ADMIN_URL, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  let res = await send();
+  if (res.status === 401 && localStorage.getItem('sb_refresh_token') && await refreshSession()) res = await send();
+  return res;
 }
 
 async function settingsLoadUsers() {
   const el = document.getElementById('settings-users-content');
   el.innerHTML = '<div class="settings-users-empty">Loading…</div>';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/admin/users?per_page=100`, {
-      headers: { 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
-    });
-    if (!res.ok) {
-      settingsServiceKey = null;
-      sessionStorage.removeItem('sb_service_key');
-      document.getElementById('settings-service-key-banner').style.display = 'flex';
-      el.innerHTML = '<div style="font-size:13px;color:var(--coral)">Invalid key. Try again.</div>';
-      return;
-    }
+    const res = await adminRequest('list_users');
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `Admin ${res.status}`); }
     const data  = await res.json();
     const users = data.users || [];
     const myEmail = getAuthUser();
@@ -5769,15 +5745,11 @@ async function settingsLoadUsers() {
 async function settingsInviteUser() {
   const email  = document.getElementById('s-invite-email').value.trim();
   const status = document.getElementById('s-invite-status');
-  if (!email || !settingsServiceKey) return;
+  if (!email) return;
   status.style.color = 'var(--teal)';
   status.textContent = 'Sending…';
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
-      body: JSON.stringify({ email }),
-    });
+    const res = await adminRequest('invite_user', { email });
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed'); }
     status.textContent = `Invite sent to ${email}`;
     document.getElementById('s-invite-email').value = '';
@@ -5792,10 +5764,7 @@ async function settingsInviteUser() {
 async function settingsDeleteUser(id, email) {
   if (!confirm(`Remove login access for ${email}? This cannot be undone.`)) return;
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/admin/users/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${settingsServiceKey}`, 'apikey': settingsServiceKey },
-    });
+    const res = await adminRequest('delete_user', { id });
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed'); }
     settingsLoadUsers();
   } catch(e) { alert('Could not remove user: ' + e.message); }
@@ -5997,8 +5966,6 @@ async function calibInit() {
         </label>`;
       }).join('');
     }
-    const savedPat = sessionStorage.getItem('gh_pat');
-    if (savedPat) document.getElementById('modeltest-pat').value = savedPat;
   }
 
   modeltestLoadHistory();  // Recent Tests + review — everyone
@@ -6091,12 +6058,9 @@ async function modeltestRun() {
   const selected  = [...document.querySelectorAll('.modeltest-checkbox:checked')].map(cb => cb.value);
   const sampleSize = parseInt(document.getElementById('modeltest-sample-size').value || '10', 10);
   const stratify   = document.getElementById('modeltest-stratify').checked;
-  const pat       = document.getElementById('modeltest-pat').value.trim();
   const statusEl  = document.getElementById('modeltest-run-status');
 
   if (selected.length === 0) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select at least one model.'; return; }
-  if (!pat) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'GitHub PAT required.'; return; }
-  sessionStorage.setItem('gh_pat', pat);
 
   // Pin one call set up front so every model scores the identical calls.
   let callIds = [];
@@ -6132,11 +6096,7 @@ async function modeltestRun() {
     try {
       const inputs = { ai_model: modelId, batch_size: String(effectiveSize), test_mode: 'true', test_batch_id: testId };
       if (callIdsCsv) inputs.test_call_ids = callIdsCsv;
-      const res = await fetch('https://api.github.com/repos/piermadsen-blcalls/BLCallsAIAgentRegistry/actions/workflows/process.yml/dispatches', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ref: 'main', inputs }),
-      });
+      const res = await adminRequest('dispatch_process', { inputs });
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub ${res.status}`); }
       launched++;
     } catch(e) {
@@ -6517,21 +6477,14 @@ async function promptsDelete(id) {
 async function promptsRunABTest() {
   const promptId  = document.getElementById('ab-prompt-select').value;
   const batchSize = document.getElementById('ab-batch-size').value || '50';
-  const pat       = document.getElementById('ab-github-pat').value.trim();
   const statusEl  = document.getElementById('ab-status');
 
-  if (!pat) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'GitHub PAT required.'; return; }
   if (!promptId) { statusEl.style.color = 'var(--coral)'; statusEl.textContent = 'Select a prompt.'; return; }
 
   statusEl.style.color = 'var(--text-2)'; statusEl.textContent = 'Triggering…';
   try {
-    const res = await fetch('https://api.github.com/repos/piermadsen-blcalls/BLCallsAIAgentRegistry/actions/workflows/process.yml/dispatches', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: 'main', inputs: { prompt_id: promptId, batch_size: batchSize } }),
-    });
+    const res = await adminRequest('dispatch_process', { inputs: { prompt_id: promptId, batch_size: batchSize } });
     if (!res.ok) { const err = await res.json(); throw new Error(err.message || `GitHub error ${res.status}`); }
-    sessionStorage.setItem('gh_pat', pat);
     statusEl.style.color = 'var(--teal)'; statusEl.textContent = 'Started. Progress is in GitHub Actions.';
   } catch(e) {
     statusEl.style.color = 'var(--coral)'; statusEl.textContent = e.message;
