@@ -942,6 +942,8 @@
   .sus-vstate { font-size:11.5px; font-weight:500; white-space:nowrap; padding:2px 8px; border-radius:10px; background:var(--amber-bg); color:var(--amber); }
   .sus-vstate.done { background:var(--teal-bg); color:var(--teal); }
   .sus-vstate.some { background:var(--surface); border:1px solid var(--border); color:var(--text-2); }
+  .sus-margin { font-family:var(--mono); font-size:11.5px; white-space:nowrap; color:var(--brand-navy); }
+  .sus-margin.neg { color:var(--coral); }
   .sus-body { border-top:1px solid var(--border); padding:14px; display:grid; gap:14px; }
   .sus-why { font-size:13px; color:var(--text); background:var(--amber-bg); border-radius:var(--radius-sm); padding:9px 12px; }
   .sus-why b { color:var(--brand-navy); }
@@ -1919,18 +1921,16 @@
           <button type="button" class="settings-secondary-btn" onclick="susReload()">Refresh</button>
         </div>
       </div>
-      <p class="sus-intro">Three patterns that point at coached or fake callers. Open a row, then <b>Listen → Read → Decide</b>: play the recording, read the transcript, and record whether it's a coached caller. Verdicts are saved per person and per phone number, and shared with the team.</p>
+      <p class="sus-intro">Two patterns that point at coached or fake callers. Open a row, then <b>Listen → Read → Decide</b>: play the recording, read the transcript, and record whether it's a coached caller. Verdicts are saved per person and per phone number, and shared with the team.</p>
 
       <div class="summary-strip sus-tiles">
         <div class="summary-item" title="Phone numbers calling repeatedly across ZIPs, verticals or publishers in this window"><div class="summary-val" id="sus-stat-repeat"><span class="null-mark">-</span></div><div class="summary-lbl">suspicious numbers</div></div>
-        <div class="summary-item" title="Transcript pairs at or above the match slider, for the picked agent (last 7 days, matched nightly)"><div class="summary-val" id="sus-stat-script"><span class="null-mark">-</span></div><div class="summary-lbl">script matches</div></div>
-        <div class="summary-item" title="Conversions whose whole call ran at least the call-length slider, for the picked agent"><div class="summary-val" id="sus-stat-timing"><span class="null-mark">-</span></div><div class="summary-lbl">long conversions</div></div>
-        <div class="summary-item" title="Callers across the three lists that nobody has given a verdict yet"><div class="summary-val" id="sus-stat-await"><span class="null-mark">-</span></div><div class="summary-lbl">callers awaiting a verdict</div></div>
+        <div class="summary-item" title="Connected calls at or above the % over typical slider, for the picked agent"><div class="summary-val" id="sus-stat-timing"><span class="null-mark">-</span></div><div class="summary-lbl">calls over typical</div></div>
+        <div class="summary-item" title="Callers across both lists that nobody has given a verdict yet"><div class="summary-val" id="sus-stat-await"><span class="null-mark">-</span></div><div class="summary-lbl">callers awaiting a verdict</div></div>
       </div>
 
       <div class="comp-subtabs">
         <button type="button" class="comp-subtab active" onclick="susSub('repeat',this)">Repeat callers <span id="sus-ct-repeat"></span></button>
-        <button type="button" class="comp-subtab" onclick="susSub('script',this)">Same script <span id="sus-ct-script"></span></button>
         <button type="button" class="comp-subtab" onclick="susSub('timing',this)">Odd timing <span id="sus-ct-timing"></span></button>
       </div>
 
@@ -1942,28 +1942,15 @@
         <div id="sus-repeat"><div class="comp-loading">Loading…</div></div>
       </div>
 
-      <div id="sus-pane-script" style="display:none">
-        <div class="sus-controls">
-          <button type="button" id="sus-diff" class="pill active" aria-pressed="true" onclick="susToggleDiff(this)" title="Hide pairs where both calls came from the same number (redials and callbacks)">Different callers only</button>
-          <label for="sus-script-agent" class="sus-label">Agent</label>
-          <select id="sus-script-agent" class="settings-input sus-select" onchange="susRenderSimilar()" title="Only pairs with this agent on either call"><option value="">All agents</option></select>
-          <label for="sus-sim">Match at least</label>
-          <input type="range" id="sus-sim" min="0" max="100" step="5" value="55" oninput="susRenderSimilar()" title="How much of the two transcripts must match">
-          <b id="sus-sim-label" class="sus-pct">55%</b>
-        </div>
-        <div class="sus-controls"><span id="sus-script-note">Transcripts in the same vertical saying the same words, last 7 days, matched nightly; highest match first. Open a match to compare the two calls side by side.</span></div>
-        <div id="sus-similar"><div class="comp-loading">Loading…</div></div>
-      </div>
-
       <div id="sus-pane-timing" style="display:none">
         <div class="sus-controls">
           <label for="sus-timing-agent" class="sus-label">Agent</label>
-          <select id="sus-timing-agent" class="settings-input sus-select" onchange="susRenderLong()" title="Only this agent's conversions"><option value="">All agents</option></select>
-          <label for="sus-len">Call at least</label>
-          <input type="range" id="sus-len" min="2" max="60" step="1" value="10" oninput="susRenderLong()" title="The whole call's length">
-          <b id="sus-len-label" class="sus-pct">10 min</b>
+          <select id="sus-timing-agent" class="settings-input sus-select" onchange="susRenderLong()" title="Only this agent's calls"><option value="">All agents</option></select>
+          <label for="sus-pct">At least</label>
+          <input type="range" id="sus-pct" min="0" max="300" step="10" value="50" oninput="susRenderLong()" title="How far over the agent's typical call length">
+          <b id="sus-pct-label" class="sus-pct">50% over typical</b>
         </div>
-        <div class="sus-controls"><span>Abnormally long conversions: appointments and sales whose whole call ran at least this long, longest first. Each row says how far it sits above the vertical's typical conversion length (its median in this window).</span></div>
+        <div class="sus-controls"><span>Every connected call, measured against the typical call for the same AI agent (its median over the last 30 days, connected calls only; an agent with under 20 such calls uses its vertical's typical), highest % over typical first. A call far longer than the agent's usual can mean a caller stringing it out.</span></div>
         <div id="sus-conv-long"><div class="comp-loading">Loading…</div></div>
       </div>
     </div>
@@ -7043,18 +7030,18 @@ async function claudeDeleteReport(id) {
   claudeLoadReports();
 }
 
-// ── SUSPICIOUS TAB (MK-195: coached-caller triage, migration 069) ─────────────
-// Three sub-tabs on three read RPCs. Every row uses one grid (severity | who & why | when &
-// verdict state) and opens to Listen (recording) → Read (transcript, loaded on open) → Decide.
-// Same script and Odd timing each load once, then an agent pick and a slider (match %, call
-// length) filter the rows live, highest match / longest call first (PR review).
+// ── SUSPICIOUS TAB (MK-195 + MK-196: coached-caller triage, migrations 069 and 070) ─────────────
+// Two sub-tabs on two read RPCs (Same script went in MK-196: every match was advertiser-side
+// recorded audio). Every row uses one grid (severity | who & why | when & verdict state) and opens
+// to Listen (recording) → Read (transcript, loaded on open) → Decide. Repeat caller rows carry the
+// number's 30-day margin. Odd timing loads once, then an agent pick and a "% over typical" slider
+// filter the rows live, highest % over the agent's typical call first.
 // A verdict is per (caller, person): Agree / Disagree / Unknown on "is this a coached caller?",
 // saved through coached_verdict_set; clicking your own verdict again removes it. A caller is
 // decided once anyone has given a verdict. Each section loads and fails on its own.
 let susLoaded = false;
 let susRepeatRows = null;              // suspicious_repeat_callers; null = not loaded, false = failed
-let susSimilarRows = null;             // suspicious_similar_transcripts
-let susConvRows = null;                // suspicious_conversions
+let susOddRows = null;                 // suspicious_odd_timing
 const susVerdicts = {};                // caller key -> [{decided_by, verdict}]; key present = fetched
 
 function suspiciousInit() { if (susLoaded) return; susLoaded = true; susReload(); }
@@ -7064,9 +7051,9 @@ function susWin() {
 }
 function susSub(id, btn) {
   document.querySelectorAll('#tab-suspicious .comp-subtab').forEach(b => b.classList.toggle('active', b === btn));
-  for (const p of ['repeat', 'script', 'timing']) document.getElementById('sus-pane-' + p).style.display = p === id ? '' : 'none';
+  for (const p of ['repeat', 'timing']) document.getElementById('sus-pane-' + p).style.display = p === id ? '' : 'none';
 }
-function susReload() { return Promise.allSettled([susLoadRepeat(), susLoadSimilar(), susLoadConv()]); }
+function susReload() { return Promise.allSettled([susLoadRepeat(), susLoadOdd()]); }
 
 // "Hide decided" (on by default). Rows hide on the next render (toggle, refresh), not while you
 // are still looking at the caller you just decided.
@@ -7074,16 +7061,16 @@ const susDecided = k => (susVerdicts[k] || []).length > 0;
 const susHideDecided = () => document.getElementById('sus-hidedec').classList.contains('active');
 const susHiddenNote = n => n > 0 && susHideDecided() ? `<div class="canoe-none sus-note">${n} decided ${n === 1 ? 'row is' : 'rows are'} hidden. Turn off "Hide decided" to review ${n === 1 ? 'it' : 'them'} again.</div>` : '';
 function susPressed(btn) { const on = btn.classList.toggle('active'); btn.setAttribute('aria-pressed', String(on)); }
-function susToggleHide(btn) { susPressed(btn); susRenderRepeat(); susRenderSimilar(); susRenderLong(); }
+function susToggleHide(btn) { susPressed(btn); susRenderRepeat(); susRenderLong(); }
 function susToggleCross(btn) { susPressed(btn); susLoadRepeat(); }
-function susToggleDiff(btn)  { susPressed(btn); susRenderSimilar(); }
 
 const susFmtD = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
 const susDur  = s => s == null ? '?' : (s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
 const susCt   = (id, n) => { document.getElementById(id).textContent = n == null ? '' : `(${n})`; };
 const SUS_VLABEL = { coached: 'Agree', not_coached: 'Disagree', unknown: 'Unknown' };
-const SUS_SIM_FLOOR = 0.30;   // refresh_script_matches (069) stores pairs from this similarity up
-const SUS_LEN_FLOOR = 120;    // the call-length slider's shortest setting (2 min): what the list is loaded from
+const SUS_PCT_FLOOR = 0;      // the % over typical slider's lowest setting: what the Odd timing list is loaded from
+// Whole dollars with a sign: -$12, $1,234.
+const susMoney = v => { const n = Math.round(Number(v) || 0); return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(); };
 
 // Agent picks. Rows carry each call's ivr_name; aliases resolve to the canonical agent, shown by its
 // display name. A list's <select> offers the agents present in its rows and keeps the current choice.
@@ -7145,7 +7132,7 @@ async function susFetchVerdicts(keys) {
   }
 }
 function currentSusSource() {
-  return ['repeat', 'script', 'timing'].find(p => document.getElementById('sus-pane-' + p).style.display !== 'none') || null;
+  return ['repeat', 'timing'].find(p => document.getElementById('sus-pane-' + p).style.display !== 'none') || null;
 }
 async function susVote(k, verdict, callId) {
   const me = (getAuthUser() || '').toLowerCase();
@@ -7161,30 +7148,22 @@ async function susVote(k, verdict, callId) {
   susRepaint(k);
 }
 
-// The four tiles. Each list's rows are counted at their current filters, before Hide decided.
-const susMinSim = () => parseInt(document.getElementById('sus-sim').value, 10) || 0;          // percent
-const susMinLen = () => (parseInt(document.getElementById('sus-len').value, 10) || 2) * 60;   // seconds
+// The three tiles. Each list's rows are counted at their current filters, before Hide decided.
+const susMinPct = () => parseInt(document.getElementById('sus-pct').value, 10) || 0;   // percent over the agent's typical
 function susTimingRows() {
-  if (!Array.isArray(susConvRows)) return null;
-  const min = susMinLen();
-  return susConvRows.filter(r => r.duration >= min && susAgentIs('sus-timing-agent', r.ivr_name)).sort((a, b) => b.duration - a.duration);
-}
-function susPairs() {
-  if (!Array.isArray(susSimilarRows)) return null;
-  const diff = document.getElementById('sus-diff').classList.contains('active'), min = susMinSim();
-  return susSimilarRows.filter(r => (!diff || !r.same_caller) && Math.round(r.similarity * 100) >= min && susAgentIs('sus-script-agent', r.a_ivr_name, r.b_ivr_name))
-    .sort((a, b) => b.similarity - a.similarity);   // highest match first
+  if (!Array.isArray(susOddRows)) return null;
+  const min = susMinPct();
+  return susOddRows.filter(r => r.pct_above >= min && susAgentIs('sus-timing-agent', r.ivr_name))
+    .sort((a, b) => b.pct_above - a.pct_above || b.duration - a.duration);   // highest % over typical first
 }
 function susStats() {
   const set = (id, v) => { document.getElementById(id).innerHTML = v == null ? nullMark() : String(v); };
-  const pairs = susPairs(), timing = susTimingRows();
+  const timing = susTimingRows();
   set('sus-stat-repeat', Array.isArray(susRepeatRows) ? (susRepeatRows[0] ? susRepeatRows[0].total : 0) : null);
-  set('sus-stat-script', pairs ? pairs.length : null);
   set('sus-stat-timing', timing ? timing.length : null);
-  if (!Array.isArray(susRepeatRows) && !pairs && !timing) { set('sus-stat-await', null); return; }
+  if (!Array.isArray(susRepeatRows) && !timing) { set('sus-stat-await', null); return; }
   const keys = new Set();
   (Array.isArray(susRepeatRows) ? susRepeatRows : []).forEach(r => keys.add(r.caller));
-  (pairs || []).forEach(r => { keys.add(r.a_caller); keys.add(r.b_caller); });
   (timing || []).forEach(r => keys.add(r.caller));
   keys.delete(null);
   set('sus-stat-await', [...keys].filter(k => !susDecided(k)).length);
@@ -7239,8 +7218,8 @@ function susRepeatWhy(r, days) {
   if (r.distinct_verticals > 1)  bits.push(`<b>${r.distinct_verticals} verticals</b> (${esc(r.verticals.join(', '))})`);
   if (r.distinct_publishers > 1) bits.push(`<b>${r.distinct_publishers} publishers</b> (${esc(r.publishers.join(', '))})`);
   return `This number had <b>${r.calls} connected calls</b> in the last ${days} days${bits.length ? ' across ' + bits.join(', ') : ''}.`
-    + (r.conversions > 0 ? ` ${r.conversions} became an appointment or sale.` : '')
-    + (r.flagged > 0 ? ` ${r.flagged} already ${r.flagged === 1 ? 'carries' : 'carry'} a compliance flag.` : '');
+    + (r.flagged > 0 ? ` ${r.flagged} already ${r.flagged === 1 ? 'carries' : 'carry'} a compliance flag.` : '')
+    + ` Over the last 30 days its calls brought in <b>${susMoney(r.payin_30d)}</b> from advertisers and cost <b>${susMoney(r.payout_30d)}</b> in publisher payouts: a margin of <b>${susMoney(r.margin_30d)}</b>.`;
 }
 async function susLoadRepeat() {
   const el = document.getElementById('sus-repeat');
@@ -7268,13 +7247,14 @@ function susRenderRepeat() {
   const note = capped + susHiddenNote(susRepeatRows.length - shown.length);
   if (!shown.length) { el.innerHTML = note || `<div class="canoe-none">No ${cross ? 'cross-ZIP/vertical/publisher ' : ''}repeat callers in this window.</div>`; return; }
   el.innerHTML = note + shown.map(([r, i]) => {
-    const line2 = `<b>${r.calls} calls</b> across <b>${r.distinct_zips} ZIP${r.distinct_zips === 1 ? '' : 's'}</b>, ${r.distinct_verticals} vertical${r.distinct_verticals === 1 ? '' : 's'} and ${r.distinct_publishers} publisher${r.distinct_publishers === 1 ? '' : 's'}; ${r.conversions} became an appointment or sale`;
+    const line2 = `<b>${r.calls} calls</b> across <b>${r.distinct_zips} ZIP${r.distinct_zips === 1 ? '' : 's'}</b>, ${r.distinct_verticals} vertical${r.distinct_verticals === 1 ? '' : 's'} and ${r.distinct_publishers} publisher${r.distinct_publishers === 1 ? '' : 's'}`;
+    const margin = `<span class="sus-margin${Number(r.margin_30d) < 0 ? ' neg' : ''}" title="Last 30 days, every call from this number: ${esc(susMoney(r.payin_30d))} from advertisers minus ${esc(susMoney(r.payout_30d))} to publishers">${susMoney(r.margin_30d)} margin / 30d</span>`;
     return `<details class="sus-row" ontoggle="if(this.open)susExpandGroup(this,${i})">
       <summary>
         <span class="sus-sev ${r.distinct_zips > 1 ? 'sus-sev-hot' : 'sus-sev-warm'}">${r.distinct_zips > 1 ? r.distinct_zips + ' ZIPs' : 'repeat'}</span>
         <div class="sus-line1"><span class="sus-who">${esc(r.called_from)}</span><span class="sus-ctx">${esc(r.verticals.join(', '))}</span></div>
         <div class="sus-line2">${line2}</div>
-        <div class="sus-right"><span class="sus-when">last ${susFmtD(r.last_call)}</span>${susVChip([r.caller])}</div>
+        <div class="sus-right"><span class="sus-when">last ${susFmtD(r.last_call)}</span>${margin}${susVChip([r.caller])}</div>
       </summary>
       <div class="sus-body">
         <div class="sus-why"><b>Why it's here:</b> ${susRepeatWhy(r, days)}</div>
@@ -7304,98 +7284,49 @@ async function susExpandGroup(det, i) {
   } catch (e) { box.dataset.done = ''; box.innerHTML = loadErrorHtml("this number's calls", `susRetryGroup(this,${i})`, e); }
 }
 
-// ── Sub-tab 2: same script ──
-// Loaded once from the stored floor (SUS_SIM_FLOOR); the match slider and the agent pick filter the
-// pairs live, highest match first.
-async function susLoadSimilar() {
-  const el = document.getElementById('sus-similar');
-  el.innerHTML = '<div class="comp-loading">Loading…</div>';
-  susCt('sus-ct-script', null);
-  try {
-    const rows = await sbFetch('rpc/suspicious_similar_transcripts', { method: 'POST', body: JSON.stringify({ min_sim: SUS_SIM_FLOOR }) }) || [];
-    await susFetchVerdicts(rows.flatMap(r => [r.a_caller, r.b_caller]));
-    susSimilarRows = rows;
-    susAgentOptions('sus-script-agent', rows.flatMap(r => [r.a_ivr_name, r.b_ivr_name]));
-    susRenderSimilar();
-  } catch (e) { susSimilarRows = false; susCt('sus-ct-script', null); susStats(); el.innerHTML = loadErrorHtml('transcript matches', 'susLoadSimilar()', e); }
-}
-function susRenderSimilar() {
-  const el = document.getElementById('sus-similar');
-  const min = susMinSim();
-  document.getElementById('sus-sim-label').textContent = min + '%';
-  if (!Array.isArray(susSimilarRows)) return;
-  const all = susPairs();
-  const rows = all.filter(r => !susHideDecided() || !susKeys(r.a_caller, r.b_caller).every(susDecided));
-  const note = susHiddenNote(all.length - rows.length);
-  if (susSimilarRows[0]) document.getElementById('sus-script-note').textContent = `Transcripts in the same vertical saying the same words, last 7 days, last matched ${susFmtD(susSimilarRows[0].computed_at)} (nightly, pairs kept from ${Math.round(SUS_SIM_FLOOR * 100)}% up); highest match first. Open a match to compare the two calls side by side.`;
-  susCt('sus-ct-script', all.length);
-  susStats();
-  const agent = document.getElementById('sus-script-agent').value;
-  if (!rows.length) { el.innerHTML = note || `<div class="canoe-none">No transcript matches at ${min}% or more${agent ? ' for this agent' : ''} in the last 7 days.${min > SUS_SIM_FLOOR * 100 ? ' Slide left to widen.' : ' The matching runs nightly.'}</div>`; return; }
-  el.innerHTML = note + rows.map(r => {
-    const pct = Math.round(r.similarity * 100);
-    const agents = [...new Set([susAgentName(r.a_ivr_name), susAgentName(r.b_ivr_name)].filter(Boolean))].join(' / ');
-    const why = r.same_caller
-      ? `<b>${pct}% of the two conversations match</b>, from the <b>same number</b>: likely a redial or callback rather than coaching.`
-      : `<b>${pct}% of the two conversations match, from two different numbers</b>. Two callers saying the same words is a strong coached-call sign. Listen to both and compare. (Recorded greetings and hold messages are left out of the comparison.)`;
-    const side = (p, label) => susCallRow(
-      { id: r['call_id_' + p], caller: r[p + '_caller'], called_from: r[p + '_called_from'], publisher_name: r[p + '_publisher'], vertical_name: r[p + '_vertical'],
-        created_at: r[p + '_created_at'], duration: r[p + '_duration'], recording_url: r[p + '_recording_url'], ascnd_recording_url: r[p + '_ascnd_recording_url'], our_outcome: r[p + '_outcome'] },
-      { ctx: [susAgentName(r[p + '_ivr_name']), r[p + '_publisher'], susFmtD(r[p + '_created_at'])].filter(Boolean).map(esc).join(' · '), when: label });
-    return `<details class="sus-row">
-      <summary>
-        <span class="sus-sev ${pct >= 80 ? 'sus-sev-hot' : 'sus-sev-warm'}">${pct}%</span>
-        <div class="sus-line1"><span class="sus-who">${esc(r.a_called_from || '?')} ↔ ${esc(r.b_called_from || '?')}</span><span class="sus-ctx">${[r.vertical, agents].filter(Boolean).map(esc).join(' · ')}</span></div>
-        <div class="sus-line2">${r.same_caller ? 'Same number twice: likely a redial' : '<b>Two different callers</b> saying nearly the same words'}</div>
-        <div class="sus-right"><span class="sus-when">${susFmtD(r.a_created_at)}</span>${susVChip(susKeys(r.a_caller, r.b_caller))}</div>
-      </summary>
-      <div class="sus-body">
-        <div class="sus-why"><b>Why it's here:</b> ${why}</div>
-        <div class="sus-compare pair">${side('a', 'call A')}${side('b', 'call B')}</div>
-      </div>
-    </details>`;
-  }).join('');
-}
-
-// ── Sub-tab 3: odd timing: abnormally long conversions ──
-// Loaded once from the slider's shortest length (SUS_LEN_FLOOR); the call-length slider and the
-// agent pick filter live, longest first. (The PR review dropped the booked-fast list: this tab is
-// about callers stringing a call out.)
-async function susLoadConv() {
+// ── Sub-tab 2: odd timing: every connected call against its agent's typical length ──
+// Loaded once from the slider's lowest setting (SUS_PCT_FLOOR); the % over typical slider and the
+// agent pick filter live, highest % first. "Typical" is the agent's median connected call over the
+// last 30 days (suspicious_odd_timing, 070); an agent with under 20 such calls uses its vertical's.
+async function susLoadOdd() {
   const el = document.getElementById('sus-conv-long');
   el.innerHTML = '<div class="comp-loading">Loading…</div>';
   susCt('sus-ct-timing', null);
   try {
     const { from_ts, to_ts } = susWin();
-    const rows = await sbFetch('rpc/suspicious_conversions', { method: 'POST', body: JSON.stringify({ from_ts, to_ts, min_secs: SUS_LEN_FLOOR }) }) || [];
+    const rows = await sbFetch('rpc/suspicious_odd_timing', { method: 'POST', body: JSON.stringify({ from_ts, to_ts, min_pct: SUS_PCT_FLOOR }) }) || [];
     await susFetchVerdicts(rows.map(r => r.caller));
-    susConvRows = rows;
+    susOddRows = rows;
     susAgentOptions('sus-timing-agent', rows.map(r => r.ivr_name));
     susRenderLong();
-  } catch (e) { susConvRows = false; susCt('sus-ct-timing', null); susStats(); el.innerHTML = loadErrorHtml('long conversions', 'susLoadConv()', e); }
+  } catch (e) { susOddRows = false; susCt('sus-ct-timing', null); susStats(); el.innerHTML = loadErrorHtml('odd timing', 'susLoadOdd()', e); }
 }
 function susRenderLong() {
   const el = document.getElementById('sus-conv-long');
-  const mins = susMinLen() / 60;
-  document.getElementById('sus-len-label').textContent = mins + ' min';
-  if (!Array.isArray(susConvRows)) return;
+  const min = susMinPct();
+  document.getElementById('sus-pct-label').textContent = min + '% over typical';
+  if (!Array.isArray(susOddRows)) return;
   const all = susTimingRows();
   const rows = all.filter(r => !susHideDecided() || !susDecided(r.caller));
-  const total = susConvRows[0] ? susConvRows[0].total : 0;
-  const capped = total > susConvRows.length ? `<div class="canoe-none sus-note">Showing the ${susConvRows.length} longest of ${total} conversions over ${SUS_LEN_FLOOR / 60} minutes.</div>` : '';
+  const total = susOddRows[0] ? susOddRows[0].total : 0;
+  const capped = total > susOddRows.length ? `<div class="canoe-none sus-note">Showing the ${susOddRows.length} furthest over typical of ${total} calls.</div>` : '';
   const note = capped + susHiddenNote(all.length - rows.length);
   susCt('sus-ct-timing', all.length);
   susStats();
   const agent = document.getElementById('sus-timing-agent').value;
-  if (!rows.length) { el.innerHTML = note || `<div class="canoe-none">No conversions of ${mins} minutes or more${agent ? ' for this agent' : ''} in this window. Slide left to widen.</div>`; return; }
+  if (!rows.length) { el.innerHTML = note || `<div class="canoe-none">No calls ${min}% or more over typical${agent ? ' for this agent' : ''} in this window. Slide left to widen.</div>`; return; }
   el.innerHTML = note + rows.map(r => {
-    const rough = r.vertical_n < 10, vert = esc(r.vertical_name || '');
-    const above = r.pct_above >= 0 ? `<b>${r.pct_above}% above</b>` : `${-r.pct_above}% below`;
+    const agentName = susAgentName(r.ivr_name), vert = esc(r.vertical_name || '');
+    const byAgent = r.typical_from === 'agent';
+    const whose = byAgent ? `${esc(agentName || r.ivr_name)}'s typical call` : `the typical ${vert} call`;
+    const basis = byAgent
+      ? `the median of ${esc(agentName || r.ivr_name)}'s ${r.typical_n} connected calls in the last 30 days`
+      : `the ${vert} vertical's median over the last 30 days, ${r.typical_n} connected calls${r.ivr_name ? `, as ${esc(agentName || r.ivr_name)} had fewer than 20` : ', as this call has no agent'}`;
     return susCallRow(r, {
-      sev: `<span class="sus-sev ${!rough && r.pct_above >= 100 ? 'sus-sev-hot' : 'sus-sev-warm'}">${susDur(r.duration)}</span>`,
-      ctx: [susAgentName(r.ivr_name), r.vertical_name, r.publisher_name].filter(Boolean).map(esc).join(' · '),
-      line2: `<b>${esc(labelOf(r.our_outcome))}</b> in a <b>${susDur(r.duration)}</b> call, ${above} the typical ${vert} conversion (${susDur(r.typical_secs)}${rough ? ', rough' : ''})`,
-      why: `This <b>${esc(labelOf(r.our_outcome))}</b> call ran <b>${susDur(r.duration)}</b>, ${above} the typical ${vert} conversion (<b>${susDur(r.typical_secs)}</b>, from ${r.vertical_n} conversion${r.vertical_n === 1 ? '' : 's'} in this window${rough ? ', so "typical" is rough' : ''}). An unusually long conversion call can mean a caller stringing the call out.`,
+      sev: `<span class="sus-sev ${r.pct_above >= 100 ? 'sus-sev-hot' : 'sus-sev-warm'}">+${r.pct_above}%</span>`,
+      ctx: [agentName, r.vertical_name, r.publisher_name].filter(Boolean).map(esc).join(' · '),
+      line2: `<b>${susDur(r.duration)}</b> call, <b>${r.pct_above}% over</b> ${whose} (${susDur(r.typical_secs)})`,
+      why: `This call ran <b>${susDur(r.duration)}</b>, <b>${r.pct_above}% over</b> ${whose} of <b>${susDur(r.typical_secs)}</b> (${basis}). A call far longer than the agent's usual can mean a caller stringing it out.`,
     });
   }).join('');
 }
