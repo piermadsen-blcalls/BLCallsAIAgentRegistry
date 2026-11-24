@@ -28,22 +28,21 @@ const TABLES = [
   'caller_daily', 'outcome_daily',   // 064
   'flag_daily',                      // 065
   'mcp_query_log', 'mcp_saved_reports',   // 066, 067 (Claude connector)
-  'coached_verdicts', 'script_matches',   // 069 (Suspicious tab)
+  'coached_verdicts',                     // 069 (Suspicious tab; 070 dropped script_matches)
 ];
 // Read-only RPCs, as [name, query-string arguments], called with GET. HEAD is not a test here:
 // PostgREST answers HEAD on an RPC with arguments 200 without running it (2026-11-13). The two
 // argument-free ones bypass RLS (SECURITY DEFINER); the 064/065 dashboard reads get a one-day range.
 // The Claude connector's reads (066/067) take no arguments; mcp_run_sql is left out (it logs).
-// The Suspicious tab's reads (069) get a one-day window; its verdict writes are left out.
+// The Suspicious tab's reads (069/070) get a one-day window; its verdict writes are left out.
 const RPCS = [
   ['get_distinct_verticals', ''], ['get_distinct_accounts', ''],
   ['mcp_whoami', ''], ['mcp_describe', ''], ['mcp_reports_list', ''],
   ...['dashboard_summary', 'dashboard_outcomes', 'dashboard_quality', 'dashboard_trend', 'dashboard_cpa',
      'dashboard_flags', 'dashboard_flag_trend']
     .map(fn => [fn, 'from_day=2026-11-01&to_day=2026-11-01']),
-  ...['suspicious_repeat_callers', 'suspicious_conversions']
+  ...['suspicious_repeat_callers', 'suspicious_odd_timing']
     .map(fn => [fn, 'from_ts=2026-11-01T00:00:00Z&to_ts=2026-11-02T00:00:00Z']),
-  ['suspicious_similar_transcripts', 'min_sim=0.55'],
 ];
 
 // PASS = no access (401/403), or a table/RPC that doesn't exist (404). A 200 is only a PASS for a

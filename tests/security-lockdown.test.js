@@ -43,11 +43,13 @@ test('anon check: blocked or empty passes; any readable row or a runnable RPC fa
   assert.match(cfg.key, /^sb_publishable_/, 'tests the key the page ships, never a secret one');
 });
 
-test('anon check: covers every table any migration creates', () => {
+test('anon check: covers every table any migration creates (and a later one has not dropped)', () => {
   const dir = path.join(ROOT, 'supabase', 'migrations');
   const created = new Set();
-  for (const f of fs.readdirSync(dir)) {
-    for (const m of fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/create table (?:if not exists )?(?:public\.)?(\w+)/gi)) created.add(m[1]);
+  for (const f of fs.readdirSync(dir).sort()) {
+    const sql = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const m of sql.matchAll(/create table (?:if not exists )?(?:public\.)?(\w+)/gi)) created.add(m[1]);
+    for (const m of sql.matchAll(/drop table (?:if exists )?(?:public\.)?(\w+)/gi)) created.delete(m[1]);   // 070 drops 069's script_matches
   }
   const missing = [...created].filter(t => !check.TABLES.includes(t) && !/^zz/.test(t));
   assert.deepEqual(missing, []);
