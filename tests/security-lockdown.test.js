@@ -49,7 +49,7 @@ test('anon check: covers every table any migration creates (and a later one has 
   for (const f of fs.readdirSync(dir).sort()) {
     const sql = fs.readFileSync(path.join(dir, f), 'utf8');
     for (const m of sql.matchAll(/create table (?:if not exists )?(?:public\.)?(\w+)/gi)) created.add(m[1]);
-    for (const m of sql.matchAll(/drop table (?:if exists )?(?:public\.)?(\w+)/gi)) created.delete(m[1]);   // 070 drops 069's script_matches
+    for (const m of sql.matchAll(/drop table (?:if exists )?(?:public\.)?(\w+)/gi)) created.delete(m[1]);   // 070 drops 069's script_matches; 071 adds canoe_blocks
   }
   const missing = [...created].filter(t => !check.TABLES.includes(t) && !/^zz/.test(t));
   assert.deepEqual(missing, []);
