@@ -25,7 +25,7 @@ compliance, and surfaces it in a single-page registry. Live on Netlify.
 
 ## Architecture (map)
 - **`index.html`** — the ENTIRE frontend. One file, vanilla HTML/CSS/JS, **no
-  framework, no build step.** Tabs: Agents, Insights, Calls (MK-176 overview on top of the call list), Review, Scores, Suspicious (MK-195/196 coached-caller queue: repeat callers with a 30-day margin, odd timing by agent), Claude (connector setup + saved reports), Settings.
+  framework, no build step.** Tabs: Agents, Insights, Calls (MK-176 overview on top of the call list), Review, Scores, Suspicious (MK-195/196/199 coached-caller queue: repeat callers with a 30-day margin, transcript keyword search, coached caller stats, Decided lists with a Blocked in Canoe tick and a CSV export), Claude (connector setup + saved reports), Settings.
   Talks directly to Supabase REST via the `sbFetch()` helper; the Settings →
   model-calibration UI can dispatch the `process.yml` GitHub Action.
 - **`scripts/`** — Node jobs, run by GitHub Actions on a schedule (see `.github/workflows/`):

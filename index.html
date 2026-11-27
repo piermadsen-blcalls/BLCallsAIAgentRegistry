@@ -920,7 +920,6 @@
   .sus-label { font-size:12px; color:var(--text-3); }
   .sus-select { width:auto; padding:4px 8px; }
   .sus-tiles { margin-bottom:20px; }
-  .sus-pct { color:var(--brand-navy); font-family:var(--mono); font-size:12px; }
   .sus-note { margin-bottom:8px; }
   .sus-muted { color:var(--text-3); }
   .sus-row { border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); margin-bottom:8px; }
@@ -964,12 +963,62 @@
   .sus-compare { display:grid; gap:8px; }
   .sus-compare.pair { grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); align-items:start; }
   .sus-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; font-size:12px; color:var(--text-2); margin:2px 0 12px; }
-  .sus-controls input[type=range] { width:180px; max-width:100%; accent-color:var(--brand-mint); }
   .sus-h { font-size:13px; font-weight:600; color:var(--brand-navy); margin:16px 0 8px; }
   .sus-h:first-child { margin-top:0; }
+  .sus-tiles-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  /* MK-199: the Decided buttons beside Hide decided. Coached call = the coral of the "N ZIPs" badge, Unknown = amber. */
+  .sus-decided { display:inline-flex; align-items:center; gap:6px; padding-left:10px; margin-left:2px; border-left:1px solid var(--border-strong); }
+  .sus-decbtn { font-family:var(--sans); font-size:12px; font-weight:600; padding:5px 12px; min-height:30px; border-radius:100px; border:1.5px solid transparent; cursor:pointer; white-space:nowrap; }
+  .sus-decbtn .ct { font-family:var(--mono); font-weight:500; margin-left:5px; }
+  .sus-decbtn.coached { background:var(--coral-bg); color:var(--coral); }
+  .sus-decbtn.unknown { background:var(--amber-bg); color:var(--amber); }
+  .sus-decbtn.coached:hover, .sus-decbtn.coached.active { border-color:var(--coral); }
+  .sus-decbtn.unknown:hover, .sus-decbtn.unknown.active { border-color:var(--amber); }
+  .sus-decbtn.active { box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px currentColor; }
+  .sus-dechead { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; margin:4px 0 14px; }
+  .sus-dechead h3 { font-family:var(--heading); font-size:15px; font-weight:600; margin:0; color:var(--brand-navy); }
+  .sus-dechead p { margin:3px 0 0; font-size:12.5px; color:var(--text-2); }
+  /* MK-199: the Blocked in Canoe tick (step 3) and its row marker. */
+  .sus-block { display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:5px 11px; min-height:32px; border:1px solid var(--border-strong); border-radius:16px; font-size:12.5px; font-weight:500; color:var(--text); cursor:pointer; background:var(--surface); }
+  .sus-block input { width:15px; height:15px; margin:0; accent-color:var(--teal); cursor:pointer; }
+  .sus-block.on { background:var(--teal-bg); border-color:var(--teal); color:var(--teal); }
+  .sus-blockmeta { font-size:11.5px; color:var(--text-3); }
+  .sus-bchip { font-size:11.5px; font-weight:500; white-space:nowrap; padding:2px 8px; border-radius:10px; }
+  .sus-bchip.yes { background:var(--teal-bg); color:var(--teal); }
+  .sus-bchip.no { background:var(--gray-bg); color:var(--text-3); }
+  /* MK-199: the Transcript keywords sub-tab. */
+  .sus-kwbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:2px 0 10px; }
+  .sus-kw { display:inline-flex; align-items:center; gap:4px; }
+  .sus-kw input { min-width:0; width:170px; }
+  .sus-kwx { border:none; background:none; color:var(--text-3); font-size:15px; line-height:1; cursor:pointer; padding:2px 4px; }
+  .sus-kwx:hover { color:var(--coral); }
+  .sus-and { font-family:var(--mono); font-size:11px; font-weight:500; color:var(--text-3); }
+  .sus-kwadd { width:30px; height:30px; border-radius:50%; border:1px solid var(--border-strong); background:var(--surface); color:var(--brand-navy); font-size:17px; line-height:1; cursor:pointer; }
+  .sus-kwadd:hover { border-color:var(--brand-navy); }
+  .sus-kwgo { font-family:var(--sans); font-size:12px; font-weight:600; padding:6px 16px; min-height:30px; border-radius:var(--radius-sm); border:1px solid var(--brand-navy); background:var(--brand-navy); color:#fff; cursor:pointer; }
+  .sus-tx mark, .sus-line2 mark { background:var(--amber-bg); color:var(--text); border-radius:2px; padding:0 1px; font-weight:600; }
+  /* MK-199: coached caller stats (by vertical, by publisher). */
+  .sus-statgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; align-items:start; }
+  .sus-statcard { border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; min-width:0; }
+  .sus-statcard h4 { font-family:var(--heading); font-size:13px; font-weight:600; color:var(--brand-navy); margin:0 0 10px; }
+  .sus-statrow { display:grid; grid-template-columns:minmax(0,150px) minmax(40px,1fr) auto; gap:10px; align-items:center; padding:6px 0; border-top:1px solid var(--border); font-size:12.5px; }
+  .sus-statrow:first-of-type { border-top:none; }
+  .sus-statname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+  .sus-bar { height:8px; border-radius:4px; background:var(--coral-bg); overflow:hidden; }
+  .sus-bar > i { display:block; height:100%; background:var(--coral); border-radius:4px; }
+  .sus-statnum { font-family:var(--mono); font-size:11.5px; color:var(--text-2); white-space:nowrap; }
+  .sus-statnum b { color:var(--coral); }
+  /* MK-199: Export CSV on the Coached call list. */
+  .sus-export { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:0 0 14px; padding:9px 12px; background:var(--tint); border-radius:var(--radius-sm); font-size:12px; color:var(--text-2); }
+  .sus-exportbtn { font-family:var(--sans); font-size:12px; font-weight:600; padding:6px 14px; min-height:30px; border-radius:var(--radius-sm); border:1px solid var(--brand-navy); background:var(--surface); color:var(--brand-navy); cursor:pointer; white-space:nowrap; }
+  .sus-exportbtn:hover { background:var(--brand-navy); color:#fff; }
+  .sus-exportdone { color:var(--teal); font-weight:500; }
+  .sus-more { margin-top:4px; }
   @media (max-width:640px) {
     .sus-row > summary { grid-template-columns:minmax(0,1fr); }
     .sus-sev, .sus-right { grid-row:auto; grid-column:1; justify-self:start; justify-items:start; }
+    .sus-decided { border-left:none; padding-left:0; margin-left:0; }
+    .sus-block { margin-left:0; }
     .sus-line2 { grid-column:1; white-space:normal; }
     .sus-compare.pair { grid-template-columns:minmax(0,1fr); }
   }
@@ -1912,6 +1961,11 @@
         <div class="settings-section-title">Suspicious callers</div>
         <div class="sus-hdr-controls">
           <button type="button" id="sus-hidedec" class="pill active" aria-pressed="true" onclick="susToggleHide(this)" title="Hide callers that already have a verdict from anyone. Turn off to review them again.">Hide decided</button>
+          <span class="sus-decided">
+            <span class="sus-label">Decided:</span>
+            <button type="button" id="sus-dec-coached" class="sus-decbtn coached" aria-pressed="false" onclick="susShowDecided('coached')" title="Callers anyone marked Agree (coached caller), and whether each is blocked in Canoe">Coached call<span class="ct" id="sus-dec-ct-coached"></span></button>
+            <button type="button" id="sus-dec-unknown" class="sus-decbtn unknown" aria-pressed="false" onclick="susShowDecided('unknown')" title="Callers anyone marked Unknown, and whether each is blocked in Canoe">Unknown<span class="ct" id="sus-dec-ct-unknown"></span></button>
+          </span>
           <label for="sus-days" class="sus-label">Window</label>
           <select id="sus-days" class="settings-input sus-select" onchange="susReload()">
             <option value="7">Last 7 days</option>
@@ -1921,37 +1975,62 @@
           <button type="button" class="settings-secondary-btn" onclick="susReload()">Refresh</button>
         </div>
       </div>
-      <p class="sus-intro">Two patterns that point at coached or fake callers. Open a row, then <b>Listen → Read → Decide</b>: play the recording, read the transcript, and record whether it's a coached caller. Verdicts are saved per person and per phone number, and shared with the team.</p>
 
-      <div class="summary-strip sus-tiles">
-        <div class="summary-item" title="Phone numbers calling repeatedly across ZIPs, verticals or publishers in this window"><div class="summary-val" id="sus-stat-repeat"><span class="null-mark">-</span></div><div class="summary-lbl">suspicious numbers</div></div>
-        <div class="summary-item" title="Connected calls at or above the % over typical slider, for the picked agent"><div class="summary-val" id="sus-stat-timing"><span class="null-mark">-</span></div><div class="summary-lbl">calls over typical</div></div>
-        <div class="summary-item" title="Callers across both lists that nobody has given a verdict yet"><div class="summary-val" id="sus-stat-await"><span class="null-mark">-</span></div><div class="summary-lbl">callers awaiting a verdict</div></div>
-      </div>
+      <!-- The queue: the three sub-tabs -->
+      <div id="sus-view-queue">
+        <p class="sus-intro">Find coached or fake callers by repeat calls or by what was said, and see which verticals and publishers they use. Open a row, then <b>Listen → Read → Decide</b>: play the recording, read the transcript, and record whether it's a coached caller. Verdicts are saved per person and per phone number, and shared with the team. If you block the caller in Canoe, tick <b>Blocked in Canoe?</b> so the team knows it's done.</p>
 
-      <div class="comp-subtabs">
-        <button type="button" class="comp-subtab active" onclick="susSub('repeat',this)">Repeat callers <span id="sus-ct-repeat"></span></button>
-        <button type="button" class="comp-subtab" onclick="susSub('timing',this)">Odd timing <span id="sus-ct-timing"></span></button>
-      </div>
-
-      <div id="sus-pane-repeat">
-        <div class="sus-controls">
-          <button type="button" id="sus-cross" class="pill active" aria-pressed="true" onclick="susToggleCross(this)" title="Only numbers spanning more than one ZIP, vertical or publisher (the suspicious-ping pattern, on connected calls)">Cross ZIP / vertical / publisher only</button>
-          <span>One number calling repeatedly (connected calls). Open a number to hear each of its calls, then decide once for the caller.</span>
+        <div class="summary-strip sus-tiles sus-tiles-2">
+          <div class="summary-item" title="Phone numbers calling repeatedly across ZIPs, verticals or publishers in this window"><div class="summary-val" id="sus-stat-repeat"><span class="null-mark">-</span></div><div class="summary-lbl">suspicious numbers</div></div>
+          <div class="summary-item" title="Repeat callers that nobody has given a verdict yet"><div class="summary-val" id="sus-stat-await"><span class="null-mark">-</span></div><div class="summary-lbl">callers awaiting a verdict</div></div>
         </div>
-        <div id="sus-repeat"><div class="comp-loading">Loading…</div></div>
+
+        <div class="comp-subtabs">
+          <button type="button" class="comp-subtab active" onclick="susSub('repeat',this)">Repeat callers <span id="sus-ct-repeat"></span></button>
+          <button type="button" class="comp-subtab" onclick="susSub('keywords',this)">Transcript keywords <span id="sus-ct-keywords"></span></button>
+          <button type="button" class="comp-subtab" onclick="susSub('stats',this)">Coached caller stats</button>
+        </div>
+
+        <div id="sus-pane-repeat">
+          <div class="sus-controls">
+            <button type="button" id="sus-cross" class="pill active" aria-pressed="true" onclick="susToggleCross(this)" title="Only numbers spanning more than one ZIP, vertical or publisher (the suspicious-ping pattern, on connected calls)">Cross ZIP / vertical / publisher only</button>
+            <span>One number calling repeatedly (connected calls). Open a number to hear each of its calls, then decide once for the caller.</span>
+          </div>
+          <div id="sus-repeat"><div class="comp-loading">Loading…</div></div>
+        </div>
+
+        <div id="sus-pane-keywords" style="display:none">
+          <form class="sus-kwbar" onsubmit="event.preventDefault();susRunSearch()">
+            <label for="sus-kw-agent" class="sus-label">Agent</label>
+            <select id="sus-kw-agent" class="settings-input sus-select" onchange="susKwAgentChanged()" title="Only this agent's calls"><option value="">All agents</option></select>
+            <span class="sus-label">Transcript mentions</span>
+            <span id="sus-kw-inputs"></span>
+            <button type="button" class="sus-kwadd" onclick="susAddKw()" title="Add another keyword. A call must mention every keyword." aria-label="Add another keyword">+</button>
+            <button type="submit" class="sus-kwgo">Search</button>
+            <button type="button" class="settings-secondary-btn" onclick="susClearKw()">Clear</button>
+          </form>
+          <div class="sus-controls"><span>Only connected calls whose transcript mentions <b>every</b> keyword are listed, newest first. Capitals don't matter, and "spider" also finds "spiders". Pick an agent to search only that agent's calls. The Window at the top right sets how far back it looks. This is a plain word search, not AI.</span></div>
+          <div id="sus-keywords"></div>
+        </div>
+
+        <div id="sus-pane-stats" style="display:none">
+          <div class="sus-controls"><span>Where the callers marked <b>Agree</b> (coached caller) came from: every vertical and publisher their connected calls used in the Window at the top right. A caller who used two publishers counts once under each. Plain counting, not AI.</span></div>
+          <div id="sus-stats"><div class="comp-loading">Loading…</div></div>
+        </div>
       </div>
 
-      <div id="sus-pane-timing" style="display:none">
-        <div class="sus-controls">
-          <label for="sus-timing-agent" class="sus-label">Agent</label>
-          <select id="sus-timing-agent" class="settings-input sus-select" onchange="susRenderLong()" title="Only this agent's calls"><option value="">All agents</option></select>
-          <label for="sus-pct">At least</label>
-          <input type="range" id="sus-pct" min="0" max="300" step="10" value="50" oninput="susRenderLong()" title="How far over the agent's typical call length">
-          <b id="sus-pct-label" class="sus-pct">50% over typical</b>
+      <!-- The Decided lists, behind the Coached call / Unknown buttons -->
+      <div id="sus-view-decided" style="display:none">
+        <div class="sus-dechead">
+          <div><h3 id="sus-dec-title"></h3><p id="sus-dec-sub"></p></div>
+          <button type="button" class="settings-secondary-btn" onclick="susShowDecided(null)">Back to the queue</button>
         </div>
-        <div class="sus-controls"><span>Every connected call, measured against the typical call for the same AI agent (its median over the last 30 days, connected calls only; an agent with under 20 such calls uses its vertical's typical), highest % over typical first. A call far longer than the agent's usual can mean a caller stringing it out.</span></div>
-        <div id="sus-conv-long"><div class="comp-loading">Loading…</div></div>
+        <div class="sus-export" id="sus-export" style="display:none">
+          <button type="button" class="sus-exportbtn" onclick="susExportCsv()">Export CSV</button>
+          <span>One row per call from these callers, saved to your computer. <b>The file contains caller phone numbers.</b> Keep it on your work computer and don't email or upload it.</span>
+          <span class="sus-exportdone" id="sus-exportdone"></span>
+        </div>
+        <div id="sus-decided"></div>
       </div>
     </div>
   </div>
@@ -7030,50 +7109,78 @@ async function claudeDeleteReport(id) {
   claudeLoadReports();
 }
 
-// ── SUSPICIOUS TAB (MK-195 + MK-196: coached-caller triage, migrations 069 and 070) ─────────────
-// Two sub-tabs on two read RPCs (Same script went in MK-196: every match was advertiser-side
-// recorded audio). Every row uses one grid (severity | who & why | when & verdict state) and opens
-// to Listen (recording) → Read (transcript, loaded on open) → Decide. Repeat caller rows carry the
-// number's 30-day margin. Odd timing loads once, then an agent pick and a "% over typical" slider
-// filter the rows live, highest % over the agent's typical call first.
+// ── SUSPICIOUS TAB (MK-195, MK-196, MK-199: coached-caller triage, migrations 069, 070 and 071) ─────
+// The queue has three sub-tabs: Repeat callers (suspicious_repeat_callers), Transcript keywords
+// (suspicious_transcript_search: calls whose transcript mentions every keyword, plain matching) and
+// Coached caller stats (the verticals and publishers used by callers anyone marked Agree, counted on
+// the page from suspicious_coached_calls). Odd timing went in MK-199 (it was not finding coached
+// callers); its verdicts are kept. Every row uses one grid (severity | who & why | when & verdict
+// state) and opens to Listen (recording) → Read (transcript, loaded on open, keywords highlighted) →
+// Decide. Repeat caller rows carry the number's 30-day margin.
 // A verdict is per (caller, person): Agree / Disagree / Unknown on "is this a coached caller?",
 // saved through coached_verdict_set; clicking your own verdict again removes it. A caller is
-// decided once anyone has given a verdict. Each section loads and fails on its own.
+// decided once anyone has given a verdict. "Blocked in Canoe?" (canoe_blocks) is one tick per
+// caller for the whole team, set through canoe_block_set / canoe_block_clear: a record that the
+// reviewer blocked the number in Canoe, nothing more. The Decided buttons open a list of every
+// caller anyone marked Agree (Coached call) or Unknown, whatever the window, from
+// suspicious_decided_callers; the Coached call list has the CSV export, built in the browser from
+// data the page already holds. Each section loads and fails on its own.
 let susLoaded = false;
 let susRepeatRows = null;              // suspicious_repeat_callers; null = not loaded, false = failed
-let susOddRows = null;                 // suspicious_odd_timing
+let susKwRows = null;                  // suspicious_transcript_search for the last search
+let susCoachedCalls = null;            // suspicious_coached_calls: every call of every coached caller
+let susDecidedRows = null;             // suspicious_decided_callers for the open Decided list
+let susDecidedView = null;             // null (the queue) | 'coached' | 'unknown'
 const susVerdicts = {};                // caller key -> [{decided_by, verdict}]; key present = fetched
+const susBlocks = {};                  // caller key -> {blocked_by, blocked_at} | null; key present = fetched
+const susDecCounts = { coached: null, unknown: null };   // callers behind each Decided button
+let susKw = [''];                      // the keyword boxes
+let susSearched = false;               // a search has been run (its results are what the list shows)
+const susCallLists = [];               // id -> {ids, shown}: a row's call ids, loaded 25 at a time
+const SUS_CALLS_PAGE = 25;
 
-function suspiciousInit() { if (susLoaded) return; susLoaded = true; susReload(); }
+function suspiciousInit() {
+  if (susLoaded) return;
+  susLoaded = true;
+  susAgentOptions('sus-kw-agent', AGENTS.map(a => a.ivrName));
+  susRenderKwBar();
+  susRenderKeywords();
+  susReload();
+}
 function susWin() {
   const days = parseInt(document.getElementById('sus-days').value, 10) || 30;
   return { days, from_ts: new Date(Date.now() - days * 864e5).toISOString(), to_ts: new Date(Date.now() + 60e3).toISOString() };
 }
 function susSub(id, btn) {
   document.querySelectorAll('#tab-suspicious .comp-subtab').forEach(b => b.classList.toggle('active', b === btn));
-  for (const p of ['repeat', 'timing']) document.getElementById('sus-pane-' + p).style.display = p === id ? '' : 'none';
+  for (const p of ['repeat', 'keywords', 'stats']) document.getElementById('sus-pane-' + p).style.display = p === id ? '' : 'none';
 }
-function susReload() { return Promise.allSettled([susLoadRepeat(), susLoadOdd()]); }
+// The window changed, or Refresh: every list that depends on it, and the Decided counts.
+function susReload() {
+  return Promise.allSettled([susLoadRepeat(), susLoadCoached(), susLoadDecidedCounts(), susSearched ? susRunSearch() : null]);
+}
 
 // "Hide decided" (on by default). Rows hide on the next render (toggle, refresh), not while you
-// are still looking at the caller you just decided.
+// are still looking at the caller you just decided. It applies to the queue, not the Decided lists.
 const susDecided = k => (susVerdicts[k] || []).length > 0;
 const susHideDecided = () => document.getElementById('sus-hidedec').classList.contains('active');
-const susHiddenNote = n => n > 0 && susHideDecided() ? `<div class="canoe-none sus-note">${n} decided ${n === 1 ? 'row is' : 'rows are'} hidden. Turn off "Hide decided" to review ${n === 1 ? 'it' : 'them'} again.</div>` : '';
+const susHiddenNote = n => n > 0 && susHideDecided() ? `<div class="canoe-none sus-note">${n} decided ${n === 1 ? 'row is' : 'rows are'} hidden. Turn off "Hide decided", or use the Decided buttons, to see ${n === 1 ? 'it' : 'them'}.</div>` : '';
 function susPressed(btn) { const on = btn.classList.toggle('active'); btn.setAttribute('aria-pressed', String(on)); }
-function susToggleHide(btn) { susPressed(btn); susRenderRepeat(); susRenderLong(); }
+function susToggleHide(btn) { susPressed(btn); susRenderRepeat(); susRenderKeywords(); }
 function susToggleCross(btn) { susPressed(btn); susLoadRepeat(); }
 
 const susFmtD = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+const susFmtDay = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 const susDur  = s => s == null ? '?' : (s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
 const susCt   = (id, n) => { document.getElementById(id).textContent = n == null ? '' : `(${n})`; };
 const SUS_VLABEL = { coached: 'Agree', not_coached: 'Disagree', unknown: 'Unknown' };
-const SUS_PCT_FLOOR = 0;      // the % over typical slider's lowest setting: what the Odd timing list is loaded from
+const susPlural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
 // Whole dollars with a sign: -$12, $1,234.
 const susMoney = v => { const n = Math.round(Number(v) || 0); return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(); };
+const susMe = () => (getAuthUser() || '').toLowerCase();
 
 // Agent picks. Rows carry each call's ivr_name; aliases resolve to the canonical agent, shown by its
-// display name. A list's <select> offers the agents present in its rows and keeps the current choice.
+// display name. A <select> offers the given agents and keeps the current choice.
 const susAgentKey = ivr => ivr ? resolveIvrName(ivr) : '';
 function susAgentName(ivr) { const k = susAgentKey(ivr); if (!k) return ''; const a = AGENTS.find(x => x.ivrName === k); return a ? a.name : k; }
 function susAgentOptions(id, ivrs) {
@@ -7082,12 +7189,10 @@ function susAgentOptions(id, ivrs) {
   sel.innerHTML = '<option value="">All agents</option>' + agents.map(([k, n]) => `<option value="${esc(k)}">${esc(n)}</option>`).join('');
   sel.value = agents.some(([k]) => k === prev) ? prev : '';
 }
-const susAgentIs = (id, ...ivrs) => { const want = document.getElementById(id).value; return !want || ivrs.some(i => susAgentKey(i) === want); };
 
-// ── Verdict state: chips on rows, button strips in bodies, the stat tiles ──
+// ── Verdict and Blocked in Canoe state: chips on rows, the step 3 strip, the tiles and counts ──
 function susMyVerdict(k) {
-  const me = (getAuthUser() || '').toLowerCase();
-  const r = (susVerdicts[k] || []).find(x => x.decided_by === me);
+  const r = (susVerdicts[k] || []).find(x => x.decided_by === susMe());
   return r ? r.verdict : null;
 }
 function susVStateHtml(keys) {
@@ -7099,12 +7204,16 @@ function susVStateHtml(keys) {
   }
   return decided === keys.length ? '<span class="sus-vstate done">All decided</span>' : `<span class="sus-vstate some">${decided}/${keys.length} decided</span>`;
 }
-// keys: the callers a row is about (a script pair has two; one when both calls share a number).
+const susBlockedChip = (k, both) => susBlocks[k]
+  ? `<span class="sus-bchip yes" title="Ticked as blocked in Canoe by ${esc(susBlocks[k].blocked_by)}">✓ Blocked in Canoe</span>`
+  : (both ? '<span class="sus-bchip no">Not blocked in Canoe</span>' : '');
+// keys: the callers a row is about. A single caller's row also carries its Blocked in Canoe marker.
 const susKeys = (...ks) => [...new Set(ks.filter(Boolean))];
-const susVChip = keys => `<span data-suskeys="${esc(keys.join(','))}">${susVStateHtml(keys)}</span>`;
+const susChipsHtml = keys => susVStateHtml(keys) + (keys.length === 1 ? susBlockedChip(keys[0]) : '');
+const susVChip = keys => `<span data-suskeys="${esc(keys.join(','))}">${susChipsHtml(keys)}</span>`;
 function susVerdictHtml(k, callId) {
   if (!k) return '<span>No usable phone number on this call, so it cannot get a verdict.</span>';
-  const rows = susVerdicts[k] || [];
+  const rows = susVerdicts[k] || [], b = susBlocks[k];
   const mine = susMyVerdict(k);
   const ct = v => { const n = rows.filter(r => r.verdict === v).length; return n ? `<span class="ct">${n}</span>` : ''; };
   const btn = (v, title) => `<button type="button" class="sus-vbtn${mine === v ? ' active' : ''}" aria-pressed="${mine === v}" title="${mine === v ? 'Your verdict. Click again to remove it.' : title}" onclick="susVote('${jsStr(k)}','${v}','${jsStr(callId || '')}')">${SUS_VLABEL[v]}${ct(v)}</button>`;
@@ -7112,30 +7221,39 @@ function susVerdictHtml(k, callId) {
   return btn('coached', 'Yes, this looks like a coached caller')
     + btn('not_coached', 'No, this looks like a genuine caller')
     + btn('unknown', "Can't tell from this call")
-    + `<span title="${esc(who)}">${rows.length ? rows.length + ' verdict' + (rows.length === 1 ? '' : 's') + ' on this caller' : 'no verdicts on this caller yet'}</span>`;
+    + `<span title="${esc(who)}">${rows.length ? rows.length + ' verdict' + (rows.length === 1 ? '' : 's') + ' on this caller' : 'no verdicts on this caller yet'}</span>`
+    + `<label class="sus-block${b ? ' on' : ''}" title="Tick this after you block the number in Canoe. It saves for the whole team, like verdicts do, and ticking it blocks nothing by itself."><input type="checkbox"${b ? ' checked' : ''} onchange="susSetBlocked('${jsStr(k)}',this.checked)"> Blocked in Canoe?</label>`
+    + (b ? `<span class="sus-blockmeta">ticked by ${esc(b.blocked_by)} · ${esc(susFmtD(b.blocked_at))}</span>` : '');
 }
 const susDecide = (k, callId, label) => susStep(3, label || 'Decide: coached caller?',
   `<div class="sus-verdict" data-susv="${esc(k || '')}" data-suscall="${esc(callId || '')}">${susVerdictHtml(k, callId)}</div>`);
 function susRepaint(k) {
   document.querySelectorAll('#tab-suspicious [data-susv]').forEach(el => { if (el.dataset.susv === k) el.innerHTML = susVerdictHtml(k, el.dataset.suscall); });
-  document.querySelectorAll('#tab-suspicious [data-suskeys]').forEach(el => { const ks = el.dataset.suskeys.split(','); if (ks.includes(k)) el.innerHTML = susVStateHtml(ks); });
+  document.querySelectorAll('#tab-suspicious [data-suskeys]').forEach(el => { const ks = el.dataset.suskeys.split(','); if (ks.includes(k)) el.innerHTML = susChipsHtml(ks); });
+  document.querySelectorAll('#tab-suspicious [data-susblock]').forEach(el => { if (el.dataset.susblock === k) el.innerHTML = susBlockedChip(k, true); });
   susStats();
+  susDecidedSub();
 }
-// Loads the verdicts for callers not fetched yet (callers are digits, safe in an in-list).
+// Loads the verdicts and the Canoe ticks for callers not fetched yet (callers are digits, safe in an in-list).
 async function susFetchVerdicts(keys) {
   const fresh = [...new Set(keys)].filter(k => k && !(k in susVerdicts));
   for (let i = 0; i < fresh.length; i += 100) {
     const chunk = fresh.slice(i, i + 100);
-    const rows = await sbFetch(`coached_verdicts?caller=in.(${chunk.join(',')})&select=caller,decided_by,verdict`) || [];
-    chunk.forEach(k => { susVerdicts[k] = []; });
-    rows.forEach(r => susVerdicts[r.caller].push(r));
+    const [rows, blocks] = await Promise.all([
+      sbFetch(`coached_verdicts?caller=in.(${chunk.join(',')})&select=caller,decided_by,verdict`),
+      sbFetch(`canoe_blocks?caller=in.(${chunk.join(',')})&select=caller,blocked_by,blocked_at`),
+    ]);
+    chunk.forEach(k => { susVerdicts[k] = []; susBlocks[k] = null; });
+    (rows || []).forEach(r => susVerdicts[r.caller].push(r));
+    (blocks || []).forEach(b => { susBlocks[b.caller] = b; });
   }
 }
 function currentSusSource() {
-  return ['repeat', 'timing'].find(p => document.getElementById('sus-pane-' + p).style.display !== 'none') || null;
+  if (susDecidedView) return 'decided';
+  return ['repeat', 'keywords'].find(p => document.getElementById('sus-pane-' + p).style.display !== 'none') || null;
 }
 async function susVote(k, verdict, callId) {
-  const me = (getAuthUser() || '').toLowerCase();
+  const me = susMe();
   if (!me) { alert('Sign in to record a verdict.'); return; }
   const clear = susMyVerdict(k) === verdict;
   try {
@@ -7146,27 +7264,36 @@ async function susVote(k, verdict, callId) {
   if (!clear) rows.push({ caller: k, decided_by: me, verdict });
   susVerdicts[k] = rows;
   susRepaint(k);
+  // The Decided counts, the coached caller stats and the export follow the verdicts.
+  Promise.allSettled([susLoadDecidedCounts(), susLoadCoached()]);
+}
+async function susSetBlocked(k, on) {
+  const me = susMe();
+  if (!me) { alert('Sign in to tick Blocked in Canoe.'); susRepaint(k); return; }
+  try {
+    if (on) await sbFetch('rpc/canoe_block_set', { method: 'POST', body: JSON.stringify({ p_caller: k }) });
+    else await sbFetch('rpc/canoe_block_clear', { method: 'POST', body: JSON.stringify({ p_caller: k }) });
+  } catch (e) { console.warn('Blocked in Canoe:', e.message); alert("The tick didn't save. Check you're signed in and try again."); susRepaint(k); return; }
+  susBlocks[k] = on ? { caller: k, blocked_by: me, blocked_at: new Date().toISOString() } : null;
+  if (Array.isArray(susDecidedRows)) susDecidedRows.forEach(r => { if (r.caller === k) { r.blocked_by = on ? me : null; r.blocked_at = on ? susBlocks[k].blocked_at : null; } });
+  susRepaint(k);
 }
 
-// The three tiles. Each list's rows are counted at their current filters, before Hide decided.
-const susMinPct = () => parseInt(document.getElementById('sus-pct').value, 10) || 0;   // percent over the agent's typical
-function susTimingRows() {
-  if (!Array.isArray(susOddRows)) return null;
-  const min = susMinPct();
-  return susOddRows.filter(r => r.pct_above >= min && susAgentIs('sus-timing-agent', r.ivr_name))
-    .sort((a, b) => b.pct_above - a.pct_above || b.duration - a.duration);   // highest % over typical first
-}
+// The two tiles and the two Decided counts. The queue's rows are counted before Hide decided;
+// "awaiting a verdict" counts repeat callers only.
 function susStats() {
   const set = (id, v) => { document.getElementById(id).innerHTML = v == null ? nullMark() : String(v); };
-  const timing = susTimingRows();
   set('sus-stat-repeat', Array.isArray(susRepeatRows) ? (susRepeatRows[0] ? susRepeatRows[0].total : 0) : null);
-  set('sus-stat-timing', timing ? timing.length : null);
-  if (!Array.isArray(susRepeatRows) && !timing) { set('sus-stat-await', null); return; }
-  const keys = new Set();
-  (Array.isArray(susRepeatRows) ? susRepeatRows : []).forEach(r => keys.add(r.caller));
-  (timing || []).forEach(r => keys.add(r.caller));
-  keys.delete(null);
-  set('sus-stat-await', [...keys].filter(k => !susDecided(k)).length);
+  set('sus-stat-await', Array.isArray(susRepeatRows) ? susRepeatRows.filter(r => r.caller && !susDecided(r.caller)).length : null);
+  for (const v of ['coached', 'unknown']) document.getElementById('sus-dec-ct-' + v).textContent = susDecCounts[v] == null ? '' : String(susDecCounts[v]);
+}
+// How many callers are behind each Decided button: the distinct callers with that verdict from anyone.
+async function susLoadDecidedCounts() {
+  try {
+    const rows = await sbFetch('coached_verdicts?verdict=in.(coached,unknown)&select=caller,verdict') || [];
+    for (const v of ['coached', 'unknown']) susDecCounts[v] = new Set(rows.filter(r => r.verdict === v).map(r => r.caller)).size;
+  } catch (e) { console.warn('Decided counts:', e.message); susDecCounts.coached = susDecCounts.unknown = null; }
+  susStats();
 }
 
 // ── The shared row and its Listen → Read → Decide body ──
@@ -7181,11 +7308,20 @@ function susAudio(rec, aiRec) {
 function susStep(n, label, inner) {
   return `<div class="sus-step"><div class="sus-stepn">${n}</div><div><div class="sus-steph">${label}</div>${inner}</div></div>`;
 }
+// Highlights the keywords in already-escaped text, in one pass so a mark never lands inside another.
+const susReEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function susMark(escaped, kws) {
+  const list = (kws || []).map(k => esc(k)).filter(Boolean);
+  if (!list.length) return escaped;
+  return escaped.replace(new RegExp(list.map(susReEsc).join('|'), 'gi'), m => `<mark>${m}</mark>`);
+}
 // A call row. o.decide = false leaves out step 3 (a repeat caller's calls share one Decide).
+// o.kws: the keywords to highlight in the transcript once it loads.
 function susCallRow(c, o) {
   const sev = o.sev || `<span class="sus-sev sus-sev-warm">${susDur(c.duration)}</span>`;
   const ctx = o.ctx || [c.vertical_name, c.publisher_name, c.advertiser_name].filter(Boolean).map(esc).join(' · ');
-  return `<details class="sus-row" ontoggle="if(this.open)susOpenCallRow(this,'${jsStr(c.id)}')">
+  const kws = o.kws && o.kws.length ? ` data-suskw="${esc(JSON.stringify(o.kws))}"` : '';
+  return `<details class="sus-row"${kws} ontoggle="if(this.open)susOpenCallRow(this,'${jsStr(c.id)}')">
     <summary>
       ${sev}
       <div class="sus-line1"><span class="sus-who">${o.who || esc(c.called_from || '?')}</span><span class="sus-ctx">${ctx}</span>${c.our_outcome ? outcomeBadge(c.our_outcome) : ''}</div>
@@ -7204,22 +7340,67 @@ async function susOpenCallRow(det, id) {
   const box = det.querySelector('[data-sustx]');
   if (!box || box.dataset.done) return;
   box.dataset.done = '1';
+  let kws = [];
+  try { kws = JSON.parse((det.dataset && det.dataset.suskw) || '[]'); } catch (e) { kws = []; }
   try {
     const rows = await sbFetch(`canoe_calls?id=eq.${encodeURIComponent(id)}&select=transcription,our_summary`);
     const c = rows && rows[0];
-    box.innerHTML = `${c && c.our_summary ? `<b>AI summary: ${esc(c.our_summary)}</b>` : ''}${esc((c && c.transcription) || '(no transcript)')}`;
+    box.innerHTML = `${c && c.our_summary ? `<b>AI summary: ${esc(c.our_summary)}</b>` : ''}${susMark(esc((c && c.transcription) || '(no transcript)'), kws)}`;
   } catch (e) { box.dataset.done = ''; box.innerHTML = loadErrorHtml('the transcript', '', e); }
 }
+// A caller's calls, newest first, SUS_CALLS_PAGE at a time with a button for the next page.
+function susCallList(ids, total) {
+  const n = susCallLists.push({ ids: ids || [], total: total || (ids || []).length, shown: 0 }) - 1;
+  return `<div class="sus-compare" data-suscalls="${n}"><div class="comp-loading">Loading calls…</div></div>`;
+}
+function susRetryCalls(btn, n) { const box = btn.closest('[data-suscalls]'); if (box) { box.dataset.done = ''; susLoadCalls(box, n); } }
+async function susLoadCalls(box, n) {
+  if (!box || box.dataset.done) return;
+  box.dataset.done = '1';
+  const list = susCallLists[n];
+  const more = box.querySelector('[data-susmore]');
+  if (more) more.remove();
+  const ids = list.ids.slice(list.shown, list.shown + SUS_CALLS_PAGE);
+  try {
+    const calls = ids.length ? await sbFetch(`canoe_calls?id=in.(${ids.map(id => encodeURIComponent(pgQuote(id))).join(',')})&select=id,created_at,called_from,zip,city,state,vertical_name,publisher_name,advertiser_name,duration,our_outcome,our_summary,recording_url,ascnd_recording_url,result&order=created_at.desc`) || [] : [];
+    const first = list.shown === 0;
+    list.shown += ids.length;
+    const h = calls.map((c, k) => susCallRow(c, {
+      decide: false,
+      who: esc(susFmtD(c.created_at)),
+      ctx: [c.vertical_name, c.publisher_name, c.zip ? 'ZIP ' + c.zip : null, [c.city, c.state].filter(Boolean).join(', ') || null, c.result && c.result !== 'connected' ? c.result : null].filter(Boolean).map(esc).join(' · '),
+      when: `call ${list.shown - ids.length + k + 1} of ${list.total}`,
+      line2: c.our_summary ? esc(c.our_summary) : '',
+    })).join('');
+    const left = list.ids.length - list.shown;
+    const button = left > 0 ? `<div class="sus-more" data-susmore><button type="button" class="settings-secondary-btn" onclick="susMoreCalls(this,${n})">Show the next ${Math.min(left, SUS_CALLS_PAGE)} of ${left} more calls</button></div>`
+      : (list.total > list.ids.length ? `<div class="canoe-none sus-note" data-susmore>The newest ${list.ids.length} of ${list.total} calls.</div>` : '');
+    if (first) box.innerHTML = (h || '<div class="canoe-none">No synced calls.</div>') + button;
+    else box.insertAdjacentHTML('beforeend', h + button);
+  } catch (e) { box.dataset.done = ''; box.innerHTML = loadErrorHtml("this number's calls", `susRetryCalls(this,${n})`, e); }
+}
+function susMoreCalls(btn, n) { const box = btn.closest('[data-suscalls]'); if (box) { box.dataset.done = ''; susLoadCalls(box, n); } }
+function susOpenCalls(det) { const box = det.querySelector('[data-suscalls]'); if (box) susLoadCalls(box, parseInt(box.dataset.suscalls, 10)); }
+
+// "Why it's here" for a caller over its last 30 days, from a row with calls_30d, zips_30d,
+// verticals_30d, publishers_30d, payin_30d, payout_30d and margin_30d. b() wraps the bold parts and
+// e() escapes names: HTML on the page, plain text in the export.
+function susWhy30(r, days, b, e) {
+  const bits = [];
+  if (r.zips_30d.length > 1)       bits.push(`${b(r.zips_30d.length + ' different ZIPs')} (${e(r.zips_30d.join(', '))})`);
+  if (r.verticals_30d.length > 1)  bits.push(`${b(r.verticals_30d.length + ' verticals')} (${e(r.verticals_30d.join(', '))})`);
+  if (r.publishers_30d.length > 1) bits.push(`${b(r.publishers_30d.length + ' publishers')} (${e(r.publishers_30d.join(', '))})`);
+  return `This number had ${b(susPlural(r.calls_30d, 'connected call'))} in the last ${days} days${bits.length ? ' across ' + bits.join(', ') : ''}.`
+    + (r.flagged > 0 ? ` ${r.flagged} already ${r.flagged === 1 ? 'carries' : 'carry'} a compliance flag.` : '')
+    + ` Over the last 30 days its calls brought in ${b(susMoney(r.payin_30d))} from advertisers and cost ${b(susMoney(r.payout_30d))} in publisher payouts: a margin of ${b(susMoney(r.margin_30d))}.`;
+}
+const susWhyHtml = (r, days) => susWhy30(r, days, s => `<b>${s}</b>`, esc);
+const susWhyText = r => susWhy30(r, 30, s => s, s => s);
 
 // ── Sub-tab 1: repeat callers ──
 function susRepeatWhy(r, days) {
-  const bits = [];
-  if (r.distinct_zips > 1)       bits.push(`<b>${r.distinct_zips} different ZIPs</b> (${esc(r.zips.join(', '))})`);
-  if (r.distinct_verticals > 1)  bits.push(`<b>${r.distinct_verticals} verticals</b> (${esc(r.verticals.join(', '))})`);
-  if (r.distinct_publishers > 1) bits.push(`<b>${r.distinct_publishers} publishers</b> (${esc(r.publishers.join(', '))})`);
-  return `This number had <b>${r.calls} connected calls</b> in the last ${days} days${bits.length ? ' across ' + bits.join(', ') : ''}.`
-    + (r.flagged > 0 ? ` ${r.flagged} already ${r.flagged === 1 ? 'carries' : 'carry'} a compliance flag.` : '')
-    + ` Over the last 30 days its calls brought in <b>${susMoney(r.payin_30d)}</b> from advertisers and cost <b>${susMoney(r.payout_30d)}</b> in publisher payouts: a margin of <b>${susMoney(r.margin_30d)}</b>.`;
+  return susWhyHtml({ calls_30d: r.calls, zips_30d: r.zips, verticals_30d: r.verticals, publishers_30d: r.publishers, flagged: r.flagged,
+    payin_30d: r.payin_30d, payout_30d: r.payout_30d, margin_30d: r.margin_30d }, days);
 }
 async function susLoadRepeat() {
   const el = document.getElementById('sus-repeat');
@@ -7240,16 +7421,16 @@ function susRenderRepeat() {
   const cross = document.getElementById('sus-cross').classList.contains('active');
   const days = susWin().days;
   const total = susRepeatRows[0] ? susRepeatRows[0].total : 0;
-  const shown = susRepeatRows.map((r, i) => [r, i]).filter(([r]) => !susHideDecided() || !susDecided(r.caller));
+  const shown = susRepeatRows.filter(r => !susHideDecided() || !susDecided(r.caller));
   susCt('sus-ct-repeat', total);
   susStats();
   const capped = total > susRepeatRows.length ? `<div class="canoe-none sus-note">Showing the ${susRepeatRows.length} strongest of ${total} numbers (most ZIPs first, then most calls).</div>` : '';
   const note = capped + susHiddenNote(susRepeatRows.length - shown.length);
   if (!shown.length) { el.innerHTML = note || `<div class="canoe-none">No ${cross ? 'cross-ZIP/vertical/publisher ' : ''}repeat callers in this window.</div>`; return; }
-  el.innerHTML = note + shown.map(([r, i]) => {
+  el.innerHTML = note + shown.map(r => {
     const line2 = `<b>${r.calls} calls</b> across <b>${r.distinct_zips} ZIP${r.distinct_zips === 1 ? '' : 's'}</b>, ${r.distinct_verticals} vertical${r.distinct_verticals === 1 ? '' : 's'} and ${r.distinct_publishers} publisher${r.distinct_publishers === 1 ? '' : 's'}`;
     const margin = `<span class="sus-margin${Number(r.margin_30d) < 0 ? ' neg' : ''}" title="Last 30 days, every call from this number: ${esc(susMoney(r.payin_30d))} from advertisers minus ${esc(susMoney(r.payout_30d))} to publishers">${susMoney(r.margin_30d)} margin / 30d</span>`;
-    return `<details class="sus-row" ontoggle="if(this.open)susExpandGroup(this,${i})">
+    return `<details class="sus-row" ontoggle="if(this.open)susOpenCalls(this)">
       <summary>
         <span class="sus-sev ${r.distinct_zips > 1 ? 'sus-sev-hot' : 'sus-sev-warm'}">${r.distinct_zips > 1 ? r.distinct_zips + ' ZIPs' : 'repeat'}</span>
         <div class="sus-line1"><span class="sus-who">${esc(r.called_from)}</span><span class="sus-ctx">${esc(r.verticals.join(', '))}</span></div>
@@ -7258,77 +7439,209 @@ function susRenderRepeat() {
       </summary>
       <div class="sus-body">
         <div class="sus-why"><b>Why it's here:</b> ${susRepeatWhy(r, days)}</div>
-        <div><div class="sus-steph">The calls: open each to listen and read</div>
-          <div class="sus-compare" data-susgroupcalls><div class="comp-loading">Loading calls…</div></div></div>
+        <div><div class="sus-steph">The calls: open each to listen and read</div>${susCallList(r.call_ids, r.calls)}</div>
         ${susDecide(r.caller, r.call_ids[0], 'Decide once for this caller: coached caller?')}
       </div>
     </details>`;
   }).join('');
 }
-function susRetryGroup(btn, i) { const det = btn.closest('details'); if (det) susExpandGroup(det, i); }
-async function susExpandGroup(det, i) {
-  const box = det.querySelector('[data-susgroupcalls]');
-  if (!box || box.dataset.done) return;
-  box.dataset.done = '1';
-  const r = susRepeatRows[i];
-  try {
-    const ids = r.call_ids.slice(0, 25);
-    const calls = await sbFetch(`canoe_calls?id=in.(${ids.map(id => encodeURIComponent(pgQuote(id))).join(',')})&select=id,created_at,called_from,zip,city,state,vertical_name,publisher_name,advertiser_name,duration,our_outcome,our_summary,recording_url,ascnd_recording_url&order=created_at.desc`) || [];
-    box.innerHTML = calls.map((c, k) => susCallRow(c, {
-      decide: false,
-      who: esc(susFmtD(c.created_at)),
-      ctx: [c.vertical_name, c.publisher_name, c.zip ? 'ZIP ' + c.zip : null, [c.city, c.state].filter(Boolean).join(', ') || null].filter(Boolean).map(esc).join(' · '),
-      when: `call ${k + 1} of ${calls.length}${r.calls > calls.length ? ` (newest ${calls.length} of ${r.calls})` : ''}`,
-      line2: c.our_summary ? esc(c.our_summary) : '',
-    })).join('') || '<div class="canoe-none">Calls not found.</div>';
-  } catch (e) { box.dataset.done = ''; box.innerHTML = loadErrorHtml("this number's calls", `susRetryGroup(this,${i})`, e); }
-}
 
-// ── Sub-tab 2: odd timing: every connected call against its agent's typical length ──
-// Loaded once from the slider's lowest setting (SUS_PCT_FLOOR); the % over typical slider and the
-// agent pick filter live, highest % first. "Typical" is the agent's median connected call over the
-// last 30 days (suspicious_odd_timing, 070); an agent with under 20 such calls uses its vertical's.
-async function susLoadOdd() {
-  const el = document.getElementById('sus-conv-long');
-  el.innerHTML = '<div class="comp-loading">Loading…</div>';
-  susCt('sus-ct-timing', null);
+// ── Sub-tab 2: transcript keywords (MK-199) ──
+// The keyword boxes are susKw; the bar is rendered from it. Search runs on Search / Enter, and again
+// when the agent or a keyword changes after a search. Results are calls (one row each), newest
+// first, with the keywords marked in the snippet and, once opened, in the transcript.
+function susRenderKwBar() {
+  document.getElementById('sus-kw-inputs').innerHTML = susKw.map((v, i) => `<span class="sus-kw">${i ? '<span class="sus-and">AND</span>' : ''}`
+    + `<input type="text" class="settings-input" placeholder="${i ? 'another keyword' : 'e.g. spiders'}" aria-label="Keyword ${i + 1}" value="${esc(v)}" oninput="susKw[${i}]=this.value">`
+    + (i ? `<button type="button" class="sus-kwx" title="Remove this keyword" aria-label="Remove this keyword" onclick="susRemoveKw(${i})">×</button>` : '')
+    + '</span>').join('');
+}
+function susAddKw() { susKw.push(''); susRenderKwBar(); const last = document.querySelector('#sus-kw-inputs input:last-of-type'); if (last && last.focus) last.focus(); }
+function susRemoveKw(i) { susKw.splice(i, 1); if (!susKw.length) susKw.push(''); susRenderKwBar(); if (susSearched) susRunSearch(); }
+function susClearKw() { susKw = ['']; susRenderKwBar(); document.getElementById('sus-kw-agent').value = ''; susSearched = false; susKwRows = null; susRenderKeywords(); }
+function susKwAgentChanged() { if (susSearched) susRunSearch(); }
+const susKeywords = () => [...new Set(susKw.map(v => String(v || '').trim().toLowerCase()).filter(Boolean))];
+async function susRunSearch() {
+  const el = document.getElementById('sus-keywords'), kws = susKeywords();
+  susSearched = true;
+  if (!kws.length) { susKwRows = null; susRenderKeywords(); return; }
+  el.innerHTML = '<div class="comp-loading">Searching…</div>';
+  susCt('sus-ct-keywords', null);
   try {
     const { from_ts, to_ts } = susWin();
-    const rows = await sbFetch('rpc/suspicious_odd_timing', { method: 'POST', body: JSON.stringify({ from_ts, to_ts, min_pct: SUS_PCT_FLOOR }) }) || [];
+    const agent = document.getElementById('sus-kw-agent').value || null;
+    const rows = await sbFetch('rpc/suspicious_transcript_search', { method: 'POST', body: JSON.stringify({ from_ts, to_ts, keywords: kws, agent_key: agent }) }) || [];
     await susFetchVerdicts(rows.map(r => r.caller));
-    susOddRows = rows;
-    susAgentOptions('sus-timing-agent', rows.map(r => r.ivr_name));
-    susRenderLong();
-  } catch (e) { susOddRows = false; susCt('sus-ct-timing', null); susStats(); el.innerHTML = loadErrorHtml('odd timing', 'susLoadOdd()', e); }
+    susKwRows = rows;
+    susRenderKeywords();
+  } catch (e) { susKwRows = false; susCt('sus-ct-keywords', null); el.innerHTML = loadErrorHtml('the transcript search', 'susRunSearch()', e); }
 }
-function susRenderLong() {
-  const el = document.getElementById('sus-conv-long');
-  const min = susMinPct();
-  document.getElementById('sus-pct-label').textContent = min + '% over typical';
-  if (!Array.isArray(susOddRows)) return;
-  const all = susTimingRows();
-  const rows = all.filter(r => !susHideDecided() || !susDecided(r.caller));
-  const total = susOddRows[0] ? susOddRows[0].total : 0;
-  const capped = total > susOddRows.length ? `<div class="canoe-none sus-note">Showing the ${susOddRows.length} furthest over typical of ${total} calls.</div>` : '';
-  const note = capped + susHiddenNote(all.length - rows.length);
-  susCt('sus-ct-timing', all.length);
-  susStats();
-  const agent = document.getElementById('sus-timing-agent').value;
-  if (!rows.length) { el.innerHTML = note || `<div class="canoe-none">No calls ${min}% or more over typical${agent ? ' for this agent' : ''} in this window. Slide left to widen.</div>`; return; }
-  el.innerHTML = note + rows.map(r => {
-    const agentName = susAgentName(r.ivr_name), vert = esc(r.vertical_name || '');
-    const byAgent = r.typical_from === 'agent';
-    const whose = byAgent ? `${esc(agentName || r.ivr_name)}'s typical call` : `the typical ${vert} call`;
-    const basis = byAgent
-      ? `the median of ${esc(agentName || r.ivr_name)}'s ${r.typical_n} connected calls in the last 30 days`
-      : `the ${vert} vertical's median over the last 30 days, ${r.typical_n} connected calls${r.ivr_name ? `, as ${esc(agentName || r.ivr_name)} had fewer than 20` : ', as this call has no agent'}`;
-    return susCallRow(r, {
-      sev: `<span class="sus-sev ${r.pct_above >= 100 ? 'sus-sev-hot' : 'sus-sev-warm'}">+${r.pct_above}%</span>`,
-      ctx: [agentName, r.vertical_name, r.publisher_name].filter(Boolean).map(esc).join(' · '),
-      line2: `<b>${susDur(r.duration)}</b> call, <b>${r.pct_above}% over</b> ${whose} (${susDur(r.typical_secs)})`,
-      why: `This call ran <b>${susDur(r.duration)}</b>, <b>${r.pct_above}% over</b> ${whose} of <b>${susDur(r.typical_secs)}</b> (${basis}). A call far longer than the agent's usual can mean a caller stringing it out.`,
+function susRenderKeywords() {
+  const el = document.getElementById('sus-keywords'), kws = susKeywords();
+  if (!susSearched || !kws.length) {
+    susCt('sus-ct-keywords', null);
+    el.innerHTML = `<div class="canoe-none">${susSearched ? 'Type at least one keyword, then press Search.' : 'Type a keyword and press Search. Use + to add more keywords: a call must mention all of them.'}</div>`;
+    return;
+  }
+  if (!Array.isArray(susKwRows)) return;
+  const { days } = susWin();
+  const agent = document.getElementById('sus-kw-agent').value;
+  const total = susKwRows[0] ? susKwRows[0].total : 0;
+  const shown = susKwRows.filter(r => !susHideDecided() || !susDecided(r.caller));
+  const said = kws.map(k => `<b>"${esc(k)}"</b>`).join(' and ');
+  susCt('sus-ct-keywords', total);
+  const head = `<div class="canoe-none sus-note">${susPlural(total, 'connected call')} ${total === 1 ? 'mentions' : 'mention'} ${said}${agent ? ' for ' + esc(susAgentName(agent)) : ''} in the last ${days} days.</div>`;
+  const capped = total > susKwRows.length ? `<div class="canoe-none sus-note">Showing the newest ${susKwRows.length}. Add a keyword or pick an agent to narrow it.</div>` : '';
+  el.innerHTML = head + capped + susHiddenNote(susKwRows.length - shown.length) + shown.map(r => susCallRow(r, {
+    kws,
+    ctx: [susAgentName(r.ivr_name), r.vertical_name, r.publisher_name, r.zip ? 'ZIP ' + r.zip : null].filter(Boolean).map(esc).join(' · '),
+    line2: susMark(esc(r.snippet || ''), kws),
+    why: `The transcript mentions ${said}. The words are highlighted in step 2.`,
+  })).join('');
+}
+
+// ── Sub-tab 3: coached caller stats (MK-199) ──
+// Every call of every caller anyone marked Agree, loaded once (and again after a verdict changes);
+// the connected ones inside the window are tallied by vertical and by publisher.
+async function susLoadCoached() {
+  const el = document.getElementById('sus-stats');
+  try {
+    susCoachedCalls = await sbFetch('rpc/suspicious_coached_calls', { method: 'POST', body: JSON.stringify({}) }) || [];
+    susRenderStats();
+  } catch (e) { susCoachedCalls = false; el.innerHTML = loadErrorHtml('the coached caller stats', 'susLoadCoached()', e); }
+}
+function susTally(calls, f) {
+  const m = new Map();
+  calls.forEach(c => { const name = f(c) || '(none)'; const r = m.get(name) || { name, callers: new Set(), calls: 0 }; r.callers.add(c.caller); r.calls++; m.set(name, r); });
+  return [...m.values()].map(r => ({ name: r.name, callers: r.callers.size, calls: r.calls }))
+    .sort((a, b) => b.callers - a.callers || b.calls - a.calls || a.name.localeCompare(b.name));
+}
+function susRenderStats() {
+  const el = document.getElementById('sus-stats');
+  if (!Array.isArray(susCoachedCalls)) return;
+  const { days, from_ts } = susWin();
+  const callers = new Set(susCoachedCalls.map(c => c.caller));
+  if (!callers.size) { el.innerHTML = '<div class="canoe-none">No callers are marked Agree (coached caller) yet.</div>'; return; }
+  const calls = susCoachedCalls.filter(c => c.result === 'connected' && c.created_at >= from_ts);
+  const inWin = new Set(calls.map(c => c.caller));
+  const card = (title, rows) => {
+    const max = Math.max(1, ...rows.map(r => r.calls));
+    return `<div class="sus-statcard"><h4>${title}</h4>${rows.map(r => `<div class="sus-statrow"><span class="sus-statname" title="${esc(r.name)}">${esc(r.name)}</span><span class="sus-bar"><i style="width:${Math.round(r.calls / max * 100)}%"></i></span><span class="sus-statnum"><b>${r.callers}</b> caller${r.callers === 1 ? '' : 's'} · ${susPlural(r.calls, 'call')}</span></div>`).join('') || '<div class="canoe-none">No connected calls in this window.</div>'}</div>`;
+  };
+  el.innerHTML = `<div class="canoe-none sus-note">${susPlural(callers.size, 'coached caller')} so far; ${inWin.size} of them made ${susPlural(calls.length, 'connected call')} in the last ${days} days.</div>`
+    + `<div class="sus-statgrid">${card('By vertical', susTally(calls, c => c.vertical_name))}${card('By publisher', susTally(calls, c => c.publisher_name))}</div>`;
+}
+
+// ── The Decided lists (MK-199): behind the Coached call / Unknown buttons ──
+function susShowDecided(v) {
+  susDecidedView = susDecidedView === v ? null : v;
+  for (const x of ['coached', 'unknown']) { const b = document.getElementById('sus-dec-' + x); b.classList.toggle('active', susDecidedView === x); b.setAttribute('aria-pressed', String(susDecidedView === x)); }
+  document.getElementById('sus-view-queue').style.display = susDecidedView ? 'none' : '';
+  document.getElementById('sus-view-decided').style.display = susDecidedView ? '' : 'none';
+  if (susDecidedView) susLoadDecided(); else susDecidedRows = null;
+}
+const susDecTitle = v => v === 'coached' ? 'coached call' : 'unknown';
+function susDecidedSub() {
+  if (!susDecidedView || !Array.isArray(susDecidedRows)) return;
+  const n = susDecidedRows.length, nb = susDecidedRows.filter(r => susBlocks[r.caller]).length;
+  document.getElementById('sus-dec-title').textContent = `Decided: ${susDecTitle(susDecidedView)} (${n})`;
+  document.getElementById('sus-dec-sub').textContent = n ? `${nb} of ${n} blocked in Canoe. Open a caller to change the verdict or tick the box.` : '';
+}
+async function susLoadDecided() {
+  const el = document.getElementById('sus-decided'), v = susDecidedView;
+  el.innerHTML = '<div class="comp-loading">Loading…</div>';
+  document.getElementById('sus-export').style.display = 'none';
+  document.getElementById('sus-exportdone').textContent = '';
+  document.getElementById('sus-dec-title').textContent = `Decided: ${susDecTitle(v)}`;
+  document.getElementById('sus-dec-sub').textContent = '';
+  try {
+    const rows = await sbFetch('rpc/suspicious_decided_callers', { method: 'POST', body: JSON.stringify({ p_verdict: v }) }) || [];
+    if (susDecidedView !== v) return;   // the user moved on while it loaded
+    // The RPC carries every verdict and the tick: fill the caches from it, so the chips and step 3 agree.
+    rows.forEach(r => {
+      susVerdicts[r.caller] = (r.verdicts || []).map(x => ({ caller: r.caller, decided_by: x.by, verdict: x.verdict }));
+      susBlocks[r.caller] = r.blocked_by ? { caller: r.caller, blocked_by: r.blocked_by, blocked_at: r.blocked_at } : null;
     });
+    susDecidedRows = rows;
+    susDecCounts[v] = rows.length;
+    susStats();
+    susRenderDecided();
+  } catch (e) { susDecidedRows = false; el.innerHTML = loadErrorHtml('the decided callers', 'susLoadDecided()', e); }
+}
+function susRenderDecided() {
+  const el = document.getElementById('sus-decided'), v = susDecidedView;
+  if (!Array.isArray(susDecidedRows)) return;
+  susDecidedSub();
+  document.getElementById('sus-export').style.display = v === 'coached' && susDecidedRows.length ? '' : 'none';
+  if (!susDecidedRows.length) { el.innerHTML = `<div class="canoe-none">No callers marked ${v === 'coached' ? 'as a coached call' : 'Unknown'} yet.</div>`; return; }
+  el.innerHTML = susDecidedRows.map(r => {
+    const who = (r.verdicts || []).map(x => `${esc(x.by)}: ${SUS_VLABEL[x.verdict] || esc(x.verdict)} (${esc(susFmtDay(x.at))})`).join(', ');
+    return `<details class="sus-row" ontoggle="if(this.open)susOpenCalls(this)">
+      <summary>
+        <span class="sus-sev ${v === 'coached' ? 'sus-sev-hot' : 'sus-sev-warm'}">${v === 'coached' ? 'coached' : 'unknown'}</span>
+        <div class="sus-line1"><span class="sus-who">${esc(r.called_from || r.caller)}</span><span class="sus-ctx">${esc((r.verticals || []).join(', '))}</span></div>
+        <div class="sus-line2"><b>${susPlural(r.calls, 'call')}</b> · ${who}</div>
+        <div class="sus-right"><span class="sus-when">${r.last_call ? 'last ' + susFmtD(r.last_call) : 'no synced calls'}</span><span data-susblock="${esc(r.caller)}">${susBlockedChip(r.caller, true)}</span></div>
+      </summary>
+      <div class="sus-body">
+        ${v === 'coached' ? `<div class="sus-why"><b>Why it's here:</b> ${susWhyHtml(r, 30)}</div>` : ''}
+        <div><div class="sus-steph">The calls: open each to listen and read</div>${susCallList(r.call_ids, r.calls)}</div>
+        ${susDecide(r.caller, (r.call_ids || [])[0], 'Decide once for this caller: coached caller?')}
+      </div>
+    </details>`;
   }).join('');
+}
+
+// ── Export CSV (MK-199): the Coached call list, one row per call, built here and saved locally ──
+// Everything comes from what the page already holds (suspicious_decided_callers for the caller,
+// suspicious_coached_calls for its calls); no transcript, no recording link, nothing stored.
+// Every cell is quoted; one that starts with = + - @ or a tab/CR gets a leading apostrophe so
+// Excel cannot run it as a formula. The caller is its digits key (no + sign).
+function susCsvCell(v) {
+  let t = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return '"' + t.replace(/"/g, '""') + '"';
+}
+// Local date and time, as the page shows it: YYYY-MM-DD HH:MM.
+function susStamp(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+const SUS_CSV_HEAD = ['caller_number', 'why_its_here', 'verdicts', 'blocked_in_canoe', 'blocked_by', 'blocked_on',
+  'caller_payin_30d', 'caller_payout_30d', 'caller_margin_30d', 'call_id', 'call_date_time', 'agent', 'vertical', 'publisher',
+  'advertiser', 'zip', 'duration_seconds', 'outcome', 'ai_summary'];
+// The rows: every coached caller (from the Decided list) and every one of its calls (from the stats
+// load), newest first within a caller. Returns { text, calls } or null when nothing is loaded.
+function susCsv(callers, calls) {
+  if (!Array.isArray(callers) || !Array.isArray(calls)) return null;
+  const byCaller = new Map();
+  calls.forEach(c => { if (!byCaller.has(c.caller)) byCaller.set(c.caller, []); byCaller.get(c.caller).push(c); });
+  const rows = [];
+  callers.forEach(r => {
+    const why = susWhyText(r);
+    const verdicts = (r.verdicts || []).map(x => `${x.by}: ${SUS_VLABEL[x.verdict] || x.verdict} (${susStamp(x.at)})`).join('; ');
+    const b = r.blocked_by ? [ 'yes', r.blocked_by, susStamp(r.blocked_at) ] : [ 'no', '', '' ];
+    const money = [Number(r.payin_30d) || 0, Number(r.payout_30d) || 0, Number(r.margin_30d) || 0];
+    (byCaller.get(r.caller) || []).slice().sort((a, b2) => (b2.created_at || '').localeCompare(a.created_at || '')).forEach(c => rows.push([
+      r.caller, why, verdicts, ...b, ...money, c.id, susStamp(c.created_at), susAgentName(c.ivr_name) || c.agent_key || '',
+      c.vertical_name, c.publisher_name, c.advertiser_name, c.zip, c.duration, c.our_outcome, c.our_summary,
+    ]));
+  });
+  return { text: '﻿' + [SUS_CSV_HEAD, ...rows].map(r => r.map(susCsvCell).join(',')).join('\r\n'), calls: rows.length };
+}
+const susCsvName = () => `coached-callers-${susStamp(new Date().toISOString()).slice(0, 10)}.csv`;   // no phone number in the name
+function susExportCsv() {
+  const done = document.getElementById('sus-exportdone');
+  if (susDecidedView !== 'coached' || !Array.isArray(susDecidedRows)) return;
+  if (!Array.isArray(susCoachedCalls)) { done.textContent = "The calls aren't loaded yet. Press Refresh and try again."; return; }
+  const out = susCsv(susDecidedRows, susCoachedCalls);
+  const name = susCsvName();
+  const url = URL.createObjectURL(new Blob([out.text], { type: 'text/csv;charset=utf-8' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  done.textContent = `Saved ${name} (${susPlural(out.calls, 'call')}).`;
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────
